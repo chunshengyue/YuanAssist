@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/background"
+        android:contentDescription="@null" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#4D000000" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/title_bar_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_glass"
+            android:elevation="4dp"
+            android:fitsSystemWindows="true">
+
+            <TextView
+                android:id="@+id/tv_detail_title"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:text="攻略加载中..."
+                android:textColor="#E5C07B"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:fontFamily="serif"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingBottom="12dp"
+                android:paddingHorizontal="16dp">
+
+                <Button
+                    android:id="@+id/btn_copy_url"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="复制原帖链接"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textColor="#E0E0E0"
+                    android:fontFamily="serif"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    android:layout_marginEnd="8dp"/>
+
+                <Button
+                    android:id="@+id/btn_import_script"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="导入脚本"
+                    android:background="@drawable/btn_dark_gold"
+                    android:textColor="#1A1A1A"
+                    android:fontFamily="serif"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    android:layout_marginStart="8dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_detail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:paddingHorizontal="20dp"
+            android:clipToPadding="false"
+            android:paddingVertical="10dp" />
+
+    </LinearLayout>
+</FrameLayout>

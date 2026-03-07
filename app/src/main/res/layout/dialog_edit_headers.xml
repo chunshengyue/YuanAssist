@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="请修改角色名称 (表头)"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <EditText android:id="@+id/et_header_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="1" android:gravity="center"/>
+        <EditText android:id="@+id/et_header_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="2" android:gravity="center"/>
+        <EditText android:id="@+id/et_header_3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="3" android:gravity="center"/>
+        <EditText android:id="@+id/et_header_4" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="4" android:gravity="center"/>
+        <EditText android:id="@+id/et_header_5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="5" android:gravity="center"/>
+    </LinearLayout>
+</LinearLayout>

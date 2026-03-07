@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/iv_strategy_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/background"
+        android:contentDescription="@null" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#4D000000" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:background="@drawable/bg_dark_glass"
+            android:layout_margin="10dp"
+            android:gravity="center_vertical"
+            tools:ignore="ButtonStyle">
+
+            <EditText
+                android:id="@+id/et_search"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="40dp"
+                android:background="@drawable/btn_dark_hollow"
+                android:hint="🔍 搜尋關卡名或角色..."
+                android:textColorHint="#888888"
+                android:textColor="#E0E0E0"
+                android:paddingStart="12dp"
+                android:textSize="14sp"
+                android:maxLines="1"
+                android:singleLine="true"/>
+
+            <Button
+                android:id="@+id/btn_search"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="搜尋"
+                android:textColor="#1A1A1A"
+                android:background="@drawable/btn_dark_gold"
+                android:textStyle="bold"
+                android:layout_marginStart="8dp"/>
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_strategy"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingTop="8dp"
+            android:clipToPadding="false"/>
+    </LinearLayout>
+</FrameLayout>

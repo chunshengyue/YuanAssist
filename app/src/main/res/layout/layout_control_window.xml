@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="308dp"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="10dp"
+    app:cardBackgroundColor="@android:color/transparent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/silk_bg"
+        android:foreground="@drawable/bg_palace_window"
+        android:padding="20dp">
+
+        <Button
+            android:id="@+id/btn_minimize"
+            android:fontFamily="serif"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:text="-"
+            android:textColor="@color/palace_blue"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/btn_win_min"
+            android:stateListAnimator="@null"
+            android:gravity="center"
+            android:padding="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginStart="4dp"
+            android:elevation="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <Button
+            android:id="@+id/btn_close"
+            android:fontFamily="serif"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:text="×"
+            android:textColor="@color/rouge_deep"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:background="@drawable/btn_win_close"
+            android:stateListAnimator="@null"
+            android:gravity="center"
+            android:padding="0dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp"
+            android:elevation="10dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+        <TextView
+            android:id="@+id/tv_drag_handle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="YUANASSIST"
+            android:fontFamily="serif"
+            android:textColor="@color/palace_blue"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toStartOf="@+id/btn_close"
+            app:layout_constraintStart_toEndOf="@+id/btn_minimize"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/row_primary_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="20dp"
+            app:layout_constraintTop_toBottomOf="@id/tv_drag_handle">
+
+            <Button
+                android:id="@+id/btn_action"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_weight="1"
+                android:text="开始跟打"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:background="@drawable/btn_jade_primary"
+                android:fontFamily="serif"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="0dp"
+                android:layout_marginEnd="8dp"
+                android:elevation="4dp"/>
+
+            <Button
+                android:id="@+id/btn_next_turn"
+                android:layout_width="0dp"
+                android:layout_height="35dp"
+                android:layout_weight="1"
+                android:text="设置"
+                android:textColor="@color/palace_blue"
+                android:textSize="18sp"
+                android:background="@drawable/btn_jade_normal"
+                android:fontFamily="serif"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="0dp"
+                android:layout_marginStart="8dp"
+                android:elevation="4dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/row_secondary_tools"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/row_primary_actions">
+
+            <Button
+                android:id="@+id/btn_undo"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="30dp"
+                android:text="-"
+                android:textColor="@color/palace_blue"
+                android:textSize="13sp"
+                android:background="@drawable/btn_jade_normal"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:padding="0dp"
+                android:layout_marginEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btn_redo"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="30dp"
+                android:text="-"
+                android:textColor="@color/palace_blue"
+                android:textSize="13sp"
+                android:background="@drawable/btn_jade_normal"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:padding="0dp"
+                android:layout_marginEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btn_export"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="30dp"
+                android:text="-"
+                android:textColor="@color/palace_blue"
+                android:textSize="13sp"
+                android:background="@drawable/btn_jade_normal"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:padding="0dp"
+                android:layout_marginEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btn_follow_play"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="30dp"
+                android:text="-"
+                android:textColor="@color/palace_blue"
+                android:textSize="13sp"
+                android:background="@drawable/btn_jade_normal"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:padding="0dp"/>
+        </LinearLayout>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_table_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/gold_thread"
+            app:layout_constraintTop_toBottomOf="@id/row_secondary_tools">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:layout_margin="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:background="@color/gold_thread"
+                    android:orientation="horizontal"
+                    android:paddingTop="1dp"
+                    android:paddingStart="1dp"
+                    android:paddingEnd="1dp">
+
+                    <TextView
+                        android:text="回合"
+                        android:layout_width="45dp"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:textColor="@color/palace_blue"
+                        android:textStyle="bold"
+                        android:fontFamily="serif"
+                        android:textSize="12sp"
+                        android:background="@color/jade_white"
+                        android:layout_marginEnd="1dp"/>
+
+                    <TextView android:id="@+id/tv_header_1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="壹" android:gravity="center" android:textColor="@color/gold_thread" android:textStyle="bold" android:fontFamily="serif" android:background="@color/jade_white" android:layout_marginEnd="1dp"/>
+                    <TextView android:id="@+id/tv_header_2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="贰" android:gravity="center" android:textColor="@color/gold_thread" android:textStyle="bold" android:fontFamily="serif" android:background="@color/jade_white" android:layout_marginEnd="1dp"/>
+                    <TextView android:id="@+id/tv_header_3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="叁" android:gravity="center" android:textColor="@color/gold_thread" android:textStyle="bold" android:fontFamily="serif" android:background="@color/jade_white" android:layout_marginEnd="1dp"/>
+                    <TextView android:id="@+id/tv_header_4" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="肆" android:gravity="center" android:textColor="@color/gold_thread" android:textStyle="bold" android:fontFamily="serif" android:background="@color/jade_white" android:layout_marginEnd="1dp"/>
+                    <TextView android:id="@+id/tv_header_5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:text="伍" android:gravity="center" android:textColor="@color/gold_thread" android:textStyle="bold" android:fontFamily="serif" android:background="@color/jade_white"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/gold_thread"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_log_table"
+                    android:layout_width="match_parent"
+                    android:layout_height="90dp"
+                    android:background="#FFFFFF"
+                    android:scrollbars="vertical"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            android:id="@+id/btn_feedback_update"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            android:text="作者主页（获取更新和反馈问题）"
+            android:textColor="@color/palace_blue"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingEnd="8dp"
+
+            android:background="@android:color/transparent"
+
+            android:gravity="center_vertical|start"
+
+            android:layout_marginTop="2dp"
+            android:layout_marginStart="2dp"
+
+            app:layout_constraintTop_toBottomOf="@id/cv_table_container"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

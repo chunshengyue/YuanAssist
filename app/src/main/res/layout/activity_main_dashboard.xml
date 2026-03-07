@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/iv_main_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/background"
+        android:contentDescription="@null" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#4D000000" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textColor="#E5C07B"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:layout_marginTop="30dp"
+                android:layout_marginBottom="30dp"
+                android:letterSpacing="0.15"
+                android:shadowColor="#000000"
+                android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4"/>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dark_glass"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:text="@string/title_combat_mode"
+                        android:textColor="#E5C07B"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="15dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        tools:ignore="ButtonStyle">
+
+                        <Button
+                            android:id="@+id/btn_main_start_combat"
+                            android:layout_width="0dp"
+                            android:layout_weight="1.5"
+                            android:layout_height="50dp"
+                            android:text="@string/btn_start_combat"
+                            android:textColor="#1A1A1A"
+                            android:background="@drawable/btn_dark_gold"
+                            android:fontFamily="serif"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="10dp"/>
+
+                        <Button
+                            android:id="@+id/btn_main_combat_settings"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="50dp"
+                            android:text="@string/btn_settings"
+                            android:textColor="#E5C07B"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:fontFamily="serif"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dark_glass"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:text="@string/title_daily_mode"
+                        android:textColor="#E0E0E0"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="15dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        tools:ignore="ButtonStyle">
+
+                        <Button
+                            android:id="@+id/btn_main_start_daily"
+                            android:layout_width="0dp"
+                            android:layout_weight="1.5"
+                            android:layout_height="50dp"
+                            android:text="@string/btn_start_daily"
+                            android:textColor="#888888"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:fontFamily="serif"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="10dp"/>
+
+                        <Button
+                            android:id="@+id/btn_main_daily_settings"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="50dp"
+                            android:text="@string/btn_settings"
+                            android:textColor="#E0E0E0"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:fontFamily="serif"
+                            android:textStyle="bold"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dark_glass"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="15dp"
+                    tools:ignore="ButtonStyle">
+
+                    <Button
+                        android:id="@+id/btn_main_scripts"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="45dp"
+                        android:text="@string/btn_my_scripts"
+                        android:textColor="#E5C07B"
+                        android:background="@drawable/btn_dark_hollow"
+                        android:fontFamily="serif"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="8dp"/>
+
+                    <Button
+                        android:id="@+id/btn_main_strategies"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="45dp"
+                        android:text="@string/btn_strategies"
+                        android:textColor="#E5C07B"
+                        android:background="@drawable/btn_dark_hollow"
+                        android:fontFamily="serif"
+                        android:textStyle="bold"
+                        android:layout_marginStart="8dp"/>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dark_glass"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:text="活动倒计时"
+                        android:textColor="#E5C07B"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="serif"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_ddl_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never" />
+
+                </LinearLayout>
+            </FrameLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:rowCount="2"
+                android:useDefaultMargins="true"
+                android:layout_marginBottom="20dp">
+
+                <Button
+                    android:id="@+id/btn_main_tutorial"
+                    android:text="@string/btn_tutorial"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:fontFamily="serif"
+                    android:layout_columnWeight="1"
+                    android:layout_height="45dp"
+                    android:layout_margin="4dp"/>
+
+                <Button
+                    android:id="@+id/btn_main_author"
+                    android:text="@string/btn_author"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:fontFamily="serif"
+                    android:layout_columnWeight="1"
+                    android:layout_height="45dp"
+                    android:layout_margin="4dp"/>
+
+                <Button
+                    android:id="@+id/btn_main_update"
+                    android:text="@string/btn_check_update"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:fontFamily="serif"
+                    android:layout_columnWeight="1"
+                    android:layout_height="45dp"
+                    android:layout_margin="4dp"/>
+
+                <Button
+                    android:id="@+id/btn_main_theme"
+                    android:text="功能测试"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:fontFamily="serif"
+                    android:layout_columnWeight="1"
+                    android:layout_height="45dp"
+                    android:layout_margin="4dp"/>
+            </GridLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

@@ -1,0 +1,9 @@
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tv_detail_text"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textSize="16sp"
+    android:textColor="#E0E0E0"  android:paddingHorizontal="16dp"
+    android:paddingVertical="8dp"
+    android:lineSpacingExtra="6dp"
+    android:textIsSelectable="true" />

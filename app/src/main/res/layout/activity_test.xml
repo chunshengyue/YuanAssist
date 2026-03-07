@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="视觉测试模块"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <ImageView
+        android:id="@+id/iv_test_screenshot"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#E0E0E0"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/btn_test_upload"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="上传截图" />
+
+        <Button
+            android:id="@+id/btn_test_run"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="开始测试"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="#4CAF50"/>
+    </LinearLayout>
+
+    <Spinner
+        android:id="@+id/spinner_templates"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minHeight="48dp"
+        android:background="#E0E0E0"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="8dp"
+        android:background="#333333">
+        <TextView
+            android:id="@+id/tv_test_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:textColor="#00FF00"
+            android:textSize="12sp"
+            android:text="等待操作..."/>
+    </ScrollView>
+
+</LinearLayout>
