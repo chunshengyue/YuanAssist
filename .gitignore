@@ -24,3 +24,15 @@ Thumbs.db
 # Logs / temp
 *.log
 *.tmp
+
+# Release artifacts
+*.apk
+*.aab
+*.apks
+app/release/
+
+# Local assistant / workspace docs
+AGENTS.md
+CLAUDE.md
+.codex-compare/
+.gradle-user/
