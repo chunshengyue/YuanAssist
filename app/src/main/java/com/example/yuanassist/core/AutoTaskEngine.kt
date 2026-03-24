@@ -58,6 +58,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private var runGeneration = 0L
     private var debugRoiView: View? = null
     private var cooldownStartedAtMs: Long? = null
+    private var treatFailMinusOneAsSuccess = false
 
     private fun verboseInfo(message: String) {
         if (!verboseLoggingEnabled) return
@@ -112,7 +113,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         onCompleted: (Boolean, String) -> Unit,
         onCustomAction: ((DailyTask, () -> Unit, () -> Unit) -> Unit)? = null,
         onCompletedDetailed: ((DailyPlanCompletion) -> Unit)? = null,
-        initialVariables: Map<String, String> = emptyMap()
+        initialVariables: Map<String, String> = emptyMap(),
+        treatFailMinusOneAsSuccess: Boolean = false
     ) {
         runGeneration += 1
         handler.removeCallbacksAndMessages(null)
@@ -129,6 +131,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         this.onPlanCompleted = onCompleted
         this.onPlanCompletedDetailed = onCompletedDetailed
         customActionHandler = onCustomAction
+        this.treatFailMinusOneAsSuccess = treatFailMinusOneAsSuccess
         logDisplayMetrics("startPlan")
         verboseInfo("引擎已启动")
         executeNextTask()
@@ -170,6 +173,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         onPlanCompleted = null
         customActionHandler = null
         cooldownStartedAtMs = null
+        treatFailMinusOneAsSuccess = false
         detailedCallback?.invoke(
             DailyPlanCompletion(
                 success,
@@ -185,6 +189,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     fun finishTask(task: DailyTask, isSuccess: Boolean) {
         if (!isSuccess) {
+            if (treatFailMinusOneAsSuccess && task.on_fail == -1) {
+                verboseInfo("Task ${task.id} on_fail=-1 treated as completed")
+                completePlan(true, "completed", -1, task, task.params?.terminal_note)
+                return
+            }
             when (task.on_fail) {
                 -4, -3, -2 -> {
                     val msg = task.params?.terminal_note
@@ -202,6 +211,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     return
                 }
                 -1 -> {
+                    if (treatFailMinusOneAsSuccess) {
+                        verboseInfo("ä»»åŠ¡ ${task.id} å¤±è´¥åˆ†æ”¯=-1ï¼ŒæŒ‰æ­£å¸¸ç»“æŸå¤„ç†")
+                        completePlan(true, "å·²å®Œæˆ", -1, task, task.params?.terminal_note)
+                        return
+                    }
                     val msg = when (task.action) {
                         "MATCH_TEMPLATE" -> "未找到模板:${task.params?.template_name}"
                         "CLICK_OCR_TEXT" -> "未识别到文字:${task.params?.target_text ?: task.params?.button_name}"

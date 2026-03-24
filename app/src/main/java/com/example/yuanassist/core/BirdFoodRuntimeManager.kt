@@ -210,7 +210,8 @@ class BirdFoodRuntimeManager(
                     }
                 }
             },
-            initialVariables = buildScriptVariables()
+            initialVariables = buildScriptVariables(),
+            treatFailMinusOneAsSuccess = true
         )
     }
 
