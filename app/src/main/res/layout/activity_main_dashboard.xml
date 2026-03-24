@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/iv_main_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/background"
+        android:contentDescription="@null" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#4D000000" />
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_nav" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_alignParentBottom="true"
+        android:minHeight="54dp"
+        android:background="@drawable/bg_main_bottom_nav"
+        android:paddingStart="8dp"
+        android:paddingTop="0dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="0dp"
+        app:itemBackground="@drawable/bg_bottom_nav_item"
+        app:itemHorizontalTranslationEnabled="false"
+        app:itemIconSize="0dp"
+        app:itemIconTint="@android:color/transparent"
+        app:itemPaddingTop="0dp"
+        app:itemPaddingBottom="0dp"
+        app:itemRippleColor="#33FFFFFF"
+        app:itemTextAppearanceActive="@style/TextAppearance.YuanAssist.BottomNav.Active"
+        app:itemTextAppearanceInactive="@style/TextAppearance.YuanAssist.BottomNav.Inactive"
+        app:itemTextColor="@color/bottom_nav_text"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav_menu"
+        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
+
+</RelativeLayout>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#1A1A1A"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="排序方式"
+        android:textColor="#888888"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <RadioGroup
+        android:id="@+id/rg_sort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="20dp">
+
+        <RadioButton
+            android:id="@+id/rb_sort_clicks"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="最多点击"
+            android:textColor="#E5C07B"
+            android:buttonTint="#E5C07B"
+            android:checked="true"
+            android:layout_marginEnd="15dp"/>
+
+        <RadioButton
+            android:id="@+id/rb_sort_newest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="最新发布"
+            android:textColor="#E5C07B"
+            android:buttonTint="#E5C07B"
+            android:layout_marginEnd="15dp"/>
+
+        <RadioButton
+            android:id="@+id/rb_sort_likes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="最多点赞"
+            android:buttonTint="#E5C07B"
+            android:textColor="#E5C07B"/>
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="当期活动"
+        android:textColor="#888888"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <GridLayout
+        android:id="@+id/grid_tags"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:useDefaultMargins="true"
+        android:layout_marginBottom="20dp">
+    </GridLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_filter_reset"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="45dp"
+            android:text="重置"
+            android:textColor="#E5C07B"
+            android:background="@drawable/btn_dark_hollow"
+            android:layout_marginEnd="10dp"/>
+
+        <Button
+            android:id="@+id/btn_filter_confirm"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="45dp"
+            android:text="确定"
+            android:textColor="#1A1A1A"
+            android:background="@drawable/btn_dark_gold"/>
+    </LinearLayout>
+</LinearLayout>

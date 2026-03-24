@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="20dp">
+
+        <LinearLayout
+            android:id="@+id/layout_daily_bird_food_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_dark_glass_flat"
+            android:orientation="vertical">
+
+            <Space
+                android:id="@+id/view_daily_bird_food_status_space"
+                android:layout_width="match_parent"
+                android:layout_height="16dp" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="8dp"
+                android:paddingBottom="10dp">
+
+                <ImageView
+                    android:id="@+id/btn_daily_bird_food_back"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="6dp"
+                    android:contentDescription="返回"
+                    android:padding="10dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_back_arrow" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="serif"
+                    android:text="刷鸟食"
+                    android:textColor="#E5C07B"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_dark_glass">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="serif"
+                        android:text="任务勾选"
+                        android:textColor="#E5C07B"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="14dp"
+                        android:text="只会执行勾选的任务"
+                        android:textColor="#D6D6D6"
+                        android:textSize="14sp" />
+
+                    <CheckBox
+                        android:id="@+id/cb_daily_bird_food_tufa"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="#E5C07B"
+                        android:checked="true"
+                        android:text="突发情况"
+                        android:textColor="#F0F0F0"
+                        android:textSize="16sp" />
+
+                    <CheckBox
+                        android:id="@+id/cb_daily_bird_food_xiaodao"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="#E5C07B"
+                        android:text="小道消息"
+                        android:textColor="#F0F0F0"
+                        android:textSize="16sp" />
+
+                    <CheckBox
+                        android:id="@+id/cb_daily_bird_food_chuanwen"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="#E5C07B"
+                        android:text="他的传闻"
+                        android:textColor="#F0F0F0"
+                        android:textSize="16sp" />
+
+                    <CheckBox
+                        android:id="@+id/cb_daily_bird_food_gongwu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="#E5C07B"
+                        android:text="待办公务"
+                        android:textColor="#F0F0F0"
+                        android:textSize="16sp" />
+
+                    <CheckBox
+                        android:id="@+id/cb_daily_bird_food_debug_mode"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:buttonTint="#E5C07B"
+                        android:text="调试模式（显示模板匹配红框）"
+                        android:textColor="#D6D6D6"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_dark_glass">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="serif"
+                        android:text="运行方式"
+                        android:textColor="#E5C07B"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_daily_bird_food_stop_condition"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp">
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_bird_food_stop_auto_eat"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:text="自动吃鸟食（一直运行到鸟食耗尽）"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_bird_food_stop_resource"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:checked="true"
+                            android:text="不自动吃鸟食（刷完现有次数）"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_bird_food_stop_run_count"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:text="运行次数"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <LinearLayout
+                            android:id="@+id/layout_daily_bird_food_run_count"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="30dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="10dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <EditText
+                                android:id="@+id/et_daily_bird_food_run_count"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/btn_dark_hollow"
+                                android:hint="请输入次数"
+                                android:inputType="number"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:textColor="#F0F0F0"
+                                android:textColorHint="#9E9E9E" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:text="次"
+                                android:textColor="#D6D6D6"
+                                android:textSize="15sp" />
+                        </LinearLayout>
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_bird_food_stop_duration"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:text="运行时间"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <LinearLayout
+                            android:id="@+id/layout_daily_bird_food_duration"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="30dp"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <EditText
+                                android:id="@+id/et_daily_bird_food_duration"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/btn_dark_hollow"
+                                android:hint="请输入时间"
+                                android:inputType="number"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:textColor="#F0F0F0"
+                                android:textColorHint="#9E9E9E" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:text="分钟"
+                                android:textColor="#D6D6D6"
+                                android:textSize="15sp" />
+                        </LinearLayout>
+                    </RadioGroup>
+                </LinearLayout>
+            </FrameLayout>
+
+            <Button
+                android:id="@+id/btn_daily_bird_food_confirm"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/btn_dark_gold"
+                android:fontFamily="serif"
+                android:text="导入"
+                android:textColor="#1A1A1A"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

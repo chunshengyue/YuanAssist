@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="rouge_pink">#D68A93</color> <color name="palace_blue">#4A6F8A</color> <color name="jade_white">#F8F4ED</color>  <color name="gold_thread">#C4A775</color> <color name="rouge_deep">#C0392B</color> <color name="silk_bg">#FAF3F5</color>     <color name="btn_start_grad_start">#66BB6A</color>
+    <color name="btn_start_grad_end">#2E7D32</color>
+    <color name="btn_brown_grad_start">#8D6E63</color>
+    <color name="btn_brown_grad_end">#5D4037</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+</resources>

@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/background"
+        android:contentDescription="@null" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000" />
+
+    <include
+        layout="@layout/layout_top_bar"
+        android:id="@+id/top_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true" />
+
+    <LinearLayout
+        android:id="@+id/layout_bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_dark_glass_flat"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="15dp"
+        android:elevation="10dp">
+
+        <TextView
+            android:id="@+id/btn_upload_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="返回"
+            android:textColor="#888888"
+            android:textSize="14sp"
+            android:padding="10dp"/>
+
+        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+
+        <Button
+            android:id="@+id/btn_preview_strategy"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="预览"
+            android:background="@drawable/btn_dark_hollow"
+            android:textColor="#E5C07B"
+            android:textSize="13sp"
+            android:layout_marginEnd="10dp"/>
+
+        <Button
+            android:id="@+id/btn_publish_strategy"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="发布攻略"
+            android:background="@drawable/btn_dark_gold"
+            android:textColor="#1A1A1A"
+            android:textSize="14sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/layout_bottom_bar"
+        android:layout_below="@id/top_bar"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="15dp">
+
+            <EditText
+                android:id="@+id/et_strategy_title"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/bg_dark_glass"
+                android:hint="请输入攻略标题 (必填)"
+                android:textColorHint="#888888"
+                android:textColor="#E5C07B"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="20dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="◆ 导入脚本数据（三选一）"
+                android:textColor="#E5C07B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="15dp">
+                <TextView android:id="@+id/tab_import_current" android:layout_width="0dp" android:layout_height="35dp" android:layout_weight="1" android:text="当前窗口" android:gravity="center" android:textColor="#1A1A1A" android:background="@drawable/btn_dark_gold" android:textSize="13sp" android:layout_marginEnd="5dp"/>
+                <TextView android:id="@+id/tab_import_library" android:layout_width="0dp" android:layout_height="35dp" android:layout_weight="1" android:text="脚本库" android:gravity="center" android:textColor="#E5C07B" android:background="@drawable/btn_dark_hollow" android:textSize="13sp" android:layout_marginEnd="5dp"/>
+                <TextView android:id="@+id/tab_import_text" android:layout_width="0dp" android:layout_height="35dp" android:layout_weight="1" android:text="文字解析" android:gravity="center" android:textColor="#E5C07B" android:background="@drawable/btn_dark_hollow" android:textSize="13sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_import_library"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_dark_glass"
+                android:padding="10dp"
+                android:visibility="gone"
+                android:layout_marginBottom="15dp">
+                <TextView
+                    android:id="@+id/tv_selected_script"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="点击选择本地脚本 ▾"
+                    android:textColor="#E0E0E0"
+                    android:textSize="14sp"
+                    android:padding="5dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_import_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_dark_glass"
+                android:padding="10dp"
+                android:visibility="gone"
+                android:layout_marginBottom="15dp">
+
+                <EditText
+                    android:id="@+id/et_import_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:background="@android:color/transparent"
+                    android:hint="支持导入1回合 1A 2A 3A 4A 5↑......这样的格式\n也可在此粘贴辟雍学府复制的文本数据...\n\n注意：确认解析后，您也可以随时点击左下角返回修改。"
+                    android:textColorHint="#666666"
+                    android:textColor="#E0E0E0"
+                    android:gravity="top|start"
+                    android:textSize="12sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp">
+                    <Button
+                        android:id="@+id/btn_clear_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="清空重置"
+                        android:background="@drawable/btn_dark_hollow"
+                        android:textColor="#888888"
+                        android:textSize="12sp"/>
+                    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+                    <Button
+                        android:id="@+id/btn_confirm_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="确认解析"
+                        android:background="@drawable/btn_dark_gold"
+                        android:textColor="#1A1A1A"
+                        android:textStyle="bold"
+                        android:textSize="12sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_table_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_dark_glass"
+                android:padding="10dp"
+                android:visibility="gone"
+                android:layout_marginBottom="20dp">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_upload_table"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:overScrollMode="never"/>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#33E5C07B" android:layout_marginVertical="10dp"/>
+
+                <TextView
+                    android:id="@+id/tv_upload_instructions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="附带指令：无"
+                    android:textColor="#A0A0A0"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="8dp"/>
+
+                <Button
+                    android:id="@+id/btn_table_action_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="刷新"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textColor="#E5C07B"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="15dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="◆ 上阵密探（三选一）"
+                android:textColor="#E5C07B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="15dp">
+                <TextView
+                    android:id="@+id/tab_agent_select"
+                    android:layout_width="0dp"
+                    android:layout_height="35dp"
+                    android:layout_weight="1"
+                    android:text="选择密探"
+                    android:gravity="center"
+                    android:textColor="#1A1A1A"
+                    android:background="@drawable/btn_dark_gold"
+                    android:textSize="13sp"
+                    android:layout_marginEnd="5dp"/>
+                <TextView
+                    android:id="@+id/tab_agent_image"
+                    android:layout_width="0dp"
+                    android:layout_height="35dp"
+                    android:layout_weight="1"
+                    android:text="密探截图"
+                    android:gravity="center"
+                    android:textColor="#E5C07B"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textSize="13sp"
+                    android:layout_marginEnd="5dp"/>
+                <TextView
+                    android:id="@+id/tab_agent_text"
+                    android:layout_width="0dp"
+                    android:layout_height="35dp"
+                    android:layout_weight="1"
+                    android:text="文字描述"
+                    android:gravity="center"
+                    android:textColor="#E5C07B"
+                    android:background="@drawable/btn_dark_hollow"
+                    android:textSize="13sp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_agent_slots"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="top|center_horizontal"
+                android:baselineAligned="false"
+                android:layout_marginBottom="20dp">
+            </LinearLayout>
+
+            <RelativeLayout
+                android:id="@+id/layout_agent_image_upload"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="@drawable/bg_dark_glass"
+                android:visibility="gone"
+                android:layout_marginBottom="20dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:id="@+id/ll_agent_image_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+"
+                        android:textSize="36sp"
+                        android:textColor="#888888"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="点击上传练度截图"
+                        android:textColor="#888888"
+                        android:textSize="12sp"
+                        android:layout_marginTop="5dp"/>
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/iv_agent_image_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone"/>
+
+                <TextView
+                    android:id="@+id/tv_agent_image_reupload"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_dark_glass"
+                    android:text="↻ 重新上传"
+                    android:textColor="#E0E0E0"
+                    android:textSize="11sp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:visibility="gone"/>
+            </RelativeLayout>
+            <EditText
+                android:id="@+id/et_agent_text_desc"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:background="@drawable/bg_dark_glass"
+                android:hint="在此输入密探练度要求、命盘建议等文字说明..."
+                android:textColorHint="#888888"
+                android:textColor="#E0E0E0"
+                android:padding="15dp"
+                android:textSize="13sp"
+                android:gravity="top|start"
+                android:visibility="gone"
+                android:layout_marginBottom="20dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="◆ 图文说明"
+                android:textColor="#E5C07B"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp"/>
+            <RelativeLayout
+                android:id="@+id/layout_strategy_image_upload"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="@drawable/bg_dark_glass"
+                android:layout_marginBottom="15dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:id="@+id/ll_strategy_image_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+"
+                        android:textSize="36sp"
+                        android:textColor="#888888"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="若有原攻略表格，可上传在此处\n(会显示在本攻略第一张图)"
+                        android:textColor="#888888"
+                        android:textSize="12sp"
+                        android:gravity="center"
+                        android:layout_marginTop="5dp"/>
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/iv_strategy_image_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone"/>
+
+                <TextView
+                    android:id="@+id/tv_strategy_image_reupload"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_alignParentEnd="true"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_dark_glass"
+                    android:text="↻ 重新上传"
+                    android:textColor="#E0E0E0"
+                    android:textSize="11sp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="6dp"
+                    android:visibility="gone"/>
+            </RelativeLayout>
+            <EditText
+                android:id="@+id/et_strategy_content"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:background="@drawable/bg_dark_glass"
+                android:hint="输入补充说明，注意事项等..."
+                android:textColorHint="#888888"
+                android:textColor="#E0E0E0"
+                android:padding="15dp"
+                android:textSize="13sp"
+                android:gravity="top|start"
+                android:layout_marginBottom="20dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_dark_glass"
+                android:padding="15dp"
+                android:layout_marginBottom="20dp">
+                <TextView
+                    android:id="@+id/tv_upload_config"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="默认参数：普2.5s / 技4.0s / 等待8.0s"
+                    android:textColor="#E0E0E0"
+                    android:textSize="12sp"/>
+                <TextView
+                    android:id="@+id/btn_edit_config"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="修改参数"
+                    android:textColor="#E5C07B"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:paddingStart="10dp"/>
+            </LinearLayout>
+            <EditText
+                android:id="@+id/et_original_post_url"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_dark_hollow"
+                android:hint="原帖链接（选填）"
+                android:padding="12dp"
+                android:textColor="#E0E0E0"
+                android:textColorHint="#9E9E9E"
+                android:textSize="14sp"
+                android:inputType="textUri" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</RelativeLayout>

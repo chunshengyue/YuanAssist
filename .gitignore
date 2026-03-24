@@ -1,0 +1,26 @@
+# Android / Gradle
+.gradle/
+.gradle-user-home/
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local SDK / machine-specific
+local.properties
+
+# IDE
+.idea/
+*.iml
+.kotlin/
+.android/
+.cursor/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs / temp
+*.log
+*.tmp

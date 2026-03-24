@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical"
+    android:gravity="center_horizontal">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_agent_avatar_container"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="#33000000"
+        android:layout_marginBottom="6dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <TextView
+            android:id="@+id/tv_agent_add_icon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="+"
+            android:textColor="#E5C07B"
+            android:textSize="24sp"
+            android:gravity="center" />
+
+        <ImageView
+            android:id="@+id/iv_upload_agent_avatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_gold_border" />
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/tv_upload_agent_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="点击选择"
+        android:textColor="#888888"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tv_upload_agent_star"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="星级 ▾"
+        android:gravity="center"
+        android:textColor="#E5C07B"
+        android:textSize="10sp"
+        android:background="#22E5C07B"
+        android:paddingVertical="2dp"
+        android:layout_marginHorizontal="2dp"
+        android:layout_marginBottom="4dp"
+        android:visibility="invisible" /> <LinearLayout
+    android:id="@+id/layout_upload_talents"
+    android:layout_width="match_parent"
+    android:layout_marginHorizontal="2dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:visibility="invisible">
+    <TextView android:id="@+id/tv_talent_1" android:layout_width="match_parent" android:layout_height="24dp" android:text="天赋一 ▾" android:textSize="10sp" android:textColor="#A0A0A0" android:gravity="center" android:background="#1AFFFFFF" android:layout_marginBottom="2dp" android:singleLine="true" android:ellipsize="end"/>
+    <TextView android:id="@+id/tv_talent_2" android:layout_width="match_parent" android:layout_height="24dp" android:text="天赋二 ▾" android:textSize="10sp" android:textColor="#A0A0A0" android:gravity="center" android:background="#1AFFFFFF" android:layout_marginBottom="2dp" android:singleLine="true" android:ellipsize="end"/>
+    <TextView android:id="@+id/tv_talent_3" android:layout_width="match_parent" android:layout_height="24dp" android:text="天赋三 ▾" android:textSize="10sp" android:textColor="#A0A0A0" android:gravity="center" android:background="#1AFFFFFF" android:singleLine="true" android:ellipsize="end"/>
+</LinearLayout>
+</LinearLayout>

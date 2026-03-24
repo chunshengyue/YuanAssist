@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/background"
+        android:contentDescription="@null" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#4D000000" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="战斗版参数设置"
+                android:textColor="#E5C07B"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="30dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_dark_glass"
+                android:padding="20dp">
+
+                <TextView
+                    android:text="【跟打执行参数】"
+                    android:textColor="#E5C07B"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="普攻间隔 (毫秒)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_interval_attack" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="技能间隔 (毫秒)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_interval_skill" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="回合等待时间 (毫秒)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_wait_turn" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="开始回合 (默认为1)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_start_turn" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="15dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="游戏倍速 (2倍速将自动延长1.5倍等待时间)"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginBottom="8dp"/>
+
+                <RadioGroup
+                    android:id="@+id/rg_game_speed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="25dp">
+
+                    <RadioButton
+                        android:id="@+id/rb_speed_2x"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2 倍速"
+                        android:textColor="#E0E0E0"
+                        android:buttonTint="#E5C07B"
+                        android:layout_marginEnd="24dp"/>
+
+                    <RadioButton
+                        android:id="@+id/rb_speed_3x"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3 倍速 (默认)"
+                        android:textColor="#E0E0E0"
+                        android:buttonTint="#E5C07B"/>
+                </RadioGroup>
+                <TextView
+                    android:text="【录制手势参数】"
+                    android:textColor="#E5C07B"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="滑动灵敏度 (像素，越小越灵敏)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_swipe_threshold" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="录制区高度 (屏幕占比 1-100%)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_input_height" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="15dp"/>
+
+                <TextView android:text="录制响应延迟 (毫秒，建议50-80)" android:textColor="#E0E0E0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp"/>
+                <EditText android:id="@+id/et_record_delay" android:inputType="number" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/btn_dark_hollow" android:textColor="#E0E0E0" android:padding="10dp" android:layout_marginBottom="25dp"/>
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_save_settings"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:text="保存设置"
+                android:textColor="#1A1A1A"
+                android:background="@drawable/btn_dark_gold"
+                android:fontFamily="serif"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="40dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

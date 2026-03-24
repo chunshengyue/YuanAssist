@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">YuanAssist</string>
+    <string name="accessibility_service_label">YuanAssist 脚本助手</string>
+    <string name="accessibility_service_desc">用于游戏自动化操作的辅助服务。</string>
+
+    <!-- 新增主界面文字 -->
+    <string name="title_combat_mode">战斗版 (自动跟打/录制)</string>
+    <string name="title_daily_mode">日常版 (自动日常/活动)</string>
+    <string name="btn_start_combat">启动悬浮窗</string>
+    <string name="btn_start_daily">启动日常版</string>
+    <string name="btn_settings">设置</string>
+    <string name="btn_tutorial">使用教程</string>
+    <string name="btn_author">作者主页</string>
+    <string name="btn_check_update">检查更新</string>
+    <string name="btn_theme">切换主题</string>
+    <string name="btn_my_scripts">已录制脚本</string>
+    <string name="btn_strategies">攻略推荐</string>
+</resources>

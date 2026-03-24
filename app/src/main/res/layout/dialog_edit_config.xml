@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_dark_glass"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="修改执行参数"
+        android:textColor="#E5C07B"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"/>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="15dp">
+        <TextView android:layout_width="80dp" android:layout_height="wrap_content" android:text="普攻/防御" android:textColor="#E0E0E0" android:textSize="13sp"/>
+        <EditText android:id="@+id/et_config_attack" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:background="@drawable/bg_dark_hollow" android:textColor="#E5C07B" android:textSize="13sp" android:inputType="number" android:paddingHorizontal="10dp" android:gravity="center"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ms" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="15dp">
+        <TextView android:layout_width="80dp" android:layout_height="wrap_content" android:text="技能延迟" android:textColor="#E0E0E0" android:textSize="13sp"/>
+        <EditText android:id="@+id/et_config_skill" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:background="@drawable/bg_dark_hollow" android:textColor="#E5C07B" android:textSize="13sp" android:inputType="number" android:paddingHorizontal="10dp" android:gravity="center"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ms" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="25dp">
+        <TextView android:layout_width="80dp" android:layout_height="wrap_content" android:text="回合等待" android:textColor="#E0E0E0" android:textSize="13sp"/>
+        <EditText android:id="@+id/et_config_wait" android:layout_width="0dp" android:layout_weight="1" android:layout_height="40dp" android:background="@drawable/bg_dark_hollow" android:textColor="#E5C07B" android:textSize="13sp" android:inputType="number" android:paddingHorizontal="10dp" android:gravity="center"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ms" android:textColor="#888888" android:textSize="12sp" android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Button android:id="@+id/btn_config_cancel" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:text="取消" android:background="@drawable/btn_dark_hollow" android:textColor="#888888" android:layout_marginEnd="10dp"/>
+        <Button android:id="@+id/btn_config_confirm" android:layout_width="0dp" android:layout_height="36dp" android:layout_weight="1" android:text="保存修改" android:background="@drawable/btn_dark_gold" android:textColor="#1A1A1A" android:textStyle="bold"/>
+    </LinearLayout>
+</LinearLayout>
