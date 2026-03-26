@@ -21,6 +21,7 @@ import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.TemplateOverrideStore
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
@@ -679,7 +680,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val bboxHeight = bestMaxY - bestMinY + 1
         val bboxArea = (bboxWidth * bboxHeight).coerceAtLeast(1)
         val estimatedPixelArea = bestCount * step * step
-        val referenceButtonArea = 360f * 60f
+        val referenceButtonArea = 300f * 50f
         val areaRatio = (estimatedPixelArea / referenceButtonArea).coerceIn(0f, 1f)
         val fillRatio = bestCount.toFloat() / bboxArea.toFloat()
         val rednessScore = (bestRednessSum / bestCount.toFloat()).coerceIn(0f, 1f)
@@ -900,17 +901,18 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     }
 
     private fun loadTemplateFromAssets(fileName: String): Bitmap? {
-        templateCache.get(fileName)?.let {
+        val cacheKey = TemplateOverrideStore.cacheKey(service, fileName)
+        templateCache.get(cacheKey)?.let {
             if (!it.isRecycled) {
                 verboseInfo("模板缓存命中 $fileName")
                 return it
             }
-            templateCache.remove(fileName)
+            templateCache.remove(cacheKey)
         }
         return try {
-            val bitmap = service.assets.open(fileName).use { BitmapFactory.decodeStream(it) }
+            val bitmap = TemplateOverrideStore.loadBitmap(service, service.assets, fileName)
             if (bitmap != null) {
-                templateCache.put(fileName, bitmap)
+                templateCache.put(cacheKey, bitmap)
                 verboseInfo("模板已加载 $fileName ${bitmap.width}x${bitmap.height}")
             } else {
                 RunLogger.e("模板解码失败 $fileName")

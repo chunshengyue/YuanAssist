@@ -45,6 +45,8 @@ class CombatEngine(
         private val REGEX_PARSE_PURE_ACTION = Regex("^([A-Z↑↓圈]+)$")
     }
 
+    private fun getTargetSwitchSettleDelayMs(): Long = 500L
+
     fun start() {
         val appConfig = getConfig()
         isPaused = false
@@ -387,7 +389,10 @@ class CombatEngine(
                 gestureDispatcher.performActionDirect(x, y, x, y, true)
                 delay(500)
             }
-            if (isRunning) onComplete()
+            if (isRunning) {
+                delay(getTargetSwitchSettleDelayMs())
+                onComplete()
+            }
         }
     }
 

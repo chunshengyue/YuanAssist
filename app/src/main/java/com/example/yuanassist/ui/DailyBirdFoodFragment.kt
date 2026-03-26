@@ -27,6 +27,7 @@ import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.BirdFoodConfig
 import com.example.yuanassist.model.BirdFoodStopCondition
 import com.example.yuanassist.model.BirdFoodTaskType
+import com.example.yuanassist.model.DaiBanGongWuOption
 
 class DailyBirdFoodFragment : Fragment() {
 
@@ -43,6 +44,7 @@ class DailyBirdFoodFragment : Fragment() {
     private fun bindViews(view: View) {
         bindHeaderInsets(view)
         bindStopConditionInputs(view)
+        bindGongWuOptions(view)
 
         view.findViewById<ImageView>(R.id.btn_daily_bird_food_back).setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -53,6 +55,20 @@ class DailyBirdFoodFragment : Fragment() {
             DailyBirdFoodBridge.pendingConfig = config
             startBirdFoodService()
         }
+    }
+
+    private fun bindGongWuOptions(view: View) {
+        val gongwuCheckBox = view.findViewById<CheckBox>(R.id.cb_daily_bird_food_gongwu)
+        val gongwuOptionLayout = view.findViewById<View>(R.id.layout_daily_bird_food_gongwu_option)
+
+        fun refreshOptions() {
+            gongwuOptionLayout.visibility = if (gongwuCheckBox.isChecked) View.VISIBLE else View.GONE
+        }
+
+        gongwuCheckBox.setOnCheckedChangeListener { _, _ ->
+            refreshOptions()
+        }
+        refreshOptions()
     }
 
     private fun bindHeaderInsets(view: View) {
@@ -124,6 +140,12 @@ class DailyBirdFoodFragment : Fragment() {
         val durationMinutes = view.findViewById<EditText>(R.id.et_daily_bird_food_duration)
             .text.toString().trim().toIntOrNull()
         val debugModeEnabled = view.findViewById<CheckBox>(R.id.cb_daily_bird_food_debug_mode).isChecked
+        val daiBanGongWuOption =
+            if (view.findViewById<RadioButton>(R.id.rb_daily_bird_food_gongwu_wuzhuqian).isChecked) {
+                DaiBanGongWuOption.WU_ZHU_QIAN
+            } else {
+                DaiBanGongWuOption.BING_SHU
+            }
 
         if (!autoEatOption.isChecked &&
             !currentOnlyOption.isChecked &&
@@ -150,7 +172,8 @@ class DailyBirdFoodFragment : Fragment() {
             stopCondition = stopCondition,
             debugModeEnabled = debugModeEnabled,
             maxRuns = runCount,
-            maxDurationMinutes = durationMinutes
+            maxDurationMinutes = durationMinutes,
+            daiBanGongWuOption = daiBanGongWuOption
         )
     }
 

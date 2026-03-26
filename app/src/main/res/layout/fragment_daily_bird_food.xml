@@ -127,6 +127,52 @@
                         android:textColor="#F0F0F0"
                         android:textSize="16sp" />
 
+                    <LinearLayout
+                        android:id="@+id/layout_daily_bird_food_gongwu_option"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="30dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="4dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="待办公务选择"
+                            android:textColor="#D6D6D6"
+                            android:textSize="14sp" />
+
+                        <RadioGroup
+                            android:id="@+id/rg_daily_bird_food_gongwu_option"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:orientation="horizontal">
+
+                            <RadioButton
+                                android:id="@+id/rb_daily_bird_food_gongwu_wuzhuqian"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="#E5C07B"
+                                android:text="五铢钱"
+                                android:textColor="#F0F0F0"
+                                android:textSize="15sp" />
+
+                            <RadioButton
+                                android:id="@+id/rb_daily_bird_food_gongwu_bingshu"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="18dp"
+                                android:buttonTint="#E5C07B"
+                                android:checked="true"
+                                android:text="兵书"
+                                android:textColor="#F0F0F0"
+                                android:textSize="15sp" />
+                        </RadioGroup>
+                    </LinearLayout>
+
                     <CheckBox
                         android:id="@+id/cb_daily_bird_food_debug_mode"
                         android:layout_width="match_parent"

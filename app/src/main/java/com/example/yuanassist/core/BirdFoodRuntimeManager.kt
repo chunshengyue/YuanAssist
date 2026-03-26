@@ -7,6 +7,7 @@ import android.widget.Toast
 import com.example.yuanassist.model.BirdFoodConfig
 import com.example.yuanassist.model.BirdFoodStopCondition
 import com.example.yuanassist.model.BirdFoodTaskType
+import com.example.yuanassist.model.DaiBanGongWuOption
 import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
@@ -360,11 +361,34 @@ class BirdFoodRuntimeManager(
     private fun loadPlan(fileName: String): DailyTaskPlan? {
         return try {
             service.assets.open("daily_scripts/$fileName").use { input ->
-                gson.fromJson(input.reader(), DailyTaskPlan::class.java)
+                val plan = gson.fromJson(input.reader(), DailyTaskPlan::class.java)
+                customizePlan(fileName, plan)
             }
         } catch (t: Throwable) {
             RunLogger.e("加载鸟食脚本失败：$fileName", t)
             null
         }
+    }
+
+    private fun customizePlan(fileName: String, plan: DailyTaskPlan): DailyTaskPlan {
+        val currentConfig = config ?: return plan
+        if (fileName != BirdFoodTaskType.DAI_BAN_GONG_WU.scriptFileName) return plan
+        if (currentConfig.daiBanGongWuOption != DaiBanGongWuOption.WU_ZHU_QIAN) return plan
+
+        val updatedTasks = plan.tasks.map { task ->
+            if (task.params?.template_name == "xuanze.png") {
+                task.copy(
+                    params = task.params.copy(
+                        roi = task.params.roi?.copy(
+                            x = 838f,
+                            y = 1150f
+                        )
+                    )
+                )
+            } else {
+                task
+            }
+        }
+        return plan.copy(tasks = updatedTasks)
     }
 }

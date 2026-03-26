@@ -117,6 +117,14 @@ class YuanAssistService : AccessibilityService() {
         gestureDispatcher = GestureDispatcher(this, uiManager, handler)
     }
 
+    private fun updateOverlayStatePrefs(combatOpen: Boolean? = null, dailyOpen: Boolean? = null) {
+        getSharedPreferences("app_prefs", MODE_PRIVATE).edit().apply {
+            combatOpen?.let { putBoolean("combat_window_open", it) }
+            dailyOpen?.let { putBoolean("daily_window_open", it) }
+            apply()
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
 
@@ -124,7 +132,9 @@ class YuanAssistService : AccessibilityService() {
             action != "ACTION_START_DAILY_WINDOW" &&
             action != "ACTION_START_BIRD_FOOD" &&
             action != "ACTION_START_INVENTORY_STITCH" &&
-            action != "ACTION_START_COORDINATE_PICKER"
+            action != "ACTION_START_COORDINATE_PICKER" &&
+            action != "ACTION_CLOSE_COMBAT_WINDOW" &&
+            action != "ACTION_CLOSE_DAILY_WINDOW"
         ) {
             if (!this::combatEngine.isInitialized || !this::recordEngine.isInitialized) {
                 Log.w("YuanAssistService", "Service not fully connected yet, ignoring command: $action")
@@ -145,6 +155,7 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager = DailyWindowManager(this)
                 }
                 dailyWindowManager?.showWindow()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
             }
             "ACTION_START_BIRD_FOOD" -> {
                 removeInputWindow()
@@ -169,6 +180,7 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager = DailyWindowManager(this)
                 }
                 dailyWindowManager?.prepareInventoryStitching()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
             }
             "ACTION_START_COORDINATE_PICKER" -> {
                 removeInputWindow()
@@ -178,15 +190,26 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager = DailyWindowManager(this)
                 }
                 dailyWindowManager?.startCoordinatePickerMode()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
             }
             "ACTION_START_COMBAT_WINDOW" -> {
                 dailyWindowManager?.hideWindow()
                 showControlWindow()
+                updateOverlayStatePrefs(combatOpen = true, dailyOpen = false)
                 if (tableAdapter != null) {
                     updateTableData()
                 }
             }
+            "ACTION_CLOSE_DAILY_WINDOW" -> {
+                dailyWindowManager?.hideWindow()
+                updateOverlayStatePrefs(dailyOpen = false)
+            }
+            "ACTION_CLOSE_COMBAT_WINDOW" -> {
+                closeCombatFloatingWindows()
+            }
             "ACTION_IMPORT_SCRIPT" -> {
+                combatEngine.instructionList.clear()
+
                 val scriptContent = intent.getStringExtra("SCRIPT_CONTENT")
                 if (!scriptContent.isNullOrEmpty()) {
                     parseTextToTable(scriptContent)
@@ -351,18 +374,23 @@ class YuanAssistService : AccessibilityService() {
         if (pendingAction == "ACTION_START_DAILY_WINDOW") {
             if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
             dailyWindowManager?.showWindow()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
         } else if (pendingAction == "ACTION_START_BIRD_FOOD") {
             if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
             DailyBirdFoodBridge.pendingConfig?.let { dailyWindowManager?.submitBirdFoodConfig(it) }
             dailyWindowManager?.showWindow()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
         } else if (pendingAction == "ACTION_START_INVENTORY_STITCH") {
             if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
             dailyWindowManager?.prepareInventoryStitching()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
         } else if (pendingAction == "ACTION_START_COORDINATE_PICKER") {
             if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
             dailyWindowManager?.startCoordinatePickerMode()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
         } else {
             showControlWindow()
+            updateOverlayStatePrefs(combatOpen = true, dailyOpen = false)
             updateTableData()
         }
         autoTaskEngine = AutoTaskEngine(this)
@@ -371,6 +399,7 @@ class YuanAssistService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         dailyWindowManager?.hideWindow()
+        updateOverlayStatePrefs(combatOpen = false, dailyOpen = false)
         stopCombatAnchorPicker()
         autoTaskEngine?.release()
         if (this::combatEngine.isInitialized) {
@@ -620,16 +649,17 @@ class YuanAssistService : AccessibilityService() {
         val lines = text.split("\n")
         var successCount = 0
         for (line in lines) {
-            val trimLine = line.trim()
-            if (trimLine.isEmpty()) continue
-            val parts = trimLine.split(Regex("\\s+"))
+            val rawLine = line.trimEnd('\r')
+            if (rawLine.isBlank()) continue
+            val parts = if (rawLine.contains("\t")) rawLine.split("\t") else rawLine.trim().split(Regex("\\s+"))
+            val firstPart = parts.firstOrNull()?.trim().orEmpty()
             val startIndex =
-                if (parts.isNotEmpty() && (parts[0].contains("\u56DE") || parts[0].all { it.isDigit() })) 1 else 0
+                if (firstPart.contains("\u56DE") || firstPart.all { it.isDigit() }) 1 else 0
             val newTurn = TurnData(combatEngine.followData.size + 1)
             var charIdx = 0
             for (i in startIndex until parts.size) {
                 if (charIdx >= 5) break
-                val cmd = parts[i]
+                val cmd = parts[i].trim()
                 if (cmd == "-") {
                     newTurn.characterActions[charIdx] = ""
                 } else {
@@ -1167,7 +1197,7 @@ class YuanAssistService : AccessibilityService() {
         rvTable.layoutManager = LinearLayoutManager(this)
         rvTable.adapter = tableAdapter
         btnMinimize.setOnClickListener { minimizeControlWindow() }
-        btnClose.setOnClickListener { disableSelf(); System.exit(0) }
+        btnClose.setOnClickListener { closeCombatFloatingWindows() }
 
         view.tag = "initialized"
         refreshActionButtonUI()
@@ -1222,6 +1252,24 @@ class YuanAssistService : AccessibilityService() {
         uiManager.removeControlWindow()
         showMinimizedWindow()
     }
+
+    private fun closeCombatFloatingWindows() {
+        isRunning = false
+        autoTaskEngine?.stop()
+        if (this::combatEngine.isInitialized) {
+            combatEngine.stop()
+        }
+        removeInputWindow()
+        uiManager.removeMinimizedWindow()
+        uiManager.removeControlWindow()
+        if (isFollowMode && this::combatEngine.isInitialized) {
+            combatEngine.followData.forEach { it.isExecuting = false }
+        }
+        updateOverlayStatePrefs(combatOpen = false)
+        refreshActionButtonUI()
+        Toast.makeText(this, "悬浮窗已关闭", Toast.LENGTH_SHORT).show()
+    }
+
     fun getExportableInstructions(): List<InstructionJson> {
         if (!::combatEngine.isInitialized) return emptyList()
         return combatEngine.instructionList.map {

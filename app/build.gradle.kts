@@ -15,8 +15,8 @@ android {
         applicationId = "com.example.yuanassist"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.1.3.8"
+        versionCode = 19
+        versionName = "1.1.4.0"
 
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

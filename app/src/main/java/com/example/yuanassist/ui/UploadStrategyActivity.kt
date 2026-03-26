@@ -38,6 +38,21 @@ import okhttp3.RequestBody.Companion.asRequestBody
 
 class UploadStrategyActivity : AppCompatActivity() {
 
+    companion object {
+        private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
+        private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
+        private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
+            "庞羲", "吕布", "刘璋", "夏侯渊", "鄷公珠", "鄷公玖", "法正", "庞德",
+            "SP陈登", "SP史子渺", "曹丕", "程普", "钟繇", "蒯良", "马腾", "陈群",
+            "卢植", "简雍", "郭女王", "周忠"
+        )
+
+        private val DAIHAOYUAN_HIDDEN_ALIASES = DAIHAOYUAN_EXTRA_AGENTS.toSet() + setOf(
+            "庞曦",
+            "SP史子眇"
+        )
+    }
+
     // 导入与表格区块
     private lateinit var layoutTableContainer: LinearLayout
     private lateinit var rvUploadTable: RecyclerView
@@ -613,16 +628,18 @@ class UploadStrategyActivity : AppCompatActivity() {
         var currentTurn = 1
 
         for (line in lines) {
-            val trimLine = line.trim()
-            if (trimLine.isEmpty()) continue
-            val parts = trimLine.split(Regex("\\s+"))
+            val rawLine = line.trimEnd('\r')
+            if (rawLine.isBlank()) continue
+            val parts = if (rawLine.contains("\t")) rawLine.split("\t") else rawLine.trim().split(Regex("\\s+"))
             val startIndex = if (parts.isNotEmpty() && (parts[0].contains("回") || parts[0].all { it.isDigit() })) 1 else 0
 
+            val effectiveStartIndex = if (startIndex == 1 && parts.firstOrNull()?.trim().isNullOrEmpty()) 0 else startIndex
             val actions = mutableListOf<String>()
             var charIdx = 0
-            for (i in startIndex until parts.size) {
+            for (i in effectiveStartIndex until parts.size) {
                 if (charIdx >= 5) break
-                actions.add(if (parts[i] == "-") "" else parts[i])
+                val actionText = parts[i].trim()
+                actions.add(if (actionText == "-") "" else actionText)
                 charIdx++
             }
             while (actions.size < 5) actions.add("")
@@ -665,13 +682,49 @@ class UploadStrategyActivity : AppCompatActivity() {
     }
 
     private fun showAgentSelectionDialog(onAgentSelected: (String) -> Unit) {
-        val allAgents = AgentRepository.ALL_AGENTS
+        val filterPrefs = getSharedPreferences(PREFS_AGENT_FILTER, MODE_PRIVATE)
+        val defaultChecked = filterPrefs.getBoolean(KEY_SHOW_DAIHAOYUAN, false)
+        val baseAgents = AgentRepository.ALL_AGENTS.filterNot { it in DAIHAOYUAN_HIDDEN_ALIASES }
+        fun buildAgentList(includeDaihaoYuan: Boolean): List<String> {
+            val result = LinkedHashSet<String>()
+            if (includeDaihaoYuan) {
+                result.addAll(DAIHAOYUAN_EXTRA_AGENTS)
+            }
+            result.addAll(baseAgents)
+            return result.toList()
+        }
+
+        val dialogContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val filterRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(28, 10, 28, 0)
+        }
+        val filterLabel = TextView(this).apply {
+            text = "代号鸢"
+            textSize = 14f
+            setTextColor(Color.parseColor("#E5C07B"))
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        val filterSpacer = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+        }
+        val filterBox = CheckBox(this).apply {
+            buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#E5C07B"))
+        }
         val recyclerView = RecyclerView(this).apply {
             layoutManager = GridLayoutManager(this@UploadStrategyActivity, 4)
             setPadding(20, 30, 20, 30)
             clipToPadding = false
             overScrollMode = View.OVER_SCROLL_NEVER
         }
+        filterRow.addView(filterBox)
+        filterRow.addView(filterLabel)
+        filterRow.addView(filterSpacer)
+        dialogContainer.addView(filterRow)
+        dialogContainer.addView(recyclerView)
 
         // 🔴 1. 自定义弹窗标题的样式 (深色背景 + 金色字体)
         val titleView = TextView(this).apply {
@@ -685,10 +738,11 @@ class UploadStrategyActivity : AppCompatActivity() {
 
         val dialog = android.app.AlertDialog.Builder(this)
             .setCustomTitle(titleView)
-            .setView(recyclerView)
+            .setView(dialogContainer)
             .create()
 
-        recyclerView.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        val displayAgents = buildAgentList(includeDaihaoYuan = defaultChecked).toMutableList()
+        val adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
                 val density = resources.displayMetrics.density
                 val itemLayout = LinearLayout(this@UploadStrategyActivity).apply {
@@ -717,7 +771,7 @@ class UploadStrategyActivity : AppCompatActivity() {
             }
 
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-                val agentName = allAgents[position]
+                val agentName = displayAgents[position]
                 val layout = holder.itemView as LinearLayout
                 val ivAvatar = layout.getChildAt(0) as ImageView
                 val tvName = layout.getChildAt(1) as TextView
@@ -728,10 +782,22 @@ class UploadStrategyActivity : AppCompatActivity() {
                     dialog.dismiss()
                 }
             }
-            override fun getItemCount() = allAgents.size
+            override fun getItemCount() = displayAgents.size
         }
 
         // 🔴 3. 把弹窗本身的背景换成深色玻璃
+        recyclerView.adapter = adapter
+        val refreshAgents: (Boolean) -> Unit = { includeDaihaoYuan ->
+            displayAgents.clear()
+            displayAgents.addAll(buildAgentList(includeDaihaoYuan))
+            adapter.notifyDataSetChanged()
+        }
+        filterRow.setOnClickListener { filterBox.isChecked = !filterBox.isChecked }
+        filterBox.setOnCheckedChangeListener { _, isChecked ->
+            filterPrefs.edit().putBoolean(KEY_SHOW_DAIHAOYUAN, isChecked).apply()
+            refreshAgents(isChecked)
+        }
+        filterBox.isChecked = defaultChecked
         dialog.window?.setBackgroundDrawableResource(R.drawable.bg_dark_glass)
         dialog.show()
     }

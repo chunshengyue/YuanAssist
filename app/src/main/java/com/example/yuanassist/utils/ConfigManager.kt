@@ -16,7 +16,7 @@ data class AppConfig(
     val attackOffsetX: Float = 0f,
     val attackYFromBottom: Float = 600f,
     val upOffsetX: Float = 0f,
-    val upYFromBottom: Float = 695f,
+    val upYFromBottom: Float = 300f,
     val downOffsetX: Float = 0f,
     val downYFromBottom: Float = 514f,
     val circleOffsetX: Float = 0f,

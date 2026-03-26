@@ -17,11 +17,17 @@ enum class BirdFoodTaskType(
     DAI_BAN_GONG_WU("dai_ban_gong_wu.json", "待办公务", true)
 }
 
+enum class DaiBanGongWuOption {
+    BING_SHU,
+    WU_ZHU_QIAN
+}
+
 data class BirdFoodConfig(
     val selectedTasks: List<BirdFoodTaskType>,
     val autoEatEnabled: Boolean,
     val stopCondition: BirdFoodStopCondition,
     val debugModeEnabled: Boolean = false,
     val maxRuns: Int? = null,
-    val maxDurationMinutes: Int? = null
+    val maxDurationMinutes: Int? = null,
+    val daiBanGongWuOption: DaiBanGongWuOption = DaiBanGongWuOption.BING_SHU
 )

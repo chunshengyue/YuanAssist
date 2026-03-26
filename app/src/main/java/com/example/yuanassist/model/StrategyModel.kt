@@ -30,7 +30,15 @@ class strategy_detail : BmobObject() {
     var agentImageUrl: String = ""   // 阵容截图URL
     var agentTextDesc: String = ""
 
+    var viewCount: Int? = 0
+    var favoriteCount: Int? = 0
     var author: MyUser? = null
+}
+
+class strategy_favorite : BmobObject() {
+    var user: MyUser? = null
+    var strategy: strategy_detail? = null
+    var uniqueKey: String = ""
 }
 /**
  * 4. 预览与传输用的本地数据包 (不存数据库，仅 Intent 传值用)

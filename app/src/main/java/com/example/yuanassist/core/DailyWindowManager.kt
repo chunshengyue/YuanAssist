@@ -38,10 +38,16 @@ class DailyWindowManager(private val service: AccessibilityService) {
     companion object {
         private const val BASE_W = 1080f
         private const val BASE_H = 1920f
+        private const val PREFS_APP = "app_prefs"
+        private const val FLOAT_WINDOW_EDGE_MARGIN_DP = 12
+        private const val FLOAT_WINDOW_TOP_MARGIN_DP = 20
     }
 
     private val engine = AutoTaskEngine(service)
-    private val birdFoodRuntimeManager = BirdFoodRuntimeManager(service) {
+    private val birdFoodRuntimeManager = BirdFoodRuntimeManager(service) { isRunning ->
+        if (isRunning) {
+            moveWindowToTopLeftSafely()
+        }
         refreshActionButton()
     }
     private val stitchEngine = InventoryStitchEngine(service)
@@ -62,6 +68,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     fun showWindow() {
         if (floatView != null) {
             refreshActionButton()
+            updateOverlayState(isOpen = true)
             return
         }
 
@@ -88,11 +95,13 @@ class DailyWindowManager(private val service: AccessibilityService) {
         actionButton.setOnClickListener { toggleExecution() }
         refreshActionButton()
         windowManager.addView(view, params)
+        updateOverlayState(isOpen = true)
     }
 
     fun hideWindow() {
         stopCurrentWork()
         removeWindow()
+        updateOverlayState(isOpen = false)
     }
 
     fun submitTaskPlan(plan: DailyTaskPlan, scriptName: String) {
@@ -371,6 +380,27 @@ class DailyWindowManager(private val service: AccessibilityService) {
         clipboard.setPrimaryClip(ClipData.newPlainText("daily-coordinate", text))
     }
 
+    private fun moveWindowToTopLeftSafely() {
+        val targetView = floatView ?: return
+        targetView.post {
+            val params = targetView.layoutParams as? WindowManager.LayoutParams ?: return@post
+            val density = service.resources.displayMetrics.density
+            val marginPx = (FLOAT_WINDOW_EDGE_MARGIN_DP * density).roundToInt()
+            val topSafeMargin = (FLOAT_WINDOW_TOP_MARGIN_DP * density).roundToInt()
+            val (screenWidth, screenHeight) = getRealScreenSize()
+            val viewWidth = targetView.width.takeIf { it > 0 } ?: targetView.measuredWidth
+            val viewHeight = targetView.height.takeIf { it > 0 } ?: targetView.measuredHeight
+            val maxX = (screenWidth.roundToInt() - viewWidth - marginPx).coerceAtLeast(marginPx)
+            val maxY = (screenHeight.roundToInt() - viewHeight - marginPx).coerceAtLeast(topSafeMargin)
+
+            params.x = marginPx.coerceAtMost(maxX)
+            params.y = topSafeMargin.coerceAtMost(maxY)
+            lastWindowX = params.x
+            lastWindowY = params.y
+            windowManager.updateViewLayout(targetView, params)
+        }
+    }
+
     private fun removeWindow() {
         floatView?.let { view ->
             try {
@@ -380,6 +410,13 @@ class DailyWindowManager(private val service: AccessibilityService) {
                 floatView = null
             }
         }
+    }
+
+    private fun updateOverlayState(isOpen: Boolean) {
+        service.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("daily_window_open", isOpen)
+            .apply()
     }
 
     private fun overlayType(): Int =

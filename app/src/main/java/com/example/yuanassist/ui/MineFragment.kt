@@ -80,7 +80,7 @@ class MineFragment : Fragment() {
             startActivity(Intent(requireContext(), MyPublishedActivity::class.java))
         }
         view.findViewById<View>(R.id.layout_my_favorite_entry).setOnClickListener {
-            Toast.makeText(requireContext(), "我的收藏即将开放", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(requireContext(), MyFavoriteActivity::class.java))
         }
 
         btnEdit.setOnClickListener {
