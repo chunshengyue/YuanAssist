@@ -2,15 +2,18 @@ package com.example.yuanassist.core
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -26,9 +29,18 @@ import android.widget.Toast
 import com.example.yuanassist.R
 import com.example.yuanassist.model.BirdFoodConfig
 import com.example.yuanassist.model.DailyTaskPlan
+import com.example.yuanassist.network.OcrManager
 import com.example.yuanassist.ui.MainActivity
+import com.example.yuanassist.utils.DialogUtils
+import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.StoneOcrParser
 import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -55,6 +67,10 @@ class DailyWindowManager(private val service: AccessibilityService) {
         service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val handler = Handler(Looper.getMainLooper())
     private val gson = Gson()
+    private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val deviceId: String by lazy {
+        Settings.Secure.getString(service.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
+    }
 
     private var floatView: View? = null
     private var coordinatePickerView: View? = null
@@ -62,6 +78,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private var currentScriptName: String? = null
     private var currentBirdFoodConfig: BirdFoodConfig? = null
     private var inventoryStitchPrepared = false
+    private var isStoneOcrProcessing = false
     private var lastWindowX = 100
     private var lastWindowY = 100
 
@@ -156,7 +173,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         if (stitchEngine.isRunning) {
             stitchEngine.stop()
             refreshActionButton()
-            Toast.makeText(service, "物品拼接已停止", Toast.LENGTH_SHORT).show()
+            Toast.makeText(service, "星石拼图已停止", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -191,9 +208,17 @@ class DailyWindowManager(private val service: AccessibilityService) {
                 onStatusUpdate = { message ->
                     RunLogger.i("日常工具状态：$message")
                 },
-                onCompleted = {
-                    RunLogger.i("物品拼接完成")
-                    refreshActionButton()
+                onCompleted = { success ->
+                    handler.post {
+                        if (success) {
+                            RunLogger.i("星石拼图完成")
+                            Toast.makeText(service, "星石截图已保存到我的星石", Toast.LENGTH_SHORT).show()
+                            showStoneOcrPrompt()
+                        } else {
+                            RunLogger.i("星石拼图已结束")
+                        }
+                        refreshActionButton()
+                    }
                 }
             )
             refreshActionButton()
@@ -243,6 +268,104 @@ class DailyWindowManager(private val service: AccessibilityService) {
             } else {
                 button.setImageResource(android.R.drawable.ic_media_play)
                 button.contentDescription = "开始"
+            }
+        }
+    }
+
+    private fun showStoneOcrPrompt() {
+        val record = MyStoneStore.loadRecord(service) ?: return
+        if (MyStoneStore.imageFiles(service, record).isEmpty()) return
+
+        DialogUtils.safeShowOverlayDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(service))
+                .setTitle("星石拼图完成")
+                .setMessage("截图已保存到“我的星石”，是否通过 OCR 统计星石个数？")
+                .setPositiveButton("是") { _, _ ->
+                    startStoneOcrStatistics()
+                }
+                .setNegativeButton("否", null)
+        )
+    }
+
+    private fun startStoneOcrStatistics() {
+        if (isStoneOcrProcessing) {
+            Toast.makeText(service, "星石 OCR 统计正在进行中", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val record = MyStoneStore.loadRecord(service)
+        val imageFiles = record?.let { MyStoneStore.imageFiles(service, it) }.orEmpty()
+        if (imageFiles.isEmpty()) {
+            Toast.makeText(service, "未找到可统计的星石截图", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        isStoneOcrProcessing = true
+        Toast.makeText(service, "正在通过 OCR 统计星石...", Toast.LENGTH_SHORT).show()
+
+        uiScope.launch {
+            try {
+                val wordsGroups = mutableListOf<List<String>>()
+                val strategyUsed = linkedSetOf<String>()
+
+                for (file in imageFiles) {
+                    val bitmap = withContext(Dispatchers.IO) {
+                        BitmapFactory.decodeFile(file.absolutePath)
+                    }
+                    if (bitmap == null) {
+                        Toast.makeText(service, "读取星石截图失败：${file.name}", Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
+
+                    try {
+                        when (
+                            val result = OcrManager.recognizeStoneImage(
+                                bitmap = bitmap,
+                                deviceId = deviceId,
+                                onRetryMsg = {
+                                    Toast.makeText(service, "OCR 请求繁忙，正在重试...", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        ) {
+                            is OcrManager.StoneOcrResult.Success -> {
+                                wordsGroups += result.words
+                                if (result.strategyUsed.isNotEmpty()) {
+                                    strategyUsed += result.strategyUsed
+                                }
+                            }
+
+                            is OcrManager.StoneOcrResult.Error -> {
+                                Toast.makeText(service, result.message, Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
+                        }
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
+
+                val rows = StoneOcrParser.buildRows(wordsGroups)
+                val lines = StoneOcrParser.format(StoneOcrParser.aggregate(rows))
+                val hasPendingRows = rows.any { !StoneOcrParser.isRowResolved(it) }
+
+                MyStoneStore.saveOcrResult(
+                    context = service,
+                    rows = rows,
+                    statsLines = lines,
+                    ocrStrategy = strategyUsed.joinToString(",")
+                )
+
+                if (hasPendingRows) {
+                    RunLogger.i("星石 OCR 完成，但仍有待修正行，行数=${rows.size}")
+                    Toast.makeText(service, "OCR 已导入，可在我的星石中修正红色行", Toast.LENGTH_LONG).show()
+                } else {
+                    RunLogger.i("星石 OCR 完成：${lines.joinToString(" | ")}")
+                    Toast.makeText(service, "OCR 统计完成，可在我的星石中查看", Toast.LENGTH_LONG).show()
+                }
+            } catch (t: Throwable) {
+                Toast.makeText(service, "星石 OCR 统计失败：${t.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                isStoneOcrProcessing = false
             }
         }
     }
@@ -351,7 +474,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
         return PickedCoordinate(
             clipboardText = clipboardText,
-            toastText = "已复制($screenX, $screenY)"
+            toastText = "已复制 ($screenX, $screenY)"
         )
     }
 

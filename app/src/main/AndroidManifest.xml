@@ -50,6 +50,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".ui.MyStoneActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>

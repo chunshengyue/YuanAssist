@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.view.Display
+import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -72,6 +73,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         private const val INITIAL_CAPTURE_DELAY_MS = 1000L
         private const val AFTER_SWIPE_DELAY_MS = 2500L
         private const val SWIPE_DURATION_MS = 500L
+        private const val SPLIT_ASPECT_RATIO_THRESHOLD = 4f
 
         private const val TOP_CROP_BASE = 455
         private const val TOP_CROP_EXTRA = 70
@@ -104,6 +106,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
     private var pendingFrame: PendingFrame? = null
     private var stitchedBitmap: Bitmap? = null
     private var nextFrameIndex = 1
+    private val splitCandidates = mutableListOf<Int>()
 
     private val screenWidth = service.resources.displayMetrics.widthPixels
     private val screenHeight = service.resources.displayMetrics.heightPixels
@@ -149,6 +152,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         pendingFrame = null
         stitchedBitmap?.recycle()
         stitchedBitmap = null
+        splitCandidates.clear()
     }
 
     private fun captureNextFrame() {
@@ -331,6 +335,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                     )
 
                     appendPendingFrameSegment(previousPending, previousPending.lastRow.bottom)
+                    recordSplitCandidate()
                     previousPending.templateSpec.templateMat.release()
                     previousPending.bitmap.recycle()
 
@@ -880,19 +885,76 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
 
         try {
             val bitmap = stitchedBitmap ?: throw IllegalStateException("没有拼接结果可保存")
-            val savedLocation = saveBitmapToGallery(bitmap, "inventory_stitched")
-            RunLogger.i("拼接图片已保存：$savedLocation")
+            val shouldSplit = bitmap.height.toFloat() / bitmap.width.toFloat() > SPLIT_ASPECT_RATIO_THRESHOLD
+            val splitY = if (shouldSplit) findBestSplitY(bitmap.height) else null
+
+            if (splitY != null) {
+                saveSplitBitmaps(bitmap, splitY)
+            } else {
+                val savedLocation = saveBitmapToGallery(bitmap, "inventory_stitched")
+                MyStoneStore.saveImages(service, listOf(bitmap))
+                RunLogger.i("拼接图片已保存：$savedLocation")
+                RunLogger.i("星石结果已覆盖保存到我的星石")
+            }
+
             isRunning = false
             pendingFrame?.templateSpec?.templateMat?.release()
             pendingFrame?.bitmap?.recycle()
             pendingFrame = null
             bitmap.recycle()
             stitchedBitmap = null
-            onStatusUpdate?.invoke("拼图完成已保存")
+            splitCandidates.clear()
+            onStatusUpdate?.invoke(if (splitY != null) "拼图已拆分为两张并保存" else "拼图完成已保存")
             onCompleted?.invoke(true)
         } catch (e: Exception) {
             e.printStackTrace()
             handleError("保存拼图失败: ${e.message}")
+        }
+    }
+
+    private fun recordSplitCandidate() {
+        val boundaryY = stitchedBitmap?.height ?: return
+        if (boundaryY <= 0) return
+        splitCandidates += boundaryY
+        RunLogger.i("记录拼接接缝：Y=$boundaryY")
+    }
+
+    private fun findBestSplitY(totalHeight: Int): Int? {
+        if (splitCandidates.isEmpty()) {
+            RunLogger.i("长宽比超过阈值，但没有可用接缝，保持单图保存")
+            return null
+        }
+
+        val centerY = totalHeight / 2
+        val splitY = splitCandidates.minByOrNull { abs(it - centerY) } ?: return null
+        if (splitY <= 0 || splitY >= totalHeight) {
+            RunLogger.i("候选接缝越界：Y=$splitY，总高度=$totalHeight，保持单图保存")
+            return null
+        }
+
+        RunLogger.i(
+            "长图超过 %.1f:1，按最接近中线的接缝拆分：中线=%d，接缝=%d".format(
+                SPLIT_ASPECT_RATIO_THRESHOLD,
+                centerY,
+                splitY
+            )
+        )
+        return splitY
+    }
+
+    private fun saveSplitBitmaps(bitmap: Bitmap, splitY: Int) {
+        val topBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, splitY)
+        val bottomBitmap = Bitmap.createBitmap(bitmap, 0, splitY, bitmap.width, bitmap.height - splitY)
+
+        try {
+            val topLocation = saveBitmapToGallery(topBitmap, "inventory_stitched_part1")
+            val bottomLocation = saveBitmapToGallery(bottomBitmap, "inventory_stitched_part2")
+            MyStoneStore.saveImages(service, listOf(topBitmap, bottomBitmap))
+            RunLogger.i("拼接图片已拆分保存：上半=$topLocation，下半=$bottomLocation")
+            RunLogger.i("星石结果已覆盖保存到我的星石")
+        } finally {
+            topBitmap.recycle()
+            bottomBitmap.recycle()
         }
     }
 

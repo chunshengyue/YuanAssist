@@ -79,6 +79,9 @@ class MineFragment : Fragment() {
         view.findViewById<View>(R.id.layout_my_published_entry).setOnClickListener {
             startActivity(Intent(requireContext(), MyPublishedActivity::class.java))
         }
+        view.findViewById<View>(R.id.layout_my_stone_entry).setOnClickListener {
+            startActivity(Intent(requireContext(), MyStoneActivity::class.java))
+        }
         view.findViewById<View>(R.id.layout_my_favorite_entry).setOnClickListener {
             startActivity(Intent(requireContext(), MyFavoriteActivity::class.java))
         }
