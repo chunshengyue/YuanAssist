@@ -51,6 +51,7 @@ class BirdFoodRuntimeManager(
         this.config = config
         engine.debugRoiEnabled = config.debugModeEnabled
         engine.verboseLoggingEnabled = true
+        engine.globalDelayOffsetMs = config.lowSpecDelayMs
     }
 
     fun start(): Boolean {

@@ -1,0 +1,539 @@
+{
+  "start_task_id": 15,
+  "tasks": [
+    {
+      "id": 15,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "6-24.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "未找到6-24入口，请确认当前是否在第六章"
+      },
+      "on_success": 151,
+      "on_fail": -2
+    },
+    {
+      "id": 151,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "jinruguanqia.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "6-24路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1286,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 16,
+      "on_fail": -2
+    },
+    {
+      "id": 16,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "queren.png",
+        "threshold": 0.85,
+        "terminal_note": "体力已耗尽",
+        "roi": {
+          "x": 540,
+          "y": 1357,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": -2,
+      "on_fail": 17
+    },
+    {
+      "id": 17,
+      "action": "CLICK",
+      "delay": 1000,
+      "params": {
+        "x": 227,
+        "y": 1531,
+        "align": "center"
+      },
+      "on_success": 18,
+      "on_fail": -1
+    },
+    {
+      "id": 18,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "624.png",
+        "threshold": 0.75,
+        "terminal_note": "请确认当前是否在6-24",
+        "roi": {
+          "x": 938,
+          "y": 948,
+          "w": 300,
+          "h": 300,
+          "align": "top"
+        }
+      },
+      "on_success": 19,
+      "on_fail": -2
+    },
+    {
+      "id": 19,
+      "action": "CLICK",
+      "delay": 1000,
+      "params": {
+        "x": 542,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 20,
+      "on_fail": -1
+    },
+    {
+      "id": 20,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 542,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 21,
+      "on_fail": -1
+    },
+    {
+      "id": 21,
+      "action": "CLICK_RED_REGION",
+      "delay": 2200,
+      "params": {
+        "threshold": 0.72,
+        "terminal_note": "第一场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
+        "roi": {
+          "x": 540,
+          "y": 1700,
+          "w": 500,
+          "h": 400,
+          "align": "bottom"
+        }
+      },
+      "on_success": 22,
+      "on_fail": -2
+    },
+    {
+      "id": 22,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第一场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
+      "on_fail": 23
+    },
+    {
+      "id": 23,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
+      "on_fail": 24
+    },
+    {
+      "id": 24,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
+      "on_fail": 25
+    },
+    {
+      "id": 25,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第一场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
+      "on_fail": -2
+    },
+    {
+      "id": 26,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 542,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 27,
+      "on_fail": -1
+    },
+    {
+      "id": 27,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 542,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 28,
+      "on_fail": -1
+    },
+    {
+      "id": 28,
+      "action": "CLICK",
+      "delay": 2500,
+      "params": {
+        "x": 816,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 29,
+      "on_fail": -1
+    },
+    {
+      "id": 29,
+      "action": "CLICK_RED_REGION",
+      "delay": 2200,
+      "params": {
+        "threshold": 0.72,
+        "terminal_note": "第二场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
+        "roi": {
+          "x": 540,
+          "y": 1700,
+          "w": 500,
+          "h": 400,
+          "align": "bottom"
+        }
+      },
+      "on_success": 30,
+      "on_fail": -2
+    },
+    {
+      "id": 30,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第二场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
+      "on_fail": 31
+    },
+    {
+      "id": 31,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
+      "on_fail": 32
+    },
+    {
+      "id": 32,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
+      "on_fail": 33
+    },
+    {
+      "id": 33,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第二场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
+      "on_fail": -2
+    },
+    {
+      "id": 34,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 816,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 35,
+      "on_fail": -1
+    },
+    {
+      "id": 35,
+      "action": "CLICK",
+      "delay":1500,
+      "params": {
+        "x": 816,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 36,
+      "on_fail": -1
+    },
+    {
+      "id": 36,
+      "action": "CLICK",
+      "delay": 2500,
+      "params": {
+        "x": 269,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 37,
+      "on_fail": -1
+    },
+    {
+      "id": 37,
+      "action": "CLICK_RED_REGION",
+      "delay": 2200,
+      "params": {
+        "threshold": 0.72,
+        "terminal_note": "第三场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
+        "roi": {
+          "x": 540,
+          "y": 1700,
+          "w": 500,
+          "h": 400,
+          "align": "bottom"
+        }
+      },
+      "on_success": 38,
+      "on_fail": -2
+    },
+    {
+      "id": 38,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第三场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
+      "on_fail": 39
+    },
+    {
+      "id": 39,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
+      "on_fail": 40
+    },
+    {
+      "id": 40,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
+      "on_fail": 41
+    },
+    {
+      "id": 41,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第三场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
+      "on_fail": -2
+    },
+    {
+      "id": 42,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 269,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 43,
+      "on_fail": -1
+    },
+    {
+      "id": 43,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 269,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 44,
+      "on_fail": -1
+    },
+    {
+      "id": 44,
+      "action": "CLICK",
+      "delay": 2500,
+      "params": {
+        "x": 542,
+        "y": 1037,
+        "align": "center"
+      },
+      "on_success": 45,
+      "on_fail": -1
+    },
+    {
+      "id": 45,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "chenggong.png",
+        "threshold": 0.8,
+        "terminal_note": "6-24路径错误",
+        "roi": {
+          "x": 584,
+          "y": 313,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 46,
+      "on_fail": -2
+    },
+    {
+      "id": 46,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 227,
+        "y": 1531,
+        "align": "center"
+      },
+      "on_success": -1,
+      "on_fail": -1
+    }
+  ]
+}

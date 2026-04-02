@@ -108,9 +108,51 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="选择背包类型"
+                        android:textColor="#E5C07B"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/layout_daily_inventory_stitch_type_selector"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_daily_inventory_stitch_type_main"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_dark_gold"
+                            android:gravity="center"
+                            android:text="主星"
+                            android:textColor="#1A1A1A"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_daily_inventory_stitch_type_support"
+                            android:layout_width="0dp"
+                            android:layout_height="40dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:text="辅星"
+                            android:textColor="#E5C07B"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:lineSpacingExtra="4dp"
-                        android:text="点击导入之后，在观星-星石背包点击开始按钮开始截图，可以获取整个星石背包截图，可以发给AI（豆包、千问等）获取星石统计。开始位置示例和结果图示例如下。"
+                        android:text="点击导入之后，先打开对应的主星或辅星背包，再点击悬浮窗开始按钮进行截图。结果会分别保存到我的星石中的主星或辅星页签。开始位置示例如下。"
                         android:textColor="#FFFFFF"
                         android:textSize="14sp" />
 
@@ -118,22 +160,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="18dp"
-                        android:text="开始位置示例和结果图示例"
+                        android:text="开始位置示例"
                         android:textColor="#E5C07B"
                         android:textSize="16sp"
                         android:textStyle="bold" />
 
                     <ImageView
                         android:id="@+id/iv_daily_inventory_stitch_example"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:adjustViewBounds="true"
-                        android:contentDescription="@null"
-                        android:scaleType="fitCenter" />
-
-                    <ImageView
-                        android:id="@+id/iv_daily_inventory_stitch_result"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"

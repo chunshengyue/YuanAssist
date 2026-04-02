@@ -45,6 +45,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     var lastMatchY = 0f
     var debugRoiEnabled = true
     var verboseLoggingEnabled = true
+    var globalDelayOffsetMs = 0L
 
     private var currentTaskPlan: DailyTaskPlan? = null
     private var currentTaskId = -1
@@ -297,7 +298,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             return
         }
 
-        verboseInfo("准备执行任务 ${task.id} ${task.action}，延迟=${task.delay}")
+        val effectiveDelay = (task.delay + globalDelayOffsetMs).coerceAtLeast(0L)
+        verboseInfo("准备执行任务 ${task.id} ${task.action}，延迟=${task.delay}+${globalDelayOffsetMs}=${effectiveDelay}")
         handler.postDelayed({
             if (!isRunning || generation != runGeneration) return@postDelayed
             try {
@@ -324,7 +326,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 RunLogger.e("任务 ${task.id} 执行崩溃 ${task.action}", t)
                 finishTask(task, false)
             }
-        }, task.delay)
+        }, effectiveDelay)
     }
 
     private fun executeClick(task: DailyTask) {
@@ -504,6 +506,10 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     }
 
     private fun executeRedRegionClick(task: DailyTask) {
+        if (TemplateOverrideStore.isStartBattleTemplateMode(service)) {
+            executeStartBattleTemplateClick(task)
+            return
+        }
         val p = task.params ?: return finishTask(task, false)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return finishTask(task, false)
         val minConfidence = p.threshold.coerceIn(0f, 1f)
@@ -585,6 +591,20 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
             }
+        )
+    }
+
+    private fun executeStartBattleTemplateClick(task: DailyTask) {
+        if (!TemplateOverrideStore.hasOverride(service, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)) {
+            RunLogger.e("任务 ${task.id} 未找到开始战斗模板，请先在功能测试中确认替换")
+            return finishTask(task, false)
+        }
+        executeTemplateSearch(
+            task = task,
+            templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
+            threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
+            clickOnSuccess = true,
+            logLabel = "开始战斗模板"
         )
     }
 
@@ -927,8 +947,25 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private fun executeMatchTemplate(task: DailyTask) {
         val p = task.params ?: return finishTask(task, false)
         val templateName = p.template_name ?: return finishTask(task, false)
+        executeTemplateSearch(
+            task = task,
+            templateName = templateName,
+            threshold = p.threshold,
+            clickOnSuccess = p.click == 1,
+            logLabel = "模板"
+        )
+    }
+
+    private fun executeTemplateSearch(
+        task: DailyTask,
+        templateName: String,
+        threshold: Float,
+        clickOnSuccess: Boolean,
+        logLabel: String
+    ) {
+        val p = task.params ?: return finishTask(task, false)
         val generation = runGeneration
-        verboseInfo("任务 ${task.id} 匹配模板=$templateName，区域=${formatRoi(p.roi)}")
+        verboseInfo("任务 ${task.id} 匹配${logLabel}=$templateName，区域=${formatRoi(p.roi)}")
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return finishTask(task, false)
 
         service.takeScreenshot(
@@ -941,7 +978,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         return
                     }
                     var swBitmap: Bitmap? = null
-                    var searchBitmap: Bitmap? = null
+                    var searchRegion: SearchRegion? = null
                     var scaledTemplate: Bitmap? = null
                     var ownsScaledTemplate = false
                     var buffer: android.hardware.HardwareBuffer? = null
@@ -952,12 +989,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                             ?: return finishTask(task, false)
                         val mapping = buildScreenshotMapping(swBitmap)
-                        logScreenshotMapping(task.id, mapping)
-                        val gameScale = min(swBitmap.width / BASE_W, swBitmap.height / BASE_H)
-                        val gameWidth = BASE_W * gameScale
-                        val offsetX = (swBitmap.width - gameWidth) / 2f
+                        searchRegion = buildSearchRegionForOcr(swBitmap, p.roi, mapping, task.id)
+                        val searchBitmap = searchRegion.bitmap
                         val rawTemplate = loadTemplateFromAssets(templateName)
                             ?: return finishTask(task, false)
+                        val gameScale = min(swBitmap.width / BASE_W, swBitmap.height / BASE_H)
                         val scaledWidth = (rawTemplate.width * gameScale).toInt().coerceAtLeast(1)
                         val scaledHeight = (rawTemplate.height * gameScale).toInt().coerceAtLeast(1)
                         scaledTemplate = if (scaledWidth == rawTemplate.width && scaledHeight == rawTemplate.height) {
@@ -967,85 +1003,19 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             Bitmap.createScaledBitmap(rawTemplate, scaledWidth, scaledHeight, true)
                         }
 
-                        searchBitmap = swBitmap
-                        var roiOffsetX = 0f
-                        var roiOffsetY = 0f
-                        var debugLeft = 0
-                        var debugTop = 0
-                        var debugWidth = swBitmap.width
-                        var debugHeight = swBitmap.height
-
-                        if (p.roi?.align == "dynamic_avatar_bounds") {
-                            val topBound = 1254f * gameScale
-                            val bottomBound = swBitmap.height - (313f * gameScale)
-                            val safeY = topBound.toInt().coerceAtLeast(0)
-                            val safeH = (bottomBound - topBound).toInt()
-                                .coerceAtMost(swBitmap.height - safeY)
-                                .coerceAtLeast(1)
-                            searchBitmap = Bitmap.createBitmap(swBitmap, 0, safeY, swBitmap.width, safeH)
-                            roiOffsetY = safeY.toFloat()
-                            debugTop = safeY
-                            debugHeight = safeH
-                        } else if (p.roi?.align == "dynamic_filter_bounds") {
-                            val realCenterY = 1254f * gameScale
-                            val realCenterX = offsetX + (gameWidth * 0.9f)
-                            val realW = gameWidth * 0.2f
-                            val realH = 300f * gameScale
-                            val safeX = (realCenterX - realW / 2f).toInt().coerceIn(0, swBitmap.width - 1)
-                            val safeY = (realCenterY - realH / 2f).toInt().coerceIn(0, swBitmap.height - 1)
-                            val safeW = realW.toInt().coerceAtMost(swBitmap.width - safeX).coerceAtLeast(1)
-                            val safeH = realH.toInt().coerceAtMost(swBitmap.height - safeY).coerceAtLeast(1)
-                            searchBitmap = Bitmap.createBitmap(swBitmap, safeX, safeY, safeW, safeH)
-                            roiOffsetX = safeX.toFloat()
-                            roiOffsetY = safeY.toFloat()
-                            debugLeft = safeX
-                            debugTop = safeY
-                            debugWidth = safeW
-                            debugHeight = safeH
-                        } else if (p.roi?.x != null && p.roi.y != null && p.roi.w != null && p.roi.h != null) {
-                            val (realCenterX, realCenterY) =
-                                calculateRealCoordinate(p.roi.x, p.roi.y, p.roi.align)
-                            val screenshotCenterX = realCenterX * mapping.displayToScreenshotX
-                            val screenshotCenterY = realCenterY * mapping.displayToScreenshotY
-                            val realW = p.roi.w * gameScale
-                            val realH = p.roi.h * gameScale
-                            val safeX = (screenshotCenterX - realW / 2f).toInt().coerceIn(0, swBitmap.width - 1)
-                            val safeY = (screenshotCenterY - realH / 2f).toInt().coerceIn(0, swBitmap.height - 1)
-                            val safeW = realW.toInt().coerceAtMost(swBitmap.width - safeX).coerceAtLeast(1)
-                            val safeH = realH.toInt().coerceAtMost(swBitmap.height - safeY).coerceAtLeast(1)
-                            searchBitmap = Bitmap.createBitmap(swBitmap, safeX, safeY, safeW, safeH)
-                            roiOffsetX = safeX.toFloat()
-                            roiOffsetY = safeY.toFloat()
-                            debugLeft = safeX
-                            debugTop = safeY
-                            debugWidth = safeW
-                            debugHeight = safeH
-                            logRoiCenter(task.id, realCenterX, realCenterY, debugLeft, debugTop, debugWidth, debugHeight, mapping)
-                        }
-
-                        if (debugRoiEnabled) {
-                            showDebugRoi(
-                                (debugLeft * mapping.screenshotToDisplayX).toInt(),
-                                (debugTop * mapping.screenshotToDisplayY).toInt(),
-                                (debugWidth * mapping.screenshotToDisplayX).toInt(),
-                                (debugHeight * mapping.screenshotToDisplayY).toInt(),
-                                1500L
-                            )
-                        }
-
                         if (searchBitmap.width < scaledTemplate.width || searchBitmap.height < scaledTemplate.height) {
                             return finishTask(task, false)
                         }
 
-                        val matchLoc = matchTemplate(searchBitmap, scaledTemplate, p.threshold)
+                        val matchLoc = matchTemplate(searchBitmap, scaledTemplate, threshold)
                         if (matchLoc != null) {
-                            val screenshotMatchX = matchLoc.x + roiOffsetX
-                            val screenshotMatchY = matchLoc.y + roiOffsetY
+                            val screenshotMatchX = matchLoc.x + searchRegion.offsetX
+                            val screenshotMatchY = matchLoc.y + searchRegion.offsetY
                             lastMatchX = screenshotMatchX * mapping.screenshotToDisplayX
                             lastMatchY = screenshotMatchY * mapping.screenshotToDisplayY
                             matchedPointsByTaskId[task.id] = PointF(lastMatchX, lastMatchY)
                             verboseInfo("任务 ${task.id} 匹配成功 x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}")
-                            if (p.click == 1) {
+                            if (clickOnSuccess) {
                                 dispatchClick(lastMatchX, lastMatchY) {
                                     if (generation == runGeneration && isRunning) finishTask(task, true)
                                 }
@@ -1065,7 +1035,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         hwBitmap?.recycle()
                         buffer?.close()
                         if (ownsScaledTemplate) scaledTemplate?.recycle()
-                        if (searchBitmap != null && searchBitmap !== swBitmap) searchBitmap.recycle()
+                        searchRegion?.release()
                         swBitmap?.recycle()
                     }
                 }

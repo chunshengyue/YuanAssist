@@ -19,6 +19,7 @@ import cn.bmob.v3.exception.BmobException
 import cn.bmob.v3.listener.FindListener
 import com.example.yuanassist.R
 import com.example.yuanassist.model.MyUser
+import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
 import com.example.yuanassist.model.strategy_favorite
 
 class MyFavoriteActivity : AppCompatActivity() {
@@ -83,6 +84,7 @@ class MyFavoriteActivity : AppCompatActivity() {
                     if (e == null) {
                         val strategies = list
                             ?.mapNotNull { it.strategy }
+                            ?.filter { it.visible == STRATEGY_VISIBLE_PUBLIC }
                             ?.distinctBy { it.objectId }
                             ?: emptyList()
                         if (strategies.isEmpty()) {

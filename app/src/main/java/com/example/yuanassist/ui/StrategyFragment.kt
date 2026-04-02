@@ -14,6 +14,9 @@ import cn.bmob.v3.BmobQuery
 import cn.bmob.v3.exception.BmobException
 import cn.bmob.v3.listener.FindListener
 import com.example.yuanassist.R
+import com.example.yuanassist.model.STRATEGY_GAME_DAIHAOYUAN
+import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
+import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
 import com.example.yuanassist.model.strategy_detail
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -32,7 +35,7 @@ class StrategyFragment : Fragment() {
     private var currentKeyword = ""
 
     // 预设的活动标签
-    private val eventTags = listOf("地宫", "遗迹", "咪教模拟器", "3月洞窟", "3月白鹄")
+    private val eventTags = listOf("地宫", "洞窟", "白鹄", "泰山府")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -101,11 +104,11 @@ class StrategyFragment : Fragment() {
             }
         }
 
-        // 2. 游戏版本排他过滤
+        // 2. 游戏版本过滤
         if (isRuYuanSelected && !isDaiHaoSelected) {
-            filtered = filtered.filter { !(it.title ?: "").contains("代号鸢") }
+            filtered = filtered.filter { it.ruyuan == STRATEGY_GAME_RUYUAN }
         } else if (!isRuYuanSelected && isDaiHaoSelected) {
-            filtered = filtered.filter { !(it.title ?: "").contains("如鸢") }
+            filtered = filtered.filter { it.ruyuan == STRATEGY_GAME_DAIHAOYUAN }
         }
 
         // 3. 活动标签过滤
@@ -204,6 +207,7 @@ class StrategyFragment : Fragment() {
     private fun loadDataFromBmob() {
         Toast.makeText(requireContext(), "正在加载攻略...", Toast.LENGTH_SHORT).show()
         val query = BmobQuery<strategy_detail>()
+        query.addWhereEqualTo("visible", STRATEGY_VISIBLE_PUBLIC)
         query.order("-createdAt")
         query.setLimit(500)
         query.include("author")

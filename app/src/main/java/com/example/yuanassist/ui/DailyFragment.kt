@@ -36,6 +36,13 @@ class DailyFragment : Fragment() {
                 .commit()
         }
 
+        view.findViewById<LinearLayout>(R.id.item_daily_mainline_624).setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, DailyMainline624Fragment())
+                .addToBackStack("daily_mainline_624")
+                .commit()
+        }
+
         view.findViewById<LinearLayout>(R.id.item_daily_inventory_stitch).setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, DailyInventoryStitchFragment())

@@ -7,13 +7,19 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.example.yuanassist.R
 import com.example.yuanassist.model.strategy_detail
+import com.example.yuanassist.utils.RunLogger
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.graphics.Matrix
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
@@ -89,6 +95,36 @@ class StrategyAdapter(
                 .transform(TopLeftCrop(), RoundedCorners(16))
                 .placeholder(R.drawable.cover)
                 .error(R.drawable.cover)
+                .listener(object : RequestListener<Drawable> {
+                    override fun onLoadFailed(
+                        e: GlideException?,
+                        model: Any?,
+                        target: Target<Drawable>,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        val rootMessage = e?.rootCauses
+                            ?.joinToString(" | ") { cause ->
+                                "${cause.javaClass.simpleName}: ${cause.message}"
+                            }
+                            ?.takeIf { it.isNotBlank() }
+                            ?: e?.message
+                            ?: "未知错误"
+                        RunLogger.e(
+                            "攻略封面加载失败: 标题=${item.title}, url=$displayUrl, error=$rootMessage"
+                        )
+                        return false
+                    }
+
+                    override fun onResourceReady(
+                        resource: Drawable,
+                        model: Any,
+                        target: Target<Drawable>?,
+                        dataSource: DataSource,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        return false
+                    }
+                })
                 .into(holder.cover)
         } else {
             holder.cover.setImageResource(R.drawable.cover)

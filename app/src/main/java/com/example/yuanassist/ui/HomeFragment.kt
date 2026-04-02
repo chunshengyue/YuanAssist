@@ -321,6 +321,7 @@ class HomeFragment : Fragment() {
         super.onResume()
         registerOverlayPrefsListenerIfNeeded()
         if (view != null) {
+            syncOverlayStateWithRuntime()
             updateOverlayButtonTexts()
         }
         if (pendingInstallAfterPermission && updateApkFile?.exists() == true && canInstallUnknownApps()) {
@@ -630,6 +631,18 @@ class HomeFragment : Fragment() {
     private fun updateOverlayButtonTexts() {
         btnStartCombat.text = if (isCombatWindowOpen()) "关闭悬浮窗" else getString(R.string.btn_start_combat)
         btnStartDaily.text = if (isDailyWindowOpen()) "关闭悬浮窗" else getString(R.string.btn_start_daily)
+    }
+
+    private fun syncOverlayStateWithRuntime() {
+        val service = YuanAssistService.instance
+        val combatOpen = service?.isCombatWindowVisible() == true
+        val dailyOpen = service?.isDailyWindowVisible() == true
+        requireContext()
+            .getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_COMBAT_WINDOW_OPEN, combatOpen)
+            .putBoolean(KEY_DAILY_WINDOW_OPEN, dailyOpen)
+            .apply()
     }
 
     private fun isCombatWindowOpen(): Boolean {

@@ -31,6 +31,7 @@ import com.example.yuanassist.R
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.MyUser
+import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
 import com.example.yuanassist.model.StrategyPreviewData
 import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.model.strategy_detail_counter_update
@@ -123,6 +124,11 @@ class StrategyDetailActivity : AppCompatActivity() {
                     return
                 }
                 runOnUiThread {
+                    if (!canAccessDetail(detail)) {
+                        Toast.makeText(this@StrategyDetailActivity, "该攻略当前不可见", Toast.LENGTH_SHORT).show()
+                        finish()
+                        return@runOnUiThread
+                    }
                     currentDetail = detail
                     favoriteObjectId = null
                     bindTopBar(detail.title, "作者：${resolveAuthorName(detail)}", detail.author?.avatarUrl)
@@ -160,6 +166,14 @@ class StrategyDetailActivity : AppCompatActivity() {
 
     private fun resolveAuthorName(detail: strategy_detail): String {
         return detail.author?.nickname?.takeIf { it.isNotBlank() } ?: detail.author?.username ?: "热心玩家"
+    }
+
+    private fun canAccessDetail(detail: strategy_detail): Boolean {
+        if (detail.visible == STRATEGY_VISIBLE_PUBLIC) {
+            return true
+        }
+        val currentUser = BmobUser.getCurrentUser(MyUser::class.java)
+        return !currentUser?.objectId.isNullOrBlank() && currentUser?.objectId == detail.author?.objectId
     }
 
     private fun bindBottomButtons(detail: strategy_detail, hasScript: Boolean) {

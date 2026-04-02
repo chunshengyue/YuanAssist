@@ -21,7 +21,7 @@ interface ImageUploadApiService {
 }
 
 object ImageUploadClient {
-    private const val BASE_URL = "https://img.scdn.io/"
+    private const val BASE_URL = "https://example.invalid/"
 
     val api: ImageUploadApiService by lazy {
         Retrofit.Builder()

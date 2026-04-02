@@ -27,6 +27,7 @@ data class BirdFoodConfig(
     val autoEatEnabled: Boolean,
     val stopCondition: BirdFoodStopCondition,
     val debugModeEnabled: Boolean = false,
+    val lowSpecDelayMs: Long = 0L,
     val maxRuns: Int? = null,
     val maxDurationMinutes: Int? = null,
     val daiBanGongWuOption: DaiBanGongWuOption = DaiBanGongWuOption.BING_SHU

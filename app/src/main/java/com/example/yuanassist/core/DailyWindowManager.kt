@@ -29,6 +29,7 @@ import android.widget.Toast
 import com.example.yuanassist.R
 import com.example.yuanassist.model.BirdFoodConfig
 import com.example.yuanassist.model.DailyTaskPlan
+import com.example.yuanassist.model.Mainline624Config
 import com.example.yuanassist.network.OcrManager
 import com.example.yuanassist.ui.MainActivity
 import com.example.yuanassist.utils.DialogUtils
@@ -62,6 +63,12 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
         refreshActionButton()
     }
+    private val mainline624RuntimeManager = Mainline624RuntimeManager(service) { isRunning ->
+        if (isRunning) {
+            moveWindowToTopLeftSafely()
+        }
+        refreshActionButton()
+    }
     private val stitchEngine = InventoryStitchEngine(service)
     private val windowManager =
         service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -77,7 +84,9 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private var currentTaskPlan: DailyTaskPlan? = null
     private var currentScriptName: String? = null
     private var currentBirdFoodConfig: BirdFoodConfig? = null
+    private var currentMainline624Config: Mainline624Config? = null
     private var inventoryStitchPrepared = false
+    private var inventoryStitchType = MyStoneStore.TYPE_MAIN
     private var isStoneOcrProcessing = false
     private var lastWindowX = 100
     private var lastWindowY = 100
@@ -121,8 +130,11 @@ class DailyWindowManager(private val service: AccessibilityService) {
         updateOverlayState(isOpen = false)
     }
 
+    fun isWindowVisible(): Boolean = floatView != null
+
     fun submitTaskPlan(plan: DailyTaskPlan, scriptName: String) {
         currentBirdFoodConfig = null
+        currentMainline624Config = null
         currentTaskPlan = plan
         currentScriptName = scriptName
         showWindow()
@@ -140,8 +152,20 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentTaskPlan = null
         currentScriptName = null
         inventoryStitchPrepared = false
+        currentMainline624Config = null
         currentBirdFoodConfig = config
         birdFoodRuntimeManager.prepare(config)
+        showWindow()
+        refreshActionButton()
+    }
+
+    fun submitMainline624Config(config: Mainline624Config) {
+        currentTaskPlan = null
+        currentScriptName = null
+        inventoryStitchPrepared = false
+        currentBirdFoodConfig = null
+        currentMainline624Config = config
+        mainline624RuntimeManager.prepare(config)
         showWindow()
         refreshActionButton()
     }
@@ -150,22 +174,30 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentTaskPlan = null
         currentScriptName = null
         currentBirdFoodConfig = null
+        currentMainline624Config = null
         inventoryStitchPrepared = false
         showWindow()
         startCoordinatePicker()
     }
 
-    fun prepareInventoryStitching() {
+    fun prepareInventoryStitching(stoneType: String) {
         showWindow()
-        if (engine.isRunning || birdFoodRuntimeManager.isRunning) {
+        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
             return
         }
         currentTaskPlan = null
         currentScriptName = null
         currentBirdFoodConfig = null
+        currentMainline624Config = null
+        inventoryStitchType = MyStoneStore.normalizeType(stoneType)
+        MyStoneStore.setSelectedType(service, inventoryStitchType)
         inventoryStitchPrepared = true
-        Toast.makeText(service, "星石拼图已就绪，请点击悬浮窗开始按钮", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            service,
+            "${MyStoneStore.displayName(inventoryStitchType)}拼图已就绪，请点击悬浮窗开始按钮",
+            Toast.LENGTH_SHORT
+        ).show()
         refreshActionButton()
     }
 
@@ -179,6 +211,12 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
         if (birdFoodRuntimeManager.isRunning) {
             birdFoodRuntimeManager.stop(showToast = true)
+            refreshActionButton()
+            return
+        }
+
+        if (mainline624RuntimeManager.isRunning) {
+            mainline624RuntimeManager.stop(showToast = true)
             refreshActionButton()
             return
         }
@@ -200,22 +238,37 @@ class DailyWindowManager(private val service: AccessibilityService) {
             return
         }
 
+        currentMainline624Config?.let {
+            if (!mainline624RuntimeManager.start()) {
+                Toast.makeText(service, "请先确认6-24配置", Toast.LENGTH_SHORT).show()
+                openDailyPage()
+                return
+            }
+            refreshActionButton()
+            return
+        }
+
         if (inventoryStitchPrepared) {
             if (stitchEngine.isRunning) return
             RunLogger.clear()
-            RunLogger.i("开始星石拼图")
+            RunLogger.i("开始${MyStoneStore.displayName(inventoryStitchType)}拼图")
             stitchEngine.startStitching(
+                stoneType = inventoryStitchType,
                 onStatusUpdate = { message ->
                     RunLogger.i("日常工具状态：$message")
                 },
                 onCompleted = { success ->
                     handler.post {
                         if (success) {
-                            RunLogger.i("星石拼图完成")
-                            Toast.makeText(service, "星石截图已保存到我的星石", Toast.LENGTH_SHORT).show()
+                            RunLogger.i("${MyStoneStore.displayName(inventoryStitchType)}拼图完成")
+                            Toast.makeText(
+                                service,
+                                "${MyStoneStore.displayName(inventoryStitchType)}截图已保存到我的星石",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             showStoneOcrPrompt()
                         } else {
-                            RunLogger.i("星石拼图已结束")
+                            RunLogger.i("${MyStoneStore.displayName(inventoryStitchType)}拼图已结束")
                         }
                         refreshActionButton()
                     }
@@ -253,6 +306,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
     private fun stopCurrentWork() {
         birdFoodRuntimeManager.stop()
+        mainline624RuntimeManager.stop()
         engine.stop()
         if (stitchEngine.isRunning) stitchEngine.stop()
         stopCoordinatePicker()
@@ -262,7 +316,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private fun refreshActionButton() {
         handler.post {
             val button = floatView?.findViewById<ImageButton>(R.id.btn_daily_action) ?: return@post
-            if (engine.isRunning || birdFoodRuntimeManager.isRunning || stitchEngine.isRunning) {
+            if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stitchEngine.isRunning) {
                 button.setImageResource(R.drawable.ic_action_pause)
                 button.contentDescription = "暂停"
             } else {
@@ -273,13 +327,13 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     private fun showStoneOcrPrompt() {
-        val record = MyStoneStore.loadRecord(service) ?: return
-        if (MyStoneStore.imageFiles(service, record).isEmpty()) return
+        val record = MyStoneStore.loadRecord(service, inventoryStitchType) ?: return
+        if (MyStoneStore.imageFiles(service, inventoryStitchType, record).isEmpty()) return
 
         DialogUtils.safeShowOverlayDialog(
             AlertDialog.Builder(DialogUtils.getThemeContext(service))
-                .setTitle("星石拼图完成")
-                .setMessage("截图已保存到“我的星石”，是否通过 OCR 统计星石个数？")
+                .setTitle("${MyStoneStore.displayName(inventoryStitchType)}拼图完成")
+                .setMessage("截图已保存到“我的星石”，是否通过 OCR 统计${MyStoneStore.displayName(inventoryStitchType)}个数？")
                 .setPositiveButton("是") { _, _ ->
                     startStoneOcrStatistics()
                 }
@@ -293,19 +347,20 @@ class DailyWindowManager(private val service: AccessibilityService) {
             return
         }
 
-        val record = MyStoneStore.loadRecord(service)
-        val imageFiles = record?.let { MyStoneStore.imageFiles(service, it) }.orEmpty()
+        val record = MyStoneStore.loadRecord(service, inventoryStitchType)
+        val imageFiles = record?.let { MyStoneStore.imageFiles(service, inventoryStitchType, it) }.orEmpty()
         if (imageFiles.isEmpty()) {
-            Toast.makeText(service, "未找到可统计的星石截图", Toast.LENGTH_SHORT).show()
+            Toast.makeText(service, "未找到可统计的${MyStoneStore.displayName(inventoryStitchType)}截图", Toast.LENGTH_SHORT).show()
             return
         }
 
         isStoneOcrProcessing = true
-        Toast.makeText(service, "正在通过 OCR 统计星石...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(service, "正在通过 OCR 统计${MyStoneStore.displayName(inventoryStitchType)}...", Toast.LENGTH_SHORT).show()
 
         uiScope.launch {
             try {
                 val wordsGroups = mutableListOf<List<String>>()
+                val rawEntryGroups = mutableListOf<List<String>>()
                 val strategyUsed = linkedSetOf<String>()
 
                 for (file in imageFiles) {
@@ -329,6 +384,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
                         ) {
                             is OcrManager.StoneOcrResult.Success -> {
                                 wordsGroups += result.words
+                                rawEntryGroups += result.rawEntries
                                 if (result.strategyUsed.isNotEmpty()) {
                                     strategyUsed += result.strategyUsed
                                 }
@@ -344,12 +400,19 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     }
                 }
 
+                if (rawEntryGroups.isNotEmpty()) {
+                    RunLogger.raw("【OCR返回原文本】")
+                    StoneOcrParser.formatRawJsonByRow(rawEntryGroups).forEach { line ->
+                        RunLogger.i(line)
+                    }
+                }
                 val rows = StoneOcrParser.buildRows(wordsGroups)
                 val lines = StoneOcrParser.format(StoneOcrParser.aggregate(rows))
                 val hasPendingRows = rows.any { !StoneOcrParser.isRowResolved(it) }
 
                 MyStoneStore.saveOcrResult(
                     context = service,
+                    stoneType = inventoryStitchType,
                     rows = rows,
                     statsLines = lines,
                     ocrStrategy = strategyUsed.joinToString(",")

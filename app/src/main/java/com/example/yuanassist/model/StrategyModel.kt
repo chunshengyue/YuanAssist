@@ -4,6 +4,11 @@ import cn.bmob.v3.BmobObject
 import cn.bmob.v3.BmobUser
 import com.example.yuanassist.ui.UploadTurnItem
 
+const val STRATEGY_VISIBLE_HIDDEN = 0
+const val STRATEGY_VISIBLE_PUBLIC = 1
+const val STRATEGY_GAME_DAIHAOYUAN = 0
+const val STRATEGY_GAME_RUYUAN = 1
+
 /**
  * 1. 扩展用户表 (Bmob自带_User表)
  */
@@ -29,6 +34,8 @@ class strategy_detail : BmobObject() {
     var agentSelection: String = ""  // 选中的5个密探JSON
     var agentImageUrl: String = ""   // 阵容截图URL
     var agentTextDesc: String = ""
+    var visible: Int? = null         // 由 Bmob 后端控制：1=公开，0=仅我的发布可见
+    var ruyuan: Int? = null          // 由 Bmob 后端控制：1=如鸢，0=代号鸢
 
     var viewCount: Int? = 0
     var favoriteCount: Int? = 0

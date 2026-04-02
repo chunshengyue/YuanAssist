@@ -16,9 +16,9 @@ object GameConstants {
     const val DESIGN_TARGET_Y_TOP = 845f
 
     // 随机偏移参数 (控制防封号的点击范围)
-    const val RND_RADIUS_CLICK = 20f
-    const val RND_OFFSET_SWIPE_X = 15f
-    const val RND_OFFSET_SWIPE_Y = 20f
+    const val RND_RADIUS_CLICK = 12f
+    const val RND_OFFSET_SWIPE_X = 10f
+    const val RND_OFFSET_SWIPE_Y = 14f
 
     // 默认滑动距离
     const val SWIPE_DISTANCE = 300f

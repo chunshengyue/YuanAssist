@@ -2,17 +2,12 @@ package com.example.yuanassist.core
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
-import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.graphics.Path
 import android.os.Build
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
 import android.view.Display
 import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
@@ -24,7 +19,6 @@ import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.Rect
-import org.opencv.core.Scalar
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import kotlin.math.abs
@@ -33,6 +27,8 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 class InventoryStitchEngine(private val service: AccessibilityService) {
+
+    private var stoneType: String = MyStoneStore.TYPE_MAIN
 
     private data class TextRow(
         val text: String,
@@ -76,13 +72,12 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         private const val SPLIT_ASPECT_RATIO_THRESHOLD = 4f
 
         private const val TOP_CROP_BASE = 455
-        private const val TOP_CROP_EXTRA = 70
+        private const val TOP_CROP_EXTRA = 30
         private const val BOTTOM_CROP_BASE = 385
 
         private const val MIN_CHINESE_CHARS_PER_LINE = 3
         private const val ROW_MERGE_TOLERANCE_PX = 4f
         private const val TEMPLATE_HEIGHT_PX = 50
-        private const val DEBUG_LINE_WIDTH = 4f
         private const val OCR_UPSCALE_FACTOR = 3.0
         private const val UNCHANGED_DIFF_THRESHOLD = 3.0
         private const val LOW_SCORE_FULL_SEARCH_THRESHOLD = 0.8
@@ -90,9 +85,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         private const val MATCH_THRESHOLD_START = 0.9
         private const val MATCH_THRESHOLD_END = 0.1
         private const val MATCH_THRESHOLD_STEP = 0.1
-
-        private val YELLOW_LOWER_BOUND = Scalar(12.0, 50.0, 90.0)
-        private val YELLOW_UPPER_BOUND = Scalar(42.0, 255.0, 255.0)
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -112,12 +104,14 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
     private val screenHeight = service.resources.displayMetrics.heightPixels
 
     fun startStitching(
+        stoneType: String,
         onStatusUpdate: (String) -> Unit,
         onCompleted: (Boolean) -> Unit
     ) {
         if (isRunning) return
 
         isRunning = true
+        this.stoneType = MyStoneStore.normalizeType(stoneType)
         this.onStatusUpdate = onStatusUpdate
         this.onCompleted = onCompleted
         resetState()
@@ -238,16 +232,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
 
         bitmap.recycle()
 
-        RunLogger.i(
-            "裁剪帧：原图=${sourceWidth}x${sourceHeight}，缩放=%.3f，顶部=%d，底部=%d，结果=%dx%d".format(
-                scale,
-                safeTopCrop,
-                bottomCrop,
-                croppedBitmap.width,
-                croppedBitmap.height
-            )
-        )
-
         return croppedBitmap
     }
 
@@ -279,7 +263,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                         return@addOnSuccessListener
                     }
 
-                    logRecognizedLines(frameIndex, text, preprocessedImage.coordinateScaleBack)
                     val rows = mergeRows(
                         extractCandidateRows(text, preprocessedImage.coordinateScaleBack)
                     )
@@ -288,22 +271,24 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                     }
 
                     val templateSpec = buildTemplateSpec(rows, preprocessedImage)
+                    val currentLastRow = rows.last()
                     val previousPending = pendingFrame
 
                     if (previousPending == null) {
-                        logMergedRows(frameIndex, rows)
                         RunLogger.i(
-                            "帧 $frameIndex 模板：中心Y=%.1f，顶部=%d，底部=%d".format(
-                                templateSpec.centerY,
-                                templateSpec.top,
-                                templateSpec.bottom
+                            "帧 $frameIndex 采用模板行：文本=%s，中心Y=%.1f，顶部=%d，底部=%d，有效行数=%d".format(
+                                currentLastRow.text,
+                                currentLastRow.centerY,
+                                currentLastRow.top,
+                                currentLastRow.bottom,
+                                rows.size
                             )
                         )
 
                         pendingFrame = PendingFrame(
                             frameIndex = frameIndex,
                             bitmap = croppedBitmap,
-                            lastRow = rows.last(),
+                            lastRow = currentLastRow,
                             templateSpec = templateSpec,
                             startY = 0
                         )
@@ -322,15 +307,13 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                         currentPreprocessed = preprocessedImage,
                         currentRows = rows
                     )
-                    logMergedRows(frameIndex, rows)
                     RunLogger.i(
-                        "帧 $frameIndex 匹配：分数=%.4f，采用阈值=%.1f，匹配中心Y=%.1f，匹配行顶部=%d，匹配行底部=%d，搜索高度=%d".format(
-                            matchResult.score,
-                            matchResult.acceptedThreshold,
-                            matchResult.matchCenterY,
-                            matchResult.matchedRow.top,
-                            matchResult.matchedRow.bottom,
-                            matchResult.searchHeight
+                        "帧 $frameIndex 采用模板行：文本=%s，中心Y=%.1f，顶部=%d，底部=%d，有效行数=%d".format(
+                            currentLastRow.text,
+                            currentLastRow.centerY,
+                            currentLastRow.top,
+                            currentLastRow.bottom,
+                            rows.size
                         )
                     )
 
@@ -342,7 +325,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                     pendingFrame = PendingFrame(
                         frameIndex = frameIndex,
                         bitmap = croppedBitmap,
-                        lastRow = rows.last(),
+                        lastRow = currentLastRow,
                         templateSpec = templateSpec,
                         startY = matchResult.matchedRow.bottom
                     )
@@ -373,13 +356,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         val srcMat = Mat()
         val rgbMat = Mat()
         val resizedMat = Mat()
-        val hsvMat = Mat()
-        val yellowMask = Mat()
-        val refinedMask = Mat()
-        val invertedMask = Mat()
         val rgbaMat = Mat()
-        val closeKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 3.0))
-        val dilateKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
 
         return try {
             Utils.bitmapToMat(sourceBitmap, srcMat)
@@ -392,39 +369,15 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                 OCR_UPSCALE_FACTOR,
                 Imgproc.INTER_CUBIC
             )
-            Imgproc.cvtColor(resizedMat, hsvMat, Imgproc.COLOR_RGB2HSV)
-            Core.inRange(hsvMat, YELLOW_LOWER_BOUND, YELLOW_UPPER_BOUND, yellowMask)
-
-            Imgproc.morphologyEx(
-                yellowMask,
-                refinedMask,
-                Imgproc.MORPH_CLOSE,
-                closeKernel
-            )
-            Imgproc.dilate(refinedMask, refinedMask, dilateKernel)
-            Imgproc.GaussianBlur(refinedMask, refinedMask, Size(3.0, 3.0), 0.0)
-            Imgproc.threshold(refinedMask, refinedMask, 0.0, 255.0, Imgproc.THRESH_BINARY)
-
             val processedBitmap = Bitmap.createBitmap(
-                refinedMask.cols(),
-                refinedMask.rows(),
+                resizedMat.cols(),
+                resizedMat.rows(),
                 Bitmap.Config.ARGB_8888
             )
-            Core.bitwise_not(refinedMask, invertedMask)
-            Imgproc.cvtColor(invertedMask, rgbaMat, Imgproc.COLOR_GRAY2RGBA)
+            Imgproc.cvtColor(resizedMat, rgbaMat, Imgproc.COLOR_RGB2RGBA)
             Utils.matToBitmap(rgbaMat, processedBitmap)
 
-            val nonZeroCount = Core.countNonZero(refinedMask)
-            val totalPixels = refinedMask.rows().toDouble() * refinedMask.cols().toDouble()
-            val maskRatio = if (totalPixels > 0) nonZeroCount / totalPixels else 0.0
             val scaleBack = sourceBitmap.width.toFloat() / processedBitmap.width.toFloat()
-
-            RunLogger.i(
-                "ML Kit 预处理：原图=${sourceBitmap.width}x${sourceBitmap.height}，处理后=${processedBitmap.width}x${processedBitmap.height}，回缩比例=%.3f，黄色遮罩占比=%.4f".format(
-                    scaleBack,
-                    maskRatio
-                )
-            )
 
             PreprocessedImage(
                 bitmap = processedBitmap,
@@ -434,13 +387,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             srcMat.release()
             rgbMat.release()
             resizedMat.release()
-            hsvMat.release()
-            yellowMask.release()
-            refinedMask.release()
-            invertedMask.release()
             rgbaMat.release()
-            closeKernel.release()
-            dilateKernel.release()
         }
     }
 
@@ -551,15 +498,14 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             searchFullImage = searchFullImage
         )
         if (searchFullImage || halfResult.score >= LOW_SCORE_FULL_SEARCH_THRESHOLD) {
+            RunLogger.i(
+                "帧 ${previousPending.frameIndex + 1} 匹配模式：仅半图，半图分数=%.4f，搜索高度=%d".format(
+                    halfResult.score,
+                    halfResult.searchHeight
+                )
+            )
             return halfResult
         }
-
-        RunLogger.i(
-            "帧 ${previousPending.frameIndex} 低分 %.4f < %.1f，重试整图搜索".format(
-                halfResult.score,
-                LOW_SCORE_FULL_SEARCH_THRESHOLD
-            )
-        )
 
         val fullResult = runTemplateSearch(
             previousPending = previousPending,
@@ -574,11 +520,14 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             halfResult
         }
 
+        val selectedMode = if (selectedResult === fullResult) "全图" else "半图"
         RunLogger.i(
-            "帧 ${previousPending.frameIndex} 搜索对比：半图=%.4f，整图=%.4f，选中=%s".format(
+            "帧 ${previousPending.frameIndex + 1} 匹配模式：半图分数=%.4f， 全图分数=%.4f，最终采用=%s，半图搜索高度=%d，全图搜索高度=%d".format(
                 halfResult.score,
                 fullResult.score,
-                if (selectedResult === fullResult) "整图" else "半图"
+                selectedMode,
+                halfResult.searchHeight,
+                fullResult.searchHeight
             )
         )
 
@@ -624,19 +573,10 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                     matchTopProcessed + (previousPending.templateSpec.templateMat.rows() / 2f)
                 val matchCenterOriginal = matchCenterProcessed * currentPreprocessed.coordinateScaleBack
 
-                val searchMode = if (searchFullImage) "整图" else "上半区"
                 var acceptedThreshold: Double? = null
                 var threshold = MATCH_THRESHOLD_START
                 while (threshold >= MATCH_THRESHOLD_END - 1e-6) {
-                    val matched = minMax.maxVal >= threshold
-                    RunLogger.i(
-                        "帧 ${previousPending.frameIndex} $searchMode 搜索阈值 %.1f -> %s（分数=%.4f）".format(
-                            threshold,
-                            if (matched) "命中" else "未命中",
-                            minMax.maxVal
-                        )
-                    )
-                    if (matched) {
+                    if (minMax.maxVal >= threshold) {
                         acceptedThreshold = threshold
                         break
                     }
@@ -703,9 +643,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                 stitchedBitmap = combinedBitmap
             }
 
-            RunLogger.i(
-                "追加帧 ${frame.frameIndex}：起点=$safeStart，终点=$safeEnd，片段高度=$segmentHeight，总高度=${stitchedBitmap?.height ?: 0}"
-            )
         } finally {
             segmentBitmap.recycle()
         }
@@ -750,129 +687,12 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
 
     private fun isFrameAlmostUnchanged(previousBitmap: Bitmap, currentBitmap: Bitmap): Boolean {
         val meanDiff = calculateFrameDiffMean(previousBitmap, currentBitmap)
-        RunLogger.i("帧差异均值=%.2f".format(meanDiff))
         return meanDiff < UNCHANGED_DIFF_THRESHOLD
-    }
-
-    private fun drawDebugImage(
-        bitmap: Bitmap,
-        rows: List<TextRow>,
-        templateSpec: TemplateSpec?,
-        matchResult: MatchResult?,
-        scale: Float
-    ): Bitmap {
-        val annotatedBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val canvas = Canvas(annotatedBitmap)
-        val rowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.RED
-            strokeWidth = max(DEBUG_LINE_WIDTH, scale * DEBUG_LINE_WIDTH)
-        }
-        val templatePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLUE
-            strokeWidth = max(2f, scale * 2f)
-            style = Paint.Style.STROKE
-        }
-        val matchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.GREEN
-            strokeWidth = max(DEBUG_LINE_WIDTH, scale * DEBUG_LINE_WIDTH)
-        }
-        val matchedRowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.YELLOW
-            strokeWidth = max(DEBUG_LINE_WIDTH, scale * DEBUG_LINE_WIDTH)
-        }
-
-        rows.forEach { row ->
-            canvas.drawLine(
-                0f,
-                row.centerY,
-                annotatedBitmap.width.toFloat(),
-                row.centerY,
-                rowPaint
-            )
-        }
-
-        templateSpec?.let { spec ->
-            canvas.drawRect(
-                0f,
-                spec.top.toFloat(),
-                annotatedBitmap.width.toFloat(),
-                spec.bottom.toFloat(),
-                templatePaint
-            )
-        }
-
-        matchResult?.let { result ->
-            canvas.drawLine(
-                0f,
-                result.matchCenterY,
-                annotatedBitmap.width.toFloat(),
-                result.matchCenterY,
-                matchPaint
-            )
-            canvas.drawLine(
-                0f,
-                result.matchedRow.centerY,
-                annotatedBitmap.width.toFloat(),
-                result.matchedRow.centerY,
-                matchedRowPaint
-            )
-        }
-
-        return annotatedBitmap
-    }
-
-    private fun logRecognizedLines(frameIndex: Int, result: Text, coordinateScaleBack: Float) {
-        val lines = result.textBlocks.flatMap { it.lines }
-        RunLogger.i("帧 $frameIndex 原始摘要：文本块=${result.textBlocks.size}，行数=${lines.size}")
-
-        var foundChineseLine = false
-        lines.forEachIndexed { index, line ->
-            val boundingBox = line.boundingBox ?: return@forEachIndexed
-            val normalizedText = normalizeWhitespace(line.text)
-            val chineseCount = countChineseChars(normalizedText)
-            if (chineseCount <= 0) return@forEachIndexed
-
-            foundChineseLine = true
-            val centerY = ((boundingBox.top + boundingBox.bottom) / 2f) * coordinateScaleBack
-            val top = (boundingBox.top * coordinateScaleBack).roundToInt()
-            val bottom = (boundingBox.bottom * coordinateScaleBack).roundToInt()
-            RunLogger.i(
-                "帧 $frameIndex 原始行 ${index + 1}：中心Y=%.1f，顶部=%d，底部=%d，中文数=%d，文本=%s".format(
-                    centerY,
-                    top,
-                    bottom,
-                    chineseCount,
-                    normalizedText
-                )
-            )
-        }
-
-        if (!foundChineseLine) {
-            RunLogger.i("帧 $frameIndex 原始行探测：没有包含中文的行")
-        }
-    }
-
-    private fun logMergedRows(frameIndex: Int, rows: List<TextRow>) {
-        if (rows.isEmpty()) {
-            RunLogger.i("帧 $frameIndex 合并行：无")
-            return
-        }
-
-        rows.forEachIndexed { index, row ->
-            RunLogger.i(
-                "帧 $frameIndex 合并行 ${index + 1}：中心Y=%.1f，顶部=%d，底部=%d，文本=%s".format(
-                    row.centerY,
-                    row.top,
-                    row.bottom,
-                    row.text
-                )
-            )
-        }
     }
 
     private fun countChineseChars(text: String): Int {
         return text.count { char ->
-            char.code in 0x4E00..0x9FFF
+            char != '级' && char.code in 0x4E00..0x9FFF
         }
     }
 
@@ -891,9 +711,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             if (splitY != null) {
                 saveSplitBitmaps(bitmap, splitY)
             } else {
-                val savedLocation = saveBitmapToGallery(bitmap, "inventory_stitched")
-                MyStoneStore.saveImages(service, listOf(bitmap))
-                RunLogger.i("拼接图片已保存：$savedLocation")
+                MyStoneStore.saveImages(service, stoneType, listOf(bitmap))
                 RunLogger.i("星石结果已覆盖保存到我的星石")
             }
 
@@ -916,7 +734,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         val boundaryY = stitchedBitmap?.height ?: return
         if (boundaryY <= 0) return
         splitCandidates += boundaryY
-        RunLogger.i("记录拼接接缝：Y=$boundaryY")
     }
 
     private fun findBestSplitY(totalHeight: Int): Int? {
@@ -947,37 +764,12 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         val bottomBitmap = Bitmap.createBitmap(bitmap, 0, splitY, bitmap.width, bitmap.height - splitY)
 
         try {
-            val topLocation = saveBitmapToGallery(topBitmap, "inventory_stitched_part1")
-            val bottomLocation = saveBitmapToGallery(bottomBitmap, "inventory_stitched_part2")
-            MyStoneStore.saveImages(service, listOf(topBitmap, bottomBitmap))
-            RunLogger.i("拼接图片已拆分保存：上半=$topLocation，下半=$bottomLocation")
+            MyStoneStore.saveImages(service, stoneType, listOf(topBitmap, bottomBitmap))
             RunLogger.i("星石结果已覆盖保存到我的星石")
         } finally {
             topBitmap.recycle()
             bottomBitmap.recycle()
         }
-    }
-
-    private fun saveBitmapToGallery(bitmap: Bitmap, prefix: String): String {
-        val fileName = "${prefix}_${System.currentTimeMillis()}.png"
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/YuanAssist")
-            }
-        }
-
-        val uri = service.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            ?: throw IllegalStateException("创建图片 URI 失败")
-
-        service.contentResolver.openOutputStream(uri)?.use { out ->
-            if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)) {
-                throw IllegalStateException("写入图片失败")
-            }
-        } ?: throw IllegalStateException("打开图片输出流失败")
-
-        return uri.toString()
     }
 
     private fun performSwipeAndContinue() {
@@ -998,13 +790,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
 
         service.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription?) {
-                RunLogger.i(
-                    "单次滑动完成：起点Y=%.1f，终点Y=%.1f，位移=%.1f".format(
-                        startY,
-                        endY,
-                        startY - endY
-                    )
-                )
                 handler.postDelayed(
                     { captureNextFrame() },
                     AFTER_SWIPE_DELAY_MS

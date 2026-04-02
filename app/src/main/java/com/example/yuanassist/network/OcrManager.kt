@@ -20,8 +20,8 @@ import javax.net.ssl.SSLException
 
 object OcrManager {
 
-    private const val OCR_URL = "https://1404626659-0xl5hg6b23.ap-nanjing.tencentscf.com/release/ocr"
-    private const val API_SECRET = "nobodyknows"
+    private const val OCR_URL = "https://example.invalid/release/ocr"
+    private const val API_SECRET = "OCR_API_SECRET_REDACTED"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -36,6 +36,7 @@ object OcrManager {
     sealed class StoneOcrResult {
         data class Success(
             val words: List<String>,
+            val rawEntries: List<String>,
             val strategyUsed: String,
             val wordsResultNum: Int
         ) : StoneOcrResult()
@@ -107,12 +108,13 @@ object OcrManager {
                     StoneOcrResult.Error("服务器响应缺少 words_result")
                 } else {
                     val words = wordsArray.toWordList()
+                    val rawEntries = wordsArray.toRawEntryList()
                     val strategyUsed = result.json.optString("_strategy_used", "")
                     val wordsResultNum = result.json.optInt("words_result_num", words.size)
                     RunLogger.i(
                         "星石OCR成功，策略=${strategyUsed.ifEmpty { "默认" }}，词数=$wordsResultNum"
                     )
-                    StoneOcrResult.Success(words, strategyUsed, wordsResultNum)
+                    StoneOcrResult.Success(words, rawEntries, strategyUsed, wordsResultNum)
                 }
             }
 
@@ -255,5 +257,14 @@ object OcrManager {
             }
         }
         return words
+    }
+
+    private fun JSONArray.toRawEntryList(): List<String> {
+        val entries = mutableListOf<String>()
+        for (index in 0 until length()) {
+            val item = optJSONObject(index) ?: continue
+            entries += item.toString()
+        }
+        return entries
     }
 }

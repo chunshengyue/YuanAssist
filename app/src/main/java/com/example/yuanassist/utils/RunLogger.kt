@@ -21,6 +21,10 @@ object RunLogger {
         append("I", message, null)
     }
 
+    fun raw(message: String) {
+        appendRaw(message)
+    }
+
     fun e(message: String) {
         append("E", message, null)
     }
@@ -56,6 +60,16 @@ object RunLogger {
                 Log.i(TAG, line)
             }
         }
+    }
+
+    @Synchronized
+    private fun appendRaw(message: String) {
+        if (shouldSuppress(message)) return
+        logs.add(message)
+        while (logs.size > MAX_IN_MEMORY) {
+            logs.removeAt(0)
+        }
+        Log.i(TAG, message)
     }
 
     private fun shouldSuppress(message: String): Boolean {

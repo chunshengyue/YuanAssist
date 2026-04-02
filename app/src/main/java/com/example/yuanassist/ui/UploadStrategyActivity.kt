@@ -1,9 +1,14 @@
 package com.example.yuanassist.ui
 
 import android.provider.Settings
+import cn.bmob.v3.BmobObject
+import cn.bmob.v3.BmobQuery
 import cn.bmob.v3.BmobUser
 import cn.bmob.v3.exception.BmobException
+import cn.bmob.v3.listener.QueryListener
 import cn.bmob.v3.listener.SaveListener
+import cn.bmob.v3.listener.UpdateListener
+import com.bumptech.glide.Glide
 import com.example.yuanassist.model.MyUser
 import com.example.yuanassist.model.strategy_detail
 import android.app.Activity
@@ -30,8 +35,10 @@ import com.example.yuanassist.R
 import com.example.yuanassist.core.LocalScriptJson
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.AgentRepository
+import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.StrategyPreviewData
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import java.io.File
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -41,10 +48,12 @@ class UploadStrategyActivity : AppCompatActivity() {
     companion object {
         private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
         private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
+        const val EXTRA_IS_EDIT_MODE = "EXTRA_IS_EDIT_MODE"
+        const val EXTRA_STRATEGY_ID = "EXTRA_STRATEGY_ID"
         private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
-            "庞羲", "吕布", "刘璋", "夏侯渊", "鄷公珠", "鄷公玖", "法正", "庞德",
-            "SP陈登", "SP史子渺", "曹丕", "程普", "钟繇", "蒯良", "马腾", "陈群",
-            "卢植", "简雍", "郭女王", "周忠"
+            "吕布", "刘璋", "夏侯渊", "鄷公珠", "鄷公玖", "法正", "庞德",
+            "SP陈登", "SP史子渺", "曹丕", "程普", "钟繇", "蒯良", "陈群",
+            "卢植", "简雍", "郭女王", "周忠","陈纪","陈应"
         )
 
         private val DAIHAOYUAN_HIDDEN_ALIASES = DAIHAOYUAN_EXTRA_AGENTS.toSet() + setOf(
@@ -76,6 +85,12 @@ class UploadStrategyActivity : AppCompatActivity() {
     private var currentAttackDelay = 2500L
     private var currentSkillDelay = 4000L
     private var currentWaitTurn = 8000L
+    private lateinit var importTabs: List<TextView>
+    private lateinit var agentTabs: List<TextView>
+    private var isEditMode = false
+    private var editingStrategyId: String? = null
+    private var existingAgentImageUrl = ""
+    private var existingStrategyImageUrl = ""
 
     // 图片选择器注册
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -108,6 +123,8 @@ class UploadStrategyActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_upload_strategy)
+        isEditMode = intent.getBooleanExtra(EXTRA_IS_EDIT_MODE, false)
+        editingStrategyId = intent.getStringExtra(EXTRA_STRATEGY_ID)?.takeIf { it.isNotBlank() }
 
         initTopBar()
         initViews()
@@ -115,8 +132,12 @@ class UploadStrategyActivity : AppCompatActivity() {
         initAgentSlots()
         loadSystemConfig()
 
-        // 默认尝试读取当前悬浮窗数据
-        loadCurrentWindowData()
+        if (isEditMode) {
+            applyEditModeUi()
+            loadStrategyForEdit()
+        } else {
+            loadCurrentWindowData()
+        }
     }
 
     private fun initViews() {
@@ -174,10 +195,10 @@ class UploadStrategyActivity : AppCompatActivity() {
                 attackDelay = currentAttackDelay,
                 skillDelay = currentSkillDelay,
                 waitTurn = currentWaitTurn,
-                strategyImageUri = strategyImageUri?.toString(),
+                strategyImageUri = strategyImageUri?.toString() ?: existingStrategyImageUrl.takeIf { it.isNotBlank() },
                 agentType = aType,
                 agentSelection = builtAgents,
-                agentImageUri = agentImageUri?.toString(),
+                agentImageUri = agentImageUri?.toString() ?: existingAgentImageUrl.takeIf { it.isNotBlank() },
                 agentTextDesc = etAgentTextDesc.text.toString(),
                 tableData = tData,
                 instructionsJson = currentInstructionsJson
@@ -294,7 +315,7 @@ class UploadStrategyActivity : AppCompatActivity() {
         val tabImportCurrent = findViewById<TextView>(R.id.tab_import_current)
         val tabImportLibrary = findViewById<TextView>(R.id.tab_import_library)
         val tabImportText = findViewById<TextView>(R.id.tab_import_text)
-        val importTabs = listOf(tabImportCurrent, tabImportLibrary, tabImportText)
+        importTabs = listOf(tabImportCurrent, tabImportLibrary, tabImportText)
 
         tabImportCurrent.setOnClickListener {
             updateTabUI(tabImportCurrent, importTabs)
@@ -319,7 +340,7 @@ class UploadStrategyActivity : AppCompatActivity() {
         val tabAgentSelect = findViewById<TextView>(R.id.tab_agent_select)
         val tabAgentImage = findViewById<TextView>(R.id.tab_agent_image)
         val tabAgentText = findViewById<TextView>(R.id.tab_agent_text)
-        val agentTabs = listOf(tabAgentSelect, tabAgentImage, tabAgentText)
+        agentTabs = listOf(tabAgentSelect, tabAgentImage, tabAgentText)
 
         tabAgentSelect.setOnClickListener {
             updateTabUI(tabAgentSelect, agentTabs)
@@ -342,6 +363,243 @@ class UploadStrategyActivity : AppCompatActivity() {
     }
 
     // 🔴 提取出来的公共方法：用于将指定的密探名字填入指定槽位，并自动展开星级/命盘UI
+    // 编辑模式相关：回填已有攻略到发布表单
+    private fun applyEditModeUi() {
+        findViewById<View>(R.id.top_bar)
+            .findViewById<TextView>(R.id.tv_top_title)
+            ?.text = "编辑跟打攻略"
+        findViewById<Button>(R.id.btn_publish_strategy).text = "保存修改"
+    }
+
+    private fun loadStrategyForEdit() {
+        val strategyId = editingStrategyId
+        if (strategyId.isNullOrBlank()) {
+            Toast.makeText(this, "缺少攻略ID，无法进入编辑模式", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        Toast.makeText(this, "正在加载攻略数据...", Toast.LENGTH_SHORT).show()
+        BmobQuery<strategy_detail>().getObject(strategyId, object : QueryListener<strategy_detail>() {
+            override fun done(detail: strategy_detail?, e: BmobException?) {
+                runOnUiThread {
+                    if (isDestroyed || isFinishing) return@runOnUiThread
+                    if (e != null || detail == null) {
+                        Toast.makeText(
+                            this@UploadStrategyActivity,
+                            "攻略加载失败：${e?.message ?: "未找到该攻略"}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        finish()
+                        return@runOnUiThread
+                    }
+                    populateEditForm(detail)
+                }
+            }
+        })
+    }
+
+    private fun populateEditForm(detail: strategy_detail) {
+        findViewById<EditText>(R.id.et_strategy_title).setText(detail.title)
+        findViewById<EditText>(R.id.et_original_post_url).setText(detail.originalPostUrl)
+        findViewById<EditText>(R.id.et_strategy_content).setText(detail.content)
+        etAgentTextDesc.setText(detail.agentTextDesc)
+
+        applyConfigFromDetail(detail.config)
+        existingStrategyImageUrl = detail.strategyImage.orEmpty()
+        existingAgentImageUrl = detail.agentImageUrl.orEmpty()
+
+        if (existingStrategyImageUrl.isNotBlank()) {
+            Glide.with(this)
+                .load(existingStrategyImageUrl)
+                .placeholder(R.drawable.cover)
+                .error(R.drawable.cover)
+                .into(findViewById(R.id.iv_strategy_image_preview))
+            findViewById<ImageView>(R.id.iv_strategy_image_preview).visibility = View.VISIBLE
+            findViewById<View>(R.id.ll_strategy_image_placeholder).visibility = View.GONE
+            findViewById<View>(R.id.tv_strategy_image_reupload).visibility = View.VISIBLE
+        }
+
+        when (detail.agentType) {
+            1 -> {
+                showAgentMode(1)
+                if (existingAgentImageUrl.isNotBlank()) {
+                    Glide.with(this)
+                        .load(existingAgentImageUrl)
+                        .placeholder(R.drawable.cover)
+                        .error(R.drawable.cover)
+                        .into(findViewById(R.id.iv_agent_image_preview))
+                    findViewById<ImageView>(R.id.iv_agent_image_preview).visibility = View.VISIBLE
+                    findViewById<View>(R.id.ll_agent_image_placeholder).visibility = View.GONE
+                    findViewById<View>(R.id.tv_agent_image_reupload).visibility = View.VISIBLE
+                }
+            }
+            2 -> showAgentMode(2)
+            else -> {
+                showAgentMode(0)
+                applyAgentSelectionFromDetail(detail.agentSelection)
+            }
+        }
+
+        currentInstructionsJson = detail.instructions.takeIf { it.isNotBlank() }
+        showEditScriptTable(
+            parseScriptContentToUploadItems(detail.scriptContent),
+            detail.instructions
+        )
+    }
+
+    private fun applyConfigFromDetail(configJson: String?) {
+        if (!configJson.isNullOrBlank()) {
+            runCatching {
+                val json = org.json.JSONObject(configJson)
+                currentAttackDelay = json.optLong("intervalAttack", currentAttackDelay)
+                currentSkillDelay = json.optLong("intervalSkill", currentSkillDelay)
+                currentWaitTurn = json.optLong("waitTurn", currentWaitTurn)
+            }
+        }
+        findViewById<TextView>(R.id.tv_upload_config).text =
+            "参数：普${currentAttackDelay / 1000f}s / 技${currentSkillDelay / 1000f}s / 等待${currentWaitTurn / 1000f}s"
+    }
+
+    private fun applyAgentSelectionFromDetail(agentSelectionJson: String?) {
+        if (agentSelectionJson.isNullOrBlank()) return
+        val type = object : TypeToken<List<String>>() {}.type
+        val rawAgents = runCatching {
+            Gson().fromJson<List<String>>(agentSelectionJson, type)
+        }.getOrNull().orEmpty()
+
+        rawAgents.take(5).forEachIndexed { index, raw ->
+            val rawText = raw.trim()
+            if (rawText.isBlank()) return@forEachIndexed
+            val name = rawText.replaceFirst("^\\d+".toRegex(), "").substringBefore("-").trim()
+            if (name.isBlank()) return@forEachIndexed
+            applyAgentToSlot(index, name)
+            applyStarForSlot(index, rawText.takeWhile { it.isDigit() }.toIntOrNull())
+            applyTalentsForSlot(index, name, rawText.substringAfter("-", "").takeIf { it.isNotBlank() })
+        }
+    }
+
+    private fun applyStarForSlot(index: Int, starLevel: Int?) {
+        val slotView = layoutAgentSlots.getChildAt(index) ?: return
+        val tvStar = slotView.findViewById<TextView>(R.id.tv_upload_agent_star)
+        val starTag = when (starLevel) {
+            1 -> "?"
+            2 -> "??"
+            3 -> "???"
+            4 -> "????"
+            5 -> "?????"
+            6 -> "觉醒"
+            else -> null
+        }
+        if (starTag == null) {
+            tvStar.text = "星级(选填)?"
+            tvStar.setTextColor(Color.parseColor("#E5C07B"))
+            tvStar.tag = null
+        } else {
+            tvStar.text = "$starTag ?"
+            tvStar.setTextColor(Color.parseColor("#FFD700"))
+            tvStar.tag = starTag
+        }
+    }
+
+    private fun applyTalentsForSlot(index: Int, agentName: String, talentsRaw: String?) {
+        val slotView = layoutAgentSlots.getChildAt(index) ?: return
+        val defaultTexts = listOf("命盘一 ?", "命盘二 ?", "命盘三 ?")
+        val talentViews = listOf(
+            slotView.findViewById<TextView>(R.id.tv_talent_1),
+            slotView.findViewById<TextView>(R.id.tv_talent_2),
+            slotView.findViewById<TextView>(R.id.tv_talent_3)
+        )
+        val talentIds = talentsRaw
+            ?.split("、")
+            ?.mapNotNull { it.trim().toIntOrNull() }
+            .orEmpty()
+
+        talentViews.forEachIndexed { talentIndex, textView ->
+            val talentId = talentIds.getOrNull(talentIndex)
+            if (talentId == null) {
+                resetTalentStyle(textView, defaultTexts[talentIndex])
+                textView.tag = null
+            } else {
+                textView.tag = talentId
+                val rawTalentText = AgentRepository.AGENT_MAP[agentName]?.talents?.get(talentId)
+                if (rawTalentText.isNullOrBlank()) {
+                    textView.text = "${defaultTexts[talentIndex].substringBefore(" ")} $talentId"
+                    textView.setTextColor(Color.parseColor("#64B5F6"))
+                    textView.background = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 4f * resources.displayMetrics.density
+                        setStroke((1 * resources.displayMetrics.density).toInt(), Color.parseColor("#64B5F6"))
+                        setColor(Color.parseColor("#1A64B5F6"))
+                    }
+                    textView.textSize = 10f
+                } else {
+                    applyTalentStyle(textView, rawTalentText)
+                }
+            }
+        }
+    }
+
+    private fun showAgentMode(agentType: Int) {
+        val selectedTab = when (agentType) {
+            1 -> findViewById<TextView>(R.id.tab_agent_image)
+            2 -> findViewById<TextView>(R.id.tab_agent_text)
+            else -> findViewById<TextView>(R.id.tab_agent_select)
+        }
+        updateTabUI(selectedTab, agentTabs)
+        layoutAgentSlots.visibility = if (agentType == 0) View.VISIBLE else View.GONE
+        layoutAgentImageUpload.visibility = if (agentType == 1) View.VISIBLE else View.GONE
+        etAgentTextDesc.visibility = if (agentType == 2) View.VISIBLE else View.GONE
+    }
+
+    private fun showEditScriptTable(items: List<UploadTurnItem>, instructionsJson: String?) {
+        updateTabUI(findViewById(R.id.tab_import_library), importTabs)
+        layoutImportLibrary.visibility = View.VISIBLE
+        layoutImportText.visibility = View.GONE
+        tvSelectedScript.text = "已载入原攻略脚本"
+        renderTable(items, buildInstructionsInfoText(instructionsJson))
+        btnTableActionLeft?.visibility = View.GONE
+    }
+
+    private fun buildInstructionsInfoText(instructionsJson: String?): String {
+        if (instructionsJson.isNullOrBlank()) return "该脚本无附加指令"
+        val type = object : TypeToken<List<InstructionJson>>() {}.type
+        val instructions = runCatching {
+            Gson().fromJson<List<InstructionJson>>(instructionsJson, type)
+        }.getOrNull().orEmpty()
+        if (instructions.isEmpty()) return "该脚本无附加指令"
+        val text = instructions.joinToString("\n") {
+            "第${it.turn}回合 第${it.step}步: [${it.type}] 数值:${it.value}"
+        }
+        return "脚本附带指令：\n$text"
+    }
+
+    private fun parseScriptContentToUploadItems(text: String): List<UploadTurnItem> {
+        if (text.isBlank()) return emptyList()
+        val realText = text.replace("\\n", "\n").replace("\\t", "\t")
+        val items = mutableListOf<UploadTurnItem>()
+        var currentTurn = 1
+        for (line in realText.split("\n")) {
+            val rawLine = line.trimEnd('\r')
+            if (rawLine.isBlank()) continue
+            val parts = if (rawLine.contains("\t")) rawLine.split("\t") else rawLine.trim().split(Regex("\\s+"))
+            val startIndex = if (parts.isNotEmpty() && (parts[0].contains("回") || parts[0].all { it.isDigit() })) 1 else 0
+            val effectiveStartIndex = if (startIndex == 1 && parts.firstOrNull()?.trim().isNullOrEmpty()) 0 else startIndex
+            val actions = mutableListOf<String>()
+            var charIdx = 0
+            for (i in effectiveStartIndex until parts.size) {
+                if (charIdx >= 5) break
+                val actionText = parts[i].trim()
+                actions.add(if (actionText == "-") "" else actionText)
+                charIdx++
+            }
+            while (actions.size < 5) actions.add("")
+            items.add(UploadTurnItem(currentTurn, actions))
+            currentTurn++
+        }
+        return items
+    }
+
     private fun applyAgentToSlot(index: Int, agentName: String) {
         val slotView = layoutAgentSlots.getChildAt(index) ?: return
         val tvAddIcon = slotView.findViewById<TextView>(R.id.tv_agent_add_icon)
@@ -968,8 +1226,11 @@ class UploadStrategyActivity : AppCompatActivity() {
 
                         if (uploadedCount == filesToUpload.size) {
                             runOnUiThread {
-                                val finalAgentUrl = agentFile?.let { uploadedUrls[it] } ?: ""
-                                val finalStrategyUrl = strategyFile?.let { uploadedUrls[it] } ?: ""
+                                val finalAgentUrl = when (aType) {
+                                    1 -> agentFile?.let { uploadedUrls[it] } ?: existingAgentImageUrl
+                                    else -> ""
+                                }
+                                val finalStrategyUrl = strategyFile?.let { uploadedUrls[it] } ?: existingStrategyImageUrl
 
                                 executeFinalPublish(title, author, aType, builtAgents, finalAgentUrl, finalStrategyUrl, scriptContentStr, configJson, contentStr, instJson, originalUrl)
                                 filesToUpload.forEach { it.delete() }
@@ -989,7 +1250,19 @@ class UploadStrategyActivity : AppCompatActivity() {
                 )
             }
         } else {
-            executeFinalPublish(title, author, aType, builtAgents, "", "", scriptContentStr, configJson, contentStr, instJson, originalUrl)
+            executeFinalPublish(
+                title,
+                author,
+                aType,
+                builtAgents,
+                if (aType == 1) existingAgentImageUrl else "",
+                existingStrategyImageUrl,
+                scriptContentStr,
+                configJson,
+                contentStr,
+                instJson,
+                originalUrl
+            )
         }
     }
 
@@ -998,17 +1271,8 @@ class UploadStrategyActivity : AppCompatActivity() {
         agentUrl: String, strategyUrl: String, scriptContent: String,
         config: String, content: String, instructions: String,originalUrl: String
     ) {
-        val detail = strategy_detail()
-        detail.title = title
-        detail.author = author
-        detail.agentType = aType
-        detail.agentSelection = Gson().toJson(builtAgents)
-        detail.agentImageUrl = agentUrl
-        detail.agentTextDesc = etAgentTextDesc.text.toString().trim()
-        detail.originalPostUrl = originalUrl
-        detail.strategyImage = strategyUrl
-
-        detail.coverUrl = when {
+        val editId = editingStrategyId
+        val coverUrl = when {
             strategyUrl.isNotEmpty() -> strategyUrl
             agentUrl.isNotEmpty() -> agentUrl
             else -> ""
@@ -1017,14 +1281,38 @@ class UploadStrategyActivity : AppCompatActivity() {
         val agentNames = builtAgents.map { raw ->
             raw.replaceFirst("^\\d+".toRegex(), "").substringBefore("-").trim()
         }
-        detail.agents = agentNames.joinToString("、")
-
-        detail.scriptContent = scriptContent
-        detail.config = config
-        detail.content = content
-        detail.instructions = instructions
+        val detail = BmobObject("strategy_detail").apply {
+            setValue("title", title)
+            setValue("author", author)
+            setValue("agentType", aType)
+            setValue("agentSelection", Gson().toJson(builtAgents))
+            setValue("agentImageUrl", agentUrl)
+            setValue("agentTextDesc", etAgentTextDesc.text.toString().trim())
+            setValue("originalPostUrl", originalUrl)
+            setValue("strategyImage", strategyUrl)
+            setValue("coverUrl", coverUrl)
+            setValue("agents", agentNames.joinToString("、"))
+            setValue("scriptContent", scriptContent)
+            setValue("config", config)
+            setValue("content", content)
+            setValue("instructions", instructions)
+        }
 
         Toast.makeText(this, "正在保存攻略数据...", Toast.LENGTH_SHORT).show()
+        if (isEditMode && !editId.isNullOrBlank()) {
+            detail.update(editId, object : UpdateListener() {
+                override fun done(e: BmobException?) {
+                    if (e == null) {
+                        Toast.makeText(this@UploadStrategyActivity, "保存成功！", Toast.LENGTH_LONG).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@UploadStrategyActivity, "保存失败: ${e.message}", Toast.LENGTH_LONG).show()
+                        findViewById<Button>(R.id.btn_publish_strategy).isEnabled = true
+                    }
+                }
+            })
+            return
+        }
         detail.save(object : SaveListener<String>() {
             override fun done(objectId: String?, e: BmobException?) {
                 if (e == null) {
@@ -1038,7 +1326,7 @@ class UploadStrategyActivity : AppCompatActivity() {
         })
     }
     private fun uploadImageToImageBed(file: File, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
-        val uploadUrl = "https://img.scdn.io/api/v1.php"
+        val uploadUrl = "https://example.invalid/api/v1.php"
         val client = okhttp3.OkHttpClient()
 
         val mediaType = "image/*".toMediaTypeOrNull()
@@ -1047,7 +1335,7 @@ class UploadStrategyActivity : AppCompatActivity() {
         val requestBody = okhttp3.MultipartBody.Builder()
             .setType(okhttp3.MultipartBody.FORM)
             .addFormDataPart("image", file.name, fileBody)
-            .addFormDataPart("outputFormat", "webp")
+            .addFormDataPart("outputFormat", "jpeg")
             .build()
 
         val request = okhttp3.Request.Builder()

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    android:background="@drawable/bg_dark_glass">
+
+    <LinearLayout
+        android:id="@+id/layout_my_published_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <ImageView
+            android:id="@+id/iv_my_published_cover"
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            android:background="#33000000"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_launcher_background" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:minHeight="92dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_my_published_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="攻略标题示例"
+                android:textColor="#E5C07B"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_my_published_updated_at"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="最近更新：2026-03-28 12:00"
+                android:textColor="#9E9E9E"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_my_published_agents"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="角色A 角色B 角色C"
+                android:textColor="#E0E0E0"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_my_published_edit"
+                    android:layout_width="88dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_dark_gold"
+                    android:fontFamily="serif"
+                    android:text="编辑"
+                    android:textAllCaps="false"
+                    android:textColor="#1A1A1A"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btn_my_published_delete"
+                    android:layout_width="88dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/btn_dark_danger_hollow"
+                    android:fontFamily="serif"
+                    android:text="删除"
+                    android:textAllCaps="false"
+                    android:textColor="#FF8A80"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

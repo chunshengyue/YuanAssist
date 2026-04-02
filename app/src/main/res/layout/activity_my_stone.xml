@@ -102,33 +102,94 @@
                     android:textColor="#F3E9D0"
                     android:textSize="13sp" />
 
+                <TextView
+                    android:id="@+id/tv_my_stone_stats_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_run_log_console"
+                    android:lineSpacingExtra="4dp"
+                    android:padding="12dp"
+                    android:textColor="#F3E9D0"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:id="@+id/layout_my_stone_type_selector"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_my_stone_type_main"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/btn_dark_gold"
+                        android:gravity="center"
+                        android:text="主星"
+                        android:textColor="#1A1A1A"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_my_stone_type_support"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/btn_dark_hollow"
+                        android:gravity="center"
+                        android:text="辅星"
+                        android:textColor="#E5C07B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/btn_my_stone_add"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/btn_dark_gold"
+                    android:paddingStart="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="7dp"
+                    android:text="新增星石"
+                    android:textColor="#1A1A1A"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:background="@drawable/bg_dark_glass"
-                    android:orientation="vertical"
-                    android:padding="18dp">
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="serif"
-                        android:text="&#x7EDF;&#x8BA1;&#x7ED3;&#x679C;"
-                        android:textColor="#E5C07B"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_my_stone_stats"
+                    <LinearLayout
+                        android:id="@+id/layout_my_stone_stats_cards"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:lineSpacingExtra="4dp"
-                        android:textColor="#F3E9D0"
-                        android:textIsSelectable="true"
-                        android:textSize="14sp" />
+                        android:orientation="vertical" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_my_stone_cultivation_credit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_dark_hollow"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="6dp"
+                    android:text="星石培养建议 by 小红书膨胀土豆泥老师"
+                    android:textColor="#D8C59A"
+                    android:textSize="12sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -177,6 +238,22 @@
                                 android:textColor="#D3D3D3"
                                 android:textSize="12sp" />
                         </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/btn_recognize_my_stone_images"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/btn_dark_gold"
+                            android:paddingStart="12dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="6dp"
+                            android:text="识别"
+                            android:textColor="#1A1A1A"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
 
                         <TextView
                             android:id="@+id/btn_toggle_my_stone_images"

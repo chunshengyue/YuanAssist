@@ -1,5 +1,6 @@
 package com.example.yuanassist.ui
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -17,6 +18,7 @@ import cn.bmob.v3.BmobUser
 import cn.bmob.v3.datatype.BmobPointer
 import cn.bmob.v3.exception.BmobException
 import cn.bmob.v3.listener.FindListener
+import cn.bmob.v3.listener.UpdateListener
 import com.example.yuanassist.R
 import com.example.yuanassist.model.MyUser
 import com.example.yuanassist.model.strategy_detail
@@ -25,7 +27,7 @@ class MyPublishedActivity : AppCompatActivity() {
 
     private lateinit var emptyView: TextView
     private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: StrategyAdapter
+    private lateinit var adapter: MyPublishedAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,11 +39,24 @@ class MyPublishedActivity : AppCompatActivity() {
         emptyView = findViewById(R.id.tv_my_published_empty)
         recyclerView = findViewById(R.id.rv_my_published)
 
-        adapter = StrategyAdapter(emptyList()) { item ->
-            val intent = Intent(this, StrategyDetailActivity::class.java)
-            intent.putExtra("STRATEGY_ID", item.objectId)
-            startActivity(intent)
-        }
+        adapter = MyPublishedAdapter(
+            emptyList(),
+            onCardClick = { item ->
+                val intent = Intent(this, StrategyDetailActivity::class.java)
+                intent.putExtra("STRATEGY_ID", item.objectId)
+                startActivity(intent)
+            },
+            onEditClick = { item ->
+                val intent = Intent(this, UploadStrategyActivity::class.java).apply {
+                    putExtra(UploadStrategyActivity.EXTRA_IS_EDIT_MODE, true)
+                    putExtra(UploadStrategyActivity.EXTRA_STRATEGY_ID, item.objectId)
+                }
+                startActivity(intent)
+            },
+            onDeleteClick = { item ->
+                showDeleteDialog(item)
+            }
+        )
 
         ViewCompat.setOnApplyWindowInsetsListener(header) { _, insets ->
             val statusBarTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
@@ -58,7 +73,10 @@ class MyPublishedActivity : AppCompatActivity() {
         backButton.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
+    }
 
+    override fun onResume() {
+        super.onResume()
         loadMyPublishedStrategies()
     }
 
@@ -106,5 +124,43 @@ class MyPublishedActivity : AppCompatActivity() {
         emptyView.text = message
         emptyView.visibility = View.VISIBLE
         recyclerView.visibility = View.GONE
+    }
+
+    private fun showDeleteDialog(item: strategy_detail) {
+        AlertDialog.Builder(this)
+            .setTitle("删除攻略")
+            .setMessage("确认删除《${item.title.ifBlank { "未命名攻略" }}》吗？")
+            .setNegativeButton("取消", null)
+            .setPositiveButton("删除") { _, _ ->
+                deleteStrategy(item)
+            }
+            .show()
+    }
+
+    private fun deleteStrategy(item: strategy_detail) {
+        if (item.objectId.isNullOrBlank()) {
+            Toast.makeText(this, "缺少攻略ID，无法删除", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(this, "正在删除攻略...", Toast.LENGTH_SHORT).show()
+        strategy_detail().apply {
+            objectId = item.objectId
+        }.delete(object : UpdateListener() {
+            override fun done(e: BmobException?) {
+                runOnUiThread {
+                    if (isDestroyed || isFinishing) return@runOnUiThread
+                    if (e == null) {
+                        Toast.makeText(this@MyPublishedActivity, "删除成功", Toast.LENGTH_SHORT).show()
+                        loadMyPublishedStrategies()
+                    } else {
+                        Toast.makeText(
+                            this@MyPublishedActivity,
+                            "删除失败：${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        })
     }
 }

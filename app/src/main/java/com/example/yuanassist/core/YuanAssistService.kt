@@ -125,12 +125,18 @@ class YuanAssistService : AccessibilityService() {
         }
     }
 
+    fun isDailyWindowVisible(): Boolean = dailyWindowManager?.isWindowVisible() == true
+
+    fun isCombatWindowVisible(): Boolean =
+        uiManager.controlView != null || uiManager.minimizedView != null || uiManager.inputView != null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action
 
         if (action != null &&
             action != "ACTION_START_DAILY_WINDOW" &&
             action != "ACTION_START_BIRD_FOOD" &&
+            action != "ACTION_START_MAINLINE_624" &&
             action != "ACTION_START_INVENTORY_STITCH" &&
             action != "ACTION_START_COORDINATE_PICKER" &&
             action != "ACTION_CLOSE_COMBAT_WINDOW" &&
@@ -172,6 +178,21 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager?.showWindow()
                 }
             }
+            "ACTION_START_MAINLINE_624" -> {
+                removeInputWindow()
+                uiManager.removeControlWindow()
+                uiManager.removeMinimizedWindow()
+                if (dailyWindowManager == null) {
+                    dailyWindowManager = DailyWindowManager(this)
+                }
+                val config = DailyMainline624Bridge.pendingConfig
+                if (config == null) {
+                    Toast.makeText(this, "6-24配置缺失", Toast.LENGTH_SHORT).show()
+                } else {
+                    dailyWindowManager?.submitMainline624Config(config)
+                    dailyWindowManager?.showWindow()
+                }
+            }
             "ACTION_START_INVENTORY_STITCH" -> {
                 removeInputWindow()
                 uiManager.removeControlWindow()
@@ -179,7 +200,9 @@ class YuanAssistService : AccessibilityService() {
                 if (dailyWindowManager == null) {
                     dailyWindowManager = DailyWindowManager(this)
                 }
-                dailyWindowManager?.prepareInventoryStitching()
+                val stoneType = intent?.getStringExtra(DailyInventoryStitchFragment.KEY_PENDING_STONE_TYPE)
+                    ?: MyStoneStore.getSelectedType(this)
+                dailyWindowManager?.prepareInventoryStitching(stoneType)
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
             }
             "ACTION_START_COORDINATE_PICKER" -> {
@@ -380,9 +403,17 @@ class YuanAssistService : AccessibilityService() {
             DailyBirdFoodBridge.pendingConfig?.let { dailyWindowManager?.submitBirdFoodConfig(it) }
             dailyWindowManager?.showWindow()
             updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
+        } else if (pendingAction == "ACTION_START_MAINLINE_624") {
+            if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
+            DailyMainline624Bridge.pendingConfig?.let { dailyWindowManager?.submitMainline624Config(it) }
+            dailyWindowManager?.showWindow()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
         } else if (pendingAction == "ACTION_START_INVENTORY_STITCH") {
             if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
-            dailyWindowManager?.prepareInventoryStitching()
+            val stoneType = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                .getString(DailyInventoryStitchFragment.KEY_PENDING_STONE_TYPE, MyStoneStore.TYPE_MAIN)
+                ?: MyStoneStore.TYPE_MAIN
+            dailyWindowManager?.prepareInventoryStitching(stoneType)
             updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
         } else if (pendingAction == "ACTION_START_COORDINATE_PICKER") {
             if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)

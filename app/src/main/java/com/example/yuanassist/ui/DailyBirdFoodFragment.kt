@@ -45,6 +45,7 @@ class DailyBirdFoodFragment : Fragment() {
         bindHeaderInsets(view)
         bindStopConditionInputs(view)
         bindGongWuOptions(view)
+        restoreSavedSettings(view)
 
         view.findViewById<ImageView>(R.id.btn_daily_bird_food_back).setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -52,6 +53,7 @@ class DailyBirdFoodFragment : Fragment() {
 
         view.findViewById<Button>(R.id.btn_daily_bird_food_confirm).setOnClickListener {
             val config = buildConfig(view) ?: return@setOnClickListener
+            saveSettings(view)
             DailyBirdFoodBridge.pendingConfig = config
             startBirdFoodService()
         }
@@ -139,6 +141,8 @@ class DailyBirdFoodFragment : Fragment() {
             .text.toString().trim().toIntOrNull()
         val durationMinutes = view.findViewById<EditText>(R.id.et_daily_bird_food_duration)
             .text.toString().trim().toIntOrNull()
+        val lowSpecDelayMs = view.findViewById<EditText>(R.id.et_daily_bird_food_low_spec_delay)
+            .text.toString().trim().toLongOrNull() ?: 0L
         val debugModeEnabled = view.findViewById<CheckBox>(R.id.cb_daily_bird_food_debug_mode).isChecked
         val daiBanGongWuOption =
             if (view.findViewById<RadioButton>(R.id.rb_daily_bird_food_gongwu_wuzhuqian).isChecked) {
@@ -166,15 +170,92 @@ class DailyBirdFoodFragment : Fragment() {
             return null
         }
 
+        if (lowSpecDelayMs < 0L) {
+            Toast.makeText(requireContext(), "低配机型适应延时不能小于 0", Toast.LENGTH_SHORT).show()
+            return null
+        }
+
         return BirdFoodConfig(
             selectedTasks = selectedTasks,
             autoEatEnabled = autoEatEnabled,
             stopCondition = stopCondition,
             debugModeEnabled = debugModeEnabled,
+            lowSpecDelayMs = lowSpecDelayMs,
             maxRuns = runCount,
             maxDurationMinutes = durationMinutes,
             daiBanGongWuOption = daiBanGongWuOption
         )
+    }
+
+    private fun restoreSavedSettings(view: View) {
+        val prefs = requireContext().getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+
+        if (prefs.contains(KEY_TASK_TUFA)) {
+            view.findViewById<CheckBox>(R.id.cb_daily_bird_food_tufa)
+                .isChecked = prefs.getBoolean(KEY_TASK_TUFA, true)
+            view.findViewById<CheckBox>(R.id.cb_daily_bird_food_xiaodao)
+                .isChecked = prefs.getBoolean(KEY_TASK_XIAODAO, false)
+            view.findViewById<CheckBox>(R.id.cb_daily_bird_food_chuanwen)
+                .isChecked = prefs.getBoolean(KEY_TASK_CHUANWEN, false)
+            view.findViewById<CheckBox>(R.id.cb_daily_bird_food_gongwu)
+                .isChecked = prefs.getBoolean(KEY_TASK_GONGWU, false)
+        }
+
+        view.findViewById<CheckBox>(R.id.cb_daily_bird_food_debug_mode)
+            .isChecked = prefs.getBoolean(KEY_DEBUG_MODE, false)
+
+        val savedGongwuOption = prefs.getString(KEY_GONGWU_OPTION, OPTION_BINGSHU)
+        view.findViewById<RadioButton>(
+            if (savedGongwuOption == OPTION_WUZHUQIAN) {
+                R.id.rb_daily_bird_food_gongwu_wuzhuqian
+            } else {
+                R.id.rb_daily_bird_food_gongwu_bingshu
+            }
+        ).isChecked = true
+
+        val savedStopMode = prefs.getString(KEY_STOP_MODE, null)
+        when (savedStopMode) {
+            MODE_AUTO_EAT -> view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_auto_eat).isChecked = true
+            MODE_RESOURCE -> view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_resource).isChecked = true
+            MODE_RUN_COUNT -> view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_run_count).isChecked = true
+            MODE_DURATION -> view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_duration).isChecked = true
+        }
+
+        view.findViewById<EditText>(R.id.et_daily_bird_food_run_count)
+            .setText(prefs.getString(KEY_RUN_COUNT, "").orEmpty())
+        view.findViewById<EditText>(R.id.et_daily_bird_food_duration)
+            .setText(prefs.getString(KEY_DURATION, "").orEmpty())
+        view.findViewById<EditText>(R.id.et_daily_bird_food_low_spec_delay)
+            .setText(prefs.getString(KEY_LOW_SPEC_DELAY, "").orEmpty())
+    }
+
+    private fun saveSettings(view: View) {
+        val stopMode = when {
+            view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_auto_eat).isChecked -> MODE_AUTO_EAT
+            view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_run_count).isChecked -> MODE_RUN_COUNT
+            view.findViewById<RadioButton>(R.id.rb_daily_bird_food_stop_duration).isChecked -> MODE_DURATION
+            else -> MODE_RESOURCE
+        }
+        val gongwuOption = if (
+            view.findViewById<RadioButton>(R.id.rb_daily_bird_food_gongwu_wuzhuqian).isChecked
+        ) {
+            OPTION_WUZHUQIAN
+        } else {
+            OPTION_BINGSHU
+        }
+
+        requireContext().getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_TASK_TUFA, view.findViewById<CheckBox>(R.id.cb_daily_bird_food_tufa).isChecked)
+            .putBoolean(KEY_TASK_XIAODAO, view.findViewById<CheckBox>(R.id.cb_daily_bird_food_xiaodao).isChecked)
+            .putBoolean(KEY_TASK_CHUANWEN, view.findViewById<CheckBox>(R.id.cb_daily_bird_food_chuanwen).isChecked)
+            .putBoolean(KEY_TASK_GONGWU, view.findViewById<CheckBox>(R.id.cb_daily_bird_food_gongwu).isChecked)
+            .putBoolean(KEY_DEBUG_MODE, view.findViewById<CheckBox>(R.id.cb_daily_bird_food_debug_mode).isChecked)
+            .putString(KEY_GONGWU_OPTION, gongwuOption)
+            .putString(KEY_STOP_MODE, stopMode)
+            .putString(KEY_RUN_COUNT, view.findViewById<EditText>(R.id.et_daily_bird_food_run_count).text.toString().trim())
+            .putString(KEY_DURATION, view.findViewById<EditText>(R.id.et_daily_bird_food_duration).text.toString().trim())
+            .putString(KEY_LOW_SPEC_DELAY, view.findViewById<EditText>(R.id.et_daily_bird_food_low_spec_delay).text.toString().trim())
+            .apply()
     }
 
     private fun startBirdFoodService() {
@@ -224,5 +305,25 @@ class DailyBirdFoodFragment : Fragment() {
             if (enabled == expected) return true
         }
         return false
+    }
+
+    companion object {
+        private const val PREFS_APP = "app_prefs"
+        private const val KEY_TASK_TUFA = "daily_bird_food_task_tufa"
+        private const val KEY_TASK_XIAODAO = "daily_bird_food_task_xiaodao"
+        private const val KEY_TASK_CHUANWEN = "daily_bird_food_task_chuanwen"
+        private const val KEY_TASK_GONGWU = "daily_bird_food_task_gongwu"
+        private const val KEY_DEBUG_MODE = "daily_bird_food_debug_mode"
+        private const val KEY_GONGWU_OPTION = "daily_bird_food_gongwu_option"
+        private const val KEY_STOP_MODE = "daily_bird_food_stop_mode"
+        private const val KEY_RUN_COUNT = "daily_bird_food_run_count"
+        private const val KEY_DURATION = "daily_bird_food_duration"
+        private const val KEY_LOW_SPEC_DELAY = "daily_bird_food_low_spec_delay"
+        private const val MODE_AUTO_EAT = "auto_eat"
+        private const val MODE_RESOURCE = "resource"
+        private const val MODE_RUN_COUNT = "run_count"
+        private const val MODE_DURATION = "duration"
+        private const val OPTION_BINGSHU = "bingshu"
+        private const val OPTION_WUZHUQIAN = "wuzhuqian"
     }
 }

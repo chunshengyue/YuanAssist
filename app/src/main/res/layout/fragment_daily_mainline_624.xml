@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="20dp">
+
+        <LinearLayout
+            android:id="@+id/layout_daily_mainline_624_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_dark_glass_flat"
+            android:orientation="vertical">
+
+            <Space
+                android:id="@+id/view_daily_mainline_624_status_space"
+                android:layout_width="match_parent"
+                android:layout_height="16dp" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="8dp"
+                android:paddingBottom="10dp">
+
+                <ImageView
+                    android:id="@+id/btn_daily_mainline_624_back"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="6dp"
+                    android:contentDescription="返回"
+                    android:padding="10dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_back_arrow" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="serif"
+                    android:text="刷6-24"
+                    android:textColor="#E5C07B"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_dark_glass">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="serif"
+                        android:text="游戏版本"
+                        android:textColor="#E5C07B"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_daily_mainline_624_game_variant"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp">
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_mainline_624_variant_ruyuan"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:checked="true"
+                            android:text="如鸢"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_mainline_624_variant_codename"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:text="代号鸢"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+                    </RadioGroup>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_dark_glass">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="serif"
+                        android:text="运行方式"
+                        android:textColor="#E5C07B"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/rg_daily_mainline_624_stop_condition"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp">
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_mainline_624_stop_resource"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:checked="true"
+                            android:text="刷到体力耗尽"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <RadioButton
+                            android:id="@+id/rb_daily_mainline_624_stop_run_count"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:buttonTint="#E5C07B"
+                            android:text="指定运行次数"
+                            android:textColor="#F0F0F0"
+                            android:textSize="16sp" />
+
+                        <LinearLayout
+                            android:id="@+id/layout_daily_mainline_624_run_count"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="30dp"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <EditText
+                                android:id="@+id/et_daily_mainline_624_run_count"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/btn_dark_hollow"
+                                android:hint="请输入次数"
+                                android:inputType="number"
+                                android:paddingStart="14dp"
+                                android:paddingEnd="14dp"
+                                android:textColor="#F0F0F0"
+                                android:textColorHint="#9E9E9E" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:text="次"
+                                android:textColor="#D6D6D6"
+                                android:textSize="15sp" />
+                        </LinearLayout>
+                    </RadioGroup>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_dark_glass">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="serif"
+                        android:text="低配机型适应"
+                        android:textColor="#E5C07B"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="会在所有任务原始 delay 基础上统一增加该数值，单位 ms。"
+                        android:textColor="#D6D6D6"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <EditText
+                            android:id="@+id/et_daily_mainline_624_low_spec_delay"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:hint="0 表示关闭"
+                            android:inputType="number"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:textColor="#F0F0F0"
+                            android:textColorHint="#9E9E9E" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="ms"
+                            android:textColor="#D6D6D6"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="18dp"
+                android:background="@drawable/bg_dark_glass">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="serif"
+                        android:text="成就提示"
+                        android:textColor="#E5C07B"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:lineSpacingExtra="4dp"
+                        android:text="可以携带羁绊密探刷成就，下面这些组合可供参考："
+                        android:textColor="#D6D6D6"
+                        android:textSize="14sp" />
+
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:columnCount="3"
+                        android:rowCount="4"
+                        android:useDefaultMargins="true">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="颜良&#10;文丑"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="飞云&#10;绣球"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="李真&#10;李脱"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="陆逊&#10;吕蒙"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="阿蝉&#10;张辽"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="华佗&#10;张仲景"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="刘豹&#10;蔡琰"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="诸葛瑾&#10;诸葛诞"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="祢衡&#10;徐庶"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_columnWeight="1"
+                            android:background="@drawable/btn_dark_hollow"
+                            android:gravity="center"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="10dp"
+                            android:text="周瑜&#10;小乔"
+                            android:textColor="#F6D28D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </GridLayout>
+                </LinearLayout>
+            </FrameLayout>
+
+            <Button
+                android:id="@+id/btn_daily_mainline_624_confirm"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/btn_dark_gold"
+                android:fontFamily="serif"
+                android:text="导入"
+                android:textColor="#1A1A1A"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

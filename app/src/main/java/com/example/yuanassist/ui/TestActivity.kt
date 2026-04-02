@@ -53,11 +53,12 @@ class TestActivity : AppCompatActivity() {
         private const val BASE_W = 1080f
         private const val BASE_H = 1920f
         private const val REPLACEMENT_SIZE = 60
-        private val BIRD_FOOD_SCRIPT_FILES = listOf(
+        private val DAILY_TEST_SCRIPT_FILES = listOf(
             "tu_fa_qing_kuang.json",
             "xiao_dao_xiao_xi.json",
             "ta_de_chuan_wen.json",
-            "dai_ban_gong_wu.json"
+            "dai_ban_gong_wu.json",
+            "zhu_xian_6_24.json"
         )
     }
 
@@ -76,6 +77,14 @@ class TestActivity : AppCompatActivity() {
 
     private data class LocalTemplateRegion(val scriptFileName: String, val taskId: Int, val roi: ROI)
     private data class SearchArea(val label: String, val rect: Rect)
+    private data class AreaMatchScan(
+        val hits: List<TemplateMatchHit>,
+        val bestCandidate: TemplateMatchHit?
+    )
+    private data class TemplateScanSummary(
+        val hits: List<TemplateMatchHit>,
+        val bestCandidate: TemplateMatchHit?
+    )
     private data class DisplayMapping(
         val displayWidth: Float,
         val displayHeight: Float,
@@ -87,7 +96,8 @@ class TestActivity : AppCompatActivity() {
     private inner class ReplacementPreviewView(
         private val bitmap: Bitmap,
         private val roiRect: Rect,
-        initialCropRect: Rect
+        initialCropRect: Rect,
+        private val instructionText: String
     ) : View(this) {
 
         private val bitmapDstRect = RectF()
@@ -104,6 +114,14 @@ class TestActivity : AppCompatActivity() {
         private val shadePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#44000000")
             style = Paint.Style.FILL
+        }
+        private val instructionBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#AA111111")
+            style = Paint.Style.FILL
+        }
+        private val instructionTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = dp(12).toFloat().coerceAtLeast(26f)
         }
         private val cropRect = Rect(initialCropRect)
         private var dragging = false
@@ -134,6 +152,7 @@ class TestActivity : AppCompatActivity() {
             canvas.drawRect(0f, crop.top, crop.left, crop.bottom, shadePaint)
             canvas.drawRect(crop.right, crop.top, width.toFloat(), crop.bottom, shadePaint)
             canvas.drawRect(crop, cropPaint)
+            drawInstruction(canvas)
         }
 
         override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -193,6 +212,19 @@ class TestActivity : AppCompatActivity() {
             val left = (viewWidth - drawWidth) / 2f
             val top = (viewHeight - drawHeight) / 2f
             bitmapDstRect.set(left, top, left + drawWidth, top + drawHeight)
+        }
+
+        private fun drawInstruction(canvas: Canvas) {
+            val padding = dp(10).toFloat()
+            val lineHeight = instructionTextPaint.fontMetrics.run { bottom - top }
+            val textWidth = instructionTextPaint.measureText(instructionText)
+            val boxLeft = bitmapDstRect.left + padding
+            val boxTop = bitmapDstRect.top + padding
+            val boxRight = (boxLeft + textWidth + padding * 2f).coerceAtMost(bitmapDstRect.right - padding)
+            val boxBottom = boxTop + lineHeight + padding * 1.6f
+            canvas.drawRoundRect(RectF(boxLeft, boxTop, boxRight, boxBottom), dp(8).toFloat(), dp(8).toFloat(), instructionBgPaint)
+            val baseline = boxTop + padding - instructionTextPaint.fontMetrics.top
+            canvas.drawText(instructionText, boxLeft + padding, baseline, instructionTextPaint)
         }
 
         private fun mapBitmapRectToView(bitmapRect: Rect): RectF {
@@ -271,7 +303,7 @@ class TestActivity : AppCompatActivity() {
         btnReplaceTemplate = findViewById(R.id.btn_test_replace_template)
         btnRestoreTemplate = findViewById(R.id.btn_test_restore_template)
 
-        loadBirdFoodTemplateRegions()
+        loadDailyTemplateRegions()
         rgScope.setOnCheckedChangeListener { _, _ -> updateScopeHint() }
 
         log(if (OpenCVLoader.initDebug()) "OpenCV init success" else "OpenCV init failed")
@@ -328,33 +360,54 @@ class TestActivity : AppCompatActivity() {
     private fun updateScopeHint() {
         val template = currentSelectedTemplate()
         tvScopeHint.text = when {
-            template == START_BATTLE_RED_OPTION && isLocalScopeEnabled() -> "\u5C40\u90E8\u8BC6\u522B\u4F1A\u4F7F\u7528\u5237\u9E1F\u98DF\u811A\u672C\u4E2D\u7684 ${redRegionSearchRegions.size} \u4E2A\u7EA2\u533A\u68C0\u7D22\u8303\u56F4"
-            template == START_BATTLE_RED_OPTION -> "\u5168\u5C4F\u6A21\u5F0F\u4F1A\u4FDD\u7559\u5F53\u524D\u7EA2\u533A\u6D4B\u8BD5\u903B\u8F91"
-            isLocalScopeEnabled() -> "\u5C40\u90E8\u8BC6\u522B\u4F1A\u6A21\u62DF\u5237\u9E1F\u98DF\u4EFB\u52A1\u7684 ROI \u68C0\u7D22 ${displayName(template)}"
+            template == START_BATTLE_RED_OPTION && isStartBattleTemplateModeEnabled() && isLocalScopeEnabled() ->
+                "\u5F53\u524D\u4E3A\u5F00\u59CB\u6218\u6597\u6A21\u677F\u6A21\u5F0F\uFF0C\u5C40\u90E8\u8BC6\u522B\u4F1A\u4F7F\u7528 ${redRegionSearchRegions.size} \u4E2A ROI"
+            template == START_BATTLE_RED_OPTION && isStartBattleTemplateModeEnabled() ->
+                "\u5F53\u524D\u4E3A\u5F00\u59CB\u6218\u6597\u6A21\u677F\u6A21\u5F0F\uFF0C\u5168\u5C4F\u6D4B\u8BD5\u4F1A\u76F4\u63A5\u8D70\u6A21\u677F\u5339\u914D"
+            template == START_BATTLE_RED_OPTION && isLocalScopeEnabled() ->
+                "\u5C40\u90E8\u8BC6\u522B\u4F1A\u4F7F\u7528\u65E5\u5E38\u811A\u672C\u4E2D\u7684 ${redRegionSearchRegions.size} \u4E2A\u7EA2\u533A\u68C0\u7D22\u8303\u56F4"
+            template == START_BATTLE_RED_OPTION ->
+                "\u5168\u5C4F\u6A21\u5F0F\u4F1A\u4FDD\u7559\u5F53\u524D\u7EA2\u533A\u6D4B\u8BD5\u903B\u8F91"
+            isLocalScopeEnabled() -> "\u5C40\u90E8\u8BC6\u522B\u4F1A\u6A21\u62DF\u65E5\u5E38\u811A\u672C\u7684 ROI \u68C0\u7D22 ${displayName(template)}"
             else -> "\u5168\u5C4F\u8BC6\u522B\u4F1A\u5728\u6574\u5F20\u622A\u56FE\u4E2D\u68C0\u7D22 ${displayName(template)}"
         }
     }
 
     private fun updateTemplateActionButtons() {
-        val enabled = currentSelectedTemplate() != START_BATTLE_RED_OPTION
-        btnReplaceTemplate.isEnabled = enabled
-        btnRestoreTemplate.isEnabled = enabled
+        btnReplaceTemplate.isEnabled = true
+        btnRestoreTemplate.isEnabled = true
     }
 
     private fun startTemplateReplacementFlow() {
         val templateName = currentSelectedTemplate()
         val screenshot = currentBitmap
-        if (templateName == START_BATTLE_RED_OPTION) {
-            Toast.makeText(this, "\u7EA2\u533A\u6D4B\u8BD5\u4E0D\u652F\u6301\u7D20\u6750\u66FF\u6362", Toast.LENGTH_SHORT).show()
-            return
-        }
         if (screenshot == null) {
             Toast.makeText(this, "\u8BF7\u5148\u4E0A\u4F20\u622A\u56FE", Toast.LENGTH_SHORT).show()
             return
         }
+        if (templateName == START_BATTLE_RED_OPTION) {
+            val regions = redRegionSearchRegions
+                .distinctBy { "${it.roi.x}_${it.roi.y}_${it.roi.w}_${it.roi.h}_${it.roi.align}" }
+            if (regions.isEmpty()) {
+                showReplacementPreviewDialog(templateName, screenshot, null)
+                return
+            }
+            if (regions.size == 1) {
+                showReplacementPreviewDialog(templateName, screenshot, regions.first())
+                return
+            }
+            AlertDialog.Builder(this)
+                .setTitle("\u9009\u62E9\u5F00\u59CB\u6218\u6597 ROI \u6765\u6E90")
+                .setItems(regions.map { "${it.scriptFileName}#${it.taskId}" }.toTypedArray()) { _, which ->
+                    showReplacementPreviewDialog(templateName, screenshot, regions[which])
+                }
+                .setNegativeButton("\u53D6\u6D88", null)
+                .show()
+            return
+        }
         val regions = localSearchRegionsByTemplate[templateName].orEmpty()
         if (regions.isEmpty()) {
-            Toast.makeText(this, "\u8BE5\u7D20\u6750\u6CA1\u6709\u53EF\u7528 ROI", Toast.LENGTH_SHORT).show()
+            showReplacementPreviewDialog(templateName, screenshot, null)
             return
         }
         if (regions.size == 1) {
@@ -370,10 +423,11 @@ class TestActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showReplacementPreviewDialog(templateName: String, screenshot: Bitmap, region: LocalTemplateRegion) {
+    private fun showReplacementPreviewDialog(templateName: String, screenshot: Bitmap, region: LocalTemplateRegion?) {
         val replacementBaseBitmap = normalizeReplacementBitmap(screenshot)
-        val roiRect = buildRectFromRoi(replacementBaseBitmap, region.roi)
-        if (roiRect == null) {
+        val roiRect = region?.let { buildRectFromRoi(replacementBaseBitmap, it.roi) }
+            ?: Rect(0, 0, replacementBaseBitmap.width, replacementBaseBitmap.height)
+        if (roiRect.width() <= 0 || roiRect.height() <= 0) {
             replacementBaseBitmap.recycle()
             return
         }
@@ -383,14 +437,23 @@ class TestActivity : AppCompatActivity() {
             replacementBaseBitmap.height,
             REPLACEMENT_SIZE
         )
-        val previewView = ReplacementPreviewView(replacementBaseBitmap, roiRect, cropRect)
+        val previewView = ReplacementPreviewView(
+            replacementBaseBitmap,
+            roiRect,
+            cropRect,
+            "\u628A\u7EA2\u6846\u79FB\u5230\u8FD9\u4E2A\u754C\u9762\u5E94\u8BE5\u70B9\u51FB\u7684\u4F4D\u7F6E"
+        )
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(18), dp(18), dp(10))
         }
         layout.addView(TextView(this).apply {
-            text = "${displayName(templateName)}\n${region.scriptFileName}#${region.taskId}"
+            text = buildString {
+                append(displayName(templateName))
+                append('\n')
+                append(region?.let { "${it.scriptFileName}#${it.taskId}" } ?: "\u5168\u5C4F\u66FF\u6362")
+            }
             setTextColor(Color.WHITE)
             textSize = 15f
         })
@@ -400,7 +463,11 @@ class TestActivity : AppCompatActivity() {
             }
         })
         layout.addView(TextView(this).apply {
-            text = "\u91D1\u6846\u662F ROI\uFF0C\u7EA2\u6846\u662F 60x60 \u66FF\u6362\u7D20\u6750\uFF0C\u53EF\u4EE5\u62D6\u52A8"
+            text = if (region == null) {
+                "\u5F53\u524D\u7D20\u6750\u6CA1\u6709 ROI\uFF0C\u5DF2\u5207\u6362\u4E3A\u5168\u5C4F\u9009\u70B9\u6A21\u5F0F\u3002\u7EA2\u6846\u4E3A 60x60 \u66FF\u6362\u7D20\u6750\uFF0C\u53EF\u4EE5\u62D6\u52A8\u3002"
+            } else {
+                "\u91D1\u6846\u662F ROI\uFF0C\u7EA2\u6846\u662F 60x60 \u66FF\u6362\u7D20\u6750\uFF0C\u53EF\u4EE5\u62D6\u52A8\u3002"
+            }
             setTextColor(Color.parseColor("#D9D2C3"))
             textSize = 12f
             layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -419,12 +486,13 @@ class TestActivity : AppCompatActivity() {
                     selectedCropRect.width(),
                     selectedCropRect.height()
                 )
-                val saved = TemplateOverrideStore.saveOverride(this, templateName, replacement)
+                val saved = saveTemplateOverride(templateName, replacement)
                 replacement.recycle()
                 if (saved) {
-                    Toast.makeText(this, "\u5DF2\u66FF\u6362 $templateName", Toast.LENGTH_SHORT).show()
-                    log("Template replaced: $templateName")
+                    Toast.makeText(this, "\u5DF2\u66FF\u6362 ${displayName(templateName)}", Toast.LENGTH_SHORT).show()
+                    log("Template replaced: ${displayName(templateName)}")
                     updateTemplateActionButtons()
+                    updateScopeHint()
                 } else {
                     Toast.makeText(this, "\u66FF\u6362\u5931\u8D25", Toast.LENGTH_SHORT).show()
                 }
@@ -444,25 +512,60 @@ class TestActivity : AppCompatActivity() {
 
     private fun restoreCurrentTemplate() {
         val templateName = currentSelectedTemplate()
-        if (templateName == START_BATTLE_RED_OPTION) return
-        if (!TemplateOverrideStore.hasOverride(this, templateName)) {
+        if (!hasTemplateOverride(templateName)) {
             Toast.makeText(this, "\u5F53\u524D\u6CA1\u6709\u66FF\u6362\u7248\u7D20\u6750", Toast.LENGTH_SHORT).show()
             return
         }
-        if (TemplateOverrideStore.restoreOverride(this, templateName)) {
-            Toast.makeText(this, "\u5DF2\u8FD8\u539F $templateName", Toast.LENGTH_SHORT).show()
-            log("Template restored: $templateName")
+        if (restoreTemplateOverride(templateName)) {
+            Toast.makeText(this, "\u5DF2\u8FD8\u539F ${displayName(templateName)}", Toast.LENGTH_SHORT).show()
+            log("Template restored: ${displayName(templateName)}")
             updateTemplateActionButtons()
+            updateScopeHint()
         } else {
             Toast.makeText(this, "\u8FD8\u539F\u5931\u8D25", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun loadBirdFoodTemplateRegions() {
+    private fun isStartBattleTemplateModeEnabled(): Boolean =
+        TemplateOverrideStore.isStartBattleTemplateMode(this)
+
+    private fun hasTemplateOverride(templateName: String): Boolean {
+        return if (templateName == START_BATTLE_RED_OPTION) {
+            TemplateOverrideStore.hasOverride(this, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)
+        } else {
+            TemplateOverrideStore.hasOverride(this, templateName)
+        }
+    }
+
+    private fun saveTemplateOverride(templateName: String, bitmap: Bitmap): Boolean {
+        return if (templateName == START_BATTLE_RED_OPTION) {
+            val saved = TemplateOverrideStore.saveOverride(this, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME, bitmap)
+            if (saved) {
+                TemplateOverrideStore.enableStartBattleTemplateMode(this)
+            }
+            saved
+        } else {
+            TemplateOverrideStore.saveOverride(this, templateName, bitmap)
+        }
+    }
+
+    private fun restoreTemplateOverride(templateName: String): Boolean {
+        return if (templateName == START_BATTLE_RED_OPTION) {
+            val restored = TemplateOverrideStore.restoreOverride(this, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)
+            if (restored) {
+                TemplateOverrideStore.disableStartBattleTemplateMode(this)
+            }
+            restored
+        } else {
+            TemplateOverrideStore.restoreOverride(this, templateName)
+        }
+    }
+
+    private fun loadDailyTemplateRegions() {
         localSearchRegionsByTemplate.clear()
         redRegionSearchRegions.clear()
         val regionMap = linkedMapOf<String, MutableList<LocalTemplateRegion>>()
-        for (scriptFile in BIRD_FOOD_SCRIPT_FILES) {
+        for (scriptFile in DAILY_TEST_SCRIPT_FILES) {
             try {
                 val plan = assets.open("daily_scripts/$scriptFile").use { gson.fromJson(it.reader(), DailyTaskPlan::class.java) }
                 for (task in plan.tasks) {
@@ -506,12 +609,16 @@ class TestActivity : AppCompatActivity() {
         val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
         val templateBitmap = TemplateOverrideStore.loadBitmap(this, assets, templateName) ?: return log("Load template failed: $templateName")
         try {
-            val hits = findTemplateMatches(screenshot, templateName, templateBitmap, isLocalScopeEnabled())
+            val summary = findTemplateMatches(screenshot, templateName, templateBitmap, isLocalScopeEnabled())
+            val hits = summary.hits
             val canvas = Canvas(screenshot)
             val paint = Paint().apply { color = Color.RED; style = Paint.Style.STROKE; strokeWidth = 6f }
             hits.forEachIndexed { index, hit ->
                 canvas.drawRect(hit.rect, paint)
                 log("Hit ${index + 1}: ${hit.areaLabel} x=${hit.rect.centerX()} y=${hit.rect.centerY()} score=${"%.3f".format(hit.score)}")
+            }
+            summary.bestCandidate?.let {
+                log("Best score: ${it.areaLabel} x=${it.rect.centerX()} y=${it.rect.centerY()} score=${"%.3f".format(it.score)}")
             }
             if (hits.isEmpty()) log("No match above threshold")
             ivScreenshot.setImageBitmap(screenshot)
@@ -521,6 +628,10 @@ class TestActivity : AppCompatActivity() {
     }
 
     private fun runScopedStartBattleRedMatchTest(useLocalScope: Boolean) {
+        if (isStartBattleTemplateModeEnabled()) {
+            runScopedStartBattleTemplateMatchTest(useLocalScope)
+            return
+        }
         log("------------------------")
         val source = currentBitmap ?: return
         val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
@@ -538,6 +649,13 @@ class TestActivity : AppCompatActivity() {
             val bitmap = Bitmap.createBitmap(screenshot, area.rect.left, area.rect.top, area.rect.width(), area.rect.height())
             try {
                 val match = findRedRegionMatch(bitmap) ?: return@forEach
+                log(
+                    "Candidate ${area.label}: " +
+                        "score=${"%.3f".format(match.confidence)} " +
+                        "size=${"%.3f".format(match.sizeScore)} " +
+                        "colour=${"%.3f".format(match.rednessScore)} " +
+                        "full=${"%.3f".format(match.fillRatio)}"
+                )
                 if (best == null || match.confidence > best!!.second.confidence) best = area to match
             } finally {
                 bitmap.recycle()
@@ -552,13 +670,68 @@ class TestActivity : AppCompatActivity() {
         val right = area.rect.left + ((match.maxX + 1) * match.step).coerceAtMost(area.rect.width())
         val bottom = area.rect.top + ((match.maxY + 1) * match.step).coerceAtMost(area.rect.height())
         canvas.drawRect(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat(), hitPaint)
-        log("Red region hit: ${area.label} score=${"%.3f".format(match.confidence)}")
+        log(
+            "Red region hit: ${area.label} " +
+                "score=${"%.3f".format(match.confidence)} " +
+                "size=${"%.3f".format(match.sizeScore)} " +
+                "colour=${"%.3f".format(match.rednessScore)} " +
+                "full=${"%.3f".format(match.fillRatio)}"
+        )
         ivScreenshot.setImageBitmap(screenshot)
     }
 
-    private fun findTemplateMatches(screenshot: Bitmap, templateName: String, templateBitmap: Bitmap, useLocalScope: Boolean): List<TemplateMatchHit> {
+    private fun runScopedStartBattleTemplateMatchTest(useLocalScope: Boolean) {
+        log("------------------------")
+        val source = currentBitmap ?: return
+        val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
+        val templateBitmap = TemplateOverrideStore.loadBitmap(this, assets, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)
+            ?: return log("Load template failed: ${TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME}")
+        val searchAreas = if (!useLocalScope || redRegionSearchRegions.isEmpty()) {
+            listOf(SearchArea("full-screen", Rect(0, 0, screenshot.width, screenshot.height)))
+        } else {
+            redRegionSearchRegions
+                .distinctBy { "${it.roi.x}_${it.roi.y}_${it.roi.w}_${it.roi.h}_${it.roi.align}" }
+                .mapNotNull { buildRectFromRoi(screenshot, it.roi)?.let { rect -> SearchArea("${it.scriptFileName}#${it.taskId}", rect) } }
+        }
+        val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+        val scaledWidth = (templateBitmap.width * gameScale).toInt().coerceAtLeast(1)
+        val scaledHeight = (templateBitmap.height * gameScale).toInt().coerceAtLeast(1)
+        val scaledTemplate = if (scaledWidth == templateBitmap.width && scaledHeight == templateBitmap.height) {
+            templateBitmap
+        } else {
+            Bitmap.createScaledBitmap(templateBitmap, scaledWidth, scaledHeight, true)
+        }
+        try {
+            val canvas = Canvas(screenshot)
+            val searchPaint = Paint().apply { color = Color.GREEN; style = Paint.Style.STROKE; strokeWidth = 5f }
+            val hitPaint = Paint().apply { color = Color.RED; style = Paint.Style.STROKE; strokeWidth = 6f }
+            var bestHit: TemplateMatchHit? = null
+            searchAreas.forEach { area ->
+                canvas.drawRect(area.rect, searchPaint)
+                val scan = findMatchesInArea(
+                    screenshot = screenshot,
+                    area = area,
+                    templateBitmap = scaledTemplate,
+                    threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD
+                )
+                scan.bestCandidate?.let {
+                    log("Candidate ${area.label}: score=${"%.3f".format(it.score)}")
+                    if (bestHit == null || it.score > bestHit!!.score) bestHit = it
+                } ?: log("Candidate ${area.label}: score=0.000")
+            }
+            val hit = bestHit ?: return log("No start battle template detected").also { ivScreenshot.setImageBitmap(screenshot) }
+            canvas.drawRect(hit.rect, hitPaint)
+            log("Start battle template hit: ${hit.areaLabel} score=${"%.3f".format(hit.score)}")
+            ivScreenshot.setImageBitmap(screenshot)
+        } finally {
+            if (scaledTemplate !== templateBitmap) scaledTemplate.recycle()
+            templateBitmap.recycle()
+        }
+    }
+
+    private fun findTemplateMatches(screenshot: Bitmap, templateName: String, templateBitmap: Bitmap, useLocalScope: Boolean): TemplateScanSummary {
         val areas = buildTemplateSearchAreas(screenshot, templateName, useLocalScope)
-        if (areas.isEmpty()) return emptyList()
+        if (areas.isEmpty()) return TemplateScanSummary(emptyList(), null)
         Canvas(screenshot).apply {
             val areaPaint = Paint().apply { color = Color.argb(220, 229, 192, 123); style = Paint.Style.STROKE; strokeWidth = 4f }
             areas.forEach { drawRect(it.rect, areaPaint) }
@@ -568,14 +741,19 @@ class TestActivity : AppCompatActivity() {
         val scaledHeight = (templateBitmap.height * gameScale).toInt().coerceAtLeast(1)
         val scaledTemplate = if (scaledWidth == templateBitmap.width && scaledHeight == templateBitmap.height) templateBitmap else Bitmap.createScaledBitmap(templateBitmap, scaledWidth, scaledHeight, true)
         return try {
-            dedupeHits(areas.flatMap { findMatchesInArea(screenshot, it, scaledTemplate, 0.90f) }, scaledTemplate.width / 2.0)
+            val scans = areas.map { findMatchesInArea(screenshot, it, scaledTemplate, 0.90f) }
+            val hits = dedupeHits(scans.flatMap { it.hits }, scaledTemplate.width / 2.0)
+            val bestCandidate = scans.mapNotNull { it.bestCandidate }.maxByOrNull { it.score }
+            TemplateScanSummary(hits, bestCandidate)
         } finally {
             if (scaledTemplate !== templateBitmap) scaledTemplate.recycle()
         }
     }
 
-    private fun findMatchesInArea(screenshot: Bitmap, area: SearchArea, templateBitmap: Bitmap, threshold: Float): List<TemplateMatchHit> {
-        if (area.rect.width() < templateBitmap.width || area.rect.height() < templateBitmap.height) return emptyList()
+    private fun findMatchesInArea(screenshot: Bitmap, area: SearchArea, templateBitmap: Bitmap, threshold: Float): AreaMatchScan {
+        if (area.rect.width() < templateBitmap.width || area.rect.height() < templateBitmap.height) {
+            return AreaMatchScan(emptyList(), null)
+        }
         val searchBitmap = Bitmap.createBitmap(screenshot, area.rect.left, area.rect.top, area.rect.width(), area.rect.height())
         val srcMat = Mat()
         val tmplMat = Mat()
@@ -591,13 +769,29 @@ class TestActivity : AppCompatActivity() {
             val scores = FloatArray(cols * rows)
             resultMat.get(0, 0, scores)
             val hits = mutableListOf<TemplateMatchHit>()
+            var bestScore = Float.NEGATIVE_INFINITY
+            var bestHit: TemplateMatchHit? = null
             for (y in 0 until rows) {
                 for (x in 0 until cols) {
                     val score = scores[y * cols + x]
-                    if (score >= threshold) hits += TemplateMatchHit(Rect(area.rect.left + x, area.rect.top + y, area.rect.left + x + templateBitmap.width, area.rect.top + y + templateBitmap.height), score, area.label)
+                    val hit = TemplateMatchHit(
+                        Rect(
+                            area.rect.left + x,
+                            area.rect.top + y,
+                            area.rect.left + x + templateBitmap.width,
+                            area.rect.top + y + templateBitmap.height
+                        ),
+                        score,
+                        area.label
+                    )
+                    if (score > bestScore) {
+                        bestScore = score
+                        bestHit = hit
+                    }
+                    if (score >= threshold) hits += hit
                 }
             }
-            hits
+            AreaMatchScan(hits, bestHit)
         } finally {
             srcMat.release()
             tmplMat.release()
