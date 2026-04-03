@@ -286,7 +286,7 @@ class MineFragment : Fragment() {
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
     ) {
-        val uploadUrl = "https://example.invalid/api/v1.php"
+        val uploadUrl = "https://img.scdn.io/api/v1.php"
         val client = okhttp3.OkHttpClient()
         val mediaType = "image/*".toMediaTypeOrNull()
         val fileBody = file.asRequestBody(mediaType)

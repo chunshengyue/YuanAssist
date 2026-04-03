@@ -10,7 +10,7 @@ class YuanAssistApp : Application() {
         super.onCreate()
         cleanupStaleUpdateApk()
         try {
-            Bmob.initialize(this, "BMOB_APP_KEY_REDACTED")
+            Bmob.initialize(this, "ce7c10b39d790e195d0f3e11bf1945ee")
         } catch (e: Exception) {
             Log.e("YuanAssistApp", "Bmob 初始化失败: ${e.message}", e)
         }

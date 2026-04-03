@@ -75,6 +75,14 @@
             android:screenOrientation="portrait"
             android:exported="false" />
         <activity
+            android:name=".ui.JobStationActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity
+            android:name=".ui.JobStationListActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity
             android:name=".ui.StrategyListActivity"
             android:screenOrientation="portrait"
             android:exported="false" />

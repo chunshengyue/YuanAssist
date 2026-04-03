@@ -104,6 +104,50 @@
             </GridLayout>
         </FrameLayout>
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_dark_glass">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="作业站"
+                    android:textColor="#E5C07B"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="查看本地 JSON 构建的作业列表与详情页。"
+                    android:textColor="#DDD6C6"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btn_main_job_station"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/btn_dark_gold"
+                    android:fontFamily="serif"
+                    android:text="进入作业站"
+                    android:textColor="#1A1A1A"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </FrameLayout>
+
         <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_dark_glass" android:layout_marginBottom="20dp">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="活动倒计时" android:textColor="#E5C07B" android:textSize="18sp" android:textStyle="bold" android:fontFamily="serif" android:layout_marginBottom="10dp"/>

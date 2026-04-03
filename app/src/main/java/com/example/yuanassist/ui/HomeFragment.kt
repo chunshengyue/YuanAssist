@@ -395,6 +395,10 @@ class HomeFragment : Fragment() {
             startActivity(Intent(requireContext(), TestActivity::class.java))
         }
 
+        view.findViewById<Button>(R.id.btn_main_job_station).setOnClickListener {
+            startActivity(Intent(requireContext(), JobStationListActivity::class.java))
+        }
+
         // --- 初始化 DDL RecyclerView ---
         val rvDdl = view.findViewById<RecyclerView>(R.id.rv_ddl_list)
         ddlAdapter = DdlAdapter(ddlList)

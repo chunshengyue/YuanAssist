@@ -20,8 +20,8 @@ import javax.net.ssl.SSLException
 
 object OcrManager {
 
-    private const val OCR_URL = "https://example.invalid/release/ocr"
-    private const val API_SECRET = "OCR_API_SECRET_REDACTED"
+    private const val OCR_URL = "https://1404626659-0xl5hg6b23.ap-nanjing.tencentscf.com/release/ocr"
+    private const val API_SECRET = "nobodyknows"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
