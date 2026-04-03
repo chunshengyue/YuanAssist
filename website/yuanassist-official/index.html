@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YuanAssist | 如鸢脚本助手</title>
+    <meta
+        name="description"
+        content="YuanAssist 是一个围绕如鸢 / 代号鸢打造的脚本助手官网，提供工具说明、核心能力介绍、上手教程与作者信息。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap"
+        rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+    <div class="site-shell">
+        <header class="topbar">
+            <a class="brand" href="#hero">
+                <span class="brand-mark">
+                    <img src="./assets/guide/21.png" alt="YuanAssist 标识" loading="lazy" onerror="this.remove();" />
+                </span>
+                <span class="brand-copy">
+                    <strong>YuanAssist</strong>
+                    <small>如鸢/代号鸢自动化助手</small>
+                </span>
+            </a>
+
+            <nav class="nav">
+                <a href="#features">功能</a>
+                <a href="#guide">教程</a>
+                <a href="#faq">答疑</a>
+                <a href="#author">作者</a>
+            </nav>
+
+            <a
+                class="ghost-button"
+                href="https://gitee.com/chunshengyue/yuan-assist-data/releases/download/v1.1.4.3/YuanAssist1.1.4.3.apk"
+                target="_blank"
+                rel="noreferrer"
+            >
+                下载 APK
+            </a>
+        </header>
+
+        <main>
+            <section class="hero" id="hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">非盈利、无广告，献给所有鸟玩家的安卓端自动化工具</p>
+                    <h1>如鸢/代号鸢实现一键录制表格、表格跟打、完成日常任务。</h1>
+                    <p class="hero-text">
+                        YuanAssist 面向需要工具完成高频重复操作，以及想要录制表格和表格跟打的玩家。
+                        可以自动适配不同机型（不支持iPhone系统）。
+                    </p>
+
+                    <div class="hero-actions">
+                        <a class="primary-button" href="#guide">先看上手教程</a>
+                        <a class="secondary-button" href="#features">了解核心能力</a>
+                    </div>
+
+                    <div class="hero-meta">
+                        <div>
+                            <strong>主界面</strong>
+                            <span>提供运行入口/DDL提醒/更新链接等</span>
+                        </div>
+                        <div>
+                            <strong>悬浮窗</strong>
+                            <span>工具核心-录制/跟打/OCR/设置</span>
+                        </div>
+                        <div>
+                            <strong>个人主页</strong>
+                            <span>我的发布/我的收藏/我的星石/其他特色功能</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-panel">
+                    <div class="hero-panel-card glow-card">
+                        <div class="panel-top">
+                            <span class="panel-badge">核心能力</span>
+                            <span class="panel-dot"></span>
+                        </div>
+                        <ul class="panel-list">
+                            <li>
+                                <strong>表格跟打</strong>
+                                <span>把表格交给悬浮窗执行，不再需要看着表格凹关。</span>
+                            </li>
+                            <li>
+                                <strong>表格录制</strong>
+                                <span>把回合和动作录成结构化表格，后续可复用、可分享。</span>
+                            </li>
+                            <li>
+                                <strong>OCR 功能</strong>
+                                <span>OCR提供了表格转为可运行脚本的渠道，可见即可行。</span>
+                            </li>
+                            <li>
+                                <strong>图像识别</strong>
+                                <span>主要是模板匹配和颜色匹配，为自动化任务增加保障。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" id="features">
+                <div class="section-heading">
+                    <p class="eyebrow">功能概览</p>
+                    <h2>YuanAssist能做什么？。</h2>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">01</span>
+                        <h3>跟打模式</h3>
+                        <p>把回合动作整理成表格后交给悬浮窗执行，表格形式不限（文字/图片/辟雍学府json），支持多种导入方式。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">02</span>
+                        <h3>录制模式</h3>
+                        <p>直接操作就可以同时记录，录制完成的脚本可以保存、导入和复用，适合生成表格以及洞窟重复操作。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">03</span>
+                        <h3>攻略表格导入</h3>
+                        <p>可以一键导入任何形式的攻略表格图片，OCR转化为可运行脚本。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">04</span>
+                        <h3>日常自动化</h3>
+                        <p>围绕高频任务做模块化入口，例如刷鸟食、刷624和其他重复操作。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">05</span>
+                        <h3>攻略社区</h3>
+                        <p>攻略板块有其他广陵王上传的攻略，支持一键导入。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">06</span>
+                        <h3>星石拼图</h3>
+                        <p>针对星石背包场景，可以进行拼图获取完整星石截图。并且可以一键统计星石数量，减少整理信息的时间成本。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">07</span>
+                        <h3>轻用户模式</h3>
+                        <p>YuanAssist支持识别设备ID一键注册，没有繁琐的步骤。注册后支持发布自己的攻略和脚本，成为创作者。</p>
+                    </article>
+
+                    <article class="feature-card glow-card">
+                        <span class="feature-index">08</span>
+                        <h3>后续可扩展</h3>
+                        <p>在目前图像识别和无障碍模式的支持下，YuanAssist未来可以为更多任务提供自动化支持。</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section guide-section" id="guide">
+                <div class="section-heading">
+                    <p class="eyebrow">上手教程</p>
+                    <h2>YuanAssist是低门槛，易操作的APP，这里给出详细教程。</h2>
+                </div>
+
+                <div class="guide-tabs" role="tablist" aria-label="上手教程目录">
+                    <button class="guide-tab is-active" type="button" data-guide-tab="permissions">启动悬浮窗</button>
+                    <button class="guide-tab" type="button" data-guide-tab="overlay">表格跟打</button>
+                    <button class="guide-tab" type="button" data-guide-tab="record">录制表格</button>
+                    <button class="guide-tab" type="button" data-guide-tab="import">日常任务</button>
+                    <button class="guide-tab" type="button" data-guide-tab="battle">攻略模块</button>
+                </div>
+
+                <div class="guide-stage glow-card">
+                    <article class="guide-panel is-active" data-guide-panel="permissions">
+                        <div class="guide-panel-main">
+                            <div class="guide-panel-copy">
+                                <span class="guide-panel-kicker">教程 01</span>
+                                <h3>悬浮窗是YuanAssist的核心，这一步很简单，手机会弹出提示</h3>
+                                <p class="guide-panel-lead">
+
+                                </p>
+                                <ol class="guide-panel-steps">
+                                    <li>打开应用首页，运行想要的功能，分为战斗版悬浮窗和日常版悬浮窗。</li>
+                                    <li>开启悬浮窗权限，只需要在第一次运行的时候授予。</li>
+                                    <li>开启无障碍权限，这是安卓端自动化的核心权限，每次运行都要重新授予。</li>
+                                    <li>回到主页，悬浮窗会自动弹出。</li>
+                                </ol>
+                            </div>
+
+                            <div class="guide-panel-media">
+                                <figure class="guide-shot guide-shot-large guide-shot-ratio-main">
+                                    <span>运行按钮</span>
+                                    <img src="./assets/guide/1.webp" alt="权限设置总览图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                    <small>点击之后，系统会跳转应用权限页面</small>
+                                </figure>
+                                <div class="guide-shot-grid">
+                                    <figure class="guide-shot guide-shot-ratio-tall">
+                                        <span>悬浮窗</span>
+                                        <img src="./assets/guide/2.webp" alt="无障碍权限设置截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>悬浮窗权限只需要第一次运行授予</small>
+                                    </figure>
+                                    <figure class="guide-shot guide-shot-ratio-tall">
+                                        <span>无障碍</span>
+                                        <img src="./assets/guide/3.webp" alt="悬浮窗权限设置截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>无障碍权限每次运行都要重新授予</small>
+                                    </figure>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="guide-panel" data-guide-panel="overlay">
+                        <div class="guide-panel-main">
+                            <div class="guide-panel-copy">
+                                <span class="guide-panel-kicker">教程 02</span>
+                                <h3>跟打模式是YuanAssist的核心功能，告别手动凹关</h3>
+                                <ol class="guide-panel-steps">
+                                    <li>打开战斗版悬浮窗，切换到跟打模式。</li>
+                                    <li>点击导入按钮。</li>
+                                    <li>导入方式有文本、图片、录制模式录制的表格，以及保存的脚本。</li>
+                                    <li>导入之后可以在设置修改战斗参数，这里的操作延时保守可以设置的长一点。</li>
+                                    <li>点击开始跟打，会自动最小化，小窗上有停止按钮、暂停按钮，以及倒计时。</li>
+                                    <li>表格运行结束后，会自动停止。</li>
+                                </ol>
+                            </div>
+
+                            <div class="guide-panel-media">
+                                <div class="guide-shot-grid guide-shot-grid-overlay-top">
+                                    <figure class="guide-shot guide-shot-large">
+                                        <span>导入方式</span>
+                                        <img src="./assets/guide/7.webp" alt="悬浮窗功能总览截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>导入图片最常用</small>
+                                    </figure>
+                                </div>
+                                <div class="guide-shot-grid guide-shot-grid-overlay-middle">
+                                    <figure class="guide-shot">
+                                        <span>导入文字</span>
+                                        <img src="./assets/guide/8.webp" alt="导入界面截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>朴实无华的空格和换行就可以识别</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>导入图片</span>
+                                        <img src="./assets/guide/9.webp" alt="参数设置截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>选择图片后一般需要等待3-5s</small>
+                                    </figure>
+                                </div>
+                                <div class="guide-shot-grid guide-shot-grid-overlay-bottom">
+                                    <figure class="guide-shot">
+                                        <span>参数设置</span>
+                                        <img src="./assets/guide/10.webp" alt="跟打小窗截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>主要是修改A↑↓的延时</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>开始战斗！！</span>
+                                        <img src="./assets/guide/11.webp" alt="运行状态截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>开始战斗会自动最小化窗口</small>
+                                    </figure>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="guide-panel" data-guide-panel="record">
+                        <div class="guide-panel-main">
+                            <div class="guide-panel-copy">
+                                <span class="guide-panel-kicker">教程 03</span>
+                                <h3>录制自己的表格，让一次操作变成可复用脚本</h3>
+                                <ol class="guide-panel-steps">
+                                    <li>打开战斗版悬浮窗，在画面稳定后点击开始录制。</li>
+                                    <li>按照正常打法完成操作，系统会自动记录回合与动作顺序。</li>
+                                    <li>需要手动切换至下一回合。</li>
+                                    <li>录制结束后点击停止按钮。</li>
+                                    <li>保存为脚本或表格，后续可以继续编辑、导出和分享。</li>
+                                </ol>
+                            </div>
+
+                            <div class="guide-panel-media">
+                                <div class="guide-shot-grid guide-shot-grid-record-top">
+                                    <figure class="guide-shot guide-shot-ratio-tall">
+                                        <span>录制模式界面</span>
+                                        <img src="./assets/guide/4.webp" alt="录制中界面截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>点击开始录制，并点击左上角最小化。</small>
+                                    </figure>
+                                    <figure class="guide-shot guide-shot-ratio-tall">
+                                        <span>开始战斗！</span>
+                                        <img src="./assets/guide/5.webp" alt="回合记录截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>正常操作即可，打完一个回合后，需要手动点击》|切换回合。</small>
+                                    </figure>
+                                </div>
+                                <div class="guide-shot-grid guide-shot-grid-record-bottom">
+                                    <figure class="guide-shot guide-shot-large">
+                                        <span>导出表格</span>
+                                        <img src="./assets/guide/6.webp" alt="保存结果截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>可导出到脚本库或者导出图片。</small>
+                                    </figure>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="guide-panel" data-guide-panel="import">
+                        <div class="guide-panel-main">
+                            <div class="guide-panel-copy">
+                                <span class="guide-panel-kicker">教程 04</span>
+                                <h3>重复任务的自动化，是时代所趋</h3>
+                                <ol class="guide-panel-steps">
+                                    <li>在主页点击日常版的设置按钮。</li>
+                                    <li>选择你想要进行的日常任务。</li>
+                                    <li>修改设置，如刷鸟食需要设置四个任务做哪几个，以及运行结束方式。</li>
+                                    <li>点击导入，切换到游戏对应页面点击开始。</li>
+                                    <li>刷鸟食运行位置：除了主界面右边（带有观星入口）以外都可，会自动导航。</li>
+                                    <li>刷624运行位置：除了主界面右边（带有观星入口）以外都可，会自动导航。</li>
+                                    <li>星石拼图运行位置：星石背包滑到最上方，点击开始。</li>
+                                    <li>日常任务涉及到图像识别，不同手机差异巨大，遇到问题请移步[答疑]部分</li>
+                                </ol>
+                            </div>
+
+                            <div class="guide-panel-media">
+                                <div class="guide-shot-grid guide-shot-grid-import">
+                                    <figure class="guide-shot">
+                                        <span>日常任务入口</span>
+                                        <img src="./assets/guide/12.webp" alt="日常任务设置截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>点击日常版的设置</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>目前支持的任务</span>
+                                        <img src="./assets/guide/13.webp" alt="运行位置截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>点击你想要进行的任务</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>鸟食任务设置</span>
+                                        <img src="./assets/guide/14.webp" alt="刷鸟食截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>点击导入,,切回游戏运行</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>星石拼图</span>
+                                        <img src="./assets/guide/15.webp" alt="星石拼图截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>星石拼图开始位置如图</small>
+                                    </figure>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="guide-panel" data-guide-panel="battle">
+                        <div class="guide-panel-main">
+                            <div class="guide-panel-copy">
+                                <span class="guide-panel-kicker">教程 05</span>
+                                <h3>有没有更快的导入方法？有！</h3>
+                                <ol class="guide-panel-steps">
+                                    <li>点击主页第三栏，攻略</li>
+                                    <li>寻找或者搜索你想要跟打的关卡，页面上会显示阵容</li>
+                                    <li>点击之后，可以确认命盘、练度等是否符合</li>
+                                    <li>最下方可以点击导入，导入的时候，所有参数、指令都会一起导入，无需任何调整</li>
+                                    <li>开始战斗！！</li>
+                                    <li>发布攻略：在攻略板块点击＋号，可以发布攻略（必须一键注册之后）</li>
+                                    <li>查看/修改发布：在主页-我的，可以查看自己发布以及收藏的攻略</li>
+                                </ol>
+                            </div>
+
+                            <div class="guide-panel-media">
+                                <div class="guide-shot-grid guide-shot-grid-battle">
+                                    <figure class="guide-shot">
+                                        <span>攻略板块</span>
+                                        <img src="./assets/guide/16.webp" alt="开始跟打前检查截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>选择心仪的攻略</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>攻略详情</span>
+                                        <img src="./assets/guide/17.webp" alt="脚本预览截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>检查练度、注意事项</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>发布攻略</span>
+                                        <img src="./assets/guide/18.webp" alt="异常排查截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>点击主页＋号进入</small>
+                                    </figure>
+                                    <figure class="guide-shot">
+                                        <span>我的发布</span>
+                                        <img src="./assets/guide/19.webp" alt="实战状态截图" loading="lazy" onerror="this.closest('figure').classList.add('is-empty'); this.remove();" />
+                                        <small>修改/删除发布的攻略</small>
+                                    </figure>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section" id="faq">
+                <div class="section-heading">
+                    <p class="eyebrow">常见问题</p>
+                    <h2>最简单的解决方法：<br />小红书搜索春笙月，以评论 / 私信的方式询问，页面底部有小红书主页链接。</h2>
+                </div>
+
+                <div class="faq-list">
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>如何更新版本？</h3>
+                            <p><strong>A：</strong>版本有更新时，点进软件会有公告。点击主页检查更新，可选应用内更新/浏览器更新。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>无法设置无障碍权限？</h3>
+                            <p><strong>A：</strong>鸿蒙部分版本无法启用无障碍权限，请见谅。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>跟打的时候，漏掉某个角色的操作？</h3>
+                            <p><strong>A：</strong>一种可能是延时设置的短了，部分机型存在小概率（约十分之一）点击无效的情况。如无法解决，请联系作者进行义诊。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>刷鸟食、刷624，中间停止了？</h3>
+                            <p><strong>A：</strong>1.可能是网络卡顿，导致操作游戏画面未及时切换。2.可能是某张素材在您的手机上不太适配，替换方法见下问。3.可能是您的手机运行时有卡顿感，刷鸟食和刷624设置界面都有低配机型适应，在网络/设备不良的情况下，可以试试改成500ms。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>无法识别某个图片怎么办？</h3>
+                            <p><strong>A：</strong>主页-功能测试-上传停止位置的截图-选择对应的文件-点击一键替换，就可以使用自己截图的素材了，百分百能匹配到。若是对应的文件不清楚，请私信询问。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>私信询问的时候，需要注意什么？</h3>
+                            <p><strong>A：</strong>如果停止的那一次运行日志有内容，请带上运行日志最后的片段截图。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>无障碍模式有没有风险？</h3>
+                            <p><strong>A：</strong>有，但是YuanAssist原码已上传github，只使用无障碍权限的点击操作，本质上是自动化工具，不修改游戏数据，和maayuan原理一致。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>有没有上线iPhone系统的风险？</h3>
+                            <p><strong>A：</strong>没有，因为iPhone没有无障碍权限。</p>
+                        </div>
+                    </article>
+
+                    <article class="faq-card glow-card">
+                        <div class="faq-mark">Q</div>
+                        <div class="faq-copy">
+                            <h3>能不能在模拟器上运行？</h3>
+                            <p><strong>A：</strong>理论上可以，但是我试了mumu模拟器无法获取屏幕截图，其他模拟器或许可行，另外模拟器建议使用maayuan。</p>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section author-section" id="author">
+                <div class="section-heading">
+                    <p class="eyebrow">作者介绍</p>
+                    <h2>一只平平无奇的比格。</h2>
+                </div>
+
+                <div class="author-card glow-card">
+                    <div class="author-avatar">
+                        <img src="./assets/guide/20.png" alt="作者头像" loading="lazy" onerror="this.remove();" />
+                    </div>
+                    <div class="author-copy">
+                        <h3>春笙月</h3>
+                        <p>
+                            如果你在使用过程中遇到问题，请在小红书联系。
+                        </p>
+                        <div class="author-actions">
+                            <button
+                                class="author-action-button"
+                                type="button"
+                                data-copy-text="小红书首页我在小红书收获了5.4万次赞与收藏，来看看我的主页>> https://xhslink.com/m/1dqYgUmpoE1"
+                            >
+                                复制小红书主页
+                            </button>
+                            <button
+                                class="author-action-button"
+                                type="button"
+                                data-copy-text="小红书交流反馈群6【全文复制→开启🍠】 5月1日前进入，&quot;YuanAssist交流反馈群&quot;一起来聊 CA1810 :/#v🥭🐦🍙🥭🍑🍔🍔🥒🐵😎🐧🍙"
+                            >
+                                复制交流反馈群
+                            </button>
+                            <a
+                                class="author-action-button author-action-link"
+                                href="https://github.com/chunshengyue/YuanAssist"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                GitHub 仓库
+                            </a>
+                            <a
+                                class="author-action-button author-action-link"
+                                href="https://maayuan.top"
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                友链 maayuan.top
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="./main.js"></script>
+</body>
+</html>
