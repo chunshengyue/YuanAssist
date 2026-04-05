@@ -330,8 +330,8 @@ class JobStationListFragment : Fragment() {
                 when (item.type) {
                     JobStationAssetRepository.JobStationListItemType.BMOB -> {
                         item.strategyId?.let { strategyId ->
-                            startActivity(Intent(requireContext(), StrategyDetailActivity::class.java).apply {
-                                putExtra("STRATEGY_ID", strategyId)
+                            startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
+                                putExtra(JobStationActivity.EXTRA_STRATEGY_ID, strategyId)
                             })
                         }
                     }

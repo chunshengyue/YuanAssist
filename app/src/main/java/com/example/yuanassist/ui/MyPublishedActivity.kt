@@ -42,8 +42,8 @@ class MyPublishedActivity : AppCompatActivity() {
         adapter = MyPublishedAdapter(
             emptyList(),
             onCardClick = { item ->
-                val intent = Intent(this, StrategyDetailActivity::class.java)
-                intent.putExtra("STRATEGY_ID", item.objectId)
+                val intent = Intent(this, JobStationActivity::class.java)
+                intent.putExtra(JobStationActivity.EXTRA_STRATEGY_ID, item.objectId)
                 startActivity(intent)
             },
             onEditClick = { item ->

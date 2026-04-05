@@ -52,9 +52,8 @@ class StrategyFragment : Fragment() {
 
         // 3. 这里的 item 现在会自动识别为 strategy_detail 类型
         adapter = StrategyAdapter(displayList) { item ->
-            val intent = Intent(requireContext(), StrategyDetailActivity::class.java)
-            // 因为 strategy_detail 继承自 BmobObject，所以 objectId 绝对存在
-            intent.putExtra("STRATEGY_ID", item.objectId)
+            val intent = Intent(requireContext(), JobStationActivity::class.java)
+            intent.putExtra(JobStationActivity.EXTRA_STRATEGY_ID, item.objectId)
             startActivity(intent)
         }
         rvStrategy.layoutManager = LinearLayoutManager(requireContext())

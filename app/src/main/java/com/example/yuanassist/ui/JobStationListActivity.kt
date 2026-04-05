@@ -157,8 +157,8 @@ class JobStationListActivity : AppCompatActivity() {
                 when (item.type) {
                     JobStationAssetRepository.JobStationListItemType.BMOB -> {
                         item.strategyId?.let { strategyId ->
-                            startActivity(Intent(this, StrategyDetailActivity::class.java).apply {
-                                putExtra("STRATEGY_ID", strategyId)
+                            startActivity(Intent(this, JobStationActivity::class.java).apply {
+                                putExtra(JobStationActivity.EXTRA_STRATEGY_ID, strategyId)
                             })
                         }
                     }

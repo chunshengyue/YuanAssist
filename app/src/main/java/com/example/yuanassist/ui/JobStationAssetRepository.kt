@@ -1,6 +1,7 @@
 package com.example.yuanassist.ui
 
 import android.content.Context
+import com.example.yuanassist.model.AgentRepository
 import com.example.yuanassist.model.BattleStageTarget
 import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.InstructionType
@@ -136,6 +137,23 @@ object JobStationAssetRepository {
             readCount = formatMetric(copilot.views),
             importPayload = buildImportPayload(contentRoot),
             isFromMaaYuan = true
+        )
+    }
+
+    fun fromBmobDetailData(detail: strategy_detail): JobStationDetailData {
+        val title = detail.title.ifBlank { "未命名攻略" }
+        return JobStationDetailData(
+            title = title,
+            summary = detail.content.orEmpty(),
+            stageTags = buildBmobTags(detail, title),
+            roster = parseBmobOperData(detail),
+            turns = parseBmobTurns(detail.scriptContent, detail.instructions),
+            author = resolveBmobAuthorName(detail),
+            sourceType = "",
+            originalLink = detail.originalPostUrl.orEmpty(),
+            likeCount = formatMetric((detail.favoriteCount ?: 0).toLong()),
+            readCount = formatMetric((detail.viewCount ?: 0).toLong()),
+            importPayload = buildBmobImportPayload(detail)
         )
     }
 
@@ -325,6 +343,41 @@ object JobStationAssetRepository {
                 actionParamMs = extractActionParamMs(node)
             )
             turnMap.getOrPut(turnNum) { mutableListOf() }.add(slot to chip)
+        }
+
+        return turnMap.map { (turnNum, actionList) ->
+            TurnData(
+                turnNum = turnNum,
+                actionCount = actionList.size,
+                slotActions = actionList.groupBy({ it.first }, { it.second })
+            )
+        }.sortedBy { it.turnNum }
+    }
+
+    private fun parseBmobTurns(
+        scriptContent: String?,
+        instructionsJson: String?
+    ): List<TurnData> {
+        val turnMap = linkedMapOf<Int, MutableList<Pair<Int, ActionChip>>>()
+
+        parseBmobScriptRows(scriptContent).forEach { (turnNum, actions) ->
+            val turnItems = turnMap.getOrPut(turnNum) { mutableListOf() }
+            actions.forEachIndexed { index, actionText ->
+                parseBmobActionLabels(actionText).forEach { label ->
+                    turnItems += (index + 1) to ActionChip(
+                        globalOrder = extractActionOrder(label, index + 1),
+                        type = resolveActionType(label),
+                        label = label
+                    )
+                }
+            }
+        }
+
+        parseBmobInstructionChips(instructionsJson).forEach { (turnNum, chips) ->
+            val turnItems = turnMap.getOrPut(turnNum) { mutableListOf() }
+            chips.forEach { chip ->
+                turnItems += 0 to chip
+            }
         }
 
         return turnMap.map { (turnNum, actionList) ->
@@ -624,6 +677,117 @@ object JobStationAssetRepository {
         return 0L
     }
 
+    private fun parseBmobScriptRows(scriptContent: String?): List<Pair<Int, List<String>>> {
+        val normalized = scriptContent
+            ?.replace("\\n", "\n")
+            ?.replace("\\t", "\t")
+            ?.trim()
+            .orEmpty()
+        if (normalized.isBlank()) return emptyList()
+
+        val result = mutableListOf<Pair<Int, List<String>>>()
+        normalized.lines().forEachIndexed { index, line ->
+            val rawLine = line.trimEnd('\r')
+            if (rawLine.isBlank()) return@forEachIndexed
+
+            val parts = if (rawLine.contains("\t")) {
+                rawLine.split("\t")
+            } else {
+                rawLine.trim().split(Regex("\\s+"))
+            }
+
+            val turnNum = parts.firstOrNull()
+                ?.filter { it.isDigit() }
+                ?.toIntOrNull()
+                ?: (index + 1)
+            val startIndex = if (parts.firstOrNull()?.contains("回") == true || parts.firstOrNull()?.all { it.isDigit() } == true) {
+                1
+            } else {
+                0
+            }
+
+            val actions = buildList {
+                for (i in startIndex until parts.size) {
+                    if (size >= 5) break
+                    add(parts[i].trim())
+                }
+                while (size < 5) {
+                    add("")
+                }
+            }
+            result += turnNum to actions
+        }
+
+        return result
+    }
+
+    private fun parseBmobActionLabels(actionText: String): List<String> {
+        val normalized = actionText.trim()
+        if (normalized.isBlank() || normalized == "-") return emptyList()
+        val matches = Regex("""\d+(?:A|↑|↓|圈)""").findAll(normalized).map { it.value }.toList()
+        return if (matches.isNotEmpty()) matches else listOf(normalized)
+    }
+
+    private fun extractActionOrder(label: String, fallback: Int): Int {
+        return Regex("""^(\d+)""").find(label)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: fallback
+    }
+
+    private fun resolveActionType(label: String): ActionType {
+        return when {
+            label.endsWith("↑") -> ActionType.ULT
+            label.endsWith("↓") -> ActionType.DEFEND
+            label.endsWith("A") -> ActionType.ATTACK
+            else -> ActionType.OTHER
+        }
+    }
+
+    private fun parseBmobInstructionChips(instructionsJson: String?): Map<Int, List<ActionChip>> {
+        if (instructionsJson.isNullOrBlank()) return emptyMap()
+
+        val instructions = runCatching {
+            Gson().fromJson(instructionsJson, Array<InstructionJson>::class.java)?.toList().orEmpty()
+        }.getOrDefault(emptyList())
+
+        return instructions
+            .groupBy { it.turn }
+            .mapValues { (_, list) ->
+                list.sortedWith(compareBy<InstructionJson> { it.step }.thenBy { it.type }).map { instruction ->
+                    val type = runCatching { InstructionType.valueOf(instruction.type) }.getOrNull()
+                    ActionChip(
+                        globalOrder = if (instruction.step > 0) instruction.step else 999,
+                        type = ActionType.OTHER,
+                        label = formatBmobInstructionLabel(type, instruction),
+                        actionParamMs = when (type) {
+                            InstructionType.DELAY_ADD,
+                            InstructionType.DELAY_SUBTRACT -> instruction.value
+                            else -> null
+                        }
+                    )
+                }
+            }
+    }
+
+    private fun formatBmobInstructionLabel(
+        type: InstructionType?,
+        instruction: InstructionJson
+    ): String {
+        return when (type) {
+            InstructionType.DELAY_ADD -> "增加延时"
+            InstructionType.DELAY_SUBTRACT -> "缩短延时"
+            InstructionType.PAUSE -> "执行暂停"
+            InstructionType.STAGE_AUTO_NAV -> {
+                BattleStageTarget.fromCode(instruction.value)?.description ?: "关卡自动导航"
+            }
+            InstructionType.ALL_WIPE_CHECK -> "全灭检测"
+            InstructionType.DEATH_CHECK -> "阵亡检测 第${instruction.value}人"
+            InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
+            InstructionType.TARGET_SWITCH,
+            InstructionType.TARGET_SWITCH_RIGHT -> "切换右侧目标"
+            InstructionType.TARGET_SWITCH_LEFT -> "切换左侧目标"
+            null -> instruction.type
+        }
+    }
+
     private fun buildSummary(doc: JSONObject?, root: JSONObject): String {
         return doc?.optString("details")
             ?.takeIf { it.isNotBlank() }
@@ -719,6 +883,80 @@ object JobStationAssetRepository {
         return result
     }
 
+    private fun parseBmobOperData(detail: strategy_detail): List<OperData> {
+        val parsedEntries = parseBmobAgentEntries(detail.agentSelection)
+        if (parsedEntries.isNotEmpty()) {
+            return parsedEntries.map { entry ->
+                OperData(
+                    name = entry.name,
+                    starLevel = entry.starLevel,
+                    hp = 0,
+                    attack = 0,
+                    discs = entry.discs
+                )
+            }
+        }
+
+        return parseBmobRoster(detail).map { name ->
+            OperData(
+                name = name,
+                starLevel = 0,
+                hp = 0,
+                attack = 0,
+                discs = emptyList()
+            )
+        }
+    }
+
+    private data class BmobAgentEntry(
+        val name: String,
+        val starLevel: Int,
+        val discs: List<Int>
+    )
+
+    private fun parseBmobAgentEntries(agentSelectionJson: String?): List<BmobAgentEntry> {
+        if (agentSelectionJson.isNullOrBlank()) return emptyList()
+
+        val rawAgents = runCatching {
+            Gson().fromJson(agentSelectionJson, Array<String>::class.java)?.toList().orEmpty()
+        }.getOrDefault(emptyList())
+
+        return rawAgents.mapNotNull(::parseBmobAgentEntry)
+    }
+
+    private fun parseBmobAgentEntry(raw: String?): BmobAgentEntry? {
+        val value = raw?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        val parts = value.split("-", limit = 2)
+        val rawName = parts[0].trim()
+        val talents = parts.getOrNull(1)
+            ?.split("、", "，", ",")
+            ?.mapNotNull { it.trim().toIntOrNull() }
+            .orEmpty()
+
+        var displayName = rawName.substringBefore(" ").trim()
+        var starLevel = 0
+        val prefixMatch = Regex("""^(\d+)(.*)$""").find(displayName)
+        if (prefixMatch != null) {
+            starLevel = prefixMatch.groupValues[1].toIntOrNull() ?: 0
+            displayName = prefixMatch.groupValues[2].trim()
+        } else if (rawName.contains(" ")) {
+            val suffix = rawName.substringAfter(" ").trim()
+            starLevel = when {
+                suffix == "觉醒" -> 6
+                suffix.contains("★") || suffix.contains("☆") -> suffix.count { it == '★' || it == '☆' }
+                else -> 0
+            }
+        }
+
+        return displayName.takeIf { it.isNotBlank() }?.let {
+            BmobAgentEntry(
+                name = it,
+                starLevel = starLevel,
+                discs = talents
+            )
+        }
+    }
+
     fun resolveMaaDiscDisplaySpec(
         context: Context,
         agentName: String,
@@ -739,6 +977,13 @@ object JobStationAssetRepository {
         val displayName = discMeta?.abbreviation
             ?.takeIf { it.isNotBlank() }
             ?: discMeta?.otName
+                ?.takeIf { it.isNotBlank() }
+            ?: AgentRepository.AGENT_MAP[normalizeOperatorName(agentName)]
+                ?.talents
+                ?.get(normalizedDiscId)
+                ?.removePrefix("橙")
+                ?.removePrefix("紫")
+                ?.trim()
                 ?.takeIf { it.isNotBlank() }
             ?: "命盘$normalizedDiscId"
 
@@ -951,6 +1196,47 @@ object JobStationAssetRepository {
         return roster.joinToString(" ").ifBlank {
             detail.agents.orEmpty().ifBlank { "未配置阵容" }
         }
+    }
+
+    private fun buildBmobImportPayload(detail: strategy_detail): JobStationImportPayload? {
+        val normalizedScript = detail.scriptContent
+            .replace("\\n", "\n")
+            .replace("\\t", "\t")
+            .trim()
+        if (normalizedScript.isBlank()) return null
+
+        return JobStationImportPayload(
+            scriptContent = normalizedScript,
+            configJson = detail.config.orEmpty(),
+            instructionsJson = detail.instructions.orEmpty(),
+            agentsJson = cleanBmobAgentSelectionJson(detail.agentSelection),
+            notice = "导入成功"
+        )
+    }
+
+    private fun cleanBmobAgentSelectionJson(agentSelectionJson: String?): String {
+        if (agentSelectionJson.isNullOrBlank() || agentSelectionJson == "[]") return ""
+        return runCatching {
+            val rawAgentsList = Gson().fromJson(agentSelectionJson, Array<String>::class.java)
+                ?.toList()
+                .orEmpty()
+            Gson().toJson(rawAgentsList.map { raw ->
+                val trimRaw = raw.trim()
+                if (trimRaw.isBlank()) {
+                    ""
+                } else {
+                    trimRaw.replaceFirst("^\\d+".toRegex(), "")
+                        .substringBefore("-")
+                        .trim()
+                }
+            })
+        }.getOrDefault(agentSelectionJson)
+    }
+
+    private fun resolveBmobAuthorName(detail: strategy_detail): String {
+        return detail.author?.nickname?.takeIf { it.isNotBlank() }
+            ?: detail.author?.username?.takeIf { it.isNotBlank() }
+            ?: "热心玩家"
     }
 
     private fun buildBmobTags(detail: strategy_detail, title: String): List<String> {

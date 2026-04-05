@@ -39,8 +39,8 @@ class MyFavoriteActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.rv_my_favorite)
 
         adapter = StrategyAdapter(emptyList()) { item ->
-            startActivity(Intent(this, StrategyDetailActivity::class.java).apply {
-                putExtra("STRATEGY_ID", item.objectId)
+            startActivity(Intent(this, JobStationActivity::class.java).apply {
+                putExtra(JobStationActivity.EXTRA_STRATEGY_ID, item.objectId)
             })
         }
 

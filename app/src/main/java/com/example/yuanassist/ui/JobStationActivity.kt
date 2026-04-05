@@ -20,13 +20,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import cn.bmob.v3.exception.BmobException
+import cn.bmob.v3.listener.QueryListener
+import cn.bmob.v3.BmobQuery
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.R
+import com.example.yuanassist.model.strategy_detail
 
 class JobStationActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_COPILOT_ID = "extra_copilot_id"
+        const val EXTRA_STRATEGY_ID = "extra_strategy_id"
         const val EXTRA_ASSET_FILE_NAME = "extra_asset_file_name"
         private const val MAA_YUAN_HOME_URL = "https://maayuan.top/"
         private const val MAA_YUAN_SHARE_URL = "https://share.maayuan.top/"
@@ -42,26 +47,17 @@ class JobStationActivity : AppCompatActivity() {
         findViewById<ImageView>(R.id.btn_job_station_back).setOnClickListener { finish() }
 
         val copilotId = intent.getLongExtra(EXTRA_COPILOT_ID, -1L)
-        if (copilotId <= 0L) {
-            Toast.makeText(this, "缺少作业 id", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
+        val strategyId = intent.getStringExtra(EXTRA_STRATEGY_ID).orEmpty()
 
         renderLoadingState()
-        JobStationRemoteRepository.loadDetail(
-            copilotId = copilotId,
-            onSuccess = { data ->
-                bindHeaderAndContent(data)
-                bindRosterCard(data)
-                bindTableAndOtherActions(data)
-                bindBottomBar(data)
-            },
-            onError = { message ->
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        when {
+            copilotId > 0L -> loadMaaYuanDetail(copilotId)
+            strategyId.isNotBlank() -> loadBmobDetail(strategyId)
+            else -> {
+                Toast.makeText(this, "缺少攻略 id", Toast.LENGTH_SHORT).show()
                 finish()
             }
-        )
+        }
     }
 
     private fun bindHeaderAndContent(data: JobStationAssetRepository.JobStationDetailData) {
@@ -90,6 +86,48 @@ class JobStationActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tv_detail_original_author).text = ""
         findViewById<TextView>(R.id.tv_detail_original_platform).text = ""
         findViewById<View>(R.id.card_maayuan_notice).visibility = View.GONE
+    }
+
+    private fun loadMaaYuanDetail(copilotId: Long) {
+        JobStationRemoteRepository.loadDetail(
+            copilotId = copilotId,
+            onSuccess = { data ->
+                bindHeaderAndContent(data)
+                bindRosterCard(data)
+                bindTableAndOtherActions(data)
+                bindBottomBar(data)
+            },
+            onError = { message ->
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        )
+    }
+
+    private fun loadBmobDetail(strategyId: String) {
+        val query = BmobQuery<strategy_detail>()
+        query.include("author")
+        query.getObject(strategyId, object : QueryListener<strategy_detail>() {
+            override fun done(detail: strategy_detail?, e: BmobException?) {
+                runOnUiThread {
+                    if (e != null || detail == null) {
+                        Toast.makeText(
+                            this@JobStationActivity,
+                            "攻略详情加载失败: ${e?.message ?: "未找到该攻略"}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                        return@runOnUiThread
+                    }
+
+                    val data = JobStationAssetRepository.fromBmobDetailData(detail)
+                    bindHeaderAndContent(data)
+                    bindRosterCard(data)
+                    bindTableAndOtherActions(data)
+                    bindBottomBar(data)
+                }
+            }
+        })
     }
 
     private fun bindSourceInfo(data: JobStationAssetRepository.JobStationDetailData) {
