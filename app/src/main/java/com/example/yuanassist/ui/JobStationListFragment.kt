@@ -8,13 +8,15 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.appcompat.widget.ListPopupWindow
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -49,6 +51,7 @@ class JobStationListFragment : Fragment() {
     private lateinit var chipGameDaihao: TextView
     private lateinit var chipStageFilter: TextView
     private lateinit var chipDefaultFilter: TextView
+    private lateinit var listAdapter: JobStationListAdapter
 
     private var currentSortMode = SortMode.HOT
     private var selectedGameTag = ""
@@ -60,6 +63,7 @@ class JobStationListFragment : Fragment() {
     private var loadedMaaItems: List<JobStationAssetRepository.JobStationListItem> = emptyList()
     private var loadedBmobItems: List<strategy_detail> = emptyList()
     private var mergedItems: List<JobStationAssetRepository.JobStationListItem> = emptyList()
+    private var stageDropdown: ListPopupWindow? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -94,6 +98,36 @@ class JobStationListFragment : Fragment() {
         chipDefaultFilter = view.findViewById(R.id.chip_default_filter)
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        listAdapter = JobStationListAdapter(
+            items = emptyList(),
+            showLoadMore = false,
+            isLoadingMore = false,
+            onClick = { item ->
+                when (item.type) {
+                    JobStationAssetRepository.JobStationListItemType.BMOB -> {
+                        item.strategyId?.let { strategyId ->
+                            startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
+                                putExtra(JobStationActivity.EXTRA_STRATEGY_ID, strategyId)
+                            })
+                        }
+                    }
+
+                    JobStationAssetRepository.JobStationListItemType.MAA -> {
+                        item.copilotId?.let { copilotId ->
+                            startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
+                                putExtra(JobStationActivity.EXTRA_COPILOT_ID, copilotId)
+                            })
+                        }
+                    }
+                }
+            },
+            onLoadMore = {
+                if (!isLoadingMore && hasNextMaaPage) {
+                    loadMaaPage(currentMaaPage + 1, append = true)
+                }
+            }
+        )
+        recyclerView.adapter = listAdapter
         swipeRefreshLayout.setColorSchemeColors(
             Color.parseColor("#C88A2C"),
             Color.parseColor("#8F6A2B")
@@ -122,6 +156,12 @@ class JobStationListFragment : Fragment() {
     override fun onPause() {
         (activity as? MainActivity)?.setBottomNavVisible(true)
         super.onPause()
+    }
+
+    override fun onDestroyView() {
+        stageDropdown?.dismiss()
+        stageDropdown = null
+        super.onDestroyView()
     }
 
     private fun setupFilterChips() {
@@ -154,25 +194,63 @@ class JobStationListFragment : Fragment() {
         }
 
         chipStageFilter.setOnClickListener {
-            showStagePickerDialog()
+            showStageDropdown()
         }
 
         updateFilterChipUi()
     }
 
-    private fun showStagePickerDialog() {
-        val options = arrayOf("全部") + STAGE_OPTIONS.toTypedArray()
-        val selectedIndex = (STAGE_OPTIONS.indexOf(selectedStageTag) + 1).coerceAtLeast(0)
-        AlertDialog.Builder(requireContext())
-            .setTitle("选择关卡")
-            .setSingleChoiceItems(options, selectedIndex) { dialog, which ->
-                selectedStageTag = if (which == 0) "" else options[which]
+    private fun showStageDropdown() {
+        val options = listOf("全部") + STAGE_OPTIONS
+        val selectedIndex = options.indexOf(
+            if (selectedStageTag.isBlank()) "全部" else selectedStageTag
+        ).coerceAtLeast(0)
+        val popupWidth = chipStageFilter.width.coerceAtLeast(dpToPx(64f))
+
+        stageDropdown?.dismiss()
+        stageDropdown = ListPopupWindow(requireContext()).apply {
+            anchorView = chipStageFilter
+            width = popupWidth
+            height = ViewGroup.LayoutParams.WRAP_CONTENT
+            isModal = true
+            verticalOffset = dpToPx(6f)
+            setBackgroundDrawable(
+                AppCompatResources.getDrawable(requireContext(), R.drawable.bg_job_station_card)
+            )
+            setAdapter(object : ArrayAdapter<String>(
+                requireContext(),
+                R.layout.item_job_station_stage_dropdown,
+                R.id.tv_job_station_stage_dropdown,
+                options
+            ) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val view = super.getView(position, convertView, parent)
+                    val textView = view.findViewById<TextView>(R.id.tv_job_station_stage_dropdown)
+                    val selected = position == selectedIndex
+                    textView.background = createStageDropdownItemBackground(selected)
+                    textView.setTextColor(
+                        Color.parseColor(
+                            if (selected) "#6B4E1C" else "#8C6C33"
+                        )
+                    )
+                    return view
+                }
+            })
+            setOnItemClickListener { _, _, position, _ ->
+                selectedStageTag = if (position == 0) "" else options[position]
                 updateFilterChipUi()
                 reloadAll()
-                dialog.dismiss()
+                dismiss()
             }
-            .setNegativeButton("取消", null)
-            .show()
+            show()
+            listView?.apply {
+                divider = null
+                dividerHeight = 0
+                setPadding(dpToPx(6f), dpToPx(6f), dpToPx(6f), dpToPx(6f))
+                clipToPadding = false
+                overScrollMode = View.OVER_SCROLL_NEVER
+            }
+        }
     }
 
     private fun reloadAll(fromPullRefresh: Boolean = false) {
@@ -322,34 +400,10 @@ class JobStationListFragment : Fragment() {
         swipeRefreshLayout.isRefreshing = false
         emptyView.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
-        recyclerView.adapter = JobStationListAdapter(
+        listAdapter.updateData(
             items = items,
             showLoadMore = hasNextMaaPage || isLoadingMore,
             isLoadingMore = isLoadingMore,
-            onClick = { item ->
-                when (item.type) {
-                    JobStationAssetRepository.JobStationListItemType.BMOB -> {
-                        item.strategyId?.let { strategyId ->
-                            startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
-                                putExtra(JobStationActivity.EXTRA_STRATEGY_ID, strategyId)
-                            })
-                        }
-                    }
-
-                    JobStationAssetRepository.JobStationListItemType.MAA -> {
-                        item.copilotId?.let { copilotId ->
-                            startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
-                                putExtra(JobStationActivity.EXTRA_COPILOT_ID, copilotId)
-                            })
-                        }
-                    }
-                }
-            },
-            onLoadMore = {
-                if (!isLoadingMore && hasNextMaaPage) {
-                    loadMaaPage(currentMaaPage + 1, append = true)
-                }
-            }
         )
     }
 
@@ -437,6 +491,18 @@ class JobStationListFragment : Fragment() {
         )
         view.isEnabled = enabled
         view.alpha = if (enabled) 1f else 0.75f
+    }
+
+    private fun createStageDropdownItemBackground(selected: Boolean): GradientDrawable {
+        return GradientDrawable().apply {
+            cornerRadius = dpToPx(10f).toFloat()
+            if (selected) {
+                setColor(Color.parseColor("#F6D59A"))
+                setStroke(dpToPx(1f), Color.parseColor("#C88A2C"))
+            } else {
+                setColor(Color.TRANSPARENT)
+            }
+        }
     }
 
     private fun applyStatusBarInsets(root: View) {

@@ -203,6 +203,71 @@
                     android:paddingBottom="8dp" />
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/tv_image_section_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="serif"
+                android:text="攻略原图"
+                android:textColor="#3D3222"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/layout_image_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_job_station_card"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="14dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_detail_strategy_image_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:text="原图"
+                    android:textColor="#7A6A51"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/iv_detail_strategy_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="350dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tv_detail_agent_image_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="10dp"
+                    android:text="阵容图"
+                    android:textColor="#7A6A51"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/iv_detail_agent_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="350dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+            </LinearLayout>
+
             <LinearLayout
                 android:id="@+id/card_other_actions"
                 android:layout_width="match_parent"
@@ -262,6 +327,17 @@
                         android:textColor="#6C5B43"
                         android:textSize="13sp"
                         android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/iv_detail_source_author_avatar"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_job_station_avatar"
+                        android:clipToOutline="true"
+                        android:outlineProvider="background"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/tv_detail_source_author"

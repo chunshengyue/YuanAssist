@@ -18,9 +18,9 @@ import com.bumptech.glide.Glide
 import com.example.yuanassist.R
 
 class JobStationListAdapter(
-    private val items: List<JobStationAssetRepository.JobStationListItem>,
-    private val showLoadMore: Boolean,
-    private val isLoadingMore: Boolean,
+    items: List<JobStationAssetRepository.JobStationListItem>,
+    showLoadMore: Boolean,
+    isLoadingMore: Boolean,
     private val onClick: (JobStationAssetRepository.JobStationListItem) -> Unit,
     private val onLoadMore: () -> Unit = {}
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -29,6 +29,21 @@ class JobStationListAdapter(
         private const val VIEW_TYPE_MAA = 1
         private const val VIEW_TYPE_BMOB = 2
         private const val VIEW_TYPE_LOAD_MORE = 3
+    }
+
+    private var items: List<JobStationAssetRepository.JobStationListItem> = items
+    private var showLoadMore: Boolean = showLoadMore
+    private var isLoadingMore: Boolean = isLoadingMore
+
+    fun updateData(
+        items: List<JobStationAssetRepository.JobStationListItem>,
+        showLoadMore: Boolean,
+        isLoadingMore: Boolean
+    ) {
+        this.items = items
+        this.showLoadMore = showLoadMore
+        this.isLoadingMore = isLoadingMore
+        notifyDataSetChanged()
     }
 
     override fun getItemViewType(position: Int): Int {

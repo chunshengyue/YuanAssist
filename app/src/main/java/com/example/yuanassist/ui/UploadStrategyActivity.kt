@@ -51,7 +51,7 @@ class UploadStrategyActivity : AppCompatActivity() {
         const val EXTRA_IS_EDIT_MODE = "EXTRA_IS_EDIT_MODE"
         const val EXTRA_STRATEGY_ID = "EXTRA_STRATEGY_ID"
         private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
-            "吕布", "刘璋", "夏侯渊", "鄷公珠", "鄷公玖", "法正", "庞德",
+            "吕布", "刘璋", "夏侯渊", "酆公珠", "酆公玖", "法正", "庞德",
             "SP陈登", "SP史子渺", "曹丕", "程普", "钟繇", "蒯良", "陈群",
             "卢植", "简雍", "郭女王", "周忠","陈纪","陈应"
         )

@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.bumptech.glide.Glide
 import cn.bmob.v3.exception.BmobException
 import cn.bmob.v3.listener.QueryListener
 import cn.bmob.v3.BmobQuery
@@ -64,6 +65,7 @@ class JobStationActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tv_detail_title).text = data.title
         bindStageTags(data.stageTags)
         bindSourceInfo(data)
+        bindStrategyImage(data)
         bindMaaYuanNotice(data)
 
         val summaryView = findViewById<TextView>(R.id.tv_detail_summary)
@@ -81,10 +83,20 @@ class JobStationActivity : AppCompatActivity() {
             visibility = View.VISIBLE
             text = "正在拉取作业详情"
         }
+        findViewById<ImageView>(R.id.iv_detail_source_author_avatar).apply {
+            visibility = View.GONE
+            Glide.with(this@JobStationActivity).clear(this)
+        }
         findViewById<TextView>(R.id.tv_detail_source_author).text = ""
         findViewById<TextView>(R.id.tv_detail_source_type).text = ""
         findViewById<TextView>(R.id.tv_detail_original_author).text = ""
         findViewById<TextView>(R.id.tv_detail_original_platform).text = ""
+        findViewById<View>(R.id.layout_image_container).visibility = View.GONE
+        findViewById<View>(R.id.tv_image_section_title).visibility = View.GONE
+        findViewById<View>(R.id.tv_detail_strategy_image_label).visibility = View.GONE
+        findViewById<View>(R.id.iv_detail_strategy_image).visibility = View.GONE
+        findViewById<View>(R.id.tv_detail_agent_image_label).visibility = View.GONE
+        findViewById<View>(R.id.iv_detail_agent_image).visibility = View.GONE
         findViewById<View>(R.id.card_maayuan_notice).visibility = View.GONE
     }
 
@@ -131,6 +143,20 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun bindSourceInfo(data: JobStationAssetRepository.JobStationDetailData) {
+        findViewById<ImageView>(R.id.iv_detail_source_author_avatar).apply {
+            if (data.authorAvatarUrl.isBlank()) {
+                visibility = View.GONE
+                Glide.with(this@JobStationActivity).clear(this)
+            } else {
+                visibility = View.VISIBLE
+                Glide.with(this@JobStationActivity)
+                    .load(data.authorAvatarUrl)
+                    .placeholder(R.drawable.cover)
+                    .error(R.drawable.cover)
+                    .circleCrop()
+                    .into(this)
+            }
+        }
         findViewById<TextView>(R.id.tv_detail_source_author).text = data.author
         findViewById<TextView>(R.id.tv_detail_source_type).apply {
             text = data.sourceType
@@ -151,6 +177,62 @@ class JobStationActivity : AppCompatActivity() {
                 visibility = View.VISIBLE
                 text = "原发布平台：${data.originalPlatform}"
             }
+        }
+    }
+
+    private fun bindStrategyImage(data: JobStationAssetRepository.JobStationDetailData) {
+        val imageTitle = findViewById<TextView>(R.id.tv_image_section_title)
+        val imageContainer = findViewById<View>(R.id.layout_image_container)
+        val strategyLabel = findViewById<TextView>(R.id.tv_detail_strategy_image_label)
+        val strategyImageView = findViewById<ImageView>(R.id.iv_detail_strategy_image)
+        val agentLabel = findViewById<TextView>(R.id.tv_detail_agent_image_label)
+        val agentImageView = findViewById<ImageView>(R.id.iv_detail_agent_image)
+        val strategyImageUrl = data.strategyImageUrl.trim()
+        val agentImageUrl = data.agentImageUrl.trim()
+        val hasStrategyImage = strategyImageUrl.isNotBlank()
+        val hasAgentImage = agentImageUrl.isNotBlank()
+
+        if (!hasStrategyImage && !hasAgentImage) {
+            imageTitle.visibility = View.GONE
+            imageContainer.visibility = View.GONE
+            strategyLabel.visibility = View.GONE
+            strategyImageView.visibility = View.GONE
+            agentLabel.visibility = View.GONE
+            agentImageView.visibility = View.GONE
+            Glide.with(this).clear(strategyImageView)
+            Glide.with(this).clear(agentImageView)
+            return
+        }
+
+        imageTitle.visibility = View.VISIBLE
+        imageContainer.visibility = View.VISIBLE
+
+        if (hasStrategyImage) {
+            strategyLabel.visibility = View.VISIBLE
+            strategyImageView.visibility = View.VISIBLE
+            Glide.with(this)
+                .load(strategyImageUrl)
+                .placeholder(R.drawable.cover)
+                .error(R.drawable.cover)
+                .into(strategyImageView)
+        } else {
+            strategyLabel.visibility = View.GONE
+            strategyImageView.visibility = View.GONE
+            Glide.with(this).clear(strategyImageView)
+        }
+
+        if (hasAgentImage) {
+            agentLabel.visibility = View.VISIBLE
+            agentImageView.visibility = View.VISIBLE
+            Glide.with(this)
+                .load(agentImageUrl)
+                .placeholder(R.drawable.cover)
+                .error(R.drawable.cover)
+                .into(agentImageView)
+        } else {
+            agentLabel.visibility = View.GONE
+            agentImageView.visibility = View.GONE
+            Glide.with(this).clear(agentImageView)
         }
     }
 

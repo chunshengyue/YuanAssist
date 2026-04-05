@@ -149,11 +149,16 @@ object JobStationAssetRepository {
             roster = parseBmobOperData(detail),
             turns = parseBmobTurns(detail.scriptContent, detail.instructions),
             author = resolveBmobAuthorName(detail),
+            authorAvatarUrl = detail.author?.avatarUrl.orEmpty(),
             sourceType = "",
+            originalAuthor = "",
+            originalPlatform = "",
             originalLink = detail.originalPostUrl.orEmpty(),
             likeCount = formatMetric((detail.favoriteCount ?: 0).toLong()),
             readCount = formatMetric((detail.viewCount ?: 0).toLong()),
-            importPayload = buildBmobImportPayload(detail)
+            importPayload = buildBmobImportPayload(detail),
+            strategyImageUrl = detail.strategyImage.orEmpty(),
+            agentImageUrl = detail.agentImageUrl.orEmpty()
         )
     }
 
@@ -164,6 +169,7 @@ object JobStationAssetRepository {
         val roster: List<OperData>,
         val turns: List<TurnData>,
         val author: String = "作者",
+        val authorAvatarUrl: String = "",
         val sourceType: String = "搬运",
         val originalAuthor: String = "一条桂鱼",
         val originalPlatform: String = "小红书",
@@ -171,7 +177,9 @@ object JobStationAssetRepository {
         val likeCount: String = "1.2w",
         val readCount: String = "10w+",
         val importPayload: JobStationImportPayload? = null,
-        val isFromMaaYuan: Boolean = false
+        val isFromMaaYuan: Boolean = false,
+        val strategyImageUrl: String = "",
+        val agentImageUrl: String = ""
     )
 
     data class JobStationImportPayload(
@@ -424,9 +432,13 @@ object JobStationAssetRepository {
         val attackDelay = customDelayNode?.optString("attack_delay")
             ?.toLongOrNull()
             ?: DEFAULT_ATTACK_DELAY_MS
+        val defenseDelay = customDelayNode?.optString("defense_delay")
+            ?.toLongOrNull()
+            ?: attackDelay
         val skillDelay = customDelayNode?.optString("ult_delay")
             ?.toLongOrNull()
             ?: DEFAULT_SKILL_DELAY_MS
+        val sharedActionDelay = maxOf(attackDelay, defenseDelay)
         val stageAutoNavTarget = resolveStageAutoNavTarget(root.optJSONObject("level_meta"))
 
         val sortedKeys = actions.keys().asSequence().toList().sortedWith(
@@ -503,11 +515,18 @@ object JobStationAssetRepository {
                     cell.append(step).append(mapped.command)
                     lastActionStepByTurn[turn] = step
 
-                    val baseDelay = when (mapped.command) {
+                    val importedBaseDelay = when (mapped.command) {
                         "↑" -> skillDelay
-                        else -> attackDelay
+                        else -> sharedActionDelay
                     }
-                    val extraDelay = resolveActionDelay(node) - baseDelay
+                    val rawActionDelay = resolveActionDelay(node)
+                    val actionDelay = when {
+                        mapped.command == "↑" -> rawActionDelay.takeIf { it > 0L } ?: skillDelay
+                        rawActionDelay <= 0L -> sharedActionDelay
+                        rawActionDelay == attackDelay || rawActionDelay == defenseDelay -> sharedActionDelay
+                        else -> rawActionDelay
+                    }
+                    val extraDelay = actionDelay - importedBaseDelay
                     if (extraDelay > 0L) {
                         instructions += InstructionJson(
                             turn = turn,
@@ -583,7 +602,7 @@ object JobStationAssetRepository {
 
         val configJson = Gson().toJson(
             mapOf(
-                "intervalAttack" to attackDelay,
+                "intervalAttack" to sharedActionDelay,
                 "intervalSkill" to skillDelay,
                 "waitTurn" to DEFAULT_WAIT_TURN_MS
             )
@@ -1052,8 +1071,6 @@ object JobStationAssetRepository {
     private fun normalizeOperatorName(rawName: String): String {
         val normalized = rawName.trim()
         return when (normalized) {
-            "酆公珠" -> "鄷公珠"
-            "酆公玖" -> "鄷公玖"
             "SP史子眇" -> "SP史子渺"
             else -> normalized
         }

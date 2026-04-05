@@ -44,7 +44,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:background="@drawable/bg_job_station_icon_button"
-                android:hint="搜索关卡/作者/密探搜索"
+                android:hint="搜索关卡/密探/神秘代码"
                 android:imeOptions="actionSearch"
                 android:maxLines="1"
                 android:paddingStart="15dp"
