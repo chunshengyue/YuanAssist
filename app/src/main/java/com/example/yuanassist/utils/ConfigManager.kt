@@ -9,6 +9,7 @@ data class AppConfig(
     val intervalSkill: Long,
     val waitTurn: Long,
     val startTurn: Int,
+    val enableTurnNumberCheck: Boolean = true,
     val swipeThreshold: Int,
     val inputHeightRatio: Int,
     val recordDelay: Long,
@@ -48,6 +49,7 @@ object ConfigManager {
             intervalSkill = p.getLong("interval_skill", DEF_INTERVAL_SKILL),
             waitTurn = p.getLong("wait_turn", DEF_WAIT_TURN),
             startTurn = p.getInt("start_turn", DEF_START_TURN),
+            enableTurnNumberCheck = p.getBoolean("enable_turn_number_check", true),
             swipeThreshold = p.getInt("swipe_threshold", DEF_SWIPE_THRESHOLD),
             inputHeightRatio = p.getInt("input_height", DEF_INPUT_HEIGHT),
             recordDelay = p.getLong("record_delay", DEF_RECORD_DELAY),
@@ -55,7 +57,7 @@ object ConfigManager {
             attackOffsetX = p.getFloat("attack_offset_x", 0f),
             attackYFromBottom = p.getFloat("attack_y_from_bottom", 600f),
             upOffsetX = p.getFloat("up_offset_x", 0f),
-            upYFromBottom = p.getFloat("up_y_from_bottom", 695f),
+            upYFromBottom = p.getFloat("up_y_from_bottom", 300f),
             downOffsetX = p.getFloat("down_offset_x", 0f),
             downYFromBottom = p.getFloat("down_y_from_bottom", 514f),
             circleOffsetX = p.getFloat("circle_offset_x", 0f),
@@ -70,6 +72,7 @@ object ConfigManager {
             putLong("interval_skill", config.intervalSkill)
             putLong("wait_turn", config.waitTurn)
             putInt("start_turn", config.startTurn)
+            putBoolean("enable_turn_number_check", config.enableTurnNumberCheck)
             putInt("swipe_threshold", config.swipeThreshold)
             putInt("input_height", config.inputHeightRatio)
             putLong("record_delay", config.recordDelay)

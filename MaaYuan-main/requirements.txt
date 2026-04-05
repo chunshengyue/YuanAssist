@@ -1,0 +1,6 @@
+maafw>=5.0.0,<=5.0.5
+loguru
+pandas
+openpyxl
+opencv-python
+zhconv --only-binary=:all:

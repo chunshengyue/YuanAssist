@@ -7,8 +7,11 @@ import android.content.SharedPreferences
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.Settings
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.ImageView
@@ -49,6 +52,7 @@ class StrategyDetailActivity : AppCompatActivity() {
         private const val PREFS_STRATEGY_STATS = "strategy_detail_stats"
         private const val KEY_LAST_VIEW_PREFIX = "last_view_"
         private const val VIEW_THROTTLE_WINDOW_MS = 10 * 60 * 1000L
+        private const val TURN_COLUMN_WIDTH_DP = 42f
     }
 
     private var isFavorited = false
@@ -91,20 +95,9 @@ class StrategyDetailActivity : AppCompatActivity() {
         bindTopBar("攻略预览：${data.title}", "作者：我自己", null)
         findViewById<View>(R.id.layout_bottom_bar).visibility = View.GONE
         clearDynamicStrategyViews()
-        when {
-            !data.strategyImageUri.isNullOrEmpty() -> {
-                addDynamicStrategyTitle("◆ 跟打表格")
-                renderStrategyImage(data.strategyImageUri)
-            }
-            !data.tableData.isNullOrEmpty() -> {
-                addDynamicStrategyTitle("◆ 跟打表格")
-                hideStrategyImage()
-                addDynamicViewBeforeImage(createReadOnlyTable(data.tableData))
-            }
-            else -> hideStrategyImage()
-        }
+        bindHeaderCard(data.title, "作者：我自己", data.content, emptyList())
+        renderPreviewStrategyContent(data)
         renderAgents(data.agentType, data.agentSelection, data.agentImageUri, data.agentTextDesc)
-        renderDescriptionSection(data.content)
     }
 
     private fun loadAndRenderNormalMode(objectId: String) {
@@ -132,6 +125,12 @@ class StrategyDetailActivity : AppCompatActivity() {
                     currentDetail = detail
                     favoriteObjectId = null
                     bindTopBar(detail.title, "作者：${resolveAuthorName(detail)}", detail.author?.avatarUrl)
+                    bindHeaderCard(
+                        title = detail.title,
+                        authorText = "作者：${resolveAuthorName(detail)}",
+                        summary = detail.content,
+                        tags = JobStationAssetRepository.fromBmobListItem(detail).tags
+                    )
                     updateFavoriteUi(false, detail.favoriteCount ?: 0)
                     updateViewCountUi(detail.viewCount ?: 0)
                     syncFavoriteState(detail)
@@ -140,7 +139,6 @@ class StrategyDetailActivity : AppCompatActivity() {
                     bindBottomButtons(detail, !detail.scriptContent.isNullOrEmpty())
                     renderStrategyContent(detail)
                     renderAgents(detail.agentType, parseAgentSelection(detail.agentSelection), detail.agentImageUrl, detail.agentTextDesc)
-                    renderDescriptionSection(detail.content)
                 }
             }
         })
@@ -207,20 +205,66 @@ class StrategyDetailActivity : AppCompatActivity() {
     private fun renderStrategyContent(detail: strategy_detail) {
         val hasImage = !detail.strategyImage.isNullOrEmpty()
         val hasScript = !detail.scriptContent.isNullOrEmpty()
-        when {
-            hasImage -> {
-                addDynamicStrategyTitle("◆ 攻略原图")
-                renderStrategyImage(detail.strategyImage)
+        if (hasImage) {
+            renderStrategyImage(detail.strategyImage)
+        } else {
+            hideStrategyImage()
+        }
+
+        val tableCard = findViewById<LinearLayout>(R.id.layout_table_card)
+        val tableTitle = findViewById<TextView>(R.id.tv_table_section_title)
+        val tableContainer = findViewById<LinearLayout>(R.id.layout_table_content)
+        tableContainer.removeAllViews()
+
+        if (hasScript) {
+            tableTitle.visibility = View.VISIBLE
+            tableCard.visibility = View.VISIBLE
+            tableContainer.addView(
+                createReadOnlyTable(
+                    tableData = parseScriptContentToTableData(detail.scriptContent),
+                    agentNames = parseAgentSelection(detail.agentSelection)
+                        ?.mapNotNull { raw -> raw?.takeIf { it.isNotBlank() }?.let(::extractPureAgentName) }
+                        .orEmpty()
+                )
+            )
+            if (!detail.instructions.isNullOrEmpty()) {
+                tableContainer.addView(createInstructionsView(detail.instructions))
             }
-            hasScript -> {
-                addDynamicStrategyTitle("◆ 跟打表格")
-                hideStrategyImage()
-                addDynamicViewBeforeImage(createReadOnlyTable(parseScriptContentToTableData(detail.scriptContent)))
-                if (!detail.instructions.isNullOrEmpty()) {
-                    addDynamicViewBeforeImage(createInstructionsView(detail.instructions))
-                }
+        } else {
+            tableTitle.visibility = View.GONE
+            tableCard.visibility = View.GONE
+        }
+    }
+
+    private fun renderPreviewStrategyContent(data: StrategyPreviewData) {
+        if (!data.strategyImageUri.isNullOrEmpty()) {
+            renderStrategyImage(data.strategyImageUri)
+        } else {
+            hideStrategyImage()
+        }
+
+        val tableCard = findViewById<LinearLayout>(R.id.layout_table_card)
+        val tableTitle = findViewById<TextView>(R.id.tv_table_section_title)
+        val tableContainer = findViewById<LinearLayout>(R.id.layout_table_content)
+        tableContainer.removeAllViews()
+
+        if (!data.tableData.isNullOrEmpty()) {
+            tableTitle.visibility = View.VISIBLE
+            tableCard.visibility = View.VISIBLE
+            tableContainer.addView(
+                createReadOnlyTable(
+                    tableData = data.tableData,
+                    agentNames = data.agentSelection
+                        ?.mapNotNull { raw -> raw?.takeIf { it.isNotBlank() }?.let(::extractPureAgentName) }
+                        .orEmpty()
+                )
+            )
+            if (!data.instructionsJson.isNullOrEmpty()) {
+                tableContainer.addView(createInstructionsView(data.instructionsJson))
             }
-            else -> hideStrategyImage()
+        } else {
+            tableTitle.visibility = View.GONE
+            tableCard.visibility = View.GONE
         }
     }
 
@@ -454,70 +498,51 @@ class StrategyDetailActivity : AppCompatActivity() {
     }
 
     private fun clearDynamicStrategyViews() {
-        val mainLayout = findViewById<View>(R.id.layout_image_container).parent as LinearLayout
-        mainLayout.findViewWithTag<View>("DYNAMIC_TABLE_TITLE")?.let { mainLayout.removeView(it) }
-        mainLayout.findViewWithTag<View>("DYNAMIC_TABLE_CONTENT")?.let { mainLayout.removeView(it) }
-        mainLayout.findViewWithTag<View>("DYNAMIC_INSTRUCTIONS")?.let { mainLayout.removeView(it) }
-    }
-
-    private fun addDynamicStrategyTitle(title: String) {
-        val mainLayout = findViewById<View>(R.id.layout_image_container).parent as LinearLayout
-        val anchorView = findViewById<View>(R.id.layout_image_container)
-        val titleView = TextView(this).apply {
-            tag = "DYNAMIC_TABLE_TITLE"
-            text = title
-            setTextColor(Color.parseColor("#E5C07B"))
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = (15 * resources.displayMetrics.density).toInt()
-            }
-        }
-        mainLayout.addView(titleView, mainLayout.indexOfChild(anchorView))
-    }
-
-    private fun addDynamicViewBeforeImage(view: View) {
-        val mainLayout = findViewById<View>(R.id.layout_image_container).parent as LinearLayout
-        mainLayout.addView(view, mainLayout.indexOfChild(findViewById(R.id.layout_image_container)))
+        findViewById<LinearLayout>(R.id.layout_table_content).removeAllViews()
     }
 
     private fun renderStrategyImage(imageUrl: String?) {
         val layoutImageContainer = findViewById<View>(R.id.layout_image_container)
+        val titleView = findViewById<TextView>(R.id.tv_image_section_title)
         if (imageUrl.isNullOrEmpty()) {
+            titleView.visibility = View.GONE
             layoutImageContainer.visibility = View.GONE
             return
         }
+        titleView.visibility = View.VISIBLE
         layoutImageContainer.visibility = View.VISIBLE
         findViewById<ViewPager2>(R.id.vp_detail_images).adapter = StrategyDetailImagesAdapter(listOf(DetailItem("image", imageUrl)))
         findViewById<TextView>(R.id.tv_image_indicator).text = "1/1"
     }
 
     private fun hideStrategyImage() {
+        findViewById<TextView>(R.id.tv_image_section_title).visibility = View.GONE
         findViewById<View>(R.id.layout_image_container).visibility = View.GONE
     }
 
     private fun createInstructionsView(instructionsJson: String): TextView {
         return TextView(this).apply {
-            tag = "DYNAMIC_INSTRUCTIONS"
-            setTextColor(Color.parseColor("#9E9E9E"))
+            setTextColor(Color.parseColor("#7A6C57"))
             textSize = 12f
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = (10 * resources.displayMetrics.density).toInt()
-                bottomMargin = (10 * resources.displayMetrics.density).toInt()
             }
             text = try {
                 val type = object : TypeToken<List<InstructionJson>>() {}.type
                 val instList: List<InstructionJson> = Gson().fromJson(instructionsJson, type)
-                "附加指令：\n" + instList.joinToString("\n") { "回合${it.turn} 动作${it.step}: [${it.type}] ${it.value}" } + "\n"
+                "附加指令\n" + instList.joinToString("\n") { "回合${it.turn} 动作${it.step}: [${it.type}] ${it.value}" }
             } catch (_: Exception) {
-                "附加指令：\n$instructionsJson\n"
+                "附加指令\n$instructionsJson"
             }
         }
     }
 
     private fun renderAgents(agentType: Int, rawAgentSelection: List<String?>?, agentImageUrl: String?, agentTextDesc: String?) {
         val layoutAgents = findViewById<LinearLayout>(R.id.layout_agents_container)
+        val agentsCard = findViewById<LinearLayout>(R.id.layout_agents_card)
+        val agentsTitle = findViewById<TextView>(R.id.tv_agents_section_title)
         layoutAgents.removeAllViews()
+        var hasContent = false
         when (agentType) {
             0 -> {
                 val hasAnyStar = checkHasAnyStar(rawAgentSelection)
@@ -527,6 +552,7 @@ class StrategyDetailActivity : AppCompatActivity() {
                         val agentName = parts[0].trim()
                         val talents = if (parts.size > 1) parts[1].split("、").mapNotNull { it.trim().toIntOrNull() } else emptyList()
                         renderSingleAgentView(agentName, talents, layoutAgents, hasAnyStar)
+                        hasContent = true
                     }
                 }
             }
@@ -537,47 +563,91 @@ class StrategyDetailActivity : AppCompatActivity() {
                 }
                 Glide.with(this).load(agentImageUrl).into(iv)
                 layoutAgents.addView(iv)
+                hasContent = true
             }
             2 -> if (!agentTextDesc.isNullOrEmpty()) {
                 val tv = TextView(this).apply {
                     text = agentTextDesc
-                    setTextColor(Color.WHITE)
+                    setTextColor(Color.parseColor("#3D3222"))
                     textSize = 14f
                 }
                 layoutAgents.addView(tv)
+                hasContent = true
+            }
+        }
+        agentsCard.visibility = if (hasContent) View.VISIBLE else View.GONE
+        agentsTitle.visibility = if (hasContent) View.VISIBLE else View.GONE
+    }
+
+    private fun bindHeaderCard(
+        title: String,
+        authorText: String,
+        summary: String?,
+        tags: List<String>
+    ) {
+        findViewById<TextView>(R.id.tv_detail_title).text = title
+        findViewById<TextView>(R.id.tv_detail_author).text = authorText
+        findViewById<TextView>(R.id.tv_detail_summary).text =
+            summary?.takeIf { it.isNotBlank() } ?: "暂无补充说明"
+        bindStageTags(tags)
+    }
+
+    private fun bindStageTags(tags: List<String>) {
+        val scrollView = findViewById<android.widget.HorizontalScrollView>(R.id.scroll_detail_tags)
+        val container = findViewById<LinearLayout>(R.id.ll_detail_tags)
+        container.removeAllViews()
+        val validTags = tags.filter { it.isNotBlank() }
+        if (validTags.isEmpty()) {
+            scrollView.visibility = View.GONE
+            return
+        }
+        scrollView.visibility = View.VISIBLE
+        validTags.forEach { tag ->
+            container.addView(createStageTagView(tag))
+        }
+    }
+
+    private fun createStageTagView(tag: String): TextView {
+        val (bgColor, strokeColor, textColor) = when (tag) {
+            "如鸢" -> Triple("#F8E0B8", "#C88A2C", "#8F5A11")
+            "代号鸢" -> Triple("#E2E7DA", "#9AA98B", "#5D6B51")
+            else -> Triple("#F8F2E5", "#D8C18A", "#7B5B17")
+        }
+        return TextView(this).apply {
+            text = tag
+            textSize = 12f
+            setTextColor(Color.parseColor(textColor))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor(bgColor))
+                setStroke(dpToPx(1f), Color.parseColor(strokeColor))
+                cornerRadius = dpToPx(999f).toFloat()
+            }
+            setPadding(dpToPx(10f), dpToPx(4f), dpToPx(10f), dpToPx(4f))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = dpToPx(6f)
             }
         }
     }
 
-    private fun renderDescriptionSection(content: String?) {
-        val rvText = findViewById<RecyclerView>(R.id.rv_detail_text)
-        val glassContainer = rvText.parent as LinearLayout
-        val outerContainer = glassContainer.parent as LinearLayout
-        rvText.visibility = View.GONE
-        outerContainer.findViewWithTag<View>("DYNAMIC_DESC_TITLE")?.let { outerContainer.removeView(it) }
-        glassContainer.findViewWithTag<View>("DYNAMIC_DESC_CONTENT")?.let { glassContainer.removeView(it) }
-        if (content.isNullOrEmpty()) {
-            glassContainer.visibility = View.GONE
-            return
+    private fun dpToPx(dp: Float): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp,
+            resources.displayMetrics
+        ).toInt()
+    }
+
+    private fun extractPureAgentName(raw: String): String {
+        val agentDisplayName = raw.substringBefore(" ").trim()
+        val match = Regex("^(\\d+)(.*)").find(agentDisplayName)
+        return if (match != null) {
+            match.groupValues[2].trim()
+        } else {
+            agentDisplayName
         }
-        glassContainer.visibility = View.VISIBLE
-        val titleView = TextView(this).apply {
-            tag = "DYNAMIC_DESC_TITLE"
-            text = "◆ 补充说明"
-            setTextColor(Color.parseColor("#E5C07B"))
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = (15 * resources.displayMetrics.density).toInt()
-            }
-        }
-        outerContainer.addView(titleView, outerContainer.indexOfChild(glassContainer))
-        glassContainer.addView(TextView(this).apply {
-            tag = "DYNAMIC_DESC_CONTENT"
-            text = content
-            setTextColor(Color.parseColor("#E0E0E0"))
-            textSize = 14f
-        })
     }
 
     private fun parseAgentSelection(agentSelectionJson: String?): List<String?>? {
@@ -697,55 +767,185 @@ class StrategyDetailActivity : AppCompatActivity() {
             if (agentsJson.isNotEmpty()) putExtra("AGENTS_JSON", agentsJson)
         }
         startService(intent)
-        Toast.makeText(this, "脚本及配置已发送至悬浮窗", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "导入成功", Toast.LENGTH_SHORT).show()
     }
 
-    private fun createReadOnlyTable(tableData: List<UploadTurnItem>): View {
+    private fun createReadOnlyTable(
+        tableData: List<UploadTurnItem>,
+        agentNames: List<String>
+    ): View {
         val tableContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = (25 * resources.displayMetrics.density).toInt()
-            }
-            setBackgroundColor(Color.parseColor("#444444"))
-            setPadding(2, 2, 2, 2)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
-        fun createCell(textStr: String, weight: Float, isHeader: Boolean = false): TextView {
+
+        fun createTurnHeaderCell(): TextView {
             return TextView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, weight).apply {
-                    setMargins(1, 1, 1, 1)
-                }
-                text = textStr
-                textSize = if (isHeader) 13f else 12f
-                setTextColor(Color.parseColor(if (isHeader) "#E5C07B" else "#E0E0E0"))
+                layoutParams = LinearLayout.LayoutParams(dpToPx(TURN_COLUMN_WIDTH_DP), LinearLayout.LayoutParams.WRAP_CONTENT)
+                text = "回合"
+                textSize = 11f
+                setTextColor(Color.parseColor("#A3967F"))
                 gravity = Gravity.CENTER
-                setBackgroundColor(Color.parseColor(if (isHeader) "#2D2D2D" else "#1A1A1A"))
-                val padV = (10 * resources.displayMetrics.density).toInt()
-                setPadding(0, padV, 0, padV)
             }
         }
+
+        fun createAvatarHeaderCell(name: String?): LinearLayout {
+            return LinearLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+
+                val avatarView = ImageView(this@StrategyDetailActivity).apply {
+                    layoutParams = LinearLayout.LayoutParams(dpToPx(32f), dpToPx(32f))
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setBackgroundResource(R.drawable.bg_job_station_avatar)
+                    clipToOutline = true
+                    outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+                    if (!name.isNullOrBlank()) {
+                        loadAvatarFromAssets(name)?.let { setImageDrawable(it) }
+                    }
+                }
+
+                val nameView = TextView(this@StrategyDetailActivity).apply {
+                    text = name?.take(3).orEmpty()
+                    textSize = 10f
+                    setTextColor(Color.parseColor("#3D3222"))
+                    setTypeface(typeface, Typeface.BOLD)
+                    setPadding(0, dpToPx(4f), 0, 0)
+                    maxLines = 1
+                    gravity = Gravity.CENTER
+                    visibility = if (name.isNullOrBlank()) View.INVISIBLE else View.VISIBLE
+                }
+
+                addView(avatarView)
+                addView(nameView)
+            }
+        }
+
+        fun createTurnInfoCell(turnNum: Int): TextView {
+            return TextView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dpToPx(TURN_COLUMN_WIDTH_DP), LinearLayout.LayoutParams.WRAP_CONTENT)
+                text = turnNum.toString()
+                textSize = 15f
+                setTextColor(Color.parseColor("#82683A"))
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER
+            }
+        }
+
+        fun createActionChipView(label: String): TextView {
+            val (bgColor, strokeColor, textColor) = when {
+                label.endsWith("↑") ->
+                    Triple("#FFF2F2", "#F0C7C7", "#C94242")
+                label.endsWith("↓") ->
+                    Triple("#F2F7FF", "#C2D9F2", "#3D73A8")
+                label.endsWith("A") ->
+                    Triple("#FFF8EB", "#EEDCA8", "#A37817")
+                else ->
+                    Triple("#F7F5F0", "#E0DCD3", "#7A7369")
+            }
+
+            return TextView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dpToPx(2f)
+                    bottomMargin = dpToPx(2f)
+                }
+                text = label
+                textSize = 10f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(Color.parseColor(textColor))
+                gravity = Gravity.CENTER
+                maxLines = 1
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor(bgColor))
+                    setStroke(dpToPx(1f), Color.parseColor(strokeColor))
+                    cornerRadius = dpToPx(8f).toFloat()
+                }
+                setPadding(dpToPx(6f), dpToPx(1f), dpToPx(6f), dpToPx(1f))
+            }
+        }
+
+        fun parseActionLabels(actionText: String): List<String> {
+            val normalized = actionText.trim()
+            if (normalized.isBlank() || normalized == "-") return emptyList()
+            val matches = Regex("""\d+(?:A|↑|↓|圈)""").findAll(normalized).map { it.value }.toList()
+            return if (matches.isNotEmpty()) matches else listOf(normalized)
+        }
+
+        fun createActionsCell(actionText: String): LinearLayout {
+            return LinearLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+
+                val labels = parseActionLabels(actionText)
+                if (labels.isEmpty()) {
+                    addView(TextView(this@StrategyDetailActivity).apply {
+                        text = "-"
+                        textSize = 12f
+                        setTextColor(Color.parseColor("#D1C6B4"))
+                    })
+                } else {
+                    labels.forEach { label ->
+                        addView(createActionChipView(label))
+                    }
+                }
+            }
+        }
+
         val headerRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            gravity = Gravity.CENTER_VERTICAL
+            setBackgroundColor(Color.parseColor("#FAF8F3"))
+            setPadding(dpToPx(8f), dpToPx(12f), dpToPx(8f), dpToPx(12f))
         }
-        headerRow.addView(createCell("回合", 1.2f, true))
-        for (i in 1..5) headerRow.addView(createCell(i.toString(), 1f, true))
-        headerRow.addView(createCell("备注", 2f, true))
+        headerRow.addView(createTurnHeaderCell())
+        repeat(5) { index ->
+            headerRow.addView(createAvatarHeaderCell(agentNames.getOrNull(index)))
+        }
         tableContainer.addView(headerRow)
-        tableData.forEach { item ->
+        tableData.forEachIndexed { index, item ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dpToPx(10f), 0, dpToPx(10f))
             }
-            row.addView(createCell(item.turnNum.toString(), 1.2f))
+            row.addView(createTurnInfoCell(item.turnNum))
             for (i in 0 until 5) {
-                val actionText = item.actions.getOrNull(i)?.takeIf { it.isNotBlank() } ?: "-"
-                row.addView(createCell(actionText, 1f))
+                row.addView(createActionsCell(item.actions.getOrNull(i).orEmpty()))
             }
-            row.addView(createCell(item.remark, 2f))
             tableContainer.addView(row)
+            if (index < tableData.lastIndex) {
+                tableContainer.addView(View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        dpToPx(1f)
+                    )
+                    setBackgroundColor(Color.parseColor("#F2EDE1"))
+                })
+            }
         }
-        tableContainer.tag = "DYNAMIC_TABLE_CONTENT"
         return tableContainer
+    }
+
+    private fun loadAvatarFromAssets(name: String): Drawable? {
+        return runCatching {
+            assets.open("$name.png").use { stream ->
+                Drawable.createFromStream(stream, null)
+            }
+        }.getOrNull() ?: runCatching {
+            assets.open("$name.jpg").use { stream ->
+                Drawable.createFromStream(stream, null)
+            }
+        }.getOrNull()
     }
 
     private fun parseScriptContentToTableData(text: String): List<UploadTurnItem> {

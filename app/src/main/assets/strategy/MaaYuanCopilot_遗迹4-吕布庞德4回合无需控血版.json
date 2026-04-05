@@ -1,0 +1,909 @@
+{
+  "version": 3,
+  "stage_name": "yu_ying_die_ying",
+  "difficulty": 0,
+  "level_recognition_name": "4",
+  "level_meta": {
+    "stage_id": "yu_ying_die_ying",
+    "level_id": "di_gong/yu_ying_die_ying",
+    "name": "欲影·谍影",
+    "cat_one": "地宫",
+    "cat_two": "欲影·谍影",
+    "cat_three": "无",
+    "width": 0,
+    "height": 0
+  },
+  "doc": {
+    "title": "遗迹4-吕布庞德4回合无需控血版",
+    "details": "可能对吕布要求高 群攻盘 这里是本人练度 攻略老师四星吕布 庞德站得住即可\n该练度需赌一个三回合橙星已写进作业 练度够可以不赌"
+  },
+  "opers": [
+    {
+      "name": "诸葛亮",
+      "star_level": 2,
+      "hp": 31099,
+      "attack": 7228,
+      "discs_selected": [
+        3,
+        2,
+        0
+      ],
+      "disc_star_stones": [
+        "",
+        "",
+        ""
+      ],
+      "disc_assist_stars": [
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "name": "庞德",
+      "discs_selected": [
+        7,
+        10,
+        0
+      ],
+      "disc_star_stones": [
+        "",
+        "",
+        ""
+      ],
+      "disc_assist_stars": [
+        "",
+        "",
+        ""
+      ],
+      "star_level": 1,
+      "hp": 21559,
+      "attack": 7264
+    },
+    {
+      "name": "刘璋",
+      "star_level": 2,
+      "hp": 30136,
+      "attack": 5076,
+      "discs_selected": [
+        2,
+        1,
+        -4
+      ],
+      "disc_star_stones": [
+        "",
+        "",
+        ""
+      ],
+      "disc_assist_stars": [
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "name": "庞羲",
+      "star_level": 3,
+      "hp": 30491,
+      "attack": 7976,
+      "discs_selected": [
+        2,
+        6,
+        -4
+      ],
+      "disc_star_stones": [
+        "",
+        "",
+        ""
+      ],
+      "disc_assist_stars": [
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "name": "吕布",
+      "star_level": 3,
+      "hp": 26234,
+      "attack": 10048,
+      "discs_selected": [
+        4,
+        6,
+        3
+      ],
+      "disc_star_stones": [
+        "天府",
+        "武曲",
+        "破军"
+      ],
+      "disc_assist_stars": [
+        "解神",
+        "文曲",
+        "天魁"
+      ]
+    }
+  ],
+  "actions": {
+    "检测回合1": {
+      "recognition": "Custom",
+      "custom_recognition": "PureNum",
+      "custom_recognition_param": {
+        "roi": [
+          641,
+          50,
+          43,
+          27
+        ],
+        "expected": "1"
+      },
+      "text_doc": "回合1",
+      "focus": "当前：第1回合",
+      "next": [
+        "史子眇sp",
+        "回合1行动1"
+      ],
+      "on_error": [
+        "抄作业点左上角重开"
+      ],
+      "timeout": 3000,
+      "post_delay": 2000
+    },
+    "回合1行动1": {
+      "text_doc": "等待",
+      "focus": "等待1000ms",
+      "post_delay": 1000,
+      "next": [
+        "史子眇sp",
+        "回合1行动2"
+      ]
+    },
+    "回合1行动2": {
+      "text_doc": "左侧目标",
+      "focus": "切换至左侧目标",
+      "action": "Click",
+      "target": [
+        154,
+        648,
+        1,
+        1
+      ],
+      "post_delay": 2000,
+      "duration": 800,
+      "next": [
+        "史子眇sp",
+        "回合1行动3"
+      ]
+    },
+    "回合1行动3": {
+      "text_doc": "左侧目标",
+      "focus": "切换至左侧目标",
+      "action": "Click",
+      "target": [
+        154,
+        648,
+        1,
+        1
+      ],
+      "post_delay": 2000,
+      "duration": 800,
+      "next": [
+        "史子眇sp",
+        "回合1行动4"
+      ]
+    },
+    "回合1行动4": {
+      "action": "Click",
+      "target": [
+        180,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "2普",
+      "focus": "行动:2号位普攻",
+      "next": [
+        "史子眇sp",
+        "回合1行动5"
+      ]
+    },
+    "回合1行动5": {
+      "action": "Swipe",
+      "begin": [
+        77,
+        1060,
+        10,
+        1
+      ],
+      "end": [
+        77,
+        670,
+        10,
+        1
+      ],
+      "post_delay": 5000,
+      "duration": 800,
+      "text_doc": "1大",
+      "focus": "行动:1号位大招",
+      "next": [
+        "史子眇sp",
+        "回合1行动6"
+      ]
+    },
+    "回合1行动6": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        714,
+        1,
+        1
+      ],
+      "post_delay": 5000,
+      "duration": 800,
+      "text_doc": "3大",
+      "focus": "行动:3号位大招",
+      "next": [
+        "史子眇sp",
+        "回合1行动7"
+      ]
+    },
+    "回合1行动7": {
+      "action": "Click",
+      "target": [
+        496,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "4普",
+      "focus": "行动:4号位普攻",
+      "next": [
+        "史子眇sp",
+        "回合1行动8"
+      ]
+    },
+    "回合1行动8": {
+      "text_doc": "等待",
+      "focus": "等待1000ms",
+      "post_delay": 1000,
+      "next": [
+        "史子眇sp",
+        "回合1行动9"
+      ]
+    },
+    "回合1行动9": {
+      "text_doc": "右侧目标",
+      "focus": "切换至右侧目标",
+      "action": "Click",
+      "target": [
+        603,
+        413,
+        18,
+        21
+      ],
+      "post_delay": 2000,
+      "duration": 800,
+      "next": [
+        "史子眇sp",
+        "回合1行动10"
+      ]
+    },
+    "回合1行动10": {
+      "action": "Click",
+      "target": [
+        646,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "5普",
+      "focus": "行动:5号位普攻",
+      "next": [
+        "史子眇sp",
+        "抄作业战斗胜利",
+        "检测回合2"
+      ]
+    },
+    "检测回合2": {
+      "recognition": "Custom",
+      "custom_recognition": "PureNum",
+      "custom_recognition_param": {
+        "roi": [
+          641,
+          50,
+          43,
+          27
+        ],
+        "expected": "2"
+      },
+      "text_doc": "回合2",
+      "focus": "当前：第2回合",
+      "next": [
+        "史子眇sp",
+        "回合2行动1"
+      ],
+      "on_error": [
+        "抄作业点左上角重开"
+      ],
+      "timeout": 3000,
+      "post_delay": 2000
+    },
+    "回合2行动1": {
+      "text_doc": "等待",
+      "focus": "等待1000ms",
+      "post_delay": 1000,
+      "next": [
+        "史子眇sp",
+        "回合2行动2"
+      ]
+    },
+    "回合2行动2": {
+      "action": "Swipe",
+      "begin": [
+        73,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        73,
+        1258,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "1下",
+      "focus": "行动:1号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动3"
+      ]
+    },
+    "回合2行动3": {
+      "action": "Swipe",
+      "begin": [
+        221,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        221,
+        1251,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "2下",
+      "focus": "行动:2号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动4"
+      ]
+    },
+    "回合2行动4": {
+      "action": "Swipe",
+      "begin": [
+        496,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        496,
+        1258,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "4下",
+      "focus": "行动:4号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动5"
+      ]
+    },
+    "回合2行动5": {
+      "action": "Swipe",
+      "begin": [
+        646,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        642,
+        700,
+        1,
+        1
+      ],
+      "post_delay": 5000,
+      "duration": 800,
+      "text_doc": "5大",
+      "focus": "行动:5号位大招",
+      "next": [
+        "史子眇sp",
+        "回合2行动6"
+      ]
+    },
+    "回合2行动6": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        1237,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "3下",
+      "focus": "行动:3号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动7"
+      ]
+    },
+    "回合2行动7": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        1237,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "3下",
+      "focus": "行动:3号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动8"
+      ]
+    },
+    "回合2行动8": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        1237,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "3下",
+      "focus": "行动:3号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动9"
+      ]
+    },
+    "回合2行动9": {
+      "action": "Swipe",
+      "begin": [
+        646,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        646,
+        1258,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "5下",
+      "focus": "行动:5号位防御",
+      "next": [
+        "史子眇sp",
+        "回合2行动10"
+      ]
+    },
+    "回合2行动10": {
+      "action": "Swipe",
+      "begin": [
+        646,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        646,
+        1258,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "5下",
+      "focus": "行动:5号位防御",
+      "next": [
+        "史子眇sp",
+        "抄作业战斗胜利",
+        "检测回合3"
+      ]
+    },
+    "检测回合3": {
+      "recognition": "Custom",
+      "custom_recognition": "PureNum",
+      "custom_recognition_param": {
+        "roi": [
+          641,
+          50,
+          43,
+          27
+        ],
+        "expected": "3"
+      },
+      "text_doc": "回合3",
+      "focus": "当前：第3回合",
+      "next": [
+        "史子眇sp",
+        "第3回合橙星检测"
+      ],
+      "on_error": [
+        "抄作业点左上角重开"
+      ],
+      "timeout": 3000,
+      "post_delay": 2000
+    },
+    "第3回合橙星检测": {
+      "recognition": "ColorMatch",
+      "upper": [
+        255,
+        255,
+        120
+      ],
+      "lower": [
+        180,
+        160,
+        40
+      ],
+      "roi": [
+        58,
+        160,
+        103,
+        88
+      ],
+      "next": [
+        "史子眇sp",
+        "回合3行动1"
+      ],
+      "text_doc": "第3回合橙星检测",
+      "focus": "第3回合有橙星"
+    },
+    "回合3行动1": {
+      "text_doc": "等待",
+      "focus": "等待1000ms",
+      "post_delay": 1000,
+      "next": [
+        "史子眇sp",
+        "回合3行动2"
+      ]
+    },
+    "回合3行动2": {
+      "action": "Swipe",
+      "begin": [
+        77,
+        1060,
+        10,
+        1
+      ],
+      "end": [
+        77,
+        670,
+        10,
+        1
+      ],
+      "post_delay": 5000,
+      "duration": 800,
+      "text_doc": "1大",
+      "focus": "行动:1号位大招",
+      "next": [
+        "史子眇sp",
+        "回合3行动3"
+      ]
+    },
+    "回合3行动3": {
+      "action": "Swipe",
+      "begin": [
+        496,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        496,
+        679,
+        1,
+        1
+      ],
+      "post_delay": 5000,
+      "duration": 800,
+      "text_doc": "4大",
+      "focus": "行动:4号位大招",
+      "next": [
+        "史子眇sp",
+        "回合3行动4"
+      ]
+    },
+    "回合3行动4": {
+      "action": "Swipe",
+      "begin": [
+        220,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        225,
+        668,
+        1,
+        1
+      ],
+      "post_delay": 5000,
+      "duration": 800,
+      "text_doc": "2大",
+      "focus": "行动:2号位大招",
+      "next": [
+        "史子眇sp",
+        "回合3行动5"
+      ]
+    },
+    "回合3行动5": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        1237,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "3下",
+      "focus": "行动:3号位防御",
+      "next": [
+        "史子眇sp",
+        "回合3行动6"
+      ]
+    },
+    "回合3行动6": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        1237,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "3下",
+      "focus": "行动:3号位防御",
+      "next": [
+        "史子眇sp",
+        "回合3行动7"
+      ]
+    },
+    "回合3行动7": {
+      "action": "Swipe",
+      "begin": [
+        357,
+        1060,
+        1,
+        1
+      ],
+      "end": [
+        357,
+        1237,
+        1,
+        1
+      ],
+      "post_delay": 3000,
+      "duration": 800,
+      "text_doc": "3下",
+      "focus": "行动:3号位防御",
+      "next": [
+        "史子眇sp",
+        "回合3行动8"
+      ]
+    },
+    "回合3行动8": {
+      "action": "Click",
+      "target": [
+        634,
+        1118,
+        16,
+        11
+      ],
+      "pre_delay": 500,
+      "post_delay": 3000,
+      "text_doc": "5sp",
+      "focus": "行动:5号位SP",
+      "next": [
+        "史子眇sp",
+        "回合3行动9"
+      ]
+    },
+    "回合3行动9": {
+      "action": "Click",
+      "target": [
+        646,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "5普",
+      "focus": "行动:5号位普攻",
+      "next": [
+        "史子眇sp",
+        "回合3行动10"
+      ]
+    },
+    "回合3行动10": {
+      "text_doc": "等待",
+      "focus": "等待1000ms",
+      "post_delay": 1000,
+      "next": [
+        "史子眇sp",
+        "回合3行动11"
+      ]
+    },
+    "回合3行动11": {
+      "action": "Click",
+      "target": [
+        646,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "5普",
+      "focus": "行动:5号位普攻",
+      "next": [
+        "史子眇sp",
+        "回合3行动12"
+      ]
+    },
+    "回合3行动12": {
+      "text_doc": "等待",
+      "focus": "等待1000ms",
+      "post_delay": 1000,
+      "next": [
+        "史子眇sp",
+        "回合3行动13"
+      ]
+    },
+    "回合3行动13": {
+      "action": "Click",
+      "target": [
+        646,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "5普",
+      "focus": "行动:5号位普攻",
+      "next": [
+        "史子眇sp",
+        "回合3行动14"
+      ]
+    },
+    "回合3行动14": {
+      "action": "Click",
+      "target": [
+        646,
+        1060,
+        5,
+        5
+      ],
+      "post_delay": 3000,
+      "text_doc": "5普",
+      "focus": "行动:5号位普攻",
+      "next": [
+        "抄作业战斗胜利"
+      ]
+    },
+    "抄作业点左上角重开": {
+      "recognition": "TemplateMatch",
+      "template": "back.png",
+      "green_mask": true,
+      "threshold": 0.5,
+      "roi": [
+        6,
+        8,
+        123,
+        112
+      ],
+      "action": "Click",
+      "pre_delay": 500,
+      "post_delay": 2000,
+      "next": [
+        "[JumpBack]抄作业确定左上角重开",
+        "抄作业退出兰台木桩",
+        "抄作业找到关卡-OCR"
+      ],
+      "focus": "正在尝试点左上角重开",
+      "timeout": 20000
+    },
+    "作业信息": {
+      "focus": "[color:#D48806] [如果版本符合请无视] 该作业由 MaaYuan Share v26.02.09 生成，推荐使用 MaaYuan v2.0.0-beta5 或更高版本运行，以免作业无法使用。"
+    },
+    "抄作业胜利后继续": {
+      "focus": "战斗胜利，尝试继续",
+      "next": [
+        "抄作业找到关卡-OCR"
+      ]
+    },
+    "抄作业自定义延时": {
+      "attack_delay": "3000",
+      "ult_delay": "5000",
+      "defense_delay": "3000"
+    },
+    "抄作业找到关卡-OCR": {
+      "recognition": "OCR",
+      "expected": "4",
+      "roi": [
+        0,
+        297,
+        720,
+        1030
+      ],
+      "action": "Click",
+      "pre_delay": 2000,
+      "next": [
+        "抄作业进入关卡"
+      ],
+      "timeout": 20000
+    }
+  },
+  "level": "yu_ying_die_ying",
+  "id": 25369,
+  "tags": [
+    "代号鸢"
+  ]
+}

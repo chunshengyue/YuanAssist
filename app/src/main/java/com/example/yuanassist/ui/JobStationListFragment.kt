@@ -1,0 +1,461 @@
+package com.example.yuanassist.ui
+
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.os.Bundle
+import android.util.TypedValue
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import cn.bmob.v3.BmobQuery
+import cn.bmob.v3.exception.BmobException
+import cn.bmob.v3.listener.FindListener
+import com.example.yuanassist.R
+import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
+import com.example.yuanassist.model.strategy_detail
+
+class JobStationListFragment : Fragment() {
+
+    companion object {
+        private val STAGE_OPTIONS = listOf("主线", "白鹄", "洞窟", "兰台", "地宫", "家具", "活动")
+    }
+
+    private enum class SortMode(val maaOrderBy: String) {
+        HOT("hot"),
+        NEWEST("id")
+    }
+
+    private lateinit var emptyView: TextView
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var searchInput: EditText
+    private lateinit var chipSortHot: TextView
+    private lateinit var chipSortNewest: TextView
+    private lateinit var chipGameRuyuan: TextView
+    private lateinit var chipGameDaihao: TextView
+    private lateinit var chipStageFilter: TextView
+    private lateinit var chipDefaultFilter: TextView
+
+    private var currentSortMode = SortMode.HOT
+    private var selectedGameTag = ""
+    private var selectedStageTag = ""
+    private var appliedKeyword = ""
+    private var currentMaaPage = 1
+    private var hasNextMaaPage = false
+    private var isLoadingMore = false
+    private var loadedMaaItems: List<JobStationAssetRepository.JobStationListItem> = emptyList()
+    private var loadedBmobItems: List<strategy_detail> = emptyList()
+    private var mergedItems: List<JobStationAssetRepository.JobStationListItem> = emptyList()
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return inflater.inflate(R.layout.activity_job_station_list, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        applyStatusBarInsets(view)
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    (activity as? MainActivity)?.navigateToTab(R.id.nav_home)
+                }
+            }
+        )
+
+        view.findViewById<ImageView>(R.id.btn_job_station_list_back).visibility = View.GONE
+        emptyView = view.findViewById(R.id.tv_job_station_list_empty)
+        recyclerView = view.findViewById(R.id.rv_job_station_list)
+        swipeRefreshLayout = view.findViewById(R.id.swipe_job_station_list)
+        searchInput = view.findViewById(R.id.et_job_station_search_keyword)
+        chipSortHot = view.findViewById(R.id.chip_sort_hot)
+        chipSortNewest = view.findViewById(R.id.chip_sort_newest)
+        chipGameRuyuan = view.findViewById(R.id.chip_game_ruyuan)
+        chipGameDaihao = view.findViewById(R.id.chip_game_daihao)
+        chipStageFilter = view.findViewById(R.id.chip_stage_filter)
+        chipDefaultFilter = view.findViewById(R.id.chip_default_filter)
+
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        swipeRefreshLayout.setColorSchemeColors(
+            Color.parseColor("#C88A2C"),
+            Color.parseColor("#8F6A2B")
+        )
+        swipeRefreshLayout.setProgressBackgroundColorSchemeColor(Color.parseColor("#FFF8EB"))
+        swipeRefreshLayout.setOnRefreshListener {
+            reloadAll(fromPullRefresh = true)
+        }
+        view.findViewById<Button>(R.id.btn_job_station_search).setOnClickListener {
+            submitSearch()
+        }
+        searchInput.setOnEditorActionListener { _, _, _ ->
+            submitSearch()
+            true
+        }
+
+        setupFilterChips()
+        reloadAll()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        (activity as? MainActivity)?.setBottomNavVisible(false)
+    }
+
+    override fun onPause() {
+        (activity as? MainActivity)?.setBottomNavVisible(true)
+        super.onPause()
+    }
+
+    private fun setupFilterChips() {
+        chipSortHot.setOnClickListener {
+            if (currentSortMode != SortMode.HOT) {
+                currentSortMode = SortMode.HOT
+                updateFilterChipUi()
+                reloadAll()
+            }
+        }
+
+        chipSortNewest.setOnClickListener {
+            if (currentSortMode != SortMode.NEWEST) {
+                currentSortMode = SortMode.NEWEST
+                updateFilterChipUi()
+                reloadAll()
+            }
+        }
+
+        chipGameRuyuan.setOnClickListener {
+            selectedGameTag = if (selectedGameTag == "如鸢") "" else "如鸢"
+            updateFilterChipUi()
+            applyFilters()
+        }
+
+        chipGameDaihao.setOnClickListener {
+            selectedGameTag = if (selectedGameTag == "代号鸢") "" else "代号鸢"
+            updateFilterChipUi()
+            applyFilters()
+        }
+
+        chipStageFilter.setOnClickListener {
+            showStagePickerDialog()
+        }
+
+        updateFilterChipUi()
+    }
+
+    private fun showStagePickerDialog() {
+        val options = arrayOf("全部") + STAGE_OPTIONS.toTypedArray()
+        val selectedIndex = (STAGE_OPTIONS.indexOf(selectedStageTag) + 1).coerceAtLeast(0)
+        AlertDialog.Builder(requireContext())
+            .setTitle("选择关卡")
+            .setSingleChoiceItems(options, selectedIndex) { dialog, which ->
+                selectedStageTag = if (which == 0) "" else options[which]
+                updateFilterChipUi()
+                reloadAll()
+                dialog.dismiss()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun reloadAll(fromPullRefresh: Boolean = false) {
+        loadedMaaItems = emptyList()
+        loadedBmobItems = emptyList()
+        mergedItems = emptyList()
+        currentMaaPage = 1
+        hasNextMaaPage = false
+        isLoadingMore = false
+        if (!fromPullRefresh) {
+            swipeRefreshLayout.isRefreshing = false
+        } else {
+            swipeRefreshLayout.isRefreshing = true
+        }
+        updateLoadMoreUi()
+        showEmpty("正在加载攻略...")
+        loadMaaPage(page = 1, append = false)
+    }
+
+    private fun loadMaaPage(page: Int, append: Boolean) {
+        isLoadingMore = append
+        updateLoadMoreUi()
+        JobStationRemoteRepository.loadList(
+            page = page,
+            orderBy = currentSortMode.maaOrderBy,
+            levelKeyword = selectedStageTag,
+            document = appliedKeyword,
+            onSuccess = { pageInfo, items ->
+                activity?.runOnUiThread {
+                    currentMaaPage = pageInfo.page
+                    hasNextMaaPage = pageInfo.hasNext
+                    loadedMaaItems = if (append) {
+                        (loadedMaaItems + items).distinctBy { it.copilotId }
+                    } else {
+                        items
+                    }
+                    loadBmobStrategies()
+                }
+            },
+            onError = { message ->
+                activity?.runOnUiThread {
+                    isLoadingMore = false
+                    swipeRefreshLayout.isRefreshing = false
+                    updateLoadMoreUi()
+                    if (append) {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                    } else {
+                        mergedItems = emptyList()
+                        showEmpty(message)
+                    }
+                }
+            }
+        )
+    }
+
+    private fun loadBmobStrategies() {
+        val query = BmobQuery<strategy_detail>()
+        query.addWhereEqualTo("visible", STRATEGY_VISIBLE_PUBLIC)
+        query.order(
+            when (currentSortMode) {
+                SortMode.HOT -> "-viewCount"
+                SortMode.NEWEST -> "-createdAt"
+            }
+        )
+        query.setLimit(200)
+        query.include("author")
+        query.findObjects(object : FindListener<strategy_detail>() {
+            override fun done(list: MutableList<strategy_detail>?, e: BmobException?) {
+                activity?.runOnUiThread {
+                    swipeRefreshLayout.isRefreshing = false
+                    if (e != null) {
+                        Toast.makeText(
+                            requireContext(),
+                            "社区攻略加载失败: ${e.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    loadedBmobItems = list.orEmpty()
+                    mergedItems = mergeStrategies(loadedMaaItems, loadedBmobItems)
+                    isLoadingMore = false
+                    updateLoadMoreUi()
+                    applyFilters()
+                }
+            }
+        })
+    }
+
+    private fun mergeStrategies(
+        maaItems: List<JobStationAssetRepository.JobStationListItem>,
+        bmobItems: List<strategy_detail>
+    ): List<JobStationAssetRepository.JobStationListItem> {
+        val bmobMappedItems = bmobItems.map(JobStationAssetRepository::fromBmobListItem)
+        val maaTimestamps = maaItems.map { it.publishTimestamp }.filter { it > 0L }
+
+        val merged = if (maaTimestamps.isEmpty()) {
+            maaItems + bmobMappedItems
+        } else {
+            val newestTime = maaTimestamps.maxOrNull() ?: 0L
+            val oldestTime = maaTimestamps.minOrNull() ?: 0L
+            val rangedBmobItems = bmobMappedItems.filter { item ->
+                item.publishTimestamp in oldestTime..newestTime
+            }
+            maaItems + rangedBmobItems
+        }
+
+        return when (currentSortMode) {
+            SortMode.HOT -> merged.sortedWith(
+                compareByDescending<JobStationAssetRepository.JobStationListItem> { it.hotScore }
+                    .thenByDescending { it.publishTimestamp }
+            )
+
+            SortMode.NEWEST -> merged.sortedByDescending { it.publishTimestamp }
+        }
+    }
+
+    private fun applyFilters() {
+        var filteredItems = mergedItems
+
+        if (selectedGameTag.isNotBlank()) {
+            filteredItems = filteredItems.filter { it.gameTag == selectedGameTag }
+        }
+
+        if (selectedStageTag.isNotBlank()) {
+            filteredItems = filteredItems.filter { it.categoryTag == selectedStageTag }
+        }
+
+        if (appliedKeyword.isNotEmpty()) {
+            filteredItems = filteredItems.filter { item ->
+                item.type == JobStationAssetRepository.JobStationListItemType.MAA ||
+                    item.title.contains(appliedKeyword, ignoreCase = true) ||
+                    item.author.contains(appliedKeyword, ignoreCase = true) ||
+                    item.tags.any { it.contains(appliedKeyword, ignoreCase = true) } ||
+                    item.roster.any { it.contains(appliedKeyword, ignoreCase = true) } ||
+                    item.agentsText.contains(appliedKeyword, ignoreCase = true)
+            }
+        }
+
+        if (filteredItems.isEmpty()) {
+            showEmpty("没有匹配的攻略，换个关键词试试")
+        } else {
+            showItems(filteredItems)
+        }
+    }
+
+    private fun showItems(items: List<JobStationAssetRepository.JobStationListItem>) {
+        swipeRefreshLayout.isRefreshing = false
+        emptyView.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
+        recyclerView.adapter = JobStationListAdapter(
+            items = items,
+            showLoadMore = hasNextMaaPage || isLoadingMore,
+            isLoadingMore = isLoadingMore,
+            onClick = { item ->
+                when (item.type) {
+                    JobStationAssetRepository.JobStationListItemType.BMOB -> {
+                        item.strategyId?.let { strategyId ->
+                            startActivity(Intent(requireContext(), StrategyDetailActivity::class.java).apply {
+                                putExtra("STRATEGY_ID", strategyId)
+                            })
+                        }
+                    }
+
+                    JobStationAssetRepository.JobStationListItemType.MAA -> {
+                        item.copilotId?.let { copilotId ->
+                            startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
+                                putExtra(JobStationActivity.EXTRA_COPILOT_ID, copilotId)
+                            })
+                        }
+                    }
+                }
+            },
+            onLoadMore = {
+                if (!isLoadingMore && hasNextMaaPage) {
+                    loadMaaPage(currentMaaPage + 1, append = true)
+                }
+            }
+        )
+    }
+
+    private fun showEmpty(message: String) {
+        swipeRefreshLayout.isRefreshing = false
+        emptyView.text = message
+        emptyView.visibility = View.VISIBLE
+        recyclerView.visibility = View.GONE
+    }
+
+    private fun updateFilterChipUi() {
+        bindChip(chipSortHot, currentSortMode == SortMode.HOT, true)
+        bindChip(chipSortNewest, currentSortMode == SortMode.NEWEST, true)
+        bindChip(chipGameRuyuan, selectedGameTag == "如鸢", true)
+        bindChip(chipGameDaihao, selectedGameTag == "代号鸢", true)
+        bindChip(chipStageFilter, selectedStageTag.isNotBlank(), true)
+        chipStageFilter.text = if (selectedStageTag.isBlank()) "关卡" else selectedStageTag
+        bindChip(chipDefaultFilter, true, false)
+    }
+
+    private fun updateLoadMoreUi() {
+        // 列表底部 footer 负责展示加载更多状态，这里不再维护固定按钮。
+    }
+
+    private fun submitSearch() {
+        val newKeyword = searchInput.text.toString().trim()
+        parseMysteryCopilotId(newKeyword)?.let { copilotId ->
+            JobStationRemoteRepository.loadComments(
+                copilotId = copilotId,
+                onSuccess = {
+                    activity?.runOnUiThread {
+                        openJobStationDetail(copilotId)
+                    }
+                },
+                onError = { message ->
+                    activity?.runOnUiThread {
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+            return
+        }
+        if (newKeyword == appliedKeyword) {
+            applyFilters()
+            return
+        }
+        appliedKeyword = newKeyword
+        reloadAll()
+    }
+
+    private fun parseMysteryCopilotId(keyword: String): Long? {
+        if (!keyword.startsWith("maay://", ignoreCase = true)) return null
+        return keyword.substring(7)
+            .trim()
+            .toLongOrNull()
+            ?.takeIf { it > 0L }
+    }
+
+    private fun openJobStationDetail(copilotId: Long) {
+        startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
+            putExtra(JobStationActivity.EXTRA_COPILOT_ID, copilotId)
+        })
+    }
+
+    private fun bindChip(view: TextView, selected: Boolean, enabled: Boolean) {
+        val background = GradientDrawable().apply {
+            cornerRadius = dpToPx(999f).toFloat()
+            if (selected) {
+                setColor(Color.parseColor("#F6D59A"))
+                setStroke(dpToPx(1f), Color.parseColor("#C88A2C"))
+            } else {
+                setColor(Color.parseColor("#F8F2E5"))
+                setStroke(dpToPx(1f), Color.parseColor("#D8C18A"))
+            }
+        }
+        view.background = background
+        view.setTextColor(
+            Color.parseColor(
+                when {
+                    !enabled -> "#B5A690"
+                    selected -> "#6B4E1C"
+                    else -> "#8C6C33"
+                }
+            )
+        )
+        view.isEnabled = enabled
+        view.alpha = if (enabled) 1f else 0.75f
+    }
+
+    private fun applyStatusBarInsets(root: View) {
+        val statusBarSpacer = root.findViewById<View>(R.id.view_job_station_list_status_bar_spacer)
+        ViewCompat.setOnApplyWindowInsetsListener(statusBarSpacer) { view, insets ->
+            val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            view.layoutParams = view.layoutParams.apply {
+                height = statusBars.top
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(statusBarSpacer)
+    }
+
+    private fun dpToPx(dp: Float): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp,
+            resources.displayMetrics
+        ).toInt()
+    }
+}

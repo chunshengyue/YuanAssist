@@ -6,67 +6,189 @@
     android:background="#F7F3EA"
     android:orientation="vertical">
 
-    <RelativeLayout
+    <LinearLayout
+        android:id="@+id/layout_job_station_list_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#00000000"
-        android:paddingStart="16dp"
-        android:paddingTop="50dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="12dp">
+        android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/btn_job_station_list_back"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:background="@drawable/bg_job_station_icon_button"
-            android:contentDescription="返回"
-            android:padding="12dp"
-            android:src="@drawable/ic_back_arrow"
-            app:tint="#634B22" />
+        <View
+            android:id="@+id/view_job_station_list_status_bar_spacer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:fontFamily="serif"
-            android:text="攻略列表"
-            android:textColor="#423521"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="14dp">
 
-    <FrameLayout
+            <ImageView
+                android:id="@+id/btn_job_station_list_back"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_job_station_icon_button"
+                android:contentDescription="返回"
+                android:padding="11dp"
+                android:src="@drawable/ic_back_arrow"
+                app:tint="#634B22" />
+
+            <EditText
+                android:id="@+id/et_job_station_search_keyword"
+                android:layout_width="0dp"
+                android:layout_height="45dp"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/bg_job_station_icon_button"
+                android:hint="搜索关卡/作者/密探搜索"
+                android:imeOptions="actionSearch"
+                android:maxLines="1"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:textColor="#4E3C1E"
+                android:textColorHint="#9A8A71"
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/btn_job_station_search"
+                android:layout_width="70dp"
+                android:layout_height="45dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/bg_job_station_chip"
+                android:text="搜索"
+                android:textColor="#6B4E1C"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/ll_job_station_filters"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/chip_sort_hot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:gravity="center"
+                    android:minWidth="52dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="最热"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/chip_sort_newest"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:minWidth="52dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="最新"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/chip_game_ruyuan"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="12dp"
+                    android:gravity="center"
+                    android:minWidth="52dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="如鸢"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/chip_game_daihao"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:minWidth="60dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="代号鸢"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/chip_stage_filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="12dp"
+                    android:gravity="center"
+                    android:minWidth="64dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="关卡"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/chip_default_filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:enabled="false"
+                    android:gravity="center"
+                    android:minWidth="64dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="默认"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_job_station_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_job_station_list"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="40dp" />
+            android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/tv_job_station_list_empty"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="16dp"
-            android:background="@drawable/bg_job_station_card"
-            android:gravity="center"
-            android:padding="30dp"
-            android:text="暂无攻略档案，请检查 assets 目录"
-            android:textColor="#8C7A61"
-            android:textSize="15sp"
-            android:visibility="gone" />
-    </FrameLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_job_station_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="40dp" />
+
+            <TextView
+                android:id="@+id/tv_job_station_list_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="16dp"
+                android:background="@drawable/bg_job_station_card"
+                android:gravity="center"
+                android:padding="30dp"
+                android:text="暂无攻略"
+                android:textColor="#8C7A61"
+                android:textSize="15sp"
+                android:visibility="gone" />
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>

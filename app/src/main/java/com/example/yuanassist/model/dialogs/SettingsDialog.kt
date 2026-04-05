@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import com.example.yuanassist.utils.AppConfig
@@ -67,10 +68,33 @@ object SettingsDialog {
                 InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
             )
 
+        fun createSwitchRow(label: String, checked: Boolean): Switch {
+            val row = LinearLayout(themeContext).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 15, 0, 15)
+            }
+            val tvLabel = TextView(themeContext).apply {
+                text = label
+                textSize = 14f
+                setTextColor(Color.DKGRAY)
+                width = (140 * context.resources.displayMetrics.density).toInt()
+            }
+            val switchView = Switch(themeContext).apply {
+                isChecked = checked
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            row.addView(tvLabel)
+            row.addView(switchView)
+            scrollContent.addView(row)
+            return switchView
+        }
+
         val etAttack = createIntRow("普攻间隔(ms):", currentConfig.intervalAttack.toString())
         val etSkill = createIntRow("技能间隔(ms):", currentConfig.intervalSkill.toString())
         val etWait = createIntRow("敌方回合(ms):", currentConfig.waitTurn.toString())
         val etStart = createIntRow("起始回合:", currentConfig.startTurn.toString())
+        val switchTurnNumberCheck = createSwitchRow("回合数检测:", currentConfig.enableTurnNumberCheck)
         val etThreshold = createIntRow("滑动阈值:", currentConfig.swipeThreshold.toString())
         val etHeight = createIntRow("录制区高度(%):", currentConfig.inputHeightRatio.toString())
         val etRecordDelay = createIntRow("录制延迟(ms):", currentConfig.recordDelay.toString())
@@ -146,6 +170,7 @@ object SettingsDialog {
                         intervalSkill = skill,
                         waitTurn = wait,
                         startTurn = start,
+                        enableTurnNumberCheck = switchTurnNumberCheck.isChecked,
                         swipeThreshold = threshold,
                         inputHeightRatio = height,
                         recordDelay = delay,

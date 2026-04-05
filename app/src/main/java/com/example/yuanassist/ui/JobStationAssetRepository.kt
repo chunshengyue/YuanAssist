@@ -1,23 +1,143 @@
 package com.example.yuanassist.ui
 
 import android.content.Context
+import com.example.yuanassist.model.BattleStageTarget
+import com.example.yuanassist.model.InstructionJson
+import com.example.yuanassist.model.InstructionType
+import com.example.yuanassist.model.STRATEGY_GAME_DAIHAOYUAN
+import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
+import com.example.yuanassist.model.strategy_detail
+import com.google.gson.Gson
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.math.abs
+import kotlin.math.max
 
 object JobStationAssetRepository {
 
     private const val ASSET_DIR = "strategy"
+    private const val DEFAULT_ATTACK_DELAY_MS = 2500L
+    private const val DEFAULT_SKILL_DELAY_MS = 4000L
+    private const val DEFAULT_WAIT_TURN_MS = 8000L
+    @Volatile
+    private var maaOperatorDiscCache: Map<String, List<OperatorDiscMeta>>? = null
+
+    enum class JobStationListItemType {
+        MAA,
+        BMOB
+    }
 
     data class JobStationListItem(
+        val type: JobStationListItemType = JobStationListItemType.MAA,
+        val copilotId: Long? = null,
+        val strategyId: String? = null,
         val assetFileName: String,
         val title: String,
         val tags: List<String>,
         val roster: List<String>,
         val author: String = "作者",
-        val publishTime: String = "1天前"
+        val publishTime: String = "1天前",
+        val publishTimestamp: Long = 0L,
+        val hotScore: Long = 0L,
+        val gameTag: String = "",
+        val categoryTag: String = "",
+        val coverUrl: String = "",
+        val authorAvatarUrl: String = "",
+        val agentsText: String = ""
     )
+
+    fun fromRemoteListItem(copilot: JobStationApiModels.CopilotInfo): JobStationListItem {
+        val contentRoot = parseContentRoot(copilot.content)
+        val publishTimestamp = parsePublishTimestamp(copilot.uploadTime)
+        val title = contentRoot?.optJSONObject("doc")?.optString("title")
+            .orEmpty()
+            .ifBlank { copilot.name.orEmpty() }
+            .ifBlank { "作业 ${copilot.id}" }
+
+        val tags = buildList {
+            resolveGameTagFromStrings(copilot.tags.orEmpty())
+                .takeIf { it.isNotBlank() }
+                ?.let(::add)
+            copilot.catOne
+                ?.takeIf { it.isNotBlank() }
+                ?.let(::add)
+            add("MaaYuanShare")
+        }.distinct()
+
+        val roster = contentRoot?.optJSONArray("opers")
+            ?.let(::readOperatorNames)
+            .orEmpty()
+
+        return JobStationListItem(
+            type = JobStationListItemType.MAA,
+            copilotId = copilot.id,
+            assetFileName = "",
+            title = title,
+            tags = tags,
+            roster = roster,
+            author = copilot.uploader.ifBlank { "作者" },
+            publishTime = formatRelativeTime(publishTimestamp, formatRemoteTime(copilot.uploadTime)),
+            publishTimestamp = publishTimestamp,
+            hotScore = copilot.views,
+            gameTag = resolveGameTagFromStrings(copilot.tags.orEmpty()),
+            categoryTag = copilot.catOne.orEmpty()
+        )
+    }
+
+    fun fromBmobListItem(detail: strategy_detail): JobStationListItem {
+        val roster = parseBmobRoster(detail)
+        val title = detail.title.ifBlank { "未命名攻略" }
+        val publishTimestamp = parsePublishTimestamp(detail.createdAt)
+        return JobStationListItem(
+            type = JobStationListItemType.BMOB,
+            strategyId = detail.objectId,
+            assetFileName = "",
+            title = title,
+            tags = buildBmobTags(detail, title),
+            roster = roster,
+            author = detail.author?.nickname?.takeIf { it.isNotBlank() }
+                ?: detail.author?.username?.takeIf { it.isNotBlank() }
+                ?: "热心玩家",
+            publishTime = formatRelativeTime(publishTimestamp, formatBmobTime(detail.createdAt)),
+            publishTimestamp = publishTimestamp,
+            hotScore = detail.viewCount?.toLong() ?: 0L,
+            gameTag = resolveGameTagFromRuyuan(detail.ruyuan).ifBlank { resolveGameTagFromTitle(title) },
+            categoryTag = resolveCategoryTagFromTitle(title),
+            coverUrl = detail.coverUrl.orEmpty(),
+            authorAvatarUrl = detail.author?.avatarUrl.orEmpty(),
+            agentsText = buildBmobAgentsText(detail, roster)
+        )
+    }
+
+    fun fromRemoteDetailData(copilot: JobStationApiModels.CopilotInfo): JobStationDetailData {
+        val contentRoot = parseContentRoot(copilot.content)
+        val metadata = copilot.metadata
+
+        return JobStationDetailData(
+            title = contentRoot?.optJSONObject("doc")?.optString("title")
+                .orEmpty()
+                .ifBlank { copilot.name.orEmpty() }
+                .ifBlank { "作业 ${copilot.id}" },
+            summary = buildRemoteSummary(contentRoot),
+            stageTags = buildRemoteStageTags(copilot),
+            roster = parseOpers(contentRoot?.optJSONArray("opers")),
+            turns = parseTurns(contentRoot?.optJSONObject("actions")),
+            author = copilot.uploader.ifBlank { "作者" },
+            sourceType = formatSourceType(metadata?.sourceType),
+            originalAuthor = metadata?.repostAuthor.orEmpty(),
+            originalPlatform = metadata?.repostPlatform.orEmpty(),
+            originalLink = metadata?.repostUrl.orEmpty(),
+            likeCount = formatMetric(copilot.like),
+            readCount = formatMetric(copilot.views),
+            importPayload = buildImportPayload(contentRoot),
+            isFromMaaYuan = true
+        )
+    }
 
     data class JobStationDetailData(
         val title: String,
@@ -31,7 +151,17 @@ object JobStationAssetRepository {
         val originalPlatform: String = "小红书",
         val originalLink: String = "https://www.xiaohongshu.com/",
         val likeCount: String = "1.2w",
-        val readCount: String = "10w+"
+        val readCount: String = "10w+",
+        val importPayload: JobStationImportPayload? = null,
+        val isFromMaaYuan: Boolean = false
+    )
+
+    data class JobStationImportPayload(
+        val scriptContent: String,
+        val configJson: String,
+        val instructionsJson: String,
+        val agentsJson: String,
+        val notice: String
     )
 
     data class OperData(
@@ -40,6 +170,12 @@ object JobStationAssetRepository {
         val hp: Int,
         val attack: Int,
         val discs: List<Int>
+    )
+
+    data class DiscDisplaySpec(
+        val displayName: String,
+        val color: String,
+        val forbidden: Boolean
     )
 
     data class TurnData(
@@ -57,6 +193,12 @@ object JobStationAssetRepository {
         val actionParamMs: Long? = null
     )
 
+    private data class OperatorDiscMeta(
+        val otName: String,
+        val abbreviation: String,
+        val color: String
+    )
+
     fun loadList(context: Context): List<JobStationListItem> {
         return runCatching {
             context.assets.list(ASSET_DIR)
@@ -67,6 +209,7 @@ object JobStationAssetRepository {
                         val docTitle = root.optJSONObject("doc")?.optString("title").orEmpty()
 
                         JobStationListItem(
+                            type = JobStationListItemType.MAA,
                             assetFileName = fileName,
                             title = docTitle.ifBlank { fileName.removeSuffix(".json") },
                             tags = buildList {
@@ -89,7 +232,8 @@ object JobStationAssetRepository {
                                         add(array.optJSONObject(i)?.optString("name").orEmpty())
                                     }
                                 }
-                            }
+                            },
+                            publishTimestamp = 0L
                         )
                     }
                 }
@@ -205,10 +349,292 @@ object JobStationAssetRepository {
         }.getOrNull()
     }
 
+    private fun parseContentRoot(content: String): JSONObject? {
+        return runCatching {
+            JSONObject(content)
+        }.getOrNull()
+    }
+
+    private fun buildImportPayload(root: JSONObject?): JobStationImportPayload? {
+        if (root == null) return null
+
+        val actions = root.optJSONObject("actions") ?: return null
+        val turnRows = linkedMapOf<Int, Array<StringBuilder>>()
+        val instructions = mutableListOf<InstructionJson>()
+        val stepActionRegex = Regex("""^回合(\d+)行动(\d+)$""")
+        val orangeDetectionRegex = Regex("""第(\d+)回合橙星检测""")
+        val deathDetectionRegex = Regex("""([1-5])号位阵亡检测""")
+        val importedTurnStartInstructions = mutableSetOf<String>()
+        var hasAllWipeRestart = false
+
+        val customDelayNode = actions.optJSONObject("抄作业自定义延时")
+        val attackDelay = customDelayNode?.optString("attack_delay")
+            ?.toLongOrNull()
+            ?: DEFAULT_ATTACK_DELAY_MS
+        val skillDelay = customDelayNode?.optString("ult_delay")
+            ?.toLongOrNull()
+            ?: DEFAULT_SKILL_DELAY_MS
+        val stageAutoNavTarget = resolveStageAutoNavTarget(root.optJSONObject("level_meta"))
+
+        val sortedKeys = actions.keys().asSequence().toList().sortedWith(
+            compareBy<String>(
+                { key -> stepActionRegex.matchEntire(key)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: Int.MAX_VALUE },
+                { key -> stepActionRegex.matchEntire(key)?.groupValues?.getOrNull(2)?.toIntOrNull() ?: Int.MAX_VALUE }
+            )
+        )
+
+        val lastActionStepByTurn = mutableMapOf<Int, Int>()
+
+        sortedKeys.forEach { key ->
+            val node = actions.optJSONObject(key) ?: return@forEach
+            val textDoc = node.optString("text_doc").ifBlank { node.optString("focus") }
+            val nextTargets = node.optJSONArray("next")?.let(::readStringArray).orEmpty()
+
+            if (
+                key.contains("全灭重开") ||
+                textDoc.contains("全灭重开") ||
+                nextTargets.any { it.contains("全灭重开") }
+            ) {
+                hasAllWipeRestart = true
+            }
+
+            val orangeTurn = orangeDetectionRegex.find(key)?.groupValues?.getOrNull(1)?.toIntOrNull()
+                ?: orangeDetectionRegex.find(textDoc)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            if (orangeTurn != null) {
+                val dedupeKey = "orange_$orangeTurn"
+                if (importedTurnStartInstructions.add(dedupeKey)) {
+                    instructions += InstructionJson(
+                        turn = orangeTurn,
+                        step = 0,
+                        type = InstructionType.ORANGE_STAR_CHECK.name,
+                        value = 0L
+                    )
+                }
+                return@forEach
+            }
+
+            val match = stepActionRegex.matchEntire(key) ?: return@forEach
+            val turn = match.groupValues[1].toIntOrNull() ?: return@forEach
+            val step = match.groupValues[2].toIntOrNull() ?: return@forEach
+
+            val deathSlot = deathDetectionRegex.find(textDoc)?.groupValues?.getOrNull(1)?.toLongOrNull()
+            if (deathSlot != null) {
+                val dedupeKey = "death_${turn}_$deathSlot"
+                if (importedTurnStartInstructions.add(dedupeKey)) {
+                    instructions += InstructionJson(
+                        turn = turn,
+                        step = 0,
+                        type = InstructionType.DEATH_CHECK.name,
+                        value = deathSlot
+                    )
+                }
+                return@forEach
+            }
+
+            val mapped = mapRemoteAction(textDoc)
+            val targetSwitchType = mapTargetSwitchInstructionType(textDoc)
+
+            when {
+                targetSwitchType != null -> {
+                    instructions += InstructionJson(
+                        turn = turn,
+                        step = lastActionStepByTurn[turn] ?: 0,
+                        type = targetSwitchType.name,
+                        value = 1L
+                    )
+                }
+
+                mapped != null -> {
+                    val row = turnRows.getOrPut(turn) { Array(5) { StringBuilder() } }
+                    val cell = row[mapped.slotIndex]
+                    cell.append(step).append(mapped.command)
+                    lastActionStepByTurn[turn] = step
+
+                    val baseDelay = when (mapped.command) {
+                        "↑" -> skillDelay
+                        else -> attackDelay
+                    }
+                    val extraDelay = resolveActionDelay(node) - baseDelay
+                    if (extraDelay > 0L) {
+                        instructions += InstructionJson(
+                            turn = turn,
+                            step = step,
+                            type = InstructionType.DELAY_ADD.name,
+                            value = extraDelay
+                        )
+                    } else if (extraDelay < 0L) {
+                        instructions += InstructionJson(
+                            turn = turn,
+                            step = step,
+                            type = InstructionType.DELAY_SUBTRACT.name,
+                            value = -extraDelay
+                        )
+                    }
+                }
+
+                isWaitAction(textDoc) -> {
+                    val waitDelay = resolveActionDelay(node)
+                    if (waitDelay > 0L) {
+                        instructions += InstructionJson(
+                            turn = turn,
+                            step = lastActionStepByTurn[turn] ?: 0,
+                            type = InstructionType.DELAY_ADD.name,
+                            value = waitDelay
+                        )
+                    }
+                }
+            }
+        }
+
+        if (turnRows.isEmpty()) return null
+
+        stageAutoNavTarget?.let { target ->
+            if (importedTurnStartInstructions.add("stage_nav")) {
+                instructions += InstructionJson(
+                    turn = 1,
+                    step = 0,
+                    type = InstructionType.STAGE_AUTO_NAV.name,
+                    value = target.code
+                )
+            }
+        }
+
+        if (hasAllWipeRestart) {
+            turnRows.keys.sorted().forEach { turn ->
+                val dedupeKey = "wipe_$turn"
+                if (importedTurnStartInstructions.add(dedupeKey)) {
+                    instructions += InstructionJson(
+                        turn = turn,
+                        step = 0,
+                        type = InstructionType.ALL_WIPE_CHECK.name,
+                        value = 0L
+                    )
+                }
+            }
+        }
+
+        val scriptContent = buildString {
+            turnRows.toSortedMap().forEach { (turn, columns) ->
+                append(turn).append("回合")
+                columns.forEach { builder ->
+                    append('\t')
+                    append(builder.toString().ifBlank { "-" })
+                }
+                append('\n')
+            }
+        }.trimEnd()
+
+        val agentNames = root.optJSONArray("opers")
+            ?.let(::readOperatorNames)
+            .orEmpty()
+
+        val configJson = Gson().toJson(
+            mapOf(
+                "intervalAttack" to attackDelay,
+                "intervalSkill" to skillDelay,
+                "waitTurn" to DEFAULT_WAIT_TURN_MS
+            )
+        )
+
+        return JobStationImportPayload(
+            scriptContent = scriptContent,
+            configJson = configJson,
+            instructionsJson = Gson().toJson(instructions),
+            agentsJson = Gson().toJson(agentNames),
+            notice = "导入成功"
+        )
+    }
+
+    private fun resolveStageAutoNavTarget(levelMeta: JSONObject?): BattleStageTarget? {
+        if (levelMeta == null) return null
+
+        val catOne = levelMeta.optString("cat_one").trim()
+        val catThree = levelMeta.optString("cat_three").trim()
+
+        return when {
+            catOne == "白鹄" -> BattleStageTarget.BAI_HU
+            catOne == "洞窟" && catThree.contains("左") -> BattleStageTarget.DONG_KU_LEFT
+            catOne == "洞窟" && catThree.contains("右") -> BattleStageTarget.DONG_KU_RIGHT
+            catOne == "地宫" && catThree == "遗迹一" -> BattleStageTarget.YI_JI_ONE
+            catOne == "地宫" && catThree == "遗迹二" -> BattleStageTarget.YI_JI_TWO
+            catOne == "地宫" && catThree == "遗迹三" -> BattleStageTarget.YI_JI_THREE
+            catOne == "地宫" && catThree == "遗迹四" -> BattleStageTarget.YI_JI_FOUR
+            else -> null
+        }
+    }
+
+    private data class MappedRemoteAction(
+        val slotIndex: Int,
+        val command: String
+    )
+
+    private fun mapRemoteAction(textDoc: String): MappedRemoteAction? {
+        if (textDoc.isBlank()) return null
+
+        val normalized = textDoc.replace("号位", "").replace("行动:", "").trim()
+        val basicMatch = Regex("""([1-5])\s*(普|大|下)""").find(normalized)
+        if (basicMatch != null) {
+            val slot = basicMatch.groupValues[1].toIntOrNull()?.minus(1) ?: return null
+            val command = when (basicMatch.groupValues[2]) {
+                "普" -> "A"
+                "大" -> "↑"
+                "下" -> "↓"
+                else -> return null
+            }
+            return MappedRemoteAction(slot, command)
+        }
+
+        val spMatch = Regex("""([1-5])\s*(SP|sp|圈)""").find(normalized)
+        if (spMatch != null) {
+            val slot = spMatch.groupValues[1].toIntOrNull()?.minus(1) ?: return null
+            return MappedRemoteAction(slot, "圈")
+        }
+
+        return null
+    }
+
+    private fun mapTargetSwitchInstructionType(textDoc: String): InstructionType? {
+        if (textDoc.isBlank()) return null
+
+        return when {
+            textDoc.contains("左侧目标") || textDoc.contains("切换至左侧目标") || textDoc.contains("左目标") ->
+                InstructionType.TARGET_SWITCH_LEFT
+
+            textDoc.contains("右侧目标") || textDoc.contains("切换至右侧目标") || textDoc.contains("右目标") ->
+                InstructionType.TARGET_SWITCH_RIGHT
+
+            else -> null
+        }
+    }
+
+    private fun isWaitAction(textDoc: String): Boolean {
+        return textDoc.contains("等待")
+    }
+
+    private fun resolveActionDelay(node: JSONObject): Long {
+        val postDelay = node.optLong("post_delay")
+        if (postDelay > 0L) return postDelay
+
+        val duration = node.optLong("duration")
+        if (duration > 0L) return duration
+
+        val timeout = node.optLong("timeout")
+        if (timeout > 0L) return timeout
+
+        return 0L
+    }
+
     private fun buildSummary(doc: JSONObject?, root: JSONObject): String {
         return doc?.optString("details")
             ?.takeIf { it.isNotBlank() }
             ?: "这里放帖子正文摘要或作业说明。"
+    }
+
+    private fun buildRemoteSummary(root: JSONObject?): String {
+        return root?.optJSONObject("doc")
+            ?.optString("details")
+            ?.takeIf { it.isNotBlank() }
+            ?: ""
     }
 
     private fun buildOtherActionLabel(node: JSONObject, textDoc: String, actionOrder: Int): String {
@@ -240,6 +666,19 @@ object JobStationAssetRepository {
                 levelMeta?.optString("cat_one").orEmpty(),
                 levelMeta?.optString("cat_two").orEmpty()
             )
+                .filter { it.isNotBlank() }
+                .forEach(::add)
+        }.distinct().ifEmpty { listOf("关卡信息待补充") }
+    }
+
+    private fun buildRemoteStageTags(copilot: JobStationApiModels.CopilotInfo): List<String> {
+        return buildList {
+            copilot.tags
+                ?.filter { it == "如鸢" || it == "代号鸢" }
+                ?.forEach(::add)
+
+            listOf(copilot.catOne, copilot.catTwo)
+                .filterNotNull()
                 .filter { it.isNotBlank() }
                 .forEach(::add)
         }.distinct().ifEmpty { listOf("关卡信息待补充") }
@@ -280,6 +719,101 @@ object JobStationAssetRepository {
         return result
     }
 
+    fun resolveMaaDiscDisplaySpec(
+        context: Context,
+        agentName: String,
+        discId: Int
+    ): DiscDisplaySpec {
+        val forbidden = discId < 0
+        val normalizedDiscId = abs(discId)
+        if (normalizedDiscId <= 0) {
+            return DiscDisplaySpec(
+                displayName = "命盘",
+                color = "",
+                forbidden = forbidden
+            )
+        }
+
+        val discMeta = getMaaOperatorDiscMap(context)[normalizeOperatorName(agentName)]
+            ?.getOrNull(normalizedDiscId - 1)
+        val displayName = discMeta?.abbreviation
+            ?.takeIf { it.isNotBlank() }
+            ?: discMeta?.otName
+                ?.takeIf { it.isNotBlank() }
+            ?: "命盘$normalizedDiscId"
+
+        return DiscDisplaySpec(
+            displayName = displayName,
+            color = discMeta?.color.orEmpty(),
+            forbidden = forbidden
+        )
+    }
+
+    private fun getMaaOperatorDiscMap(context: Context): Map<String, List<OperatorDiscMeta>> {
+        maaOperatorDiscCache?.let { return it }
+
+        return synchronized(this) {
+            maaOperatorDiscCache?.let { return@synchronized it }
+
+            val loaded = runCatching {
+                val jsonText = context.assets.open("$ASSET_DIR/operators.json").use { inputStream ->
+                    BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8)).readText()
+                }
+                val operators = JSONObject(jsonText).optJSONArray("OPERATORS") ?: JSONArray()
+                buildMap<String, List<OperatorDiscMeta>> {
+                    for (i in 0 until operators.length()) {
+                        val operator = operators.optJSONObject(i) ?: continue
+                        val discs = operator.optJSONArray("discs")
+                            ?.let(::parseOperatorDiscs)
+                            .orEmpty()
+                        if (discs.isEmpty()) continue
+
+                        sequenceOf(
+                            operator.optString("name"),
+                            operator.optString("alt_name"),
+                            operator.optString("alias")
+                        )
+                            .flatMap { value ->
+                                value.split(Regex("""[\s"“”]+"""))
+                                    .asSequence()
+                            }
+                            .map(::normalizeOperatorName)
+                            .filter { it.isNotBlank() }
+                            .forEach { key ->
+                                putIfAbsent(key, discs)
+                            }
+                    }
+                }
+            }.getOrDefault(emptyMap())
+
+            maaOperatorDiscCache = loaded
+            loaded
+        }
+    }
+
+    private fun parseOperatorDiscs(discsArray: JSONArray): List<OperatorDiscMeta> {
+        val result = mutableListOf<OperatorDiscMeta>()
+        for (i in 0 until discsArray.length()) {
+            val disc = discsArray.optJSONObject(i) ?: continue
+            result += OperatorDiscMeta(
+                otName = disc.optString("ot_name").trim(),
+                abbreviation = disc.optString("abbreviation").trim(),
+                color = disc.optString("color").trim()
+            )
+        }
+        return result
+    }
+
+    private fun normalizeOperatorName(rawName: String): String {
+        val normalized = rawName.trim()
+        return when (normalized) {
+            "酆公珠" -> "鄷公珠"
+            "酆公玖" -> "鄷公玖"
+            "SP史子眇" -> "SP史子渺"
+            else -> normalized
+        }
+    }
+
     private fun readStringArray(array: JSONArray): List<String> {
         val result = mutableListOf<String>()
         for (i in 0 until array.length()) {
@@ -296,5 +830,171 @@ object JobStationAssetRepository {
             roster = emptyList(),
             turns = emptyList()
         )
+    }
+
+    private fun formatMetric(value: Long): String {
+        return when {
+            value >= 10000 -> String.format("%.1fw", value / 10000f)
+            value >= 1000 -> String.format("%.1fk", value / 1000f)
+            else -> value.toString()
+        }
+    }
+
+    private fun formatSourceType(sourceType: String?): String {
+        return when (sourceType?.trim()?.lowercase()) {
+            "repost" -> "搬运"
+            "original" -> "原创"
+            else -> ""
+        }
+    }
+
+    private fun formatRemoteTime(uploadTime: String?): String {
+        return uploadTime
+            ?.replace("T", " ")
+            ?.replace("Z", "")
+            ?.take(16)
+            ?.takeIf { it.isNotBlank() }
+            ?: "最近更新"
+    }
+
+    private fun formatBmobTime(createdAt: String?): String {
+        return createdAt
+            ?.take(16)
+            ?.takeIf { it.isNotBlank() }
+            ?: "最近更新"
+    }
+
+    private fun formatRelativeTime(timestamp: Long, fallback: String): String {
+        if (timestamp <= 0L) return fallback
+
+        val deltaMillis = System.currentTimeMillis() - timestamp
+        if (deltaMillis <= 0L) return "1小时前"
+
+        val hours = deltaMillis / (60 * 60 * 1000L)
+        if (hours < 24L) {
+            return "${max(1L, hours)}小时前"
+        }
+
+        val days = deltaMillis / (24 * 60 * 60 * 1000L)
+        return "${max(1L, days)}天前"
+    }
+
+    fun parsePublishTimestamp(rawTime: String?): Long {
+        val normalized = rawTime?.trim()?.takeIf { it.isNotBlank() } ?: return 0L
+
+        parseWithPattern(normalized, "yyyy-MM-dd HH:mm:ss")?.let { return it }
+
+        if (normalized.contains('T')) {
+            parseWithPattern(
+                normalized.substringBefore('.'),
+                "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                TimeZone.getTimeZone("UTC")
+            )?.let { return it }
+            parseWithPattern(
+                normalized.substringBefore('.').removeSuffix("Z"),
+                "yyyy-MM-dd'T'HH:mm:ss"
+            )?.let { return it }
+            parseWithPattern(
+                normalized.replace("T", " ").substringBefore('.').removeSuffix("Z"),
+                "yyyy-MM-dd HH:mm:ss"
+            )?.let { return it }
+        }
+
+        return 0L
+    }
+
+    private fun parseWithPattern(
+        value: String,
+        pattern: String,
+        timeZone: TimeZone? = null
+    ): Long? {
+        return runCatching {
+            SimpleDateFormat(pattern, Locale.getDefault()).apply {
+                isLenient = false
+                if (timeZone != null) {
+                    this.timeZone = timeZone
+                }
+            }.parse(value)?.time
+        }.getOrNull()
+    }
+
+    private fun parseBmobRoster(detail: strategy_detail): List<String> {
+        if (!detail.agentSelection.isNullOrBlank()) {
+            val parsedRoster = runCatching {
+                Gson().fromJson(detail.agentSelection, Array<String>::class.java)
+                    .orEmpty()
+                    .mapNotNull(::normalizeBmobAgentName)
+            }.getOrNull()
+
+            if (parsedRoster != null) {
+                return parsedRoster
+            }
+        }
+
+        return detail.agents
+            .split("、", "，", ",", " ")
+            .mapNotNull(::normalizeBmobAgentName)
+    }
+
+    private fun normalizeBmobAgentName(raw: String?): String? {
+        val normalized = raw
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.replaceFirst("^\\d+".toRegex(), "")
+            ?.substringBefore("-")
+            ?.trim()
+
+        return normalized?.takeIf { it.isNotBlank() }
+    }
+
+    private fun buildBmobAgentsText(detail: strategy_detail, roster: List<String>): String {
+        return roster.joinToString(" ").ifBlank {
+            detail.agents.orEmpty().ifBlank { "未配置阵容" }
+        }
+    }
+
+    private fun buildBmobTags(detail: strategy_detail, title: String): List<String> {
+        return buildList {
+            resolveGameTagFromRuyuan(detail.ruyuan)
+                .ifBlank { resolveGameTagFromTitle(title) }
+                .takeIf { it.isNotBlank() }
+                ?.let(::add)
+
+            listOf("地宫", "洞窟", "白鹄", "泰山府").forEach { tag ->
+                if (title.contains(tag)) {
+                    add(tag)
+                }
+            }
+        }.distinct()
+    }
+
+    private fun resolveGameTagFromRuyuan(ruyuan: Int?): String {
+        return when (ruyuan) {
+            STRATEGY_GAME_RUYUAN -> "如鸢"
+            STRATEGY_GAME_DAIHAOYUAN -> "代号鸢"
+            else -> ""
+        }
+    }
+
+    private fun resolveGameTagFromStrings(tags: List<String>): String {
+        return when {
+            tags.any { it == "如鸢" } -> "如鸢"
+            tags.any { it == "代号鸢" } -> "代号鸢"
+            else -> ""
+        }
+    }
+
+    private fun resolveGameTagFromTitle(title: String): String {
+        return when {
+            title.contains("如鸢") -> "如鸢"
+            title.contains("代号鸢") -> "代号鸢"
+            else -> ""
+        }
+    }
+
+    private fun resolveCategoryTagFromTitle(title: String): String {
+        return listOf("主线", "白鹄", "洞窟", "兰台", "地宫", "家具", "活动")
+            .firstOrNull { title.contains(it) }
+            .orEmpty()
     }
 }

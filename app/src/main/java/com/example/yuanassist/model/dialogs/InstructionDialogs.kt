@@ -14,6 +14,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import com.example.yuanassist.model.BattleStageNavigationRegistry
+import com.example.yuanassist.model.BattleStageTarget
 import com.example.yuanassist.model.InstructionType
 import com.example.yuanassist.model.ScriptInstruction
 import com.example.yuanassist.utils.DialogUtils
@@ -60,8 +62,18 @@ object InstructionDialogs {
                         append(" : [${ins.type.description}]")
                         when (ins.type) {
                             InstructionType.DELAY_ADD -> append(" ${ins.value}ms")
-                            InstructionType.TARGET_SWITCH -> append(" 滑动 ${ins.value} 次")
-                            InstructionType.PAUSE -> {}
+                            InstructionType.DELAY_SUBTRACT -> append(" ${ins.value}ms")
+                            InstructionType.STAGE_AUTO_NAV -> {
+                                val stageName = BattleStageTarget.fromCode(ins.value)?.description ?: "未设置关卡"
+                                append(" $stageName")
+                            }
+                            InstructionType.DEATH_CHECK -> append(" 第 ${ins.value} 人")
+                            InstructionType.TARGET_SWITCH,
+                            InstructionType.TARGET_SWITCH_LEFT,
+                            InstructionType.TARGET_SWITCH_RIGHT -> append(" ${ins.value} 次")
+                            InstructionType.PAUSE,
+                            InstructionType.ALL_WIPE_CHECK,
+                            InstructionType.ORANGE_STAR_CHECK -> {}
                         }
                     }
 
@@ -160,7 +172,7 @@ object InstructionDialogs {
             gravity = Gravity.CENTER_VERTICAL
         }
         val tvPrefix = TextView(context).apply {
-            text = "右滑 "
+            text = "切换 "
             textSize = 16f
             setTextColor(Color.BLACK)
             visibility = View.GONE
@@ -169,6 +181,12 @@ object InstructionDialogs {
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(target?.value?.toString() ?: "1000")
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val btnStage = Button(context).apply {
+            val initialStage = BattleStageTarget.fromCode(target?.value ?: 0L) ?: BattleStageNavigationRegistry.supportedTargets.first()
+            text = "关卡: ${initialStage.description}"
+            tag = initialStage
+            visibility = View.GONE
         }
         val tvSuffix = TextView(context).apply {
             text = "ms"
@@ -182,7 +200,7 @@ object InstructionDialogs {
         valueContainer.addView(tvSuffix)
 
         val tvHint = TextView(context).apply {
-            text = "例：右滑两次即从攻击一号位变为攻击三号位"
+            text = "例：填写 1 次表示切换一次目标；方向由指令类型决定"
             textSize = 12f
             setTextColor(Color.GRAY)
             setPadding(0, 15, 0, 0)
@@ -191,24 +209,58 @@ object InstructionDialogs {
 
         fun updateValueUI(type: InstructionType) {
             when (type) {
-                InstructionType.PAUSE -> {
+                InstructionType.PAUSE,
+                InstructionType.ALL_WIPE_CHECK,
+                InstructionType.ORANGE_STAR_CHECK -> {
                     valueContainer.visibility = View.GONE
+                    btnStage.visibility = View.GONE
                     tvHint.visibility = View.GONE
                     etValue.setText("0")
                 }
 
-                InstructionType.TARGET_SWITCH -> {
+                InstructionType.TARGET_SWITCH,
+                InstructionType.TARGET_SWITCH_LEFT,
+                InstructionType.TARGET_SWITCH_RIGHT -> {
                     valueContainer.visibility = View.VISIBLE
+                    btnStage.visibility = View.GONE
                     tvPrefix.visibility = View.VISIBLE
+                    tvPrefix.text = "切换 "
                     tvSuffix.text = "次"
                     tvHint.visibility = View.VISIBLE
+                    tvHint.text = "例：填写 1 次表示切换一次目标；方向由指令类型决定"
                     if (etValue.text.toString() == "1000" || etValue.text.toString() == "0") {
                         etValue.setText("1")
                     }
                 }
 
-                InstructionType.DELAY_ADD -> {
+                InstructionType.DEATH_CHECK -> {
                     valueContainer.visibility = View.VISIBLE
+                    btnStage.visibility = View.GONE
+                    tvPrefix.visibility = View.VISIBLE
+                    tvPrefix.text = "检测第 "
+                    tvSuffix.text = " 人"
+                    tvHint.visibility = View.VISIBLE
+                    tvHint.text = "填写 1-5，表示检测对应站位角色是否阵亡"
+                    if (etValue.text.toString() == "1000" || etValue.text.toString() == "0") {
+                        etValue.setText("1")
+                    }
+                }
+
+                InstructionType.STAGE_AUTO_NAV -> {
+                    valueContainer.visibility = View.GONE
+                    btnStage.visibility = View.VISIBLE
+                    tvHint.visibility = View.VISIBLE
+                    tvHint.text = "自动导航只会在点击开始后的第1回合前执行一次"
+                    etTurn.setText("1")
+                    etStep.setText("")
+                    val stage = (btnStage.tag as? BattleStageTarget) ?: BattleStageNavigationRegistry.supportedTargets.first()
+                    btnStage.text = "关卡: ${stage.description}"
+                }
+
+                InstructionType.DELAY_ADD,
+                InstructionType.DELAY_SUBTRACT -> {
+                    valueContainer.visibility = View.VISIBLE
+                    btnStage.visibility = View.GONE
                     tvPrefix.visibility = View.GONE
                     tvSuffix.text = "ms"
                     tvHint.visibility = View.GONE
@@ -221,13 +273,24 @@ object InstructionDialogs {
         updateValueUI(target?.type ?: InstructionType.DELAY_ADD)
 
         btnType.setOnClickListener {
-            val options = InstructionType.values()
+            val options = InstructionType.values().filter { it != InstructionType.TARGET_SWITCH }
             val builder = AlertDialog.Builder(context)
                 .setItems(options.map { it.description }.toTypedArray()) { _, which ->
                     val selected = options[which]
                     btnType.text = "类型: ${selected.description}"
                     btnType.tag = selected
                     updateValueUI(selected)
+                }
+            DialogUtils.safeShowOverlayDialog(builder)
+        }
+
+        btnStage.setOnClickListener {
+            val options = BattleStageNavigationRegistry.supportedTargets
+            val builder = AlertDialog.Builder(context)
+                .setItems(options.map { it.description }.toTypedArray()) { _, which ->
+                    val selected = options[which]
+                    btnStage.tag = selected
+                    btnStage.text = "关卡: ${selected.description}"
                 }
             DialogUtils.safeShowOverlayDialog(builder)
         }
@@ -240,6 +303,7 @@ object InstructionDialogs {
         layout.addView(btnType)
         layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(1, 20) })
         layout.addView(valueContainer)
+        layout.addView(btnStage)
         layout.addView(tvHint)
 
         DialogUtils.safeShowOverlayDialog(
@@ -248,15 +312,41 @@ object InstructionDialogs {
                 .setView(layout)
                 .setPositiveButton("保存") { _, _ ->
                     try {
-                        val turnStr = etTurn.text.toString()
+                        val type = btnType.tag as InstructionType
+                        val turnStr = if (type == InstructionType.STAGE_AUTO_NAV) "1" else etTurn.text.toString()
                         if (turnStr.isEmpty()) {
                             Toast.makeText(context, "必须填写回合数", Toast.LENGTH_SHORT).show()
                             return@setPositiveButton
                         }
                         val turn = turnStr.toInt()
-                        val step = etStep.text.toString().toIntOrNull() ?: 0
-                        val type = btnType.tag as InstructionType
-                        val value = etValue.text.toString().toLongOrNull() ?: 0L
+                        val step = if (type == InstructionType.STAGE_AUTO_NAV) 0 else etStep.text.toString().toIntOrNull() ?: 0
+                        val value = when (type) {
+                            InstructionType.STAGE_AUTO_NAV -> (btnStage.tag as? BattleStageTarget)?.code ?: 0L
+                            else -> etValue.text.toString().toLongOrNull() ?: 0L
+                        }
+
+                        if (
+                            (
+                                type == InstructionType.STAGE_AUTO_NAV ||
+                                type == InstructionType.ORANGE_STAR_CHECK ||
+                                    type == InstructionType.ALL_WIPE_CHECK ||
+                                    type == InstructionType.DEATH_CHECK
+                                ) &&
+                            step != 0
+                        ) {
+                            Toast.makeText(context, "自动导航、全灭检测、阵亡检测和橙星检测只能在整回合执行", Toast.LENGTH_SHORT).show()
+                            return@setPositiveButton
+                        }
+
+                        if (type == InstructionType.STAGE_AUTO_NAV && turn != 1) {
+                            Toast.makeText(context, "关卡自动导航只能放在第1回合前", Toast.LENGTH_SHORT).show()
+                            return@setPositiveButton
+                        }
+
+                        if (type == InstructionType.DEATH_CHECK && value !in 1L..5L) {
+                            Toast.makeText(context, "阵亡检测的人物序号只能填写 1-5", Toast.LENGTH_SHORT).show()
+                            return@setPositiveButton
+                        }
 
                         if (target == null) {
                             instructionList.add(ScriptInstruction(turn, step, type, value))

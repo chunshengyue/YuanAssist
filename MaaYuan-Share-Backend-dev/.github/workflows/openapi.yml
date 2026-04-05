@@ -1,0 +1,127 @@
+name: Openapi and Clients
+on:
+  release:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+jobs:
+  generate-openapi-and-clients:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      mongo:
+        image: mongo
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}   # checkout the correct branch name
+          fetch-depth: 0                # fetch the whole repo history
+
+      - name: Git Version
+        id: version
+        uses: codacy/git-version@2.7.1
+        with:
+          release-branch: main
+          dev-branch: dev
+          major-identifier: "breaking:"
+          minor-identifier: "/^(feat|refactor):/"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+#      - name: Startup Mongodb
+#        uses: supercharge/mongodb-github-action@1.8.0
+#
+#      - name: Startup Redis
+#        uses: shogo82148/actions-setup-redis@v1
+
+      - name: Remove aliyun maven mirror
+        run: |
+          sed -i '/maven(url/d' build.gradle.kts
+
+      - name: Set versions
+        run: |
+          sed -i "s/^version.*$/version = \"${{ steps.version.outputs.version }}\"/g" build.gradle.kts
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/cpp.json
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/csharp-netcore.json
+          sed -i 's/"packageVersion.*,/"packageVersion": "${{ steps.version.outputs.version }}",/g' client-config/rust.json
+          sed -i 's/"npmVersion.*,/"npmVersion": "${{ steps.version.outputs.version }}",/g' client-config/ts-fetch.json
+
+      - name: Generate dev profile
+        run: cp ./src/main/resources/application-template.yml ./src/main/resources/application-dev.yml
+
+      - run: chmod 777 ./gradlew
+
+      - name: Execute Gradle generateOpenApi
+        run: ./gradlew generateOpenApi
+
+      - name: Generate Clients
+        run: ./gradlew generateSwaggerCode
+
+      - name: upload openapi
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-${{ steps.version.outputs.version }}
+          path: ./build/docs/swagger.json
+
+      - name: upload cpp client
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-client
+          path: ./build/clients/cpp-client/*
+
+      - name: upload csharp client
+        uses: actions/upload-artifact@v4
+        with:
+          name: csharp-client
+          path: ./build/clients/csharp-client/*
+
+      - name: upload rust client
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-client
+          path: ./build/clients/rust-client/*
+
+      - name: upload ts client
+        uses: actions/upload-artifact@v4
+        with:
+          name: ts-client
+          path: ./build/clients/ts-fetch-client/*
+
+      - name: Checkout zoot-plus-client-ts
+        uses: actions/checkout@v4
+        with:
+          repository: ZOOT-Plus/zoot-plus-client-ts
+          path: zoot-plus-client-ts
+          token: ${{ secrets.TS_CLIENT_PAT }}
+
+      - name: Update zoot-plus-client-ts and push to remote
+        run: |
+          cp -rf build/clients/ts-fetch-client/* zoot-plus-client-ts/
+          cd zoot-plus-client-ts
+
+          git diff --quiet && exit 0
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "release: ${{ steps.version.outputs.version }}"\
+                     -m "Generated from https://github.com/ZOOT-Plus/ZootPlusBackend/actions/runs/${{ github.run_id }}"
+          git tag ${{ steps.version.outputs.version }}
+          git push
+          git push --tags

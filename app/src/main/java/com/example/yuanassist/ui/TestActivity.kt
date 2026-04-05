@@ -35,6 +35,9 @@ import com.example.yuanassist.R
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
 import com.example.yuanassist.utils.TemplateOverrideStore
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.gson.Gson
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
@@ -49,7 +52,11 @@ class TestActivity : AppCompatActivity() {
     companion object {
         private const val START_BATTLE_RED_OPTION = "START_BATTLE_RED_REGION"
         private const val START_BATTLE_RED_LABEL = "\u5F00\u59CB\u6218\u6597\uFF08\u5E95\u90E8\u7EA2\u6309\u94AE\uFF09"
+        private const val BATTLE_TURN_OCR_OPTION = "BATTLE_TURN_OCR"
+        private const val BATTLE_TURN_OCR_LABEL = "\u6218\u6597\u56DE\u5408 OCR\uFF08\u53F3\u4E0A\u89D2\uFF09"
         private const val START_BATTLE_RED_MIN_CONFIDENCE = 0.55f
+        private const val BATTLE_TURN_OCR_W = 400f
+        private const val BATTLE_TURN_OCR_H = 300f
         private const val BASE_W = 1080f
         private const val BASE_H = 1920f
         private const val REPLACEMENT_SIZE = 60
@@ -321,17 +328,17 @@ class TestActivity : AppCompatActivity() {
             return
         }
         val selectedTemplate = currentSelectedTemplate()
-        if (selectedTemplate == START_BATTLE_RED_OPTION) {
-            runScopedStartBattleRedMatchTest(isLocalScopeEnabled())
-        } else {
-            runScopedMultiTargetMatchTest(selectedTemplate)
+        when (selectedTemplate) {
+            START_BATTLE_RED_OPTION -> runScopedStartBattleRedMatchTest(isLocalScopeEnabled())
+            BATTLE_TURN_OCR_OPTION -> runBattleTurnOcrTest()
+            else -> runScopedMultiTargetMatchTest(selectedTemplate)
         }
     }
 
     private fun loadAssetsTemplates() {
         try {
             val allFiles = assets.list("") ?: emptyArray()
-            availableTemplates = listOf(START_BATTLE_RED_OPTION) +
+            availableTemplates = listOf(START_BATTLE_RED_OPTION, BATTLE_TURN_OCR_OPTION) +
                 allFiles.filter { it.endsWith(".png", true) || it.endsWith(".jpg", true) }
             spinnerTemplates.adapter = TemplateSpinnerAdapter(availableTemplates)
             spinnerTemplates.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -355,7 +362,11 @@ class TestActivity : AppCompatActivity() {
     private fun isLocalScopeEnabled(): Boolean = rbScopeLocal.isChecked
 
     private fun displayName(templateName: String): String =
-        if (templateName == START_BATTLE_RED_OPTION) START_BATTLE_RED_LABEL else templateName
+        when (templateName) {
+            START_BATTLE_RED_OPTION -> START_BATTLE_RED_LABEL
+            BATTLE_TURN_OCR_OPTION -> BATTLE_TURN_OCR_LABEL
+            else -> templateName
+        }
 
     private fun updateScopeHint() {
         val template = currentSelectedTemplate()
@@ -368,6 +379,8 @@ class TestActivity : AppCompatActivity() {
                 "\u5C40\u90E8\u8BC6\u522B\u4F1A\u4F7F\u7528\u65E5\u5E38\u811A\u672C\u4E2D\u7684 ${redRegionSearchRegions.size} \u4E2A\u7EA2\u533A\u68C0\u7D22\u8303\u56F4"
             template == START_BATTLE_RED_OPTION ->
                 "\u5168\u5C4F\u6A21\u5F0F\u4F1A\u4FDD\u7559\u5F53\u524D\u7EA2\u533A\u6D4B\u8BD5\u903B\u8F91"
+            template == BATTLE_TURN_OCR_OPTION ->
+                "\u4F7F\u7528\u5B9E\u6218\u76F8\u540C\u7684\u53F3\u4E0A\u89D2 OCR \u533A\u57DF\uFF1A400x300\uFF0C\u8F93\u51FA raw/normalized/hits/turn"
             isLocalScopeEnabled() -> "\u5C40\u90E8\u8BC6\u522B\u4F1A\u6A21\u62DF\u65E5\u5E38\u811A\u672C\u7684 ROI \u68C0\u7D22 ${displayName(template)}"
             else -> "\u5168\u5C4F\u8BC6\u522B\u4F1A\u5728\u6574\u5F20\u622A\u56FE\u4E2D\u68C0\u7D22 ${displayName(template)}"
         }
@@ -680,6 +693,46 @@ class TestActivity : AppCompatActivity() {
         ivScreenshot.setImageBitmap(screenshot)
     }
 
+    private fun runBattleTurnOcrTest() {
+        log("------------------------")
+        log("Start matching: $BATTLE_TURN_OCR_LABEL")
+        val source = currentBitmap ?: return
+        val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
+        val areaRect = buildTopRightRect(
+            screenshot = screenshot,
+            widthBase = BATTLE_TURN_OCR_W,
+            heightBase = BATTLE_TURN_OCR_H
+        ) ?: return log("Build ROI failed").also { ivScreenshot.setImageBitmap(screenshot) }
+
+        val canvas = Canvas(screenshot)
+        val searchPaint = Paint().apply { color = Color.GREEN; style = Paint.Style.STROKE; strokeWidth = 5f }
+        canvas.drawRect(areaRect, searchPaint)
+        ivScreenshot.setImageBitmap(screenshot)
+
+        val bitmap = Bitmap.createBitmap(screenshot, areaRect.left, areaRect.top, areaRect.width(), areaRect.height())
+        val recognizer = TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build())
+        recognizer.process(InputImage.fromBitmap(bitmap, 0))
+            .addOnSuccessListener { text ->
+                val rawText = text.text.orEmpty()
+                val normalizedText = rawText.filterNot { it.isWhitespace() }
+                val hitChars = listOf('波', '次', '回', '合').filter { normalizedText.contains(it) }
+                val turnNumber = parseBattleTurnNumber(normalizedText)
+                log("OCR raw=${formatOcrLog(rawText)}")
+                log("OCR normalized=${formatOcrLog(normalizedText)}")
+                log("OCR hits=${if (hitChars.isEmpty()) "无" else hitChars.joinToString("")} count=${hitChars.size}")
+                log("OCR turn=${turnNumber ?: "无"}")
+                ivScreenshot.setImageBitmap(screenshot)
+                bitmap.recycle()
+                recognizer.close()
+            }
+            .addOnFailureListener { error ->
+                log("OCR failed: ${error.message}")
+                ivScreenshot.setImageBitmap(screenshot)
+                bitmap.recycle()
+                recognizer.close()
+            }
+    }
+
     private fun runScopedStartBattleTemplateMatchTest(useLocalScope: Boolean) {
         log("------------------------")
         val source = currentBitmap ?: return
@@ -888,7 +941,14 @@ class TestActivity : AppCompatActivity() {
         tvLog.post { (tvLog.parent as ScrollView).fullScroll(View.FOCUS_DOWN) }
     }
 
-    private fun findRedRegionMatch(bitmap: Bitmap): RedRegionMatch? {
+    private fun findRedRegionMatch(
+        bitmap: Bitmap,
+        referenceAreaOverride: Float? = null,
+        excludeNearWhite: Boolean = false,
+        areaWeight: Float = 0.45f,
+        fillWeight: Float = 0.25f,
+        redWeight: Float = 0.30f
+    ): RedRegionMatch? {
         val width = bitmap.width
         val height = bitmap.height
         if (width <= 0 || height <= 0) return null
@@ -904,7 +964,10 @@ class TestActivity : AppCompatActivity() {
             for (sx in 0 until sampleWidth) {
                 val x = sx * step
                 val index = sy * sampleWidth + sx
-                val redScore = computeRednessScore(bitmap.getPixel(x, y))
+                val redScore = computeRednessScore(
+                    color = bitmap.getPixel(x, y),
+                    excludeNearWhite = excludeNearWhite
+                )
                 redness[index] = redScore
                 if (redScore > 0f) {
                     mask[index] = true
@@ -969,14 +1032,19 @@ class TestActivity : AppCompatActivity() {
         val bboxHeight = bestMaxY - bestMinY + 1
         val bboxArea = (bboxWidth * bboxHeight).coerceAtLeast(1)
         val estimatedPixelArea = bestCount * step * step
-        val sizeScore = (estimatedPixelArea / (300f * 50f)).coerceIn(0f, 1f)
+        val sizeScore = (estimatedPixelArea / (referenceAreaOverride ?: (300f * 50f))).coerceIn(0f, 1f)
         val fillRatio = bestCount.toFloat() / bboxArea.toFloat()
         val rednessScore = (bestRednessSum / bestCount.toFloat()).coerceIn(0f, 1f)
         val compactnessScore = ((fillRatio - 0.15f) / 0.85f).coerceIn(0f, 1f)
-        val confidence = (sizeScore * 0.45f + compactnessScore * 0.25f + rednessScore * 0.30f).coerceIn(0f, 1f)
+        val weightSum = (areaWeight + fillWeight + redWeight).coerceAtLeast(0.0001f)
+        val confidence = (
+            sizeScore * areaWeight +
+                compactnessScore * fillWeight +
+                rednessScore * redWeight
+            ) / weightSum
         return RedRegionMatch(
             center = PointF(((bestMinX + bestMaxX + 1) * step / 2f).coerceIn(0f, (width - 1).toFloat()), ((bestMinY + bestMaxY + 1) * step / 2f).coerceIn(0f, (height - 1).toFloat())),
-            confidence = confidence,
+            confidence = confidence.coerceIn(0f, 1f),
             sizeScore = sizeScore,
             fillRatio = fillRatio,
             rednessScore = rednessScore,
@@ -988,7 +1056,7 @@ class TestActivity : AppCompatActivity() {
         )
     }
 
-    private fun computeRednessScore(color: Int): Float {
+    private fun computeRednessScore(color: Int, excludeNearWhite: Boolean = false): Float {
         val r = Color.red(color)
         val g = Color.green(color)
         val b = Color.blue(color)
@@ -999,5 +1067,49 @@ class TestActivity : AppCompatActivity() {
         val dominance = (((r - maxOf(g, b)) - 20f) / 180f).coerceIn(0f, 1f)
         val saturation = ((255f - (g + b) / 2f) / 255f).coerceIn(0f, 1f)
         return (redLevel * 0.45f + dominance * 0.4f + saturation * 0.15f).coerceIn(0f, 1f)
+    }
+
+    private fun buildFixedRectFromVisionRegion(
+        screenshot: Bitmap,
+        x: Float,
+        y: Float,
+        align: String,
+        w: Float,
+        h: Float
+    ): Rect? {
+        val mapping = buildDisplayMapping(screenshot)
+        val (realCenterX, realCenterY) = calculateRealCoordinate(x, y, align, mapping)
+        val screenshotCenterX = realCenterX * mapping.displayToScreenshotX
+        val screenshotCenterY = realCenterY * mapping.displayToScreenshotY
+        val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+        val realW = w * gameScale * mapping.displayToScreenshotX
+        val realH = h * gameScale * mapping.displayToScreenshotY
+        val left = (screenshotCenterX - realW / 2f).toInt().coerceIn(0, screenshot.width - 1)
+        val top = (screenshotCenterY - realH / 2f).toInt().coerceIn(0, screenshot.height - 1)
+        val width = realW.toInt().coerceAtMost(screenshot.width - left).coerceAtLeast(1)
+        val height = realH.toInt().coerceAtMost(screenshot.height - top).coerceAtLeast(1)
+        return Rect(left, top, left + width, top + height)
+    }
+
+    private fun buildTopRightRect(
+        screenshot: Bitmap,
+        widthBase: Float,
+        heightBase: Float
+    ): Rect? {
+        val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+        val width = (widthBase * gameScale).toInt().coerceAtLeast(1).coerceAtMost(screenshot.width)
+        val height = (heightBase * gameScale).toInt().coerceAtLeast(1).coerceAtMost(screenshot.height)
+        if (width <= 0 || height <= 0) return null
+        return Rect(screenshot.width - width, 0, screenshot.width, height)
+    }
+
+    private fun parseBattleTurnNumber(normalizedText: String): Int? {
+        val match = Regex("回合(\\d+)(?:/(\\d+))?").find(normalizedText) ?: return null
+        return match.groupValues.getOrNull(1)?.toIntOrNull()
+    }
+
+    private fun formatOcrLog(text: String): String {
+        if (text.isEmpty()) return "\"\""
+        return "\"" + text.replace("\n", "\\n") + "\""
     }
 }

@@ -64,7 +64,17 @@ data class LocalScriptJson(
 
 class YuanAssistService : AccessibilityService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var appConfig: AppConfig = AppConfig(2500, 4000, 8000, 1, 50, 31, 60, 3)
+    private var appConfig: AppConfig = AppConfig(
+        intervalAttack = 2500,
+        intervalSkill = 4000,
+        waitTurn = 8000,
+        startTurn = 1,
+        enableTurnNumberCheck = true,
+        swipeThreshold = 50,
+        inputHeightRatio = 31,
+        recordDelay = 60,
+        gameSpeed = 3
+    )
     private var lastRecordedInfo = "准备录制"
     private var currentFollowInfoText = "准备执行"
 
@@ -270,7 +280,10 @@ class YuanAssistService : AccessibilityService() {
                         var importCount = 0
                         list.forEach { ins ->
                             val exists = combatEngine.instructionList.any {
-                                it.turn == ins.turn && it.step == ins.step && it.type.name == ins.type
+                                it.turn == ins.turn &&
+                                    it.step == ins.step &&
+                                    it.type.name == ins.type &&
+                                    it.value == ins.value
                             }
                             if (!exists) {
                                 combatEngine.instructionList.add(
@@ -348,6 +361,7 @@ class YuanAssistService : AccessibilityService() {
             }
         )
         combatEngine = CombatEngine(
+            accessibilityService = this,
             serviceScope = serviceScope,
             coordinateManager = coordinateManager,
             gestureDispatcher = gestureDispatcher,
@@ -820,7 +834,7 @@ class YuanAssistService : AccessibilityService() {
 
                     isRunning = true
                     refreshActionButtonUI()
-                    minimizeControlWindow()
+                    minimizeControlWindow(autoDockToTopLeft = true)
 
                     RunLogger.i("=== 启动流程：自动选人 -> 跟打 ===")
                     Toast.makeText(this, "开始自动选人...", Toast.LENGTH_SHORT).show()
@@ -868,7 +882,7 @@ class YuanAssistService : AccessibilityService() {
                     }
                     isRunning = true
                     refreshActionButtonUI()
-                    minimizeControlWindow()
+                    minimizeControlWindow(autoDockToTopLeft = true)
                     combatEngine.start()
                 } else {
                     isRunning = true
@@ -1279,9 +1293,12 @@ class YuanAssistService : AccessibilityService() {
         isSimulating = false
     }
 
-    private fun minimizeControlWindow() {
+    private fun minimizeControlWindow(autoDockToTopLeft: Boolean = false) {
         uiManager.removeControlWindow()
         showMinimizedWindow()
+        if (autoDockToTopLeft) {
+            uiManager.moveMinimizedWindowToTopLeftSafely()
+        }
     }
 
     private fun closeCombatFloatingWindows() {

@@ -8,8 +8,14 @@ import android.view.*
 import android.widget.ImageView
 import com.example.yuanassist.R
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class FloatingUIManager(private val context: Context) {
+    companion object {
+        private const val FLOAT_WINDOW_EDGE_MARGIN_DP = 12
+        private const val FLOAT_WINDOW_TOP_MARGIN_DP = 20
+    }
+
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     var controlView: View? = null
@@ -118,6 +124,29 @@ class FloatingUIManager(private val context: Context) {
             } catch (e: Exception) {
             }
             inputView = null
+        }
+    }
+
+    fun moveMinimizedWindowToTopLeftSafely() {
+        val targetView = minimizedView ?: return
+        targetView.post {
+            val params = targetView.layoutParams as? WindowManager.LayoutParams ?: return@post
+            val density = context.resources.displayMetrics.density
+            val marginPx = (FLOAT_WINDOW_EDGE_MARGIN_DP * density).roundToInt()
+            val topSafeMargin = (FLOAT_WINDOW_TOP_MARGIN_DP * density).roundToInt()
+            val metrics = context.resources.displayMetrics
+            val screenWidth = metrics.widthPixels
+            val screenHeight = metrics.heightPixels
+            val viewWidth = targetView.width.takeIf { it > 0 } ?: targetView.measuredWidth
+            val viewHeight = targetView.height.takeIf { it > 0 } ?: targetView.measuredHeight
+            val maxX = (screenWidth - viewWidth - marginPx).coerceAtLeast(marginPx)
+            val maxY = (screenHeight - viewHeight - marginPx).coerceAtLeast(topSafeMargin)
+
+            params.x = marginPx.coerceAtMost(maxX)
+            params.y = topSafeMargin.coerceAtMost(maxY)
+            lastWindowX = params.x
+            lastWindowY = params.y
+            windowManager.updateViewLayout(targetView, params)
         }
     }
 

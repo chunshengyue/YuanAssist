@@ -59,7 +59,7 @@
                 android:layout_weight="1"
                 android:layout_height="45dp"
                 android:background="@drawable/bg_dark_glass"
-                android:hint="输入关卡或密探名称搜索..."
+                android:hint="输入关卡/密探或MaaYuanShare代码"
                 android:textColorHint="#888888"
                 android:textColor="#E5C07B"
                 android:paddingStart="15dp"

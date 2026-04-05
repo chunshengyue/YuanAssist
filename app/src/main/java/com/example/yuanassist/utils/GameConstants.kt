@@ -13,6 +13,7 @@ object GameConstants {
 
     // 目标切换坐标 (Top-Down 顶部向下推算)
     const val DESIGN_TARGET_X = 1368f
+    const val DESIGN_TARGET_LEFT_X = BASE_WIDTH - DESIGN_TARGET_X
     const val DESIGN_TARGET_Y_TOP = 845f
 
     // 随机偏移参数 (控制防封号的点击范围)

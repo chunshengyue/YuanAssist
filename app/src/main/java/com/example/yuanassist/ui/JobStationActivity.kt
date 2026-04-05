@@ -2,6 +2,7 @@ package com.example.yuanassist.ui
 
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -19,36 +20,55 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.R
-import com.example.yuanassist.model.AgentRepository
 
 class JobStationActivity : AppCompatActivity() {
 
     companion object {
+        const val EXTRA_COPILOT_ID = "extra_copilot_id"
         const val EXTRA_ASSET_FILE_NAME = "extra_asset_file_name"
+        private const val MAA_YUAN_HOME_URL = "https://maayuan.top/"
+        private const val MAA_YUAN_SHARE_URL = "https://share.maayuan.top/"
         private const val TURN_COLUMN_WIDTH_DP = 42f
         private const val DISC_NAME_MAX_LENGTH = 6
+        private const val DISC_CHIP_WIDTH_DP = 60f
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_job_station)
         applyStatusBarInsets()
+        findViewById<ImageView>(R.id.btn_job_station_back).setOnClickListener { finish() }
 
-        val assetFileName = intent.getStringExtra(EXTRA_ASSET_FILE_NAME)
-        val data = JobStationAssetRepository.loadDetail(this, assetFileName)
+        val copilotId = intent.getLongExtra(EXTRA_COPILOT_ID, -1L)
+        if (copilotId <= 0L) {
+            Toast.makeText(this, "缺少作业 id", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
 
-        bindHeaderAndContent(data)
-        bindRosterCard(data)
-        bindTableAndOtherActions(data)
-        bindBottomBar(data)
+        renderLoadingState()
+        JobStationRemoteRepository.loadDetail(
+            copilotId = copilotId,
+            onSuccess = { data ->
+                bindHeaderAndContent(data)
+                bindRosterCard(data)
+                bindTableAndOtherActions(data)
+                bindBottomBar(data)
+            },
+            onError = { message ->
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        )
     }
 
     private fun bindHeaderAndContent(data: JobStationAssetRepository.JobStationDetailData) {
-        findViewById<ImageView>(R.id.btn_job_station_back).setOnClickListener { finish() }
         findViewById<TextView>(R.id.tv_detail_title).text = data.title
         bindStageTags(data.stageTags)
         bindSourceInfo(data)
+        bindMaaYuanNotice(data)
 
         val summaryView = findViewById<TextView>(R.id.tv_detail_summary)
         if (data.summary.isBlank() || data.summary.contains("这里放帖子正文")) {
@@ -59,11 +79,57 @@ class JobStationActivity : AppCompatActivity() {
         }
     }
 
+    private fun renderLoadingState() {
+        findViewById<TextView>(R.id.tv_detail_title).text = "加载中..."
+        findViewById<TextView>(R.id.tv_detail_summary).apply {
+            visibility = View.VISIBLE
+            text = "正在拉取作业详情"
+        }
+        findViewById<TextView>(R.id.tv_detail_source_author).text = ""
+        findViewById<TextView>(R.id.tv_detail_source_type).text = ""
+        findViewById<TextView>(R.id.tv_detail_original_author).text = ""
+        findViewById<TextView>(R.id.tv_detail_original_platform).text = ""
+        findViewById<View>(R.id.card_maayuan_notice).visibility = View.GONE
+    }
+
     private fun bindSourceInfo(data: JobStationAssetRepository.JobStationDetailData) {
         findViewById<TextView>(R.id.tv_detail_source_author).text = data.author
-        findViewById<TextView>(R.id.tv_detail_source_type).text = data.sourceType
-        findViewById<TextView>(R.id.tv_detail_original_author).text = "原作者名：${data.originalAuthor}"
-        findViewById<TextView>(R.id.tv_detail_original_platform).text = "原发布平台：${data.originalPlatform}"
+        findViewById<TextView>(R.id.tv_detail_source_type).apply {
+            text = data.sourceType
+            visibility = if (data.sourceType.isBlank()) View.GONE else View.VISIBLE
+        }
+        findViewById<TextView>(R.id.tv_detail_original_author).apply {
+            if (data.originalAuthor.isBlank()) {
+                visibility = View.GONE
+            } else {
+                visibility = View.VISIBLE
+                text = "原作者名：${data.originalAuthor}"
+            }
+        }
+        findViewById<TextView>(R.id.tv_detail_original_platform).apply {
+            if (data.originalPlatform.isBlank()) {
+                visibility = View.GONE
+            } else {
+                visibility = View.VISIBLE
+                text = "原发布平台：${data.originalPlatform}"
+            }
+        }
+    }
+
+    private fun bindMaaYuanNotice(data: JobStationAssetRepository.JobStationDetailData) {
+        val noticeCard = findViewById<View>(R.id.card_maayuan_notice)
+        if (!data.isFromMaaYuan) {
+            noticeCard.visibility = View.GONE
+            return
+        }
+
+        noticeCard.visibility = View.VISIBLE
+        findViewById<TextView>(R.id.btn_maayuan_home).setOnClickListener {
+            openExternalLink(MAA_YUAN_HOME_URL, "无法打开 MaaYuan 主页")
+        }
+        findViewById<TextView>(R.id.btn_maayuan_share).setOnClickListener {
+            openExternalLink(MAA_YUAN_SHARE_URL, "无法打开 MaaYuan Share")
+        }
     }
 
     private fun bindStageTags(tags: List<String>) {
@@ -88,18 +154,21 @@ class JobStationActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.btn_original_link).setOnClickListener {
             if (data.originalLink.isNotBlank()) {
-                runCatching {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(data.originalLink)))
-                }.onFailure {
-                    Toast.makeText(this, "无法打开原帖链接", Toast.LENGTH_SHORT).show()
-                }
+                openExternalLink(data.originalLink, "无法打开原帖链接")
             } else {
                 Toast.makeText(this, "未找到原帖链接", Toast.LENGTH_SHORT).show()
             }
         }
 
         findViewById<TextView>(R.id.btn_import_script).setOnClickListener {
-            Toast.makeText(this, "开始导入脚本...", Toast.LENGTH_SHORT).show()
+            val payload = data.importPayload
+            if (payload == null) {
+                Toast.makeText(this, "当前作业没有可导入的战斗脚本", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            importScriptToService(payload)
+            Toast.makeText(this, payload.notice, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -115,6 +184,9 @@ class JobStationActivity : AppCompatActivity() {
             })
             return
         }
+
+        val hasAnyStarLevel = data.roster.any { it.starLevel > 0 }
+        val hasAnyAttackOrHp = data.roster.any { it.attack > 0 || it.hp > 0 }
 
         data.roster.forEachIndexed { index, oper ->
             val operLayout = LinearLayout(this).apply {
@@ -151,11 +223,12 @@ class JobStationActivity : AppCompatActivity() {
                 maxLines = 1
             })
 
-            if (oper.starLevel > 0) {
+            if (hasAnyStarLevel) {
                 val starsLayout = LinearLayout(this).apply {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER
                     setPadding(0, dpToPx(2f), 0, dpToPx(2f))
+                    visibility = if (oper.starLevel > 0) View.VISIBLE else View.INVISIBLE
                 }
                 for (i in 1..5) {
                     starsLayout.addView(TextView(this).apply {
@@ -168,12 +241,13 @@ class JobStationActivity : AppCompatActivity() {
                 operLayout.addView(starsLayout)
             }
 
-            if (oper.attack > 0 || oper.hp > 0) {
+            if (hasAnyAttackOrHp) {
                 operLayout.addView(TextView(this).apply {
                     text = "${oper.attack}/${oper.hp}"
                     textSize = 10f
                     setTextColor(Color.parseColor("#857864"))
                     gravity = Gravity.CENTER
+                    visibility = if (oper.attack > 0 || oper.hp > 0) View.VISIBLE else View.INVISIBLE
                 })
             }
 
@@ -417,21 +491,60 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun createDiscChip(agentName: String, discId: Int): TextView {
+        val discSpec = JobStationAssetRepository.resolveMaaDiscDisplaySpec(this, agentName, discId)
+        val (bgColor, strokeColor, textColor, displayName) = when {
+            discSpec.forbidden -> listOf(
+                "#FFF3F3",
+                "#D37B7B",
+                "#A24D4D",
+                "×${discSpec.displayName.take((DISC_NAME_MAX_LENGTH - 1).coerceAtLeast(1))}"
+            )
+            discSpec.color == "金" -> listOf(
+                "#FDF8E4",
+                "#A8813C",
+                "#82683A",
+                discSpec.displayName
+            )
+            discSpec.color == "紫" -> listOf(
+                "#F6F0FB",
+                "#B39ACF",
+                "#7A5A9C",
+                discSpec.displayName
+            )
+            discSpec.color == "蓝" -> listOf(
+                "#EFF6FC",
+                "#97B6D6",
+                "#587FA6",
+                discSpec.displayName
+            )
+            else -> listOf(
+                "#EFF6FC",
+                "#97B6D6",
+                "#587FA6",
+                discSpec.displayName
+            )
+        }
+
         return TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                dpToPx(DISC_CHIP_WIDTH_DP),
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 topMargin = dpToPx(1f)
                 bottomMargin = dpToPx(1f)
             }
-            text = translateDiscName(agentName, discId)
+            text = displayName.take(DISC_NAME_MAX_LENGTH)
             textSize = 10f
-            setTextColor(Color.parseColor("#82683A"))
+            setTextColor(Color.parseColor(textColor))
+            paintFlags = if (discSpec.forbidden) {
+                paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            } else {
+                paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            }
             gravity = Gravity.CENTER
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#FDF8E4"))
-                setStroke(dpToPx(1f), Color.parseColor("#A8813C"))
+                setColor(Color.parseColor(bgColor))
+                setStroke(dpToPx(1f), Color.parseColor(strokeColor))
                 cornerRadius = dpToPx(6f).toFloat()
             }
             setPadding(dpToPx(6f), dpToPx(1f), dpToPx(6f), dpToPx(1f))
@@ -479,29 +592,6 @@ class JobStationActivity : AppCompatActivity() {
         ViewCompat.requestApplyInsets(statusBarSpacer)
     }
 
-    private fun translateDiscName(agentName: String, discId: Int): String {
-        val normalizedName = when (agentName) {
-            "酆公珠" -> "鄷公珠"
-            "酆公玖" -> "鄷公玖"
-            "SP史子眇" -> "SP史子渺"
-            else -> agentName
-        }
-        val rawName = AgentRepository.AGENT_MAP[normalizedName]
-            ?.talents
-            ?.get(discId)
-            ?.removePrefix("橙")
-            ?.removePrefix("紫")
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?: "命盘$discId"
-
-        return if (rawName.length > DISC_NAME_MAX_LENGTH) {
-            rawName.take(DISC_NAME_MAX_LENGTH)
-        } else {
-            rawName
-        }
-    }
-
     private fun loadAvatarFromAssets(name: String): Drawable? {
         return runCatching {
             assets.open("$name.png").use { stream ->
@@ -512,6 +602,25 @@ class JobStationActivity : AppCompatActivity() {
                 Drawable.createFromStream(stream, null)
             }
         }.getOrNull()
+    }
+
+    private fun importScriptToService(payload: JobStationAssetRepository.JobStationImportPayload) {
+        val intent = Intent(this, YuanAssistService::class.java).apply {
+            action = "ACTION_IMPORT_SCRIPT"
+            putExtra("SCRIPT_CONTENT", payload.scriptContent)
+            if (payload.configJson.isNotBlank()) putExtra("CONFIG_JSON", payload.configJson)
+            if (payload.instructionsJson.isNotBlank()) putExtra("INSTRUCTIONS_JSON", payload.instructionsJson)
+            if (payload.agentsJson.isNotBlank()) putExtra("AGENTS_JSON", payload.agentsJson)
+        }
+        startService(intent)
+    }
+
+    private fun openExternalLink(url: String, failureMessage: String) {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }.onFailure {
+            Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun dpToPx(dp: Float): Int {

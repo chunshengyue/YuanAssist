@@ -1,0 +1,48 @@
+name: mirrorchyan
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mirrorchyan:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [win, macos, linux]
+        arch: [aarch64, x86_64]
+        exclude:
+          - os: win
+            arch: aarch64
+
+    steps:
+      - uses: MirrorChyan/uploading-action@v1
+        with:
+          filetype: latest-release
+          filename: ${{ matrix.os == 'win' && format('MaaYuan-{0}-{1}-*.zip', matrix.os, matrix.arch) || format('MaaYuan-{0}-{1}-*.tar.gz', matrix.os, matrix.arch) }}
+          mirrorchyan_rid: MaaYuan
+
+          owner: syoius
+          repo: MaaYuan
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          upload_token: ${{ secrets.MirrorChyanUploadToken }}
+          os: ${{ matrix.os }}
+          arch: ${{ matrix.arch }}
+
+  # 仍上传通用资源，兼容老版本
+  mirrorchyan_resource:
+    runs-on: macos-latest
+    steps:
+      - id: uploading
+        uses: MirrorChyan/uploading-action@v1
+        with:
+          filetype: latest-release
+          filename: "MaaYuan-win-x86_64-*.zip"
+          pick_files: '["resource", "interface.json", "config", "agent"]'
+          exclude_files: '["*model/ocr/**"]'
+          mirrorchyan_rid: MaaYuan
+
+          owner: syoius
+          repo: MaaYuan
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          upload_token: ${{ secrets.MirrorChyanUploadToken }}

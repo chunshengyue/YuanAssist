@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_strategy -> {
-                    loadRootFragment(StrategyFragment())
+                    loadRootFragment(JobStationListFragment())
                     true
                 }
                 R.id.nav_daily -> {
@@ -61,13 +61,17 @@ class MainActivity : AppCompatActivity() {
             bottomNav.menu.findItem(itemId)?.isChecked = true
             when (itemId) {
                 R.id.nav_home -> loadRootFragment(HomeFragment())
-                R.id.nav_strategy -> loadRootFragment(StrategyFragment())
+                R.id.nav_strategy -> loadRootFragment(JobStationListFragment())
                 R.id.nav_daily -> loadRootFragment(DailyFragment())
                 R.id.nav_profile -> loadRootFragment(MineFragment())
             }
         } else {
             bottomNav.selectedItemId = itemId
         }
+    }
+
+    fun setBottomNavVisible(visible: Boolean) {
+        bottomNav.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     private fun configureBottomNav() {

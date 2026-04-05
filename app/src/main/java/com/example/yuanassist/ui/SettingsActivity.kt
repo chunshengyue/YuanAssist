@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -74,6 +75,25 @@ class SettingsActivity : AppCompatActivity() {
                 InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
             )
 
+        fun addSwitchRow(label: String, checked: Boolean): Switch {
+            content.addView(TextView(this).apply {
+                text = label
+                textSize = 14f
+                setTextColor(Color.WHITE)
+                setPadding(0, 8, 0, 4)
+            })
+            return Switch(this).also { switchView ->
+                switchView.isChecked = checked
+                switchView.setTextColor(Color.WHITE)
+                content.addView(switchView, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    bottomMargin = 12
+                })
+            }
+        }
+
         content.setBackgroundColor(Color.parseColor("#1A1A1A"))
 
         content.addView(TextView(this).apply {
@@ -89,6 +109,7 @@ class SettingsActivity : AppCompatActivity() {
         val etSkill = addIntRow("技能间隔(ms)", currentConfig.intervalSkill.toString())
         val etWait = addIntRow("敌方回合(ms)", currentConfig.waitTurn.toString())
         val etStart = addIntRow("起始回合", currentConfig.startTurn.toString())
+        val switchTurnNumberCheck = addSwitchRow("回合数检测", currentConfig.enableTurnNumberCheck)
 
         content.addView(TextView(this).apply {
             text = "游戏倍速"
@@ -136,6 +157,7 @@ class SettingsActivity : AppCompatActivity() {
                         intervalSkill = etSkill.text.toString().toLong(),
                         waitTurn = etWait.text.toString().toLong(),
                         startTurn = etStart.text.toString().toInt(),
+                        enableTurnNumberCheck = switchTurnNumberCheck.isChecked,
                         swipeThreshold = etThreshold.text.toString().toInt(),
                         inputHeightRatio = etHeight.text.toString().toInt(),
                         recordDelay = etRecordDelay.text.toString().toLong(),

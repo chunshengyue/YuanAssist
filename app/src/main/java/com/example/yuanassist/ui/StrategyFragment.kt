@@ -63,7 +63,13 @@ class StrategyFragment : Fragment() {
         // 2. 搜索逻辑
         val etSearch = view.findViewById<EditText>(R.id.et_search_keyword)
         view.findViewById<Button>(R.id.btn_search).setOnClickListener {
-            currentKeyword = etSearch.text.toString().trim()
+            val rawKeyword = etSearch.text.toString().trim()
+            val copilotId = parseMaaShareCopilotId(rawKeyword)
+            if (copilotId != null) {
+                openJobStationDetail(copilotId)
+                return@setOnClickListener
+            }
+            currentKeyword = rawKeyword
             applyFilters()
         }
         val fabUpload = view.findViewById<FloatingActionButton>(R.id.fab_upload_strategy)
@@ -224,6 +230,21 @@ class StrategyFragment : Fragment() {
                     }
                 }
             }
+        })
+    }
+
+    private fun parseMaaShareCopilotId(keyword: String): Long? {
+        if (keyword.isBlank()) return null
+
+        keyword.toLongOrNull()?.takeIf { it > 0L }?.let { return it }
+
+        val match = Regex("""/api/copilot/get/(\d+)""", RegexOption.IGNORE_CASE).find(keyword)
+        return match?.groupValues?.getOrNull(1)?.toLongOrNull()?.takeIf { it > 0L }
+    }
+
+    private fun openJobStationDetail(copilotId: Long) {
+        startActivity(Intent(requireContext(), JobStationActivity::class.java).apply {
+            putExtra(JobStationActivity.EXTRA_COPILOT_ID, copilotId)
         })
     }
 }
