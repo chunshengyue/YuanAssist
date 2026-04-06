@@ -42,6 +42,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.*
 import org.opencv.android.OpenCVLoader
 import java.io.File
+import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 
 private var isAutoSelectAgentEnabled = false
@@ -65,11 +66,11 @@ data class LocalScriptJson(
 class YuanAssistService : AccessibilityService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var appConfig: AppConfig = AppConfig(
-        intervalAttack = 2500,
-        intervalSkill = 4000,
+        intervalAttack = 3000,
+        intervalSkill = 4500,
         waitTurn = 8000,
         startTurn = 1,
-        enableTurnNumberCheck = true,
+        enableTurnNumberCheck = false,
         swipeThreshold = 50,
         inputHeightRatio = 31,
         recordDelay = 60,
@@ -279,16 +280,16 @@ class YuanAssistService : AccessibilityService() {
 
                         var importCount = 0
                         list.forEach { ins ->
+                            val normalizedInstruction = ins.toScriptInstructionOrNull() ?: return@forEach
                             val exists = combatEngine.instructionList.any {
-                                it.turn == ins.turn &&
-                                    it.step == ins.step &&
-                                    it.type.name == ins.type &&
-                                    it.value == ins.value
+                                val existingInstruction = it.normalized()
+                                existingInstruction.turn == normalizedInstruction.turn &&
+                                    existingInstruction.step == normalizedInstruction.step &&
+                                    existingInstruction.type == normalizedInstruction.type &&
+                                    existingInstruction.value == normalizedInstruction.value
                             }
                             if (!exists) {
-                                combatEngine.instructionList.add(
-                                    ScriptInstruction(ins.turn, ins.step, InstructionType.valueOf(ins.type), ins.value)
-                                )
+                                combatEngine.instructionList.add(normalizedInstruction)
                                 importCount++
                             }
                         }
@@ -366,6 +367,14 @@ class YuanAssistService : AccessibilityService() {
             coordinateManager = coordinateManager,
             gestureDispatcher = gestureDispatcher,
             getConfig = { appConfig },
+            shouldRunAutoSelectBeforeStageBattle = {
+                isAutoSelectAgentEnabled &&
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                    selectedAgents.all { it.isNotBlank() }
+            },
+            runAutoSelectBeforeStageBattle = {
+                runAutoSelectAgentForStageNavigation()
+            },
             onStateChanged = {
                 handler.post {
                     if (!combatEngine.isRunning) isRunning = false
@@ -616,14 +625,7 @@ class YuanAssistService : AccessibilityService() {
                         combatEngine.instructionList.clear()
 
                         scriptObj.instructions?.forEach { ins ->
-                            combatEngine.instructionList.add(
-                                ScriptInstruction(
-                                    ins.turn,
-                                    ins.step,
-                                    InstructionType.valueOf(ins.type),
-                                    ins.value
-                                )
-                            )
+                            ins.toScriptInstructionOrNull()?.let { combatEngine.instructionList.add(it) }
                         }
 
                         scriptObj.targetSwitches?.forEach { oldTask ->
@@ -764,21 +766,77 @@ class YuanAssistService : AccessibilityService() {
     }
 
     // Show auto-select agent dialog
-    private fun showAutoSelectAgentDialog(btnAutoSelect: TextView) {
+    private fun showAutoSelectAgentDialog() {
         com.example.yuanassist.ui.dialogs.AutoSelectDialog.show(
             context = this,
             isCurrentlyEnabled = isAutoSelectAgentEnabled,
             currentAgents = selectedAgents,
             allAgentsLibrary = AgentRepository.ALL_AGENTS
         ) { isEnabled, newAgents ->
-            isAutoSelectAgentEnabled = isEnabled
+            setAutoSelectAgentEnabled(isEnabled)
             for (i in 0 until 5) {
                 selectedAgents[i] = newAgents[i]
             }
-            btnAutoSelect.text = if (isAutoSelectAgentEnabled) "自动选人：开启" else "自动选人：关闭"
             Toast.makeText(this, "自动选人设置已保存", Toast.LENGTH_SHORT).show()
         }
     }
+
+    private fun setAutoSelectAgentEnabled(enabled: Boolean) {
+        isAutoSelectAgentEnabled = enabled
+        uiManager.controlView?.findViewById<TextView>(R.id.btn_feedback_update)?.text =
+            if (enabled) "自动选人：开启" else "自动选人：关闭"
+    }
+
+    private suspend fun runAutoSelectAgentForStageNavigation(): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+                RunLogger.e("自动导航中的自动选人仅支持 Android 11 及以上")
+                handler.post {
+                    Toast.makeText(this, "自动选人需要 Android 11 及以上版本", Toast.LENGTH_SHORT).show()
+                }
+                continuation.resume(false)
+                return@suspendCancellableCoroutine
+            }
+            if (!isAutoSelectAgentEnabled || selectedAgents.any { it.isBlank() }) {
+                RunLogger.e("自动导航中的自动选人配置无效")
+                handler.post {
+                    Toast.makeText(this, "自动选人未开启或角色未填满", Toast.LENGTH_SHORT).show()
+                }
+                continuation.resume(false)
+                return@suspendCancellableCoroutine
+            }
+            val engine = autoTaskEngine
+            if (engine == null) {
+                RunLogger.e("自动选人引擎未初始化")
+                continuation.resume(false)
+                return@suspendCancellableCoroutine
+            }
+
+            RunLogger.i("=== 启动流程：自动导航 -> 自动选人 -> 跟打 ===")
+            handler.post {
+                Toast.makeText(this, "开始自动选人...", Toast.LENGTH_SHORT).show()
+            }
+
+            val plan = AutoSelectScriptBuilder.buildPlan(selectedAgents, AgentRepository.AGENT_MAP)
+            engine.startPlan(plan, onCompleted = { success, errorMsg ->
+                handler.post {
+                    if (!continuation.isActive) return@post
+                    if (success) {
+                        RunLogger.i("自动选人完成，已自动关闭")
+                        setAutoSelectAgentEnabled(false)
+                        continuation.resume(true)
+                    } else {
+                        RunLogger.e("自动选人中断：$errorMsg")
+                        Toast.makeText(
+                            this@YuanAssistService,
+                            "自动选人中断：$errorMsg",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        continuation.resume(false)
+                    }
+                }
+            })
+        }
 
     // Switch between record mode and follow mode
     private fun switchMode() {
@@ -826,7 +884,8 @@ class YuanAssistService : AccessibilityService() {
                 RunLogger.i("用户手动停止运行")
             } else {
                 RunLogger.clear()
-                if (isFollowMode && isAutoSelectAgentEnabled) {
+                val hasStageAutoNavigation = combatEngine.hasStageAutoNavigationInstruction()
+                if (isFollowMode && isAutoSelectAgentEnabled && !hasStageAutoNavigation) {
                     if (combatEngine.followData.isEmpty()) {
                         Toast.makeText(this, "请先导入跟打数据", Toast.LENGTH_SHORT).show()
                         return@setOnClickListener
@@ -852,9 +911,7 @@ class YuanAssistService : AccessibilityService() {
                                     Toast.LENGTH_SHORT
                                 ).show()
 
-                                isAutoSelectAgentEnabled = false
-                                uiManager.controlView?.findViewById<TextView>(R.id.btn_feedback_update)?.text =
-                                    "自动选人：关闭"
+                                setAutoSelectAgentEnabled(false)
 
                                 handler.postDelayed({
                                     if (isRunning) {
@@ -875,7 +932,13 @@ class YuanAssistService : AccessibilityService() {
                         }
                     })
                 } else if (isFollowMode) {
-                    RunLogger.i("=== 启动流程：直接开始跟打 ===")
+                    RunLogger.i(
+                        if (hasStageAutoNavigation && isAutoSelectAgentEnabled) {
+                            "=== 启动流程：自动导航 -> 自动选人 -> 跟打 ==="
+                        } else {
+                            "=== 启动流程：直接开始跟打 ==="
+                        }
+                    )
                     if (combatEngine.followData.isEmpty()) {
                         Toast.makeText(this, "请先导入跟打数据", Toast.LENGTH_SHORT).show()
                         return@setOnClickListener
@@ -1183,14 +1246,7 @@ class YuanAssistService : AccessibilityService() {
                 appConfig.intervalSkill,
                 appConfig.waitTurn
             )
-            val insJsonList = combatEngine.instructionList.map {
-                InstructionJson(
-                    it.turn,
-                    it.step,
-                    it.type.name,
-                    it.value
-                )
-            }
+            val insJsonList = combatEngine.instructionList.map { it.toInstructionJson() }
             val finalJsonObj = LocalScriptJson(
                 title = scriptName,
                 scriptContent = sb.toString(),
@@ -1220,10 +1276,10 @@ class YuanAssistService : AccessibilityService() {
         val btnAutoSelect = view.findViewById<TextView>(R.id.btn_feedback_update)
         val btnCombatAnchorPicker = view.findViewById<TextView>(R.id.btn_combat_anchor_picker)
         val btnMiniSettings = view.findViewById<TextView>(R.id.btn_mini_settings)
-        btnAutoSelect.text = if (isAutoSelectAgentEnabled) "自动选人：开启" else "自动选人：关闭"
+        setAutoSelectAgentEnabled(isAutoSelectAgentEnabled)
         btnAutoSelect.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                showAutoSelectAgentDialog(btnAutoSelect)
+                showAutoSelectAgentDialog()
             } else {
                 Toast.makeText(this, "自动选人需要 Android 11 及以上版本", Toast.LENGTH_SHORT).show()
             }
@@ -1297,7 +1353,7 @@ class YuanAssistService : AccessibilityService() {
         uiManager.removeControlWindow()
         showMinimizedWindow()
         if (autoDockToTopLeft) {
-            uiManager.moveMinimizedWindowToTopLeftSafely()
+            uiManager.moveMinimizedWindowNearTopSafely()
         }
     }
 
@@ -1320,9 +1376,7 @@ class YuanAssistService : AccessibilityService() {
 
     fun getExportableInstructions(): List<InstructionJson> {
         if (!::combatEngine.isInitialized) return emptyList()
-        return combatEngine.instructionList.map {
-            InstructionJson(it.turn, it.step, it.type.name, it.value)
-        }
+        return combatEngine.instructionList.map { it.toInstructionJson() }
     }
 }
 

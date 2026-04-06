@@ -28,6 +28,9 @@ import com.example.yuanassist.model.InstructionType
 import com.example.yuanassist.model.ScriptInstruction
 import com.example.yuanassist.model.TemplateRegionConfig
 import com.example.yuanassist.model.TurnData
+import com.example.yuanassist.model.decodeStageAutoNavTarget
+import com.example.yuanassist.model.isCaveTarget
+import com.example.yuanassist.model.isStageAutoNavAutoEnterNextFloorEnabled
 import com.example.yuanassist.utils.AppConfig
 import com.example.yuanassist.utils.GameConstants
 import com.example.yuanassist.utils.RunLogger
@@ -54,6 +57,8 @@ class CombatEngine(
     private val coordinateManager: CoordinateManager,
     private val gestureDispatcher: GestureDispatcher,
     private val getConfig: () -> AppConfig,
+    private val shouldRunAutoSelectBeforeStageBattle: () -> Boolean,
+    private val runAutoSelectBeforeStageBattle: suspend () -> Boolean,
     private val onStateChanged: () -> Unit, // 通知狀態改變 (停止/完成)
     private val onRowUpdated: (rowIndex: Int) -> Unit, // 通知 UI 更新特定行 (-1代表全部)
     private val onScrollToRow: (rowIndex: Int) -> Unit, // 通知 UI 滾動
@@ -77,9 +82,9 @@ class CombatEngine(
     private val windowManager by lazy {
         accessibilityService.getSystemService(AccessibilityService.WINDOW_SERVICE) as WindowManager
     }
-    private val templateCache = object : LruCache<String, Bitmap>(8 * 1024) {
-        override fun sizeOf(key: String, value: Bitmap): Int =
-            (value.byteCount / 1024).coerceAtLeast(1)
+    private val templateCache = object : LruCache<String, ByteArray>(8 * 1024) {
+        override fun sizeOf(key: String, value: ByteArray): Int =
+            (value.size / 1024).coerceAtLeast(1)
     }
 
     private data class OrangeStarCandidate(
@@ -208,16 +213,27 @@ class CombatEngine(
         private const val STAGE_HOME_RECOVERY_POST_XINZHI_DELAY_MS = 2000L
         private const val STAGE_HOME_RECOVERY_POST_LIXIAN_DELAY_MS = 2000L
         private const val CAVE_DONGKU_TEMPLATE = "dongku.png"
+        private const val CAVE_DONGKU_TEMPLATE_FALLBACK = "dongku2.png"
         private const val CAVE_DONGKU_CENTER_X = 666f
         private const val CAVE_DONGKU_CENTER_Y = 313f
         private const val CAVE_DONGKU_ROI_WIDTH = 300f
         private const val CAVE_DONGKU_ROI_HEIGHT = 300f
         private const val CAVE_DONGKU_THRESHOLD = 0.75f
+        private const val CAVE_NEXT_FLOOR_TEMPLATE = "xiayiceng.png"
+        private const val CAVE_NEXT_FLOOR_CENTER_X = 700f
+        private const val CAVE_NEXT_FLOOR_CENTER_Y = 1700f
+        private const val CAVE_NEXT_FLOOR_ROI_WIDTH = 500f
+        private const val CAVE_NEXT_FLOOR_ROI_HEIGHT = 500f
+        private const val CAVE_NEXT_FLOOR_THRESHOLD = 0.80f
         private const val DEATH_CHECK_TOP_Y = 1350f
         private const val DEATH_CHECK_BOTTOM_Y = 1700f
         private const val DEATH_CHECK_SLOT_COUNT = 5
         private const val DEATH_CHECK_SATURATION_THRESHOLD = 20f
         private const val STAGE_AUTO_NAV_CHECK_DELAY_MS = 500L
+        private const val STAGE_SCREENSHOT_COOLDOWN_DELAY_MS = 500L
+        private const val STAGE_AUTO_SELECT_ENTRY_OFFSET_DP = 200f
+        private const val STAGE_AUTO_SELECT_ENTRY_SETTLE_DELAY_MS = 1500L
+        private const val STAGE_AUTO_SELECT_POST_CONFIRM_DELAY_MS = 5000L
         private const val START_BATTLE_RED_THRESHOLD = 0.72f
         private const val START_BATTLE_RED_CENTER_X = 540f
         private const val START_BATTLE_RED_CENTER_Y = 1700f
@@ -281,9 +297,14 @@ class CombatEngine(
         lastTurnPauseTriggered = -1
         startOnlyInstructionsHandled = false
         delayJob?.cancel()
+        templateCache.evictAll()
         followData.forEach { it.isExecuting = false }
         onRowUpdated(-1)
         onStateChanged()
+    }
+
+    fun hasStageAutoNavigationInstruction(): Boolean {
+        return instructionList.any { it.type == InstructionType.STAGE_AUTO_NAV }
     }
 
     private fun handleStartOnlyInstructions(onReady: () -> Unit) {
@@ -295,14 +316,14 @@ class CombatEngine(
         startOnlyInstructionsHandled = true
 
         val navigationTask = instructionList.firstOrNull {
-            it.turn == 1 && it.step == 0 && it.type == InstructionType.STAGE_AUTO_NAV
-        }
+            it.type == InstructionType.STAGE_AUTO_NAV
+        }?.normalized()
         if (navigationTask == null) {
             onReady()
             return
         }
 
-        val target = BattleStageTarget.fromCode(navigationTask.value)
+        val target = decodeStageAutoNavTarget(navigationTask.value)
         if (target == null) {
             RunLogger.e("关卡自动导航配置无效 value=${navigationTask.value}")
             showToast("关卡自动导航配置无效，已停止", true)
@@ -318,11 +339,11 @@ class CombatEngine(
         isPaused = !isPaused
         if (isPaused) {
             delayJob?.cancel()
-            showToast("⏸️ 已暂停", false)
+            showToast("已暂停", false)
             onStateChanged()
             onHudUpdated("已暂停", true) // 🔴 暂停时固定显示
         } else {
-            showToast("▶️ 继续运行", false)
+            showToast("继续运行", false)
             onStateChanged()
             startSafeDelay(500, "继续", false) { // 🔴 继续时的短暂缓冲
                 if (currentExecutingRowIndex in followData.indices) {
@@ -353,7 +374,7 @@ class CombatEngine(
 
         currentExecutingRowIndex = rowIndex
         val currentTurnNum = followData[rowIndex].turnNumber
-        RunLogger.i("▶ 开始执行第 $currentTurnNum 回合...")
+        RunLogger.i("开始执行第 $currentTurnNum 回合")
 
         // 取消上一行的高亮
         if (rowIndex > 0) {
@@ -389,6 +410,61 @@ class CombatEngine(
             showToast("第 ${turnData.turnNumber} 回合指令冲突！停止运行", true)
             stop()
         }
+    }
+
+    private suspend fun continueAfterStageStartBattleDetected(
+        config: DirectStageNavigationConfig,
+        startBattlePoint: PointF,
+        logPrefix: String,
+        onReady: () -> Unit
+    ): Boolean {
+        if (!isRunning) return true
+
+        if (shouldRunAutoSelectBeforeStageBattle()) {
+            val density = accessibilityService.resources.displayMetrics.density
+            val pickEntryY = (startBattlePoint.y - STAGE_AUTO_SELECT_ENTRY_OFFSET_DP * density)
+                .coerceAtLeast(0f)
+            gestureDispatcher.performActionDirect(
+                startBattlePoint.x,
+                pickEntryY,
+                startBattlePoint.x,
+                pickEntryY,
+                true
+            )
+            RunLogger.i(
+                "$logPrefix 识别到开始战斗，点击上方选人入口 x=${startBattlePoint.x.toInt()} y=${pickEntryY.toInt()}"
+            )
+            delay(STAGE_AUTO_SELECT_ENTRY_SETTLE_DELAY_MS)
+            if (!isRunning) return true
+            val autoSelectSuccess = runAutoSelectBeforeStageBattle()
+            if (!isRunning) return true
+            if (autoSelectSuccess) {
+                RunLogger.i("$logPrefix 自动选人完成，5秒后进入跟打")
+                delay(STAGE_AUTO_SELECT_POST_CONFIRM_DELAY_MS)
+                if (!isRunning) return true
+                onReady()
+                return true
+            }
+            RunLogger.e("$logPrefix 自动选人失败，已停止")
+            stop()
+            return true
+        }
+
+        gestureDispatcher.performActionDirect(
+            startBattlePoint.x,
+            startBattlePoint.y,
+            startBattlePoint.x,
+            startBattlePoint.y,
+            true
+        )
+        RunLogger.i(
+            "$logPrefix 识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
+        )
+        delay(config.delayAfterStartBattleClickMs)
+        if (isRunning) {
+            onReady()
+        }
+        return true
     }
 
     @Throws(Exception::class)
@@ -445,12 +521,23 @@ class CombatEngine(
                 followData[currentExecutingRowIndex].characterActions.any { it.isNotBlank() }
             if (!hasActions) {
                 showToast("第${currentTurn}回合为空，跳过等待", false)
-                startSafeDelay(200, getNextTurnFirstAction(), false) { onComplete() }
+                startSafeDelay(200, getNextTurnFirstAction(), false) {
+                    if (currentExecutingRowIndex == followData.lastIndex && shouldAutoEnterNextCaveFloor()) {
+                        serviceScope.launch {
+                            continueAfterCaveNextFloorCheck(
+                                triggerLabel = "最终回合结算后",
+                                onNextTurn = onComplete
+                            )
+                        }
+                    } else {
+                        onComplete()
+                    }
+                }
                 return
             }
 
             RunLogger.i("等待敌方回合结束 (${appConfig.waitTurn / 1000}秒)...")
-            waitForEnemyTurn(onComplete)
+            waitForEnemyTurn(currentExecutingRowIndex == followData.lastIndex, onComplete)
             return
         }
 
@@ -581,7 +668,7 @@ class CombatEngine(
         }
     }
 
-    private fun waitForEnemyTurn(onNextTurn: () -> Unit) {
+    private fun waitForEnemyTurn(isFinalTurn: Boolean, onNextTurn: () -> Unit) {
         if (!isRunning) return
         val appConfig = getConfig()
         val speedMultiplier = if (appConfig.gameSpeed == 2) 1.5 else 1.0
@@ -593,21 +680,30 @@ class CombatEngine(
         startSafeDelay(actualWaitTurn, nextStepStr, false) {
             if (isRunning) {
                 RunLogger.i("敌方回合等待结束，准备进入下一回合")
-                try {
-                    onNextTurn()
-                } catch (t: Throwable) {
-                    RunLogger.e("进入下一回合回调异常", t)
-                    showToast("进入下一回合异常，已停止", true)
-                    stop()
+                if (isFinalTurn && shouldAutoEnterNextCaveFloor()) {
+                    serviceScope.launch {
+                        continueAfterCaveNextFloorCheck(
+                            triggerLabel = "最终回合结算后",
+                            onNextTurn = onNextTurn
+                        )
+                    }
+                } else {
+                    try {
+                        onNextTurn()
+                    } catch (t: Throwable) {
+                        RunLogger.e("进入下一回合回调异常", t)
+                        showToast("进入下一回合异常，已停止", true)
+                        stop()
+                    }
                 }
             }
         }
     }
 
     private fun handleTurnStartInstructions(turn: Int, onNext: () -> Unit) {
+        val shouldCheckCaveNextFloorAtTurnStart = shouldAutoEnterNextCaveFloor() && turn > 1
         val tasks = instructionList.filter {
             it.turn == turn &&
-                it.step == 0 &&
                 (
                     it.type == InstructionType.ALL_WIPE_CHECK ||
                         it.type == InstructionType.DEATH_CHECK ||
@@ -633,7 +729,8 @@ class CombatEngine(
                 }
         )
         val shouldUseSharedScreenshot =
-            tasks.any { it.type != InstructionType.ORANGE_STAR_CHECK } ||
+            shouldCheckCaveNextFloorAtTurnStart ||
+                tasks.any { it.type != InstructionType.ORANGE_STAR_CHECK } ||
                 (getConfig().enableTurnNumberCheck && turn >= 2)
 
         serviceScope.launch {
@@ -641,6 +738,15 @@ class CombatEngine(
             try {
                 if (shouldUseSharedScreenshot && sharedScreenshot == null) {
                     RunLogger.e("第${turn}回合开始前共享截图失败")
+                }
+                if (shouldCheckCaveNextFloorAtTurnStart) {
+                    val caveNextFloorHandled = tryAutoEnterNextCaveFloorIfNeeded(
+                        triggerLabel = "第${turn}回合开始",
+                        sharedScreenshot = sharedScreenshot
+                    )
+                    if (caveNextFloorHandled || !isRunning) {
+                        return@launch
+                    }
                 }
                 if (tasks.isEmpty()) {
                     performTurnNumberCheckIfNeeded(turn, onNext, sharedScreenshot)
@@ -703,6 +809,10 @@ class CombatEngine(
             }
             InstructionType.ORANGE_STAR_CHECK -> {
                 onHudUpdated("橙星检测", true)
+                if (sharedScreenshot != null) {
+                    delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+                    if (!isRunning) return
+                }
                 val shouldContinue = performOrangeStarCheck()
                 if (shouldContinue && isRunning) {
                     performTurnStartInstructions(turn, tasks, index + 1, onComplete, sharedScreenshot)
@@ -894,20 +1004,12 @@ class CombatEngine(
                 )
             }
             if (startBattlePoint != null) {
-                gestureDispatcher.performActionDirect(
-                    startBattlePoint.x,
-                    startBattlePoint.y,
-                    startBattlePoint.x,
-                    startBattlePoint.y,
-                    true
+                continueAfterStageStartBattleDetected(
+                    config = config,
+                    startBattlePoint = startBattlePoint,
+                    logPrefix = "${config.target.description} 自动导航",
+                    onReady = onReady
                 )
-                RunLogger.i(
-                    "${config.target.description} 自动导航识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
-                )
-                delay(config.delayAfterStartBattleClickMs)
-                if (isRunning) {
-                    onReady()
-                }
                 return
             }
 
@@ -924,17 +1026,10 @@ class CombatEngine(
                     logLabel = "${config.target.description} 进入挑战模板"
                 )
             }
-            if (entryPoint == null && isCaveTarget(config.target)) {
+            if (entryPoint == null && config.target.isCaveTarget()) {
                 cavePoint = withContext(Dispatchers.Default) {
-                    findTemplatePointInVisionRoiFromScreenshot(
+                    findCaveDongkuPointFromScreenshot(
                         screenshot = initialScreenshot,
-                        templateName = CAVE_DONGKU_TEMPLATE,
-                        centerX = CAVE_DONGKU_CENTER_X,
-                        centerY = CAVE_DONGKU_CENTER_Y,
-                        align = "center",
-                        roiWidth = CAVE_DONGKU_ROI_WIDTH,
-                        roiHeight = CAVE_DONGKU_ROI_HEIGHT,
-                        threshold = CAVE_DONGKU_THRESHOLD,
                         logLabel = "${config.target.description} 洞窟模板"
                     )
                 }
@@ -963,7 +1058,7 @@ class CombatEngine(
 
         if (!isRunning) return
 
-        if (isCaveTarget(config.target)) {
+        if (config.target.isCaveTarget()) {
             val completed = when {
                 entryPoint != null -> continueCaveEntryFlow(config, entryPoint, onReady)
                 cavePoint != null -> continueCaveFromDongkuFlow(config, cavePoint, onReady)
@@ -972,6 +1067,8 @@ class CombatEngine(
             if (completed || !isRunning) {
                 return
             }
+            delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+            if (!isRunning) return
             val recovered = performCaveIndirectHomeRecovery(config, onReady)
             if (recovered || !isRunning) {
                 return
@@ -1004,11 +1101,15 @@ class CombatEngine(
 
         if (entryPoint == null) {
             if (config.target == BattleStageTarget.BAI_HU) {
+                delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+                if (!isRunning) return
                 val recovered = performBaiHuIndirectRecovery(config, onReady)
                 if (recovered || !isRunning) {
                     return
                 }
             } else if (config.recoverySelectionRegion != null) {
+                delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+                if (!isRunning) return
                 val recovered = performRelicIndirectAutoNavigation(config, config.recoverySelectionRegion, onReady)
                 if (recovered || !isRunning) {
                     return
@@ -1035,20 +1136,12 @@ class CombatEngine(
             return
         }
 
-        gestureDispatcher.performActionDirect(
-            postEntryStartBattlePoint.x,
-            postEntryStartBattlePoint.y,
-            postEntryStartBattlePoint.x,
-            postEntryStartBattlePoint.y,
-            true
+        continueAfterStageStartBattleDetected(
+            config = config,
+            startBattlePoint = postEntryStartBattlePoint,
+            logPrefix = "${config.target.description} 自动导航进入挑战后",
+            onReady = onReady
         )
-        RunLogger.i(
-            "${config.target.description} 自动导航进入挑战后识别到开始战斗，点击 x=${postEntryStartBattlePoint.x.toInt()} y=${postEntryStartBattlePoint.y.toInt()}"
-        )
-        delay(config.delayAfterStartBattleClickMs)
-        if (isRunning) {
-            onReady()
-        }
     }
 
     private suspend fun performBaiHuIndirectRecovery(
@@ -1186,21 +1279,12 @@ class CombatEngine(
             return true
         }
 
-        gestureDispatcher.performActionDirect(
-            startBattlePoint.x,
-            startBattlePoint.y,
-            startBattlePoint.x,
-            startBattlePoint.y,
-            true
+        return continueAfterStageStartBattleDetected(
+            config = config,
+            startBattlePoint = startBattlePoint,
+            logPrefix = "${config.target.description} 自动导航",
+            onReady = onReady
         )
-        RunLogger.i(
-            "${config.target.description} 自动导航识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
-        )
-        delay(config.delayAfterStartBattleClickMs)
-        if (isRunning) {
-            onReady()
-        }
-        return true
     }
 
     private suspend fun continueCaveFromDongkuFlow(
@@ -1354,14 +1438,7 @@ class CombatEngine(
         delay(STAGE_HOME_RECOVERY_POST_LIXIAN_DELAY_MS)
         if (!isRunning) return true
 
-        val dongkuPoint = findTemplatePointInVisionRoi(
-            templateName = CAVE_DONGKU_TEMPLATE,
-            centerX = CAVE_DONGKU_CENTER_X,
-            centerY = CAVE_DONGKU_CENTER_Y,
-            align = "center",
-            roiWidth = CAVE_DONGKU_ROI_WIDTH,
-            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
-            threshold = CAVE_DONGKU_THRESHOLD,
+        val dongkuPoint = findCaveDongkuPoint(
             logLabel = "${config.target.description} 主页入口 洞窟模板"
         )
         if (!isRunning) return true
@@ -1373,6 +1450,61 @@ class CombatEngine(
         }
 
         return continueCaveFromDongkuFlow(config, dongkuPoint, onReady)
+    }
+
+    private suspend fun findCaveDongkuPoint(logLabel: String): PointF? {
+        val primaryPoint = findTemplatePointInVisionRoi(
+            templateName = CAVE_DONGKU_TEMPLATE,
+            centerX = CAVE_DONGKU_CENTER_X,
+            centerY = CAVE_DONGKU_CENTER_Y,
+            align = "center",
+            roiWidth = CAVE_DONGKU_ROI_WIDTH,
+            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
+            threshold = CAVE_DONGKU_THRESHOLD,
+            logLabel = logLabel
+        )
+        if (primaryPoint != null) return primaryPoint
+
+        return findTemplatePointInVisionRoi(
+            templateName = CAVE_DONGKU_TEMPLATE_FALLBACK,
+            centerX = CAVE_DONGKU_CENTER_X,
+            centerY = CAVE_DONGKU_CENTER_Y,
+            align = "center",
+            roiWidth = CAVE_DONGKU_ROI_WIDTH,
+            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
+            threshold = CAVE_DONGKU_THRESHOLD,
+            logLabel = "$logLabel fallback"
+        )
+    }
+
+    private fun findCaveDongkuPointFromScreenshot(
+        screenshot: Bitmap,
+        logLabel: String
+    ): PointF? {
+        val primaryPoint = findTemplatePointInVisionRoiFromScreenshot(
+            screenshot = screenshot,
+            templateName = CAVE_DONGKU_TEMPLATE,
+            centerX = CAVE_DONGKU_CENTER_X,
+            centerY = CAVE_DONGKU_CENTER_Y,
+            align = "center",
+            roiWidth = CAVE_DONGKU_ROI_WIDTH,
+            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
+            threshold = CAVE_DONGKU_THRESHOLD,
+            logLabel = logLabel
+        )
+        if (primaryPoint != null) return primaryPoint
+
+        return findTemplatePointInVisionRoiFromScreenshot(
+            screenshot = screenshot,
+            templateName = CAVE_DONGKU_TEMPLATE_FALLBACK,
+            centerX = CAVE_DONGKU_CENTER_X,
+            centerY = CAVE_DONGKU_CENTER_Y,
+            align = "center",
+            roiWidth = CAVE_DONGKU_ROI_WIDTH,
+            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
+            threshold = CAVE_DONGKU_THRESHOLD,
+            logLabel = "$logLabel fallback"
+        )
     }
 
     private suspend fun performRelicIndirectAutoNavigation(
@@ -1564,22 +1696,15 @@ class CombatEngine(
             val startBattlePoint = findStartBattleRedPoint()
             if (!isRunning) return true
             if (startBattlePoint != null) {
-                gestureDispatcher.performActionDirect(
-                    startBattlePoint.x,
-                    startBattlePoint.y,
-                    startBattlePoint.x,
-                    startBattlePoint.y,
-                    true
+                return continueAfterStageStartBattleDetected(
+                    config = config,
+                    startBattlePoint = startBattlePoint,
+                    logPrefix = "${config.target.description} 自动导航",
+                    onReady = onReady
                 )
-                RunLogger.i(
-                    "${config.target.description} 自动导航识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
-                )
-                delay(config.delayAfterStartBattleClickMs)
-                if (isRunning) {
-                    onReady()
-                }
-                return true
             }
+            delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+            if (!isRunning) return true
         }
 
         val entryPoint = findTemplatePointInVisionRoi(
@@ -1615,21 +1740,12 @@ class CombatEngine(
             return true
         }
 
-        gestureDispatcher.performActionDirect(
-            postEntryStartBattlePoint.x,
-            postEntryStartBattlePoint.y,
-            postEntryStartBattlePoint.x,
-            postEntryStartBattlePoint.y,
-            true
+        return continueAfterStageStartBattleDetected(
+            config = config,
+            startBattlePoint = postEntryStartBattlePoint,
+            logPrefix = "${config.target.description} 自动导航进入挑战后",
+            onReady = onReady
         )
-        RunLogger.i(
-            "${config.target.description} 自动导航进入挑战后识别到开始战斗，点击 x=${postEntryStartBattlePoint.x.toInt()} y=${postEntryStartBattlePoint.y.toInt()}"
-        )
-        delay(config.delayAfterStartBattleClickMs)
-        if (isRunning) {
-            onReady()
-        }
-        return true
     }
 
     private fun performStageRecoverySwipeRight() {
@@ -2006,7 +2122,7 @@ class CombatEngine(
                 RunLogger.i("${reasonLabel}确认后进入白鹄重开分支")
                 continueStageEntryFlow(config, onReady = { restartFromFirstTurn() }, tryStartBattleFirst = false)
             }
-            isCaveTarget(target) && config.recoverySelectionRegion != null -> {
+            target.isCaveTarget() && config.recoverySelectionRegion != null -> {
                 RunLogger.i("${reasonLabel}确认后进入${target.description}重开分支")
                 performCaveRecoveryRoute(
                     config = config,
@@ -2031,13 +2147,121 @@ class CombatEngine(
 
     private fun getSelectedStageAutoNavTarget(): BattleStageTarget? {
         val navigationTask = instructionList.firstOrNull {
-            it.turn == 1 && it.step == 0 && it.type == InstructionType.STAGE_AUTO_NAV
-        } ?: return null
-        return BattleStageTarget.fromCode(navigationTask.value)
+            it.type == InstructionType.STAGE_AUTO_NAV
+        }?.normalized() ?: return null
+        return decodeStageAutoNavTarget(navigationTask.value)
     }
 
-    private fun isCaveTarget(target: BattleStageTarget): Boolean =
-        target == BattleStageTarget.DONG_KU_LEFT || target == BattleStageTarget.DONG_KU_RIGHT
+    private fun shouldAutoEnterNextCaveFloor(): Boolean {
+        val navigationTask = instructionList.firstOrNull {
+            it.type == InstructionType.STAGE_AUTO_NAV
+        }?.normalized() ?: return false
+        val target = decodeStageAutoNavTarget(navigationTask.value) ?: return false
+        return target.isCaveTarget() && isStageAutoNavAutoEnterNextFloorEnabled(navigationTask.value)
+    }
+
+    private suspend fun continueAfterCaveNextFloorCheck(
+        triggerLabel: String,
+        onNextTurn: () -> Unit
+    ) {
+        try {
+            val handled = tryAutoEnterNextCaveFloorIfNeeded(triggerLabel = triggerLabel)
+            if (!handled && isRunning) {
+                onNextTurn()
+            }
+        } catch (t: Throwable) {
+            RunLogger.e("$triggerLabel 下一回合衔接异常", t)
+            showToast("进入下一回合异常，已停止", true)
+            stop()
+        }
+    }
+
+    private suspend fun tryAutoEnterNextCaveFloorIfNeeded(
+        triggerLabel: String,
+        sharedScreenshot: Bitmap? = null
+    ): Boolean {
+        if (!isRunning || !shouldAutoEnterNextCaveFloor()) return false
+        val target = getSelectedStageAutoNavTarget() ?: return false
+        val config = BattleStageNavigationRegistry.getDirectConfig(target) ?: return false
+        val nextFloorPoint = if (sharedScreenshot != null) {
+            withContext(Dispatchers.Default) {
+                findNextCaveFloorPointFromScreenshot(
+                    screenshot = sharedScreenshot,
+                    logLabel = "$triggerLabel 下一层模板"
+                )
+            }
+        } else {
+            findNextCaveFloorPoint("$triggerLabel 下一层模板")
+        } ?: return false
+
+        gestureDispatcher.performActionDirect(
+            nextFloorPoint.x,
+            nextFloorPoint.y,
+            nextFloorPoint.x,
+            nextFloorPoint.y,
+            true
+        )
+        RunLogger.i(
+            "$triggerLabel 识别到${CAVE_NEXT_FLOOR_TEMPLATE}，点击 x=${nextFloorPoint.x.toInt()} y=${nextFloorPoint.y.toInt()}"
+        )
+        delay(config.delayAfterEntryClickMs)
+        if (!isRunning) return true
+
+        val startBattlePoint = findStartBattleRedPoint()
+        if (!isRunning) return true
+        if (startBattlePoint == null) {
+            RunLogger.e("$triggerLabel 点击下一层后未识别到开始战斗，已停止")
+            showToast("已识别到下一层，但未识别到开始战斗", true)
+            stop()
+            return true
+        }
+
+        gestureDispatcher.performActionDirect(
+            startBattlePoint.x,
+            startBattlePoint.y,
+            startBattlePoint.x,
+            startBattlePoint.y,
+            true
+        )
+        RunLogger.i(
+            "$triggerLabel 识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
+        )
+        delay(config.delayAfterStartBattleClickMs)
+        if (isRunning) {
+            restartFromFirstTurn("已进入下一层，重新从第1回合开始")
+        }
+        return true
+    }
+
+    private suspend fun findNextCaveFloorPoint(logLabel: String): PointF? {
+        return findTemplatePointInVisionRoi(
+            templateName = CAVE_NEXT_FLOOR_TEMPLATE,
+            centerX = CAVE_NEXT_FLOOR_CENTER_X,
+            centerY = CAVE_NEXT_FLOOR_CENTER_Y,
+            align = "bottom",
+            roiWidth = CAVE_NEXT_FLOOR_ROI_WIDTH,
+            roiHeight = CAVE_NEXT_FLOOR_ROI_HEIGHT,
+            threshold = CAVE_NEXT_FLOOR_THRESHOLD,
+            logLabel = logLabel
+        )
+    }
+
+    private fun findNextCaveFloorPointFromScreenshot(
+        screenshot: Bitmap,
+        logLabel: String
+    ): PointF? {
+        return findTemplatePointInVisionRoiFromScreenshot(
+            screenshot = screenshot,
+            templateName = CAVE_NEXT_FLOOR_TEMPLATE,
+            centerX = CAVE_NEXT_FLOOR_CENTER_X,
+            centerY = CAVE_NEXT_FLOOR_CENTER_Y,
+            align = "bottom",
+            roiWidth = CAVE_NEXT_FLOOR_ROI_WIDTH,
+            roiHeight = CAVE_NEXT_FLOOR_ROI_HEIGHT,
+            threshold = CAVE_NEXT_FLOOR_THRESHOLD,
+            logLabel = logLabel
+        )
+    }
 
     private suspend fun performCaveRecoveryRoute(
         config: DirectStageNavigationConfig,
@@ -2078,21 +2302,12 @@ class CombatEngine(
             return true
         }
 
-        gestureDispatcher.performActionDirect(
-            startBattlePoint.x,
-            startBattlePoint.y,
-            startBattlePoint.x,
-            startBattlePoint.y,
-            true
+        return continueAfterStageStartBattleDetected(
+            config = config,
+            startBattlePoint = startBattlePoint,
+            logPrefix = "${config.target.description} 重开路线",
+            onReady = onReady
         )
-        RunLogger.i(
-            "${config.target.description} 重开路线识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
-        )
-        delay(config.delayAfterStartBattleClickMs)
-        if (isRunning) {
-            onReady()
-        }
-        return true
     }
 
     private suspend fun detectCharacterDeath(slotIndex: Int): DeathCheckResult? {
@@ -2813,17 +3028,21 @@ class CombatEngine(
     private fun loadTemplateBitmap(fileName: String): Bitmap? {
         val cacheKey = TemplateOverrideStore.cacheKey(accessibilityService, fileName)
         templateCache.get(cacheKey)?.let {
-            if (!it.isRecycled) {
-                return it
+            BitmapFactory.decodeByteArray(it, 0, it.size)?.let { bitmap ->
+                return bitmap
             }
             templateCache.remove(cacheKey)
         }
         return try {
-            val bitmap = TemplateOverrideStore.loadBitmap(accessibilityService, accessibilityService.assets, fileName)
-            if (bitmap != null) {
-                templateCache.put(cacheKey, bitmap)
-            } else {
+            val bytes = TemplateOverrideStore.overrideFile(accessibilityService, fileName)
+                .takeIf { it.exists() }
+                ?.readBytes()
+                ?: accessibilityService.assets.open(fileName).use { it.readBytes() }
+            templateCache.put(cacheKey, bytes)
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            if (bitmap == null) {
                 RunLogger.e("模板解码失败 $fileName")
+                templateCache.remove(cacheKey)
             }
             bitmap
         } catch (t: Throwable) {
@@ -3242,7 +3461,7 @@ class CombatEngine(
         }
     }
 
-    private fun restartFromFirstTurn() {
+    private fun restartFromFirstTurn(restartMessage: String = "全灭恢复，重新从第1回合开始") {
         if (!isRunning) return
         delayJob?.cancel()
         actionQueue.clear()
@@ -3250,23 +3469,20 @@ class CombatEngine(
         lastTurnPauseTriggered = -1
         followData.forEach { it.isExecuting = false }
         onRowUpdated(-1)
-        showToast("全灭恢复，重新从第1回合开始", false)
+        showToast(restartMessage, false)
         processRowAndExecute(0)
     }
 
     private fun startSafeDelay(delayTime: Long, actionStr: String, isWarning: Boolean, block: () -> Unit) {
-        delayJob?.cancel() // 修复隐患4：先取消可能正在运行的旧倒计时，防止多重抢占和错乱
+        delayJob?.cancel()
         delayJob = serviceScope.launch {
             var remaining = delayTime
             while (remaining > 0) {
                 if (!isRunning) return@launch
 
-                // 格式化为保留一位小数的秒数，如 "1.5s"
                 val timeStr = String.format(Locale.US, "%.1fs", remaining / 1000f)
-                // 拼接时间与动作，中间加空格
                 onHudUpdated("$timeStr $actionStr", isWarning)
 
-                // 优化2：动态分配步长，大于 0.6s 降低刷新率(500ms)，小于等于 0.6s 加快刷新(200ms)
                 val step = when {
                     remaining >= 600L -> 500L
                     else -> minOf(remaining, 200L)

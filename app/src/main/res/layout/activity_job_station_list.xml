@@ -188,6 +188,20 @@
                 android:textColor="#8C7A61"
                 android:textSize="15sp"
                 android:visibility="gone" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_upload_strategy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="28dp"
+                android:contentDescription="上传攻略"
+                android:src="@android:drawable/ic_input_add"
+                app:backgroundTint="#E5C07B"
+                app:elevation="6dp"
+                app:pressedTranslationZ="12dp"
+                app:tint="#1A1A1A" />
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

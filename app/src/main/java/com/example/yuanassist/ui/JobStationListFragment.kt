@@ -29,11 +29,23 @@ import cn.bmob.v3.listener.FindListener
 import com.example.yuanassist.R
 import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
 import com.example.yuanassist.model.strategy_detail
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import retrofit2.Call
 
 class JobStationListFragment : Fragment() {
 
     companion object {
         private val STAGE_OPTIONS = listOf("主线", "白鹄", "洞窟", "兰台", "地宫", "家具", "活动")
+
+        private data class CachedSortState(
+            val loadedMaaItems: List<JobStationAssetRepository.JobStationListItem>,
+            val loadedBmobItems: List<strategy_detail>,
+            val mergedItems: List<JobStationAssetRepository.JobStationListItem>,
+            val currentMaaPage: Int,
+            val hasNextMaaPage: Boolean
+        )
+
+        private val sortResultCache = mutableMapOf<String, CachedSortState>()
     }
 
     private enum class SortMode(val maaOrderBy: String) {
@@ -56,7 +68,6 @@ class JobStationListFragment : Fragment() {
     private var currentSortMode = SortMode.HOT
     private var selectedGameTag = ""
     private var selectedStageTag = ""
-    private var appliedKeyword = ""
     private var currentMaaPage = 1
     private var hasNextMaaPage = false
     private var isLoadingMore = false
@@ -64,6 +75,10 @@ class JobStationListFragment : Fragment() {
     private var loadedBmobItems: List<strategy_detail> = emptyList()
     private var mergedItems: List<JobStationAssetRepository.JobStationListItem> = emptyList()
     private var stageDropdown: ListPopupWindow? = null
+    private var currentListCall: Call<*>? = null
+    private var currentCommentsCall: Call<*>? = null
+    private var listRequestVersion = 0
+    private var commentsRequestVersion = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -96,6 +111,9 @@ class JobStationListFragment : Fragment() {
         chipGameDaihao = view.findViewById(R.id.chip_game_daihao)
         chipStageFilter = view.findViewById(R.id.chip_stage_filter)
         chipDefaultFilter = view.findViewById(R.id.chip_default_filter)
+        view.findViewById<FloatingActionButton>(R.id.fab_upload_strategy).setOnClickListener {
+            startActivity(Intent(requireContext(), UploadStrategyActivity::class.java))
+        }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         listAdapter = JobStationListAdapter(
@@ -145,7 +163,9 @@ class JobStationListFragment : Fragment() {
         }
 
         setupFilterChips()
-        reloadAll()
+        if (!restoreSortCacheIfAvailable()) {
+            reloadAll()
+        }
     }
 
     override fun onResume() {
@@ -159,6 +179,12 @@ class JobStationListFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        currentListCall?.cancel()
+        currentCommentsCall?.cancel()
+        currentListCall = null
+        currentCommentsCall = null
+        listRequestVersion += 1
+        commentsRequestVersion += 1
         stageDropdown?.dismiss()
         stageDropdown = null
         super.onDestroyView()
@@ -169,7 +195,9 @@ class JobStationListFragment : Fragment() {
             if (currentSortMode != SortMode.HOT) {
                 currentSortMode = SortMode.HOT
                 updateFilterChipUi()
-                reloadAll()
+                if (!restoreSortCacheIfAvailable()) {
+                    reloadAll()
+                }
             }
         }
 
@@ -177,7 +205,9 @@ class JobStationListFragment : Fragment() {
             if (currentSortMode != SortMode.NEWEST) {
                 currentSortMode = SortMode.NEWEST
                 updateFilterChipUi()
-                reloadAll()
+                if (!restoreSortCacheIfAvailable()) {
+                    reloadAll()
+                }
             }
         }
 
@@ -254,6 +284,9 @@ class JobStationListFragment : Fragment() {
     }
 
     private fun reloadAll(fromPullRefresh: Boolean = false) {
+        if (fromPullRefresh) {
+            clearCurrentSortCacheIfNeeded()
+        }
         loadedMaaItems = emptyList()
         loadedBmobItems = emptyList()
         mergedItems = emptyList()
@@ -273,13 +306,16 @@ class JobStationListFragment : Fragment() {
     private fun loadMaaPage(page: Int, append: Boolean) {
         isLoadingMore = append
         updateLoadMoreUi()
-        JobStationRemoteRepository.loadList(
+        currentListCall?.cancel()
+        val requestVersion = ++listRequestVersion
+        currentListCall = JobStationRemoteRepository.loadList(
             page = page,
             orderBy = currentSortMode.maaOrderBy,
             levelKeyword = selectedStageTag,
-            document = appliedKeyword,
             onSuccess = { pageInfo, items ->
                 activity?.runOnUiThread {
+                    if (!isFragmentViewAlive() || requestVersion != listRequestVersion) return@runOnUiThread
+                    currentListCall = null
                     currentMaaPage = pageInfo.page
                     hasNextMaaPage = pageInfo.hasNext
                     loadedMaaItems = if (append) {
@@ -287,26 +323,30 @@ class JobStationListFragment : Fragment() {
                     } else {
                         items
                     }
-                    loadBmobStrategies()
+                    loadBmobStrategies(requestVersion)
                 }
             },
             onError = { message ->
                 activity?.runOnUiThread {
+                    if (!isFragmentViewAlive() || requestVersion != listRequestVersion) return@runOnUiThread
+                    currentListCall = null
                     isLoadingMore = false
+                    if (append) {
+                        context?.let { Toast.makeText(it, message, Toast.LENGTH_SHORT).show() }
+                    } else {
+                        loadedMaaItems = emptyList()
+                        context?.let { Toast.makeText(it, message, Toast.LENGTH_SHORT).show() }
+                        loadBmobStrategies(requestVersion)
+                        return@runOnUiThread
+                    }
                     swipeRefreshLayout.isRefreshing = false
                     updateLoadMoreUi()
-                    if (append) {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-                    } else {
-                        mergedItems = emptyList()
-                        showEmpty(message)
-                    }
                 }
             }
         )
     }
 
-    private fun loadBmobStrategies() {
+    private fun loadBmobStrategies(requestVersion: Int) {
         val query = BmobQuery<strategy_detail>()
         query.addWhereEqualTo("visible", STRATEGY_VISIBLE_PUBLIC)
         query.order(
@@ -320,23 +360,63 @@ class JobStationListFragment : Fragment() {
         query.findObjects(object : FindListener<strategy_detail>() {
             override fun done(list: MutableList<strategy_detail>?, e: BmobException?) {
                 activity?.runOnUiThread {
+                    if (!isFragmentViewAlive() || requestVersion != listRequestVersion) return@runOnUiThread
                     swipeRefreshLayout.isRefreshing = false
                     if (e != null) {
-                        Toast.makeText(
-                            requireContext(),
-                            "社区攻略加载失败: ${e.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context?.let {
+                            Toast.makeText(
+                                it,
+                                "社区攻略加载失败: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
 
                     loadedBmobItems = list.orEmpty()
                     mergedItems = mergeStrategies(loadedMaaItems, loadedBmobItems)
+                    cacheCurrentSortResultIfNeeded()
                     isLoadingMore = false
                     updateLoadMoreUi()
                     applyFilters()
                 }
             }
         })
+    }
+
+    private fun shouldUseSortCache(): Boolean = selectedStageTag.isBlank()
+
+    private fun currentSortCacheKey(): String = currentSortMode.name
+
+    private fun clearCurrentSortCacheIfNeeded() {
+        if (shouldUseSortCache()) {
+            sortResultCache.remove(currentSortCacheKey())
+        }
+    }
+
+    private fun cacheCurrentSortResultIfNeeded() {
+        if (!shouldUseSortCache()) return
+        sortResultCache[currentSortCacheKey()] = CachedSortState(
+            loadedMaaItems = loadedMaaItems,
+            loadedBmobItems = loadedBmobItems,
+            mergedItems = mergedItems,
+            currentMaaPage = currentMaaPage,
+            hasNextMaaPage = hasNextMaaPage
+        )
+    }
+
+    private fun restoreSortCacheIfAvailable(): Boolean {
+        if (!shouldUseSortCache()) return false
+        val cached = sortResultCache[currentSortCacheKey()] ?: return false
+        loadedMaaItems = cached.loadedMaaItems
+        loadedBmobItems = cached.loadedBmobItems
+        mergedItems = cached.mergedItems
+        currentMaaPage = cached.currentMaaPage
+        hasNextMaaPage = cached.hasNextMaaPage
+        isLoadingMore = false
+        swipeRefreshLayout.isRefreshing = false
+        updateLoadMoreUi()
+        applyFilters()
+        return true
     }
 
     private fun mergeStrategies(
@@ -376,17 +456,6 @@ class JobStationListFragment : Fragment() {
 
         if (selectedStageTag.isNotBlank()) {
             filteredItems = filteredItems.filter { it.categoryTag == selectedStageTag }
-        }
-
-        if (appliedKeyword.isNotEmpty()) {
-            filteredItems = filteredItems.filter { item ->
-                item.type == JobStationAssetRepository.JobStationListItemType.MAA ||
-                    item.title.contains(appliedKeyword, ignoreCase = true) ||
-                    item.author.contains(appliedKeyword, ignoreCase = true) ||
-                    item.tags.any { it.contains(appliedKeyword, ignoreCase = true) } ||
-                    item.roster.any { it.contains(appliedKeyword, ignoreCase = true) } ||
-                    item.agentsText.contains(appliedKeyword, ignoreCase = true)
-            }
         }
 
         if (filteredItems.isEmpty()) {
@@ -431,27 +500,68 @@ class JobStationListFragment : Fragment() {
     private fun submitSearch() {
         val newKeyword = searchInput.text.toString().trim()
         parseMysteryCopilotId(newKeyword)?.let { copilotId ->
-            JobStationRemoteRepository.loadComments(
+            currentCommentsCall?.cancel()
+            val requestVersion = ++commentsRequestVersion
+            currentCommentsCall = JobStationRemoteRepository.loadComments(
                 copilotId = copilotId,
                 onSuccess = {
                     activity?.runOnUiThread {
+                        if (!isFragmentViewAlive() || requestVersion != commentsRequestVersion) return@runOnUiThread
+                        currentCommentsCall = null
                         openJobStationDetail(copilotId)
                     }
                 },
                 onError = { message ->
                     activity?.runOnUiThread {
-                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        if (!isFragmentViewAlive() || requestVersion != commentsRequestVersion) return@runOnUiThread
+                        currentCommentsCall = null
+                        context?.let { Toast.makeText(it, message, Toast.LENGTH_SHORT).show() }
                     }
                 }
             )
             return
         }
-        if (newKeyword == appliedKeyword) {
+
+        val matchedStageTag = resolveStageKeyword(newKeyword)
+        if (newKeyword.isBlank()) {
+            if (selectedStageTag.isBlank()) {
+                applyFilters()
+                return
+            }
+            selectedStageTag = ""
+            updateFilterChipUi()
+            reloadAll()
+            return
+        }
+
+        if (matchedStageTag == null) {
+            context?.let { Toast.makeText(it, "未识别到对应关卡关键词", Toast.LENGTH_SHORT).show() }
+            return
+        }
+
+        if (matchedStageTag == selectedStageTag) {
             applyFilters()
             return
         }
-        appliedKeyword = newKeyword
+        selectedStageTag = matchedStageTag
+        updateFilterChipUi()
         reloadAll()
+    }
+
+    private fun resolveStageKeyword(keyword: String): String? {
+        val normalized = keyword.trim()
+        if (normalized.isBlank()) return null
+
+        return when {
+            normalized.contains("白鹄") -> "白鹄"
+            normalized.contains("洞窟") -> "洞窟"
+            normalized.contains("兰台") -> "兰台"
+            normalized.contains("遗迹") || normalized.contains("地宫") -> "地宫"
+            normalized.contains("主线") -> "主线"
+            normalized.contains("家具") -> "家具"
+            normalized.contains("活动") -> "活动"
+            else -> null
+        }
     }
 
     private fun parseMysteryCopilotId(keyword: String): Long? {
@@ -467,6 +577,9 @@ class JobStationListFragment : Fragment() {
             putExtra(JobStationActivity.EXTRA_COPILOT_ID, copilotId)
         })
     }
+
+    private fun isFragmentViewAlive(): Boolean =
+        isAdded && view != null && activity != null
 
     private fun bindChip(view: TextView, selected: Boolean, enabled: Boolean) {
         val background = GradientDrawable().apply {

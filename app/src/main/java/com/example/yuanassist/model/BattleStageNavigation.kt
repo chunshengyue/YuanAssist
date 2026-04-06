@@ -15,6 +15,45 @@ enum class BattleStageTarget(val code: Long, val description: String) {
     }
 }
 
+private const val STAGE_AUTO_NAV_CAVE_NEXT_FLOOR_FLAG = 1000L
+
+fun BattleStageTarget.isCaveTarget(): Boolean =
+    this == BattleStageTarget.DONG_KU_LEFT || this == BattleStageTarget.DONG_KU_RIGHT
+
+fun encodeStageAutoNavValue(
+    target: BattleStageTarget,
+    autoEnterNextFloor: Boolean
+): Long {
+    return target.code + if (target.isCaveTarget() && autoEnterNextFloor) {
+        STAGE_AUTO_NAV_CAVE_NEXT_FLOOR_FLAG
+    } else {
+        0L
+    }
+}
+
+fun decodeStageAutoNavTarget(value: Long): BattleStageTarget? {
+    val baseValue = if (value >= STAGE_AUTO_NAV_CAVE_NEXT_FLOOR_FLAG) {
+        value - STAGE_AUTO_NAV_CAVE_NEXT_FLOOR_FLAG
+    } else {
+        value
+    }
+    return BattleStageTarget.fromCode(baseValue)
+}
+
+fun isStageAutoNavAutoEnterNextFloorEnabled(value: Long): Boolean {
+    return value >= STAGE_AUTO_NAV_CAVE_NEXT_FLOOR_FLAG &&
+        decodeStageAutoNavTarget(value)?.isCaveTarget() == true
+}
+
+fun formatStageAutoNavDisplay(value: Long): String {
+    val target = decodeStageAutoNavTarget(value) ?: return "未设置关卡"
+    return if (isStageAutoNavAutoEnterNextFloorEnabled(value)) {
+        "${target.description} · 自动进入下一层"
+    } else {
+        target.description
+    }
+}
+
 data class TemplateRegionConfig(
     val templateName: String,
     val x: Float,

@@ -21,6 +21,8 @@ import com.example.yuanassist.utils.DialogUtils
 
 object SettingsDialog {
 
+    private const val TURN_CHECK_HINT = "此为实验性功能，每回合开始时检测右上角回合数是否对应，如有场地角色，慎开"
+
     fun show(context: Context, onConfigSaved: () -> Unit) {
         val themeContext = DialogUtils.getThemeContext(context)
         val currentConfig = ConfigManager.getAllConfig(context)
@@ -94,7 +96,13 @@ object SettingsDialog {
         val etSkill = createIntRow("技能间隔(ms):", currentConfig.intervalSkill.toString())
         val etWait = createIntRow("敌方回合(ms):", currentConfig.waitTurn.toString())
         val etStart = createIntRow("起始回合:", currentConfig.startTurn.toString())
-        val switchTurnNumberCheck = createSwitchRow("回合数检测:", currentConfig.enableTurnNumberCheck)
+        val switchTurnNumberCheck = createSwitchRow("回合检测:", currentConfig.enableTurnNumberCheck)
+        scrollContent.addView(TextView(themeContext).apply {
+            text = TURN_CHECK_HINT
+            textSize = 12f
+            setTextColor(Color.GRAY)
+            setPadding(0, 0, 0, 12)
+        })
         val etThreshold = createIntRow("滑动阈值:", currentConfig.swipeThreshold.toString())
         val etHeight = createIntRow("录制区高度(%):", currentConfig.inputHeightRatio.toString())
         val etRecordDelay = createIntRow("录制延迟(ms):", currentConfig.recordDelay.toString())

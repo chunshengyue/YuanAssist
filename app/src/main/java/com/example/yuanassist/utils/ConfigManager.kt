@@ -9,7 +9,7 @@ data class AppConfig(
     val intervalSkill: Long,
     val waitTurn: Long,
     val startTurn: Int,
-    val enableTurnNumberCheck: Boolean = true,
+    val enableTurnNumberCheck: Boolean = false,
     val swipeThreshold: Int,
     val inputHeightRatio: Int,
     val recordDelay: Long,
@@ -26,10 +26,11 @@ data class AppConfig(
 
 object ConfigManager {
     private const val PREF_NAME = "game_assist_global_config"
+    private const val DEF_ENABLE_TURN_NUMBER_CHECK = false
 
     // 默认值
-    const val DEF_INTERVAL_ATTACK = 1500L
-    const val DEF_INTERVAL_SKILL = 3000L
+    const val DEF_INTERVAL_ATTACK = 3000L
+    const val DEF_INTERVAL_SKILL = 4500L
     const val DEF_WAIT_TURN = 8000L
     const val DEF_START_TURN = 1
 
@@ -49,7 +50,7 @@ object ConfigManager {
             intervalSkill = p.getLong("interval_skill", DEF_INTERVAL_SKILL),
             waitTurn = p.getLong("wait_turn", DEF_WAIT_TURN),
             startTurn = p.getInt("start_turn", DEF_START_TURN),
-            enableTurnNumberCheck = p.getBoolean("enable_turn_number_check", true),
+            enableTurnNumberCheck = p.getBoolean("enable_turn_number_check", DEF_ENABLE_TURN_NUMBER_CHECK),
             swipeThreshold = p.getInt("swipe_threshold", DEF_SWIPE_THRESHOLD),
             inputHeightRatio = p.getInt("input_height", DEF_INPUT_HEIGHT),
             recordDelay = p.getLong("record_delay", DEF_RECORD_DELAY),

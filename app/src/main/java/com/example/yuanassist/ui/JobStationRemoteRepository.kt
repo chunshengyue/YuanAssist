@@ -3,6 +3,7 @@ package com.example.yuanassist.ui
 import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.annotations.SerializedName
+import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -11,6 +12,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
 
 object JobStationApiModels {
     data class MaaResult<T>(
@@ -87,13 +94,61 @@ object JobStationRemoteRepository {
 
     private const val TAG = "JobStationRemoteRepo"
     private const val BASE_URL = "https://share.maayuan.top/"
+    private const val CONNECT_TIMEOUT_SECONDS = 10L
+    private const val READ_TIMEOUT_SECONDS = 10L
+    private const val WRITE_TIMEOUT_SECONDS = 10L
+
+    private val httpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+    }
 
     private val api: JobStationApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
+            .client(httpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(JobStationApiService::class.java)
+    }
+
+    private fun formatElapsedMs(startedAtMs: Long): String {
+        return String.format(Locale.US, "%.2fs", (System.currentTimeMillis() - startedAtMs) / 1000f)
+    }
+
+    private fun classifyFailure(call: Call<*>, throwable: Throwable): String {
+        if (call.isCanceled()) {
+            return "请求已取消，通常是页面退出、手动刷新，或新请求覆盖了旧请求"
+        }
+        return when (throwable) {
+            is SocketTimeoutException ->
+                "请求超时：MaaYuan 接口在 ${READ_TIMEOUT_SECONDS}s 内没有返回。常见原因是对方服务响应过慢、网络拥堵，或网关卡住"
+            is UnknownHostException ->
+                "域名解析失败：当前网络无法解析 share.maayuan.top，通常是断网、DNS 异常或网络被拦截"
+            is ConnectException ->
+                "连接失败：未能连上 MaaYuan 服务，可能是网络断开、目标服务不可达，或连接被系统/代理拦截"
+            is SSLException ->
+                "TLS/SSL 握手失败：可能是证书校验、代理、抓包环境或系统时间异常导致"
+            else ->
+                "请求异常：${throwable.javaClass.simpleName}${throwable.message?.let { ": $it" } ?: ""}"
+        }
+    }
+
+    private fun logRequestStart(scene: String, call: Call<*>) {
+        Log.i(TAG, "$scene start url=${call.request().url}")
+    }
+
+    private fun logRequestFailure(scene: String, call: Call<*>, throwable: Throwable, startedAtMs: Long) {
+        val url = call.request().url
+        val reason = classifyFailure(call, throwable)
+        Log.e(
+            TAG,
+            "$scene failed after ${formatElapsedMs(startedAtMs)} url=$url reason=$reason cause=${throwable.javaClass.simpleName}: ${throwable.message}",
+            throwable
+        )
     }
 
     fun loadList(
@@ -103,13 +158,19 @@ object JobStationRemoteRepository {
         document: String? = null,
         onSuccess: (JobStationApiModels.CopilotPageInfo, List<JobStationAssetRepository.JobStationListItem>) -> Unit,
         onError: (String) -> Unit
-    ) {
-        api.queryCopilots(
+    ): Call<JobStationApiModels.MaaResult<JobStationApiModels.CopilotPageInfo>> {
+        val call = api.queryCopilots(
             page = page,
             orderBy = orderBy,
             levelKeyword = levelKeyword?.takeIf { it.isNotBlank() },
             document = document?.takeIf { it.isNotBlank() }
-        ).enqueue(object : Callback<JobStationApiModels.MaaResult<JobStationApiModels.CopilotPageInfo>> {
+        )
+        val startedAtMs = System.currentTimeMillis()
+        logRequestStart(
+            scene = "loadList(page=$page, orderBy=$orderBy, levelKeyword=${levelKeyword?.takeIf { it.isNotBlank() } ?: "null"})",
+            call = call
+        )
+        call.enqueue(object : Callback<JobStationApiModels.MaaResult<JobStationApiModels.CopilotPageInfo>> {
             override fun onResponse(
                 call: Call<JobStationApiModels.MaaResult<JobStationApiModels.CopilotPageInfo>>,
                 response: Response<JobStationApiModels.MaaResult<JobStationApiModels.CopilotPageInfo>>
@@ -125,11 +186,18 @@ object JobStationRemoteRepository {
                         body?.message?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
                         errorBody?.takeIf { it.isNotBlank() }?.let { append(" ").append(it.take(240)) }
                     }
-                    Log.e(TAG, "loadList onResponse failed, code=${response.code()}, body=$body, errorBody=$errorBody")
+                    Log.e(
+                        TAG,
+                        "loadList failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} http=${response.code()} biz=${body?.statusCode}"
+                    )
                     onError(message)
                     return
                 }
 
+                Log.i(
+                    TAG,
+                    "loadList success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} count=${data.size} page=${body.data.page} hasNext=${body.data.hasNext}"
+                )
                 onSuccess(body.data, data.map(JobStationAssetRepository::fromRemoteListItem))
             }
 
@@ -137,19 +205,23 @@ object JobStationRemoteRepository {
                 call: Call<JobStationApiModels.MaaResult<JobStationApiModels.CopilotPageInfo>>,
                 t: Throwable
             ) {
-                val message = "作业站列表加载失败: ${t.javaClass.simpleName}: ${t.message ?: "未知错误"}"
-                Log.e(TAG, "loadList onFailure", t)
+                val message = "作业站列表加载失败: ${classifyFailure(call, t)}"
+                logRequestFailure("loadList", call, t, startedAtMs)
                 onError(message)
             }
         })
+        return call
     }
 
     fun loadDetail(
         copilotId: Long,
         onSuccess: (JobStationAssetRepository.JobStationDetailData) -> Unit,
         onError: (String) -> Unit
-    ) {
-        api.getCopilot(copilotId).enqueue(object : Callback<JobStationApiModels.MaaResult<JobStationApiModels.CopilotInfo>> {
+    ): Call<JobStationApiModels.MaaResult<JobStationApiModels.CopilotInfo>> {
+        val call = api.getCopilot(copilotId)
+        val startedAtMs = System.currentTimeMillis()
+        logRequestStart("loadDetail(id=$copilotId)", call)
+        call.enqueue(object : Callback<JobStationApiModels.MaaResult<JobStationApiModels.CopilotInfo>> {
             override fun onResponse(
                 call: Call<JobStationApiModels.MaaResult<JobStationApiModels.CopilotInfo>>,
                 response: Response<JobStationApiModels.MaaResult<JobStationApiModels.CopilotInfo>>
@@ -165,11 +237,18 @@ object JobStationRemoteRepository {
                         body?.message?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
                         errorBody?.takeIf { it.isNotBlank() }?.let { append(" ").append(it.take(240)) }
                     }
-                    Log.e(TAG, "loadDetail onResponse failed, id=$copilotId, code=${response.code()}, body=$body, errorBody=$errorBody")
+                    Log.e(
+                        TAG,
+                        "loadDetail failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId http=${response.code()} biz=${body?.statusCode}"
+                    )
                     onError(message)
                     return
                 }
 
+                Log.i(
+                    TAG,
+                    "loadDetail success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId"
+                )
                 onSuccess(JobStationAssetRepository.fromRemoteDetailData(data))
             }
 
@@ -177,19 +256,23 @@ object JobStationRemoteRepository {
                 call: Call<JobStationApiModels.MaaResult<JobStationApiModels.CopilotInfo>>,
                 t: Throwable
             ) {
-                val message = "作业详情加载失败: ${t.javaClass.simpleName}: ${t.message ?: "未知错误"}"
-                Log.e(TAG, "loadDetail onFailure, id=$copilotId", t)
+                val message = "作业详情加载失败: ${classifyFailure(call, t)}"
+                logRequestFailure("loadDetail(id=$copilotId)", call, t, startedAtMs)
                 onError(message)
             }
         })
+        return call
     }
 
     fun loadComments(
         copilotId: Long,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
-    ) {
-        api.queryComments(copilotId = copilotId).enqueue(object : Callback<JobStationApiModels.MaaResult<JobStationApiModels.CommentPageInfo>> {
+    ): Call<JobStationApiModels.MaaResult<JobStationApiModels.CommentPageInfo>> {
+        val call = api.queryComments(copilotId = copilotId)
+        val startedAtMs = System.currentTimeMillis()
+        logRequestStart("loadComments(id=$copilotId)", call)
+        call.enqueue(object : Callback<JobStationApiModels.MaaResult<JobStationApiModels.CommentPageInfo>> {
             override fun onResponse(
                 call: Call<JobStationApiModels.MaaResult<JobStationApiModels.CommentPageInfo>>,
                 response: Response<JobStationApiModels.MaaResult<JobStationApiModels.CommentPageInfo>>
@@ -204,11 +287,18 @@ object JobStationRemoteRepository {
                         body?.message?.takeIf { it.isNotBlank() }?.let { append(" ").append(it) }
                         errorBody?.takeIf { it.isNotBlank() }?.let { append(" ").append(it.take(240)) }
                     }
-                    Log.e(TAG, "loadComments onResponse failed, id=$copilotId, code=${response.code()}, body=$body, errorBody=$errorBody")
+                    Log.e(
+                        TAG,
+                        "loadComments failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId http=${response.code()} biz=${body?.statusCode}"
+                    )
                     onError(message)
                     return
                 }
 
+                Log.i(
+                    TAG,
+                    "loadComments success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId"
+                )
                 onSuccess()
             }
 
@@ -216,10 +306,11 @@ object JobStationRemoteRepository {
                 call: Call<JobStationApiModels.MaaResult<JobStationApiModels.CommentPageInfo>>,
                 t: Throwable
             ) {
-                val message = "神秘代码访问失败: ${t.javaClass.simpleName}: ${t.message ?: "未知错误"}"
-                Log.e(TAG, "loadComments onFailure, id=$copilotId", t)
+                val message = "神秘代码访问失败: ${classifyFailure(call, t)}"
+                logRequestFailure("loadComments(id=$copilotId)", call, t, startedAtMs)
                 onError(message)
             }
         })
+        return call
     }
 }

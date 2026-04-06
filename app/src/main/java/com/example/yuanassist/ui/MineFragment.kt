@@ -28,6 +28,10 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 class MineFragment : Fragment() {
+    companion object {
+        private const val YUAN_ASSIST_WEBSITE_URL = "https://yuanassist.space"
+    }
+
     private lateinit var tvSyncData: TextView
     private lateinit var ivAvatar: ImageView
     private lateinit var tvNickname: TextView
@@ -84,6 +88,9 @@ class MineFragment : Fragment() {
         }
         view.findViewById<View>(R.id.layout_my_favorite_entry).setOnClickListener {
             startActivity(Intent(requireContext(), MyFavoriteActivity::class.java))
+        }
+        view.findViewById<View>(R.id.layout_official_site_entry).setOnClickListener {
+            openWebsite(YUAN_ASSIST_WEBSITE_URL)
         }
 
         btnEdit.setOnClickListener {
@@ -423,5 +430,13 @@ class MineFragment : Fragment() {
                 }
             }
         })
+    }
+
+    private fun openWebsite(url: String) {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }.onFailure {
+            Toast.makeText(requireContext(), "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
+        }
     }
 }

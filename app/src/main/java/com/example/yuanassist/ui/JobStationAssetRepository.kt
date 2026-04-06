@@ -7,6 +7,8 @@ import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.InstructionType
 import com.example.yuanassist.model.STRATEGY_GAME_DAIHAOYUAN
 import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
+import com.example.yuanassist.model.formatStageAutoNavDisplay
+import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.model.strategy_detail
 import com.google.gson.Gson
 import org.json.JSONArray
@@ -25,6 +27,11 @@ object JobStationAssetRepository {
     private const val DEFAULT_ATTACK_DELAY_MS = 2500L
     private const val DEFAULT_SKILL_DELAY_MS = 4000L
     private const val DEFAULT_WAIT_TURN_MS = 8000L
+    private val DETAIL_HIGHLIGHT_INSTRUCTION_TYPES = setOf(
+        InstructionType.ALL_WIPE_CHECK,
+        InstructionType.DEATH_CHECK,
+        InstructionType.ORANGE_STAR_CHECK
+    )
     @Volatile
     private var maaOperatorDiscCache: Map<String, List<OperatorDiscMeta>>? = null
 
@@ -381,7 +388,7 @@ object JobStationAssetRepository {
             }
         }
 
-        parseBmobInstructionChips(instructionsJson).forEach { (turnNum, chips) ->
+        parseInstructionChips(instructionsJson).forEach { (turnNum, chips) ->
             val turnItems = turnMap.getOrPut(turnNum) { mutableListOf() }
             chips.forEach { chip ->
                 turnItems += 0 to chip
@@ -760,7 +767,14 @@ object JobStationAssetRepository {
         }
     }
 
-    private fun parseBmobInstructionChips(instructionsJson: String?): Map<Int, List<ActionChip>> {
+    fun parseHighlightInstructionChips(instructionsJson: String?): Map<Int, List<ActionChip>> {
+        return parseInstructionChips(instructionsJson, DETAIL_HIGHLIGHT_INSTRUCTION_TYPES)
+    }
+
+    private fun parseInstructionChips(
+        instructionsJson: String?,
+        allowedTypes: Set<InstructionType>? = null
+    ): Map<Int, List<ActionChip>> {
         if (instructionsJson.isNullOrBlank()) return emptyMap()
 
         val instructions = runCatching {
@@ -768,14 +782,18 @@ object JobStationAssetRepository {
         }.getOrDefault(emptyList())
 
         return instructions
+            .map { it.normalized() }
             .groupBy { it.turn }
             .mapValues { (_, list) ->
-                list.sortedWith(compareBy<InstructionJson> { it.step }.thenBy { it.type }).map { instruction ->
+                list.sortedWith(compareBy<InstructionJson> { it.step }.thenBy { it.type }).mapNotNull { instruction ->
                     val type = runCatching { InstructionType.valueOf(instruction.type) }.getOrNull()
+                    if (type != null && allowedTypes != null && type !in allowedTypes) {
+                        return@mapNotNull null
+                    }
                     ActionChip(
-                        globalOrder = if (instruction.step > 0) instruction.step else 999,
+                        globalOrder = instruction.step,
                         type = ActionType.OTHER,
-                        label = formatBmobInstructionLabel(type, instruction),
+                        label = formatInstructionChipLabel(type, instruction),
                         actionParamMs = when (type) {
                             InstructionType.DELAY_ADD,
                             InstructionType.DELAY_SUBTRACT -> instruction.value
@@ -786,24 +804,23 @@ object JobStationAssetRepository {
             }
     }
 
-    private fun formatBmobInstructionLabel(
+    private fun formatInstructionChipLabel(
         type: InstructionType?,
         instruction: InstructionJson
     ): String {
+        if (type == null) return instruction.type
+
         return when (type) {
+            InstructionType.ALL_WIPE_CHECK -> "全灭检测"
+            InstructionType.DEATH_CHECK -> "阵亡检测 · 第${instruction.value}人"
+            InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
+            InstructionType.TARGET_SWITCH_LEFT -> "切换左侧目标"
+            InstructionType.TARGET_SWITCH,
+            InstructionType.TARGET_SWITCH_RIGHT -> "切换右侧目标"
+            InstructionType.STAGE_AUTO_NAV -> "关卡自动导航 · ${formatStageAutoNavDisplay(instruction.value)}"
             InstructionType.DELAY_ADD -> "增加延时"
             InstructionType.DELAY_SUBTRACT -> "缩短延时"
             InstructionType.PAUSE -> "执行暂停"
-            InstructionType.STAGE_AUTO_NAV -> {
-                BattleStageTarget.fromCode(instruction.value)?.description ?: "关卡自动导航"
-            }
-            InstructionType.ALL_WIPE_CHECK -> "全灭检测"
-            InstructionType.DEATH_CHECK -> "阵亡检测 第${instruction.value}人"
-            InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
-            InstructionType.TARGET_SWITCH,
-            InstructionType.TARGET_SWITCH_RIGHT -> "切换右侧目标"
-            InstructionType.TARGET_SWITCH_LEFT -> "切换左侧目标"
-            null -> instruction.type
         }
     }
 

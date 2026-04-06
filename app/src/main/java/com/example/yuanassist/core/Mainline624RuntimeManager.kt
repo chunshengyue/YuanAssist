@@ -177,9 +177,21 @@ class Mainline624RuntimeManager(
                     threshold = 0.75f, // 根据你的要求设为 0.75
                     click = 1, // 默认点击进入，如果你只需要纯视觉校验不需要点击，把这里改成 null
                     roi = topRoi(963f, 236f, 400f, 400f), // 同 tiaoguo 的位置，宽高设为 400
-                    terminalNote = "未找到幽州入口，任务终止",
                     onSuccess = 10, // 幽州识别完后，继续去执行 ID: 10 的滑动操作
-                    onFail = -2     // 没找到直接报 -2 退出
+                    onFail = 100
+                )
+            )
+            tasks.add(
+                templateTask(
+                    id = 100,
+                    delay = 1500,
+                    templateName = "jinru.png",
+                    threshold = 0.75f,
+                    click = 1,
+                    roi = centerRoi(540f, 1440f, 1080f, 960f),
+                    terminalNote = "未找到幽州或进入入口，任务终止",
+                    onSuccess = 10,
+                    onFail = -2
                 )
             )
         }

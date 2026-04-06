@@ -36,6 +36,7 @@ import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.MyUser
 import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
 import com.example.yuanassist.model.StrategyPreviewData
+import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.model.strategy_detail_counter_update
 import com.example.yuanassist.model.strategy_favorite
@@ -530,7 +531,7 @@ class StrategyDetailActivity : AppCompatActivity() {
             text = try {
                 val type = object : TypeToken<List<InstructionJson>>() {}.type
                 val instList: List<InstructionJson> = Gson().fromJson(instructionsJson, type)
-                "附加指令\n" + instList.joinToString("\n") { "回合${it.turn} 动作${it.step}: [${it.type}] ${it.value}" }
+                "附加指令\n" + instList.joinToString("\n") { it.toDisplaySummary() }
             } catch (_: Exception) {
                 "附加指令\n$instructionsJson"
             }

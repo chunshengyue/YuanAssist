@@ -27,6 +27,7 @@ import cn.bmob.v3.BmobQuery
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.R
 import com.example.yuanassist.model.strategy_detail
+import retrofit2.Call
 
 class JobStationActivity : AppCompatActivity() {
 
@@ -40,6 +41,9 @@ class JobStationActivity : AppCompatActivity() {
         private const val DISC_NAME_MAX_LENGTH = 6
         private const val DISC_CHIP_WIDTH_DP = 60f
     }
+
+    private var currentDetailCall: Call<*>? = null
+    private var detailRequestVersion = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +63,13 @@ class JobStationActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    override fun onDestroy() {
+        currentDetailCall?.cancel()
+        currentDetailCall = null
+        detailRequestVersion += 1
+        super.onDestroy()
     }
 
     private fun bindHeaderAndContent(data: JobStationAssetRepository.JobStationDetailData) {
@@ -101,15 +112,21 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun loadMaaYuanDetail(copilotId: Long) {
-        JobStationRemoteRepository.loadDetail(
+        currentDetailCall?.cancel()
+        val requestVersion = ++detailRequestVersion
+        currentDetailCall = JobStationRemoteRepository.loadDetail(
             copilotId = copilotId,
             onSuccess = { data ->
+                if (requestVersion != detailRequestVersion || isFinishing || isDestroyed) return@loadDetail
+                currentDetailCall = null
                 bindHeaderAndContent(data)
                 bindRosterCard(data)
                 bindTableAndOtherActions(data)
                 bindBottomBar(data)
             },
             onError = { message ->
+                if (requestVersion != detailRequestVersion || isFinishing || isDestroyed) return@loadDetail
+                currentDetailCall = null
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 finish()
             }
@@ -122,6 +139,7 @@ class JobStationActivity : AppCompatActivity() {
         query.getObject(strategyId, object : QueryListener<strategy_detail>() {
             override fun done(detail: strategy_detail?, e: BmobException?) {
                 runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
                     if (e != null || detail == null) {
                         Toast.makeText(
                             this@JobStationActivity,
@@ -395,6 +413,11 @@ class JobStationActivity : AppCompatActivity() {
         val bodyContainer = findViewById<LinearLayout>(R.id.ll_table_body)
         val otherActionsCard = findViewById<View>(R.id.card_other_actions)
         val otherActionsContainer = findViewById<LinearLayout>(R.id.ll_other_actions)
+        val remoteHighlightInstructions: Map<Int, List<JobStationAssetRepository.ActionChip>> = if (data.isFromMaaYuan) {
+            JobStationAssetRepository.parseHighlightInstructionChips(data.importPayload?.instructionsJson)
+        } else {
+            emptyMap()
+        }
 
         headerContainer.removeAllViews()
         bodyContainer.removeAllViews()
@@ -442,7 +465,8 @@ class JobStationActivity : AppCompatActivity() {
                 })
             }
 
-            val otherChips = turn.slotActions[0].orEmpty()
+            val otherChips = (turn.slotActions[0].orEmpty() + remoteHighlightInstructions[turn.turnNum].orEmpty())
+                .distinctBy { it.globalOrder to it.label }
             if (otherChips.isNotEmpty()) {
                 hasOtherActions = true
                 otherChips.forEach { chip ->
@@ -564,6 +588,8 @@ class JobStationActivity : AppCompatActivity() {
         turnNum: Int,
         chip: JobStationAssetRepository.ActionChip
     ): LinearLayout {
+        val normalizedLabel = normalizeOtherActionLabel(chip.label)
+        val (bgColor, strokeColor, textColor) = resolveOtherActionStyle(normalizedLabel)
         return LinearLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -574,17 +600,32 @@ class JobStationActivity : AppCompatActivity() {
             setPadding(0, dpToPx(5f), 0, dpToPx(5f))
 
             addView(TextView(this@JobStationActivity).apply {
-                text = "第${turnNum}回合 行动${chip.globalOrder}"
+                text = if (chip.globalOrder <= 0) {
+                    "第${turnNum}回合"
+                } else {
+                    "第${turnNum}回合 行动${chip.globalOrder}"
+                }
                 textSize = 12f
                 setTextColor(Color.parseColor("#857864"))
             })
 
             addView(TextView(this@JobStationActivity).apply {
-                text = chip.label
-                textSize = 13f
-                setPadding(dpToPx(8f), 0, 0, 0)
-                setTextColor(Color.parseColor("#3D3222"))
+                text = normalizedLabel
+                textSize = 12f
+                setPadding(dpToPx(10f), dpToPx(3f), dpToPx(10f), dpToPx(3f))
+                setTextColor(Color.parseColor(textColor))
                 setTypeface(typeface, Typeface.BOLD)
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor(bgColor))
+                    setStroke(dpToPx(1f), Color.parseColor(strokeColor))
+                    cornerRadius = dpToPx(999f).toFloat()
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = dpToPx(8f)
+                }
             })
 
             chip.actionParamMs?.let { actionParam ->
@@ -607,6 +648,29 @@ class JobStationActivity : AppCompatActivity() {
                     }
                 })
             }
+        }
+    }
+
+    private fun normalizeOtherActionLabel(label: String): String {
+        return when {
+            label.contains("切换左侧目标") || label.contains("左侧目标") || label.contains("左目标") -> "切换左侧目标"
+            label.contains("切换右侧目标") || label.contains("右侧目标") || label.contains("右目标") -> "切换右侧目标"
+            else -> label
+        }
+    }
+
+    private fun resolveOtherActionStyle(label: String): Triple<String, String, String> {
+        return when {
+            label.contains("全灭检测") ->
+                Triple("#FFF1F1", "#E29A9A", "#B23A3A")
+            label.contains("阵亡检测") ->
+                Triple("#FFF4F6", "#E2A3B7", "#A63F67")
+            label.contains("橙星检测") ->
+                Triple("#FFF6E8", "#E3B15F", "#B76A11")
+            label.contains("切换左侧目标") || label.contains("切换右侧目标") ->
+                Triple("#EEF5FF", "#9BBBE7", "#3F6EA6")
+            else ->
+                Triple("#F7F5F0", "#E0DCD3", "#3D3222")
         }
     }
 

@@ -22,6 +22,10 @@ import com.example.yuanassist.utils.ConfigManager
 
 class SettingsActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TURN_CHECK_HINT = "此为实验性功能，每回合开始时检测右上角回合数是否对应，如有场地角色，慎开"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -109,7 +113,13 @@ class SettingsActivity : AppCompatActivity() {
         val etSkill = addIntRow("技能间隔(ms)", currentConfig.intervalSkill.toString())
         val etWait = addIntRow("敌方回合(ms)", currentConfig.waitTurn.toString())
         val etStart = addIntRow("起始回合", currentConfig.startTurn.toString())
-        val switchTurnNumberCheck = addSwitchRow("回合数检测", currentConfig.enableTurnNumberCheck)
+        val switchTurnNumberCheck = addSwitchRow("回合检测", currentConfig.enableTurnNumberCheck)
+        content.addView(TextView(this).apply {
+            text = TURN_CHECK_HINT
+            textSize = 12f
+            setTextColor(Color.parseColor("#B8B8B8"))
+            setPadding(0, 0, 0, 8)
+        })
 
         content.addView(TextView(this).apply {
             text = "游戏倍速"

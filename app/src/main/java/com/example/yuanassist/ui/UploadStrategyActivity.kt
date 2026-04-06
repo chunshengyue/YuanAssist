@@ -37,6 +37,7 @@ import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.AgentRepository
 import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.StrategyPreviewData
+import com.example.yuanassist.model.toDisplaySummary
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -568,9 +569,7 @@ class UploadStrategyActivity : AppCompatActivity() {
             Gson().fromJson<List<InstructionJson>>(instructionsJson, type)
         }.getOrNull().orEmpty()
         if (instructions.isEmpty()) return "该脚本无附加指令"
-        val text = instructions.joinToString("\n") {
-            "第${it.turn}回合 第${it.step}步: [${it.type}] 数值:${it.value}"
-        }
+        val text = instructions.joinToString("\n") { it.toDisplaySummary() }
         return "脚本附带指令：\n$text"
     }
 
@@ -780,7 +779,7 @@ class UploadStrategyActivity : AppCompatActivity() {
 
         if (insts.isNotEmpty()) {
             currentInstructionsJson = Gson().toJson(insts)
-            val text = insts.joinToString("\n") { "第${it.turn}回合 第${it.step}步: [${it.type}] 数值:${it.value}" }
+            val text = insts.joinToString("\n") { it.toDisplaySummary() }
             renderTable(items, "当前窗口附带指令：\n$text")
         } else {
             currentInstructionsJson = null
@@ -819,7 +818,7 @@ class UploadStrategyActivity : AppCompatActivity() {
 
                     if (!scriptObj.instructions.isNullOrEmpty()) {
                         currentInstructionsJson = Gson().toJson(scriptObj.instructions)
-                        val instText = scriptObj.instructions.joinToString("\n") { "第${it.turn}回合 第${it.step}步: [${it.type}] 数值:${it.value}" }
+                        val instText = scriptObj.instructions.joinToString("\n") { it.toDisplaySummary() }
                         renderTable(items, "脚本附带指令：\n$instText")
                     } else {
                         currentInstructionsJson = null

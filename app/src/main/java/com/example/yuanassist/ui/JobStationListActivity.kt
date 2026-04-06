@@ -19,6 +19,8 @@ import cn.bmob.v3.listener.FindListener
 import com.example.yuanassist.R
 import com.example.yuanassist.model.STRATEGY_VISIBLE_PUBLIC
 import com.example.yuanassist.model.strategy_detail
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import retrofit2.Call
 
 class JobStationListActivity : AppCompatActivity() {
 
@@ -26,6 +28,9 @@ class JobStationListActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var searchInput: EditText
     private var allItems: List<JobStationAssetRepository.JobStationListItem> = emptyList()
+    private var selectedStageTag = ""
+    private var currentListCall: Call<*>? = null
+    private var listRequestVersion = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +44,9 @@ class JobStationListActivity : AppCompatActivity() {
         emptyView = findViewById(R.id.tv_job_station_list_empty)
         recyclerView = findViewById(R.id.rv_job_station_list)
         searchInput = findViewById(R.id.et_job_station_search_keyword)
+        findViewById<FloatingActionButton>(R.id.fab_upload_strategy).setOnClickListener {
+            startActivity(Intent(this, UploadStrategyActivity::class.java))
+        }
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         findViewById<Button>(R.id.btn_job_station_search).setOnClickListener {
@@ -52,24 +60,38 @@ class JobStationListActivity : AppCompatActivity() {
         loadMixedStrategies()
     }
 
+    override fun onDestroy() {
+        currentListCall?.cancel()
+        currentListCall = null
+        listRequestVersion += 1
+        super.onDestroy()
+    }
+
     private fun loadMixedStrategies() {
         showEmpty("正在加载攻略...")
-        JobStationRemoteRepository.loadList(
+        currentListCall?.cancel()
+        val requestVersion = ++listRequestVersion
+        currentListCall = JobStationRemoteRepository.loadList(
             page = 1,
             onSuccess = { _, maaItems ->
-                loadBmobStrategies(maaItems)
+                if (requestVersion != listRequestVersion || isFinishing || isDestroyed) return@loadList
+                currentListCall = null
+                loadBmobStrategies(maaItems, requestVersion)
             },
             onError = { message ->
                 runOnUiThread {
-                    allItems = emptyList()
-                    showEmpty(message)
+                    if (requestVersion != listRequestVersion || isFinishing || isDestroyed) return@runOnUiThread
+                    currentListCall = null
+                    Toast.makeText(this@JobStationListActivity, message, Toast.LENGTH_SHORT).show()
+                    loadBmobStrategies(emptyList(), requestVersion)
                 }
             }
         )
     }
 
     private fun loadBmobStrategies(
-        maaItems: List<JobStationAssetRepository.JobStationListItem>
+        maaItems: List<JobStationAssetRepository.JobStationListItem>,
+        requestVersion: Int
     ) {
         val query = BmobQuery<strategy_detail>()
         query.addWhereEqualTo("visible", STRATEGY_VISIBLE_PUBLIC)
@@ -79,6 +101,7 @@ class JobStationListActivity : AppCompatActivity() {
         query.findObjects(object : FindListener<strategy_detail>() {
             override fun done(list: MutableList<strategy_detail>?, e: BmobException?) {
                 runOnUiThread {
+                    if (requestVersion != listRequestVersion || isFinishing || isDestroyed) return@runOnUiThread
                     if (e != null) {
                         Toast.makeText(
                             this@JobStationListActivity,
@@ -126,16 +149,20 @@ class JobStationListActivity : AppCompatActivity() {
     private fun applySearch() {
         val keyword = searchInput.text.toString().trim()
         if (keyword.isEmpty()) {
+            selectedStageTag = ""
             showItems(allItems)
             return
         }
 
+        val matchedStageTag = resolveStageKeyword(keyword)
+        if (matchedStageTag == null) {
+            showEmpty("未识别到对应关卡关键词")
+            return
+        }
+
+        selectedStageTag = matchedStageTag
         val filteredItems = allItems.filter { item ->
-            item.title.contains(keyword, ignoreCase = true) ||
-                item.author.contains(keyword, ignoreCase = true) ||
-                item.tags.any { it.contains(keyword, ignoreCase = true) } ||
-                item.roster.any { it.contains(keyword, ignoreCase = true) } ||
-                item.agentsText.contains(keyword, ignoreCase = true)
+            item.categoryTag == matchedStageTag
         }
 
         if (filteredItems.isEmpty()) {
@@ -144,6 +171,22 @@ class JobStationListActivity : AppCompatActivity() {
         }
 
         showItems(filteredItems)
+    }
+
+    private fun resolveStageKeyword(keyword: String): String? {
+        val normalized = keyword.trim()
+        if (normalized.isBlank()) return null
+
+        return when {
+            normalized.contains("白鹄") -> "白鹄"
+            normalized.contains("洞窟") -> "洞窟"
+            normalized.contains("兰台") -> "兰台"
+            normalized.contains("遗迹") || normalized.contains("地宫") -> "地宫"
+            normalized.contains("主线") -> "主线"
+            normalized.contains("家具") -> "家具"
+            normalized.contains("活动") -> "活动"
+            else -> null
+        }
     }
 
     private fun showItems(items: List<JobStationAssetRepository.JobStationListItem>) {
