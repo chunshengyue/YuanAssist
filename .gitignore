@@ -24,11 +24,22 @@ Thumbs.db
 # Logs / temp
 *.log
 *.tmp
+.tmp/
+tmp/
+temp/
+*.swp
+*.swo
+
+# Python / local tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
 
 # Release artifacts
 *.apk
 *.aab
 *.apks
+*.docx
 app/release/
 
 # Local assistant / workspace docs
@@ -36,3 +47,11 @@ AGENTS.md
 CLAUDE.md
 .codex-compare/
 .gradle-user/
+avatar_cropper.py
+website-main/
+
+# Local side workspaces
+job_station_clone/
+MaaYuan-main/
+MaaYuan-Share-Backend-dev/
+yuanassistocr/

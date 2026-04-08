@@ -10,6 +10,7 @@ import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
 import com.example.yuanassist.model.formatStageAutoNavDisplay
 import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.model.strategy_detail
+import com.example.yuanassist.utils.RunLogger
 import com.google.gson.Gson
 import org.json.JSONArray
 import org.json.JSONObject
@@ -125,16 +126,31 @@ object JobStationAssetRepository {
     fun fromRemoteDetailData(copilot: JobStationApiModels.CopilotInfo): JobStationDetailData {
         val contentRoot = parseContentRoot(copilot.content)
         val metadata = copilot.metadata
+        val title = contentRoot?.optJSONObject("doc")?.optString("title")
+            .orEmpty()
+            .ifBlank { copilot.name.orEmpty() }
+            .ifBlank { "作业 ${copilot.id}" }
+        val summary = buildRemoteSummary(contentRoot)
+        val stageTags = buildRemoteStageTags(copilot)
+        val roster = parseOpers(contentRoot?.optJSONArray("opers"))
+        val turns = parseTurns(contentRoot?.optJSONObject("actions"))
+        val importPayload = buildImportPayload(contentRoot)
+
+        RunLogger.i(
+            "MaaYuan详情解析 id=${copilot.id} contentJson=${contentRoot != null} title=${title.take(40)} summaryLen=${summary.length} tags=${stageTags.size} roster=${roster.size} turns=${turns.size} importable=${importPayload != null}"
+        )
+        if (contentRoot == null) {
+            RunLogger.e(
+                "MaaYuan详情content解析失败 id=${copilot.id} contentSnippet=${copilot.content.take(240)}"
+            )
+        }
 
         return JobStationDetailData(
-            title = contentRoot?.optJSONObject("doc")?.optString("title")
-                .orEmpty()
-                .ifBlank { copilot.name.orEmpty() }
-                .ifBlank { "作业 ${copilot.id}" },
-            summary = buildRemoteSummary(contentRoot),
-            stageTags = buildRemoteStageTags(copilot),
-            roster = parseOpers(contentRoot?.optJSONArray("opers")),
-            turns = parseTurns(contentRoot?.optJSONObject("actions")),
+            title = title,
+            summary = summary,
+            stageTags = stageTags,
+            roster = roster,
+            turns = turns,
             author = copilot.uploader.ifBlank { "作者" },
             sourceType = formatSourceType(metadata?.sourceType),
             originalAuthor = metadata?.repostAuthor.orEmpty(),
@@ -142,7 +158,7 @@ object JobStationAssetRepository {
             originalLink = metadata?.repostUrl.orEmpty(),
             likeCount = formatMetric(copilot.like),
             readCount = formatMetric(copilot.views),
-            importPayload = buildImportPayload(contentRoot),
+            importPayload = importPayload,
             isFromMaaYuan = true
         )
     }

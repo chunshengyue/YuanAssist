@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -27,6 +28,7 @@ import cn.bmob.v3.BmobQuery
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.R
 import com.example.yuanassist.model.strategy_detail
+import com.example.yuanassist.utils.RunLogger
 import retrofit2.Call
 
 class JobStationActivity : AppCompatActivity() {
@@ -53,6 +55,10 @@ class JobStationActivity : AppCompatActivity() {
 
         val copilotId = intent.getLongExtra(EXTRA_COPILOT_ID, -1L)
         val strategyId = intent.getStringExtra(EXTRA_STRATEGY_ID).orEmpty()
+
+        RunLogger.i(
+            "打开攻略详情页 manufacturer=${Build.MANUFACTURER} model=${Build.MODEL} sdk=${Build.VERSION.SDK_INT} copilotId=$copilotId strategyId=${strategyId.ifBlank { "empty" }}"
+        )
 
         renderLoadingState()
         when {
@@ -89,6 +95,7 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun renderLoadingState() {
+        RunLogger.i("攻略详情页进入加载态")
         findViewById<TextView>(R.id.tv_detail_title).text = "加载中..."
         findViewById<TextView>(R.id.tv_detail_summary).apply {
             visibility = View.VISIBLE
@@ -114,19 +121,22 @@ class JobStationActivity : AppCompatActivity() {
     private fun loadMaaYuanDetail(copilotId: Long) {
         currentDetailCall?.cancel()
         val requestVersion = ++detailRequestVersion
+        RunLogger.i("开始加载 MaaYuan 详情 copilotId=$copilotId requestVersion=$requestVersion")
         currentDetailCall = JobStationRemoteRepository.loadDetail(
             copilotId = copilotId,
             onSuccess = { data ->
                 if (requestVersion != detailRequestVersion || isFinishing || isDestroyed) return@loadDetail
                 currentDetailCall = null
-                bindHeaderAndContent(data)
-                bindRosterCard(data)
-                bindTableAndOtherActions(data)
-                bindBottomBar(data)
+                renderDetailSafely(
+                    source = "MaaYuan",
+                    detailKey = "copilotId=$copilotId",
+                    data = data
+                )
             },
             onError = { message ->
                 if (requestVersion != detailRequestVersion || isFinishing || isDestroyed) return@loadDetail
                 currentDetailCall = null
+                RunLogger.e("MaaYuan详情加载失败 copilotId=$copilotId message=$message")
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 finish()
             }
@@ -151,13 +161,48 @@ class JobStationActivity : AppCompatActivity() {
                     }
 
                     val data = JobStationAssetRepository.fromBmobDetailData(detail)
-                    bindHeaderAndContent(data)
-                    bindRosterCard(data)
-                    bindTableAndOtherActions(data)
-                    bindBottomBar(data)
+                    renderDetailSafely(
+                        source = "Bmob",
+                        detailKey = "strategyId=$strategyId",
+                        data = data
+                    )
                 }
             }
         })
+    }
+
+    private fun renderDetailSafely(
+        source: String,
+        detailKey: String,
+        data: JobStationAssetRepository.JobStationDetailData
+    ) {
+        RunLogger.i(
+            "$source 详情开始渲染 $detailKey title=${data.title.take(40)} summaryLen=${data.summary.length} tags=${data.stageTags.size} roster=${data.roster.size} turns=${data.turns.size} importable=${data.importPayload != null} originalLink=${data.originalLink.isNotBlank()} strategyImage=${data.strategyImageUrl.isNotBlank()} agentImage=${data.agentImageUrl.isNotBlank()}"
+        )
+        try {
+            bindHeaderAndContent(data)
+            RunLogger.i(
+                "$source 详情头部渲染完成 $detailKey summaryVisible=${data.summary.isNotBlank() && !data.summary.contains("这里放帖子正文")}"
+            )
+            bindRosterCard(data)
+            RunLogger.i("$source 阵容区渲染完成 $detailKey roster=${data.roster.size}")
+            bindTableAndOtherActions(data)
+            RunLogger.i("$source 表格区渲染完成 $detailKey turns=${data.turns.size}")
+            bindBottomBar(data)
+            RunLogger.i("$source 底栏渲染完成 $detailKey stats=${data.likeCount}/${data.readCount}")
+        } catch (t: Throwable) {
+            RunLogger.e("$source 详情渲染异常 $detailKey", t)
+            showRenderErrorState(source, detailKey, t)
+        }
+    }
+
+    private fun showRenderErrorState(source: String, detailKey: String, throwable: Throwable) {
+        findViewById<TextView>(R.id.tv_detail_title).text = "详情渲染异常"
+        findViewById<TextView>(R.id.tv_detail_summary).apply {
+            visibility = View.VISIBLE
+            text = "$source 详情渲染异常，请打开运行日志并反馈。\n$detailKey\n${throwable.javaClass.simpleName}: ${throwable.message ?: "无错误信息"}"
+        }
+        Toast.makeText(this, "详情渲染异常，请打开运行日志", Toast.LENGTH_LONG).show()
     }
 
     private fun bindSourceInfo(data: JobStationAssetRepository.JobStationDetailData) {

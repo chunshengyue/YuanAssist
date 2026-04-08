@@ -225,6 +225,8 @@ class CombatEngine(
         private const val CAVE_NEXT_FLOOR_ROI_WIDTH = 500f
         private const val CAVE_NEXT_FLOOR_ROI_HEIGHT = 500f
         private const val CAVE_NEXT_FLOOR_THRESHOLD = 0.80f
+        private const val CAVE_START_BATTLE_TEMPLATE_FALLBACK = "kaishizhandou2.png"
+        private const val CAVE_START_BATTLE_TEMPLATE_FALLBACK_THRESHOLD = 0.75f
         private const val DEATH_CHECK_TOP_Y = 1350f
         private const val DEATH_CHECK_BOTTOM_Y = 1700f
         private const val DEATH_CHECK_SLOT_COUNT = 5
@@ -2481,6 +2483,22 @@ class CombatEngine(
         screenshot: Bitmap,
         logLowConfidence: Boolean
     ): PointF? {
+        if (TemplateOverrideStore.isStartBattleTemplateMode(accessibilityService)) {
+            val templatePoint = findTemplatePointInVisionRoiFromScreenshot(
+                screenshot = screenshot,
+                templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
+                centerX = START_BATTLE_RED_CENTER_X,
+                centerY = START_BATTLE_RED_CENTER_Y,
+                align = "bottom",
+                roiWidth = START_BATTLE_RED_ROI_WIDTH,
+                roiHeight = START_BATTLE_RED_ROI_HEIGHT,
+                threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
+                logLabel = "开始战斗模板"
+            )
+            if (templatePoint != null) return templatePoint
+            return findCaveStartBattleFallbackPointFromScreenshot(screenshot, logLabel = "开始战斗模板 fallback")
+        }
+
         val match = findRedRegionInVisionRoiFromScreenshot(
             screenshot = screenshot,
             centerX = START_BATTLE_RED_CENTER_X,
@@ -2488,9 +2506,20 @@ class CombatEngine(
             align = "bottom",
             roiWidth = START_BATTLE_RED_ROI_WIDTH,
             roiHeight = START_BATTLE_RED_ROI_HEIGHT
-        ) ?: return null
+        )
+        if (match == null) {
+            return findCaveStartBattleFallbackPointFromScreenshot(
+                screenshot = screenshot,
+                logLabel = "开始战斗 fallback"
+            )
+        }
 
         if (match.confidence < START_BATTLE_RED_THRESHOLD) {
+            val fallbackPoint = findCaveStartBattleFallbackPointFromScreenshot(
+                screenshot = screenshot,
+                logLabel = "开始战斗 fallback"
+            )
+            if (fallbackPoint != null) return fallbackPoint
             if (logLowConfidence) {
                 RunLogger.e(
                     "开始战斗红色区域未达阈值 score=${"%.3f".format(Locale.US, match.confidence)} " +
@@ -2503,6 +2532,27 @@ class CombatEngine(
         }
 
         return match.center
+    }
+
+    private fun findCaveStartBattleFallbackPointFromScreenshot(
+        screenshot: Bitmap,
+        logLabel: String
+    ): PointF? {
+        val target = getSelectedStageAutoNavTarget() ?: return null
+        if (target != BattleStageTarget.DONG_KU_LEFT && target != BattleStageTarget.DONG_KU_RIGHT) {
+            return null
+        }
+        return findTemplatePointInVisionRoiFromScreenshot(
+            screenshot = screenshot,
+            templateName = CAVE_START_BATTLE_TEMPLATE_FALLBACK,
+            centerX = START_BATTLE_RED_CENTER_X,
+            centerY = START_BATTLE_RED_CENTER_Y,
+            align = "bottom",
+            roiWidth = START_BATTLE_RED_ROI_WIDTH,
+            roiHeight = START_BATTLE_RED_ROI_HEIGHT,
+            threshold = CAVE_START_BATTLE_TEMPLATE_FALLBACK_THRESHOLD,
+            logLabel = logLabel
+        )
     }
 
     private fun findRedRegionInVisionRoiFromScreenshot(

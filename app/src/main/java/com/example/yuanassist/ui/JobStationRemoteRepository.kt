@@ -12,6 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import com.example.yuanassist.utils.RunLogger
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -139,6 +140,7 @@ object JobStationRemoteRepository {
 
     private fun logRequestStart(scene: String, call: Call<*>) {
         Log.i(TAG, "$scene start url=${call.request().url}")
+        RunLogger.i("作业站请求开始: $scene url=${call.request().url}")
     }
 
     private fun logRequestFailure(scene: String, call: Call<*>, throwable: Throwable, startedAtMs: Long) {
@@ -147,6 +149,10 @@ object JobStationRemoteRepository {
         Log.e(
             TAG,
             "$scene failed after ${formatElapsedMs(startedAtMs)} url=$url reason=$reason cause=${throwable.javaClass.simpleName}: ${throwable.message}",
+            throwable
+        )
+        RunLogger.e(
+            "作业站请求失败: $scene after=${formatElapsedMs(startedAtMs)} url=$url reason=$reason",
             throwable
         )
     }
@@ -190,6 +196,9 @@ object JobStationRemoteRepository {
                         TAG,
                         "loadList failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} http=${response.code()} biz=${body?.statusCode}"
                     )
+                    RunLogger.e(
+                        "作业站列表加载失败 http=${response.code()} biz=${body?.statusCode} message=${body?.message ?: "empty"}"
+                    )
                     onError(message)
                     return
                 }
@@ -197,6 +206,9 @@ object JobStationRemoteRepository {
                 Log.i(
                     TAG,
                     "loadList success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} count=${data.size} page=${body.data.page} hasNext=${body.data.hasNext}"
+                )
+                RunLogger.i(
+                    "作业站列表加载成功 count=${data.size} page=${body.data.page} hasNext=${body.data.hasNext}"
                 )
                 onSuccess(body.data, data.map(JobStationAssetRepository::fromRemoteListItem))
             }
@@ -241,6 +253,9 @@ object JobStationRemoteRepository {
                         TAG,
                         "loadDetail failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId http=${response.code()} biz=${body?.statusCode}"
                     )
+                    RunLogger.e(
+                        "作业详情加载失败 id=$copilotId http=${response.code()} biz=${body?.statusCode} message=${body?.message ?: "empty"}"
+                    )
                     onError(message)
                     return
                 }
@@ -248,6 +263,9 @@ object JobStationRemoteRepository {
                 Log.i(
                     TAG,
                     "loadDetail success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId"
+                )
+                RunLogger.i(
+                    "作业详情加载成功 id=$copilotId title=${data.name.orEmpty().ifBlank { "empty" }} uploader=${data.uploader.ifBlank { "empty" }} contentLength=${data.content.length} views=${data.views} likes=${data.like}"
                 )
                 onSuccess(JobStationAssetRepository.fromRemoteDetailData(data))
             }
@@ -291,6 +309,9 @@ object JobStationRemoteRepository {
                         TAG,
                         "loadComments failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId http=${response.code()} biz=${body?.statusCode}"
                     )
+                    RunLogger.e(
+                        "神秘代码访问失败 id=$copilotId http=${response.code()} biz=${body?.statusCode} message=${body?.message ?: "empty"}"
+                    )
                     onError(message)
                     return
                 }
@@ -299,6 +320,7 @@ object JobStationRemoteRepository {
                     TAG,
                     "loadComments success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId"
                 )
+                RunLogger.i("神秘代码访问成功 id=$copilotId")
                 onSuccess()
             }
 
