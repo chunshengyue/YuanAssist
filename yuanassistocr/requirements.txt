@@ -1,7 +1,0 @@
- fastapi
- uvicorn
- requests
- pydantic<2.0
- python-multipart
- exceptiongroup
- typing_extensions
