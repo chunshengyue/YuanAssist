@@ -51,6 +51,7 @@ avatar_cropper.py
 website-main/
 
 # Local side workspaces
+.worktrees/
 job_station_clone/
 MaaYuan-main/
 MaaYuan-Share-Backend-dev/
