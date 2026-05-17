@@ -9,6 +9,14 @@ captures/
 
 # Local SDK / machine-specific
 local.properties
+.env
+.env.*
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
 
 # IDE
 .idea/
@@ -45,7 +53,10 @@ app/release/
 # Local assistant / workspace docs
 AGENTS.md
 CLAUDE.md
+.claude/
 .codex-compare/
+.codex_tmp/
+.codex_tmp_user_import/
 .gradle-user/
 avatar_cropper.py
 website-main/
@@ -56,3 +67,25 @@ job_station_clone/
 MaaYuan-main/
 MaaYuan-Share-Backend-dev/
 yuanassistocr/
+MaaYuan_pijinzhanji_core/
+MyApplication/
+myapplication2_ui_bundle/
+bbq_core_bundle_2026-04-30/
+ocr_review/
+github_exports/
+yuanassistocr2/
+
+# Local dependency / SDK bundles
+PaddleX-Lite-Deploy/
+
+# Root-only local notes / helper files not needed for build
+duckmail.txt
+extract_ocr.py
+try_passwords.py
+unzip_ocr.py
+PP-OCRv5_mobile_det.yaml
+paddleocr_v5_mobile_android_integration_guide.md
+诸葛亮.png
+
+# Local scratch data
+data/
