@@ -17,7 +17,7 @@ data class AppConfig(
     val attackOffsetX: Float = 0f,
     val attackYFromBottom: Float = 600f,
     val upOffsetX: Float = 0f,
-    val upYFromBottom: Float = 300f,
+    val upYFromBottom: Float = 360f,
     val downOffsetX: Float = 0f,
     val downYFromBottom: Float = 514f,
     val circleOffsetX: Float = 0f,
@@ -27,6 +27,7 @@ data class AppConfig(
 object ConfigManager {
     private const val PREF_NAME = "game_assist_global_config"
     private const val DEF_ENABLE_TURN_NUMBER_CHECK = false
+    private const val KEY_EXCLUDED_AGENTS = "excluded_agents"
 
     // 默认值
     const val DEF_INTERVAL_ATTACK = 3000L
@@ -58,7 +59,7 @@ object ConfigManager {
             attackOffsetX = p.getFloat("attack_offset_x", 0f),
             attackYFromBottom = p.getFloat("attack_y_from_bottom", 600f),
             upOffsetX = p.getFloat("up_offset_x", 0f),
-            upYFromBottom = p.getFloat("up_y_from_bottom", 300f),
+            upYFromBottom = p.getFloat("up_y_from_bottom", 360f),
             downOffsetX = p.getFloat("down_offset_x", 0f),
             downYFromBottom = p.getFloat("down_y_from_bottom", 514f),
             circleOffsetX = p.getFloat("circle_offset_x", 0f),
@@ -88,5 +89,15 @@ object ConfigManager {
             putFloat("circle_y_from_bottom", config.circleYFromBottom)
             apply()
         }
+    }
+
+    fun getExcludedAgents(context: Context): Set<String> {
+        return getPrefs(context).getStringSet(KEY_EXCLUDED_AGENTS, emptySet()).orEmpty()
+    }
+
+    fun saveExcludedAgents(context: Context, agents: Set<String>) {
+        getPrefs(context).edit()
+            .putStringSet(KEY_EXCLUDED_AGENTS, agents.toSet())
+            .apply()
     }
 }

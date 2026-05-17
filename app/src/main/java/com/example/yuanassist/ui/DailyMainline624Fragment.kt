@@ -10,105 +10,109 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.Toast
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
-import com.example.yuanassist.R
 import com.example.yuanassist.core.DailyMainline624Bridge
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.Mainline624Config
 import com.example.yuanassist.model.Mainline624GameVariant
+import com.example.yuanassist.ui.main.theme.BodyInk
+import com.example.yuanassist.ui.main.theme.GlassStroke
+import com.example.yuanassist.ui.main.theme.TitleInk
+import com.example.yuanassist.ui.subpage.SubpageScaffold
+import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.ui.subpage.SubpageTextField
+import com.example.yuanassist.ui.subpage.StoneStyleButton
+import com.example.yuanassist.ui.subpage.SubpageRadioOption
+
+private const val PREFS_APP = "app_prefs"
+private const val ACTION_START_MAINLINE_624 = "ACTION_START_MAINLINE_624"
+private const val KEY_STOP_MODE = "daily_mainline_624_stop_mode"
+private const val KEY_RUN_COUNT = "daily_mainline_624_run_count"
+private const val KEY_LOW_SPEC_DELAY = "daily_mainline_624_low_spec_delay"
+private const val KEY_GAME_VARIANT = "daily_mainline_624_game_variant"
+private const val MODE_RESOURCE = "resource"
+private const val MODE_RUN_COUNT = "run_count"
 
 class DailyMainline624Fragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
-        val view = inflater.inflate(R.layout.fragment_daily_mainline_624, container, false)
-        bindViews(view)
-        return view
-    }
-
-    private fun bindViews(view: View) {
-        bindHeaderInsets(view)
-        bindStopConditionInputs(view)
-        restoreSavedSettings(view)
-
-        view.findViewById<ImageView>(R.id.btn_daily_mainline_624_back).setOnClickListener {
-            parentFragmentManager.popBackStack()
-        }
-
-        view.findViewById<Button>(R.id.btn_daily_mainline_624_confirm).setOnClickListener {
-            val config = buildConfig(view) ?: return@setOnClickListener
-            saveSettings(view, config)
-            DailyMainline624Bridge.pendingConfig = config
-            startMainline624Service()
-        }
-    }
-
-    private fun bindHeaderInsets(view: View) {
-        val header = view.findViewById<View>(R.id.layout_daily_mainline_624_header)
-        val topSpace = view.findViewById<View>(R.id.view_daily_mainline_624_status_space)
-        ViewCompat.setOnApplyWindowInsetsListener(header) { _, insets ->
-            val statusBarTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            topSpace.updateLayoutParams {
-                height = statusBarTop / 2
+        val context = requireContext()
+        val prefs = context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+        val savedMode = prefs.getString(KEY_STOP_MODE, MODE_RESOURCE).orEmpty()
+        val savedRunCount = prefs.getString(KEY_RUN_COUNT, "").orEmpty()
+        val savedLowSpecDelay = prefs.getString(KEY_LOW_SPEC_DELAY, "").orEmpty()
+        val savedGameVariant = prefs.getString(KEY_GAME_VARIANT, Mainline624GameVariant.RU_YUAN.name)
+            ?.let { value ->
+                Mainline624GameVariant.entries.firstOrNull { it.name == value }
             }
-            insets
+            ?: Mainline624GameVariant.RU_YUAN
+
+        return ComposeView(context).apply {
+            setContent {
+                DailyMainline624Screen(
+                    initialConfig = DailyMainline624UiState(
+                        gameVariant = savedGameVariant,
+                        stopMode = savedMode,
+                        runCount = savedRunCount,
+                        lowSpecDelay = savedLowSpecDelay,
+                    ),
+                    onBack = {
+                        if (parentFragmentManager.backStackEntryCount > 0) {
+                            parentFragmentManager.popBackStack()
+                        } else {
+                            activity?.finish()
+                        }
+                    },
+                    onConfirm = { state ->
+                        val config = buildConfig(state) ?: return@DailyMainline624Screen
+                        saveSettings(state, config)
+                        DailyMainline624Bridge.pendingConfig = config
+                        startMainline624Service()
+                    },
+                )
+            }
         }
-        ViewCompat.requestApplyInsets(header)
     }
 
-    private fun bindStopConditionInputs(view: View) {
-        val stopGroup = view.findViewById<RadioGroup>(R.id.rg_daily_mainline_624_stop_condition)
-        val runCount = view.findViewById<RadioButton>(R.id.rb_daily_mainline_624_stop_run_count)
-        val runCountLayout = view.findViewById<View>(R.id.layout_daily_mainline_624_run_count)
+    private fun buildConfig(state: DailyMainline624UiState): Mainline624Config? {
+        val maxRuns = state.runCount.trim().toIntOrNull()
+        val lowSpecDelayMs = state.lowSpecDelay.trim().toLongOrNull() ?: 0L
 
-        fun refreshInputs() {
-            runCountLayout.visibility = if (runCount.isChecked) View.VISIBLE else View.GONE
-        }
-
-        stopGroup.setOnCheckedChangeListener { _, _ ->
-            refreshInputs()
-        }
-        refreshInputs()
-    }
-
-    private fun buildConfig(view: View): Mainline624Config? {
-        val runCountOption = view.findViewById<RadioButton>(R.id.rb_daily_mainline_624_stop_run_count)
-        val resourceOption = view.findViewById<RadioButton>(R.id.rb_daily_mainline_624_stop_resource)
-        val ruyuanOption = view.findViewById<RadioButton>(R.id.rb_daily_mainline_624_variant_ruyuan)
-        val codeNameOption = view.findViewById<RadioButton>(R.id.rb_daily_mainline_624_variant_codename)
-        val maxRuns = view.findViewById<EditText>(R.id.et_daily_mainline_624_run_count)
-            .text.toString().trim().toIntOrNull()
-        val lowSpecDelayMs = view.findViewById<EditText>(R.id.et_daily_mainline_624_low_spec_delay)
-            .text.toString().trim().toLongOrNull() ?: 0L
-        val gameVariant = when {
-            ruyuanOption.isChecked -> Mainline624GameVariant.RU_YUAN
-            codeNameOption.isChecked -> Mainline624GameVariant.CODE_NAME_YUAN
-            else -> null
-        }
-
-        if (!runCountOption.isChecked && !resourceOption.isChecked) {
+        if (state.stopMode != MODE_RUN_COUNT && state.stopMode != MODE_RESOURCE) {
             Toast.makeText(requireContext(), "请选择运行方式", Toast.LENGTH_SHORT).show()
             return null
         }
 
-        if (gameVariant == null) {
-            Toast.makeText(requireContext(), "请选择游戏版本", Toast.LENGTH_SHORT).show()
-            return null
-        }
-
-        if (runCountOption.isChecked && (maxRuns == null || maxRuns <= 0)) {
+        if (state.stopMode == MODE_RUN_COUNT && (maxRuns == null || maxRuns <= 0)) {
             Toast.makeText(requireContext(), "请输入有效的运行次数", Toast.LENGTH_SHORT).show()
             return null
         }
@@ -119,57 +123,24 @@ class DailyMainline624Fragment : Fragment() {
         }
 
         return Mainline624Config(
-            maxRuns = if (runCountOption.isChecked) maxRuns else null,
+            maxRuns = if (state.stopMode == MODE_RUN_COUNT) maxRuns else null,
             lowSpecDelayMs = lowSpecDelayMs,
-            gameVariant = gameVariant
+            gameVariant = state.gameVariant,
         )
     }
 
-    private fun restoreSavedSettings(view: View) {
-        val prefs = requireContext().getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-        val savedMode = prefs.getString(KEY_STOP_MODE, MODE_RESOURCE)
-        val savedRunCount = prefs.getString(KEY_RUN_COUNT, "").orEmpty()
-        val savedLowSpecDelay = prefs.getString(KEY_LOW_SPEC_DELAY, "").orEmpty()
-        val savedGameVariant = prefs.getString(KEY_GAME_VARIANT, Mainline624GameVariant.RU_YUAN.name)
-
-        view.findViewById<RadioButton>(
-            if (savedMode == MODE_RUN_COUNT) {
-                R.id.rb_daily_mainline_624_stop_run_count
-            } else {
-                R.id.rb_daily_mainline_624_stop_resource
-            }
-        ).isChecked = true
-
-        view.findViewById<RadioButton>(
-            if (savedGameVariant == Mainline624GameVariant.CODE_NAME_YUAN.name) {
-                R.id.rb_daily_mainline_624_variant_codename
-            } else {
-                R.id.rb_daily_mainline_624_variant_ruyuan
-            }
-        ).isChecked = true
-
-        view.findViewById<EditText>(R.id.et_daily_mainline_624_run_count).setText(savedRunCount)
-        view.findViewById<EditText>(R.id.et_daily_mainline_624_low_spec_delay).setText(savedLowSpecDelay)
-    }
-
-    private fun saveSettings(view: View, config: Mainline624Config) {
+    private fun saveSettings(state: DailyMainline624UiState, config: Mainline624Config) {
         requireContext().getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE).edit()
             .putString(KEY_STOP_MODE, if (config.maxRuns != null) MODE_RUN_COUNT else MODE_RESOURCE)
-            .putString(
-                KEY_RUN_COUNT,
-                view.findViewById<EditText>(R.id.et_daily_mainline_624_run_count).text.toString().trim()
-            )
-            .putString(
-                KEY_LOW_SPEC_DELAY,
-                view.findViewById<EditText>(R.id.et_daily_mainline_624_low_spec_delay).text.toString().trim()
-            )
+            .putString(KEY_RUN_COUNT, state.runCount.trim())
+            .putString(KEY_LOW_SPEC_DELAY, state.lowSpecDelay.trim())
             .putString(KEY_GAME_VARIANT, config.gameVariant.name)
             .apply()
     }
 
     private fun startMainline624Service() {
         val context = requireContext()
-        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE).edit()
             .putString("pending_start_action", ACTION_START_MAINLINE_624)
             .apply()
 
@@ -178,8 +149,8 @@ class DailyMainline624Fragment : Fragment() {
             startActivity(
                 Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:${context.packageName}")
-                )
+                    Uri.parse("package:${context.packageName}"),
+                ),
             )
             return
         }
@@ -205,7 +176,7 @@ class DailyMainline624Fragment : Fragment() {
         val expected = ComponentName(requireContext(), YuanAssistService::class.java)
         val setting = Settings.Secure.getString(
             requireContext().contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         ) ?: return false
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(setting)
@@ -215,15 +186,197 @@ class DailyMainline624Fragment : Fragment() {
         }
         return false
     }
+}
 
-    companion object {
-        private const val PREFS_APP = "app_prefs"
-        private const val ACTION_START_MAINLINE_624 = "ACTION_START_MAINLINE_624"
-        private const val KEY_STOP_MODE = "daily_mainline_624_stop_mode"
-        private const val KEY_RUN_COUNT = "daily_mainline_624_run_count"
-        private const val KEY_LOW_SPEC_DELAY = "daily_mainline_624_low_spec_delay"
-        private const val KEY_GAME_VARIANT = "daily_mainline_624_game_variant"
-        private const val MODE_RESOURCE = "resource"
-        private const val MODE_RUN_COUNT = "run_count"
+private data class DailyMainline624UiState(
+    val gameVariant: Mainline624GameVariant,
+    val stopMode: String,
+    val runCount: String,
+    val lowSpecDelay: String,
+)
+
+@Composable
+private fun DailyMainline624Screen(
+    initialConfig: DailyMainline624UiState,
+    onBack: () -> Unit,
+    onConfirm: (DailyMainline624UiState) -> Unit,
+) {
+    var gameVariant by rememberSaveable { mutableStateOf(initialConfig.gameVariant) }
+    var stopMode by rememberSaveable { mutableStateOf(initialConfig.stopMode) }
+    var runCount by rememberSaveable { mutableStateOf(initialConfig.runCount) }
+    var lowSpecDelay by rememberSaveable { mutableStateOf(initialConfig.lowSpecDelay) }
+
+    val state = DailyMainline624UiState(
+        gameVariant = gameVariant,
+        stopMode = stopMode,
+        runCount = runCount,
+        lowSpecDelay = lowSpecDelay,
+    )
+
+    SubpageScaffold(
+        title = "刷6-24",
+        subtitle = "版本选择 · 运行方式 · 延时调整",
+        onBack = onBack,
+    ) {
+        SubpageSectionCard(
+            title = "游戏版本",
+            subtitle = "决定 6-24 入口识别素材",
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SubpageRadioOption(
+                    text = "如鸢",
+                    selected = gameVariant == Mainline624GameVariant.RU_YUAN,
+                    onClick = { gameVariant = Mainline624GameVariant.RU_YUAN },
+                )
+                SubpageRadioOption(
+                    text = "代号鸢",
+                    selected = gameVariant == Mainline624GameVariant.CODE_NAME_YUAN,
+                    onClick = { gameVariant = Mainline624GameVariant.CODE_NAME_YUAN },
+                )
+            }
+        }
+
+        SubpageSectionCard(
+            title = "运行方式",
+            subtitle = "保留原页面两种运行方式",
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SubpageRadioOption(
+                    text = "刷到体力耗尽",
+                    selected = stopMode == MODE_RESOURCE,
+                    onClick = { stopMode = MODE_RESOURCE },
+                )
+                SubpageRadioOption(
+                    text = "指定运行次数",
+                    selected = stopMode == MODE_RUN_COUNT,
+                    onClick = { stopMode = MODE_RUN_COUNT },
+                )
+            }
+            if (stopMode == MODE_RUN_COUNT) {
+                Row(
+                    modifier = Modifier.padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SubpageTextField(
+                        value = runCount,
+                        onValueChange = { runCount = it },
+                        label = "请输入次数",
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "次",
+                        color = BodyInk,
+                        fontSize = 15.sp,
+                        fontFamily = FontFamily.Serif,
+                    )
+                }
+            }
+        }
+
+        SubpageSectionCard(
+            title = "低配机型适应",
+            subtitle = "会在所有任务原始 delay 基础上统一增加该数值，单位 ms。",
+        ) {
+            SubpageTextField(
+                value = lowSpecDelay,
+                onValueChange = { lowSpecDelay = it },
+                label = "0 表示关闭",
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        SubpageSectionCard(
+            title = "成就提示",
+            subtitle = "可以携带羁绊密探刷成就，下面这些组合可供参考",
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(
+                    "颜良 / 文丑",
+                    "飞云 / 绣球",
+                    "李真 / 李脱",
+                    "陆逊 / 吕蒙",
+                    "阿蝉 / 张辽",
+                    "华佗 / 张仲景",
+                    "刘豹 / 蔡琰",
+                    "诸葛瑾 / 诸葛诞",
+                    "祢衡 / 徐庶",
+                    "周瑜 / 小乔",
+                ).chunked(3).forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        row.forEach { item ->
+                            StoneHintCell(
+                                text = item,
+                                modifier = Modifier
+                                    .weight(1f),
+                            )
+                        }
+                        repeat(3 - row.size) {
+                            SpacerCell(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+
+        StoneActionButton(
+            text = "导入",
+            onClick = { onConfirm(state) },
+        )
     }
+}
+
+@Composable
+private fun StoneHintCell(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(58.dp)
+            .background(
+                color = Color(0xFFFFFDF8),
+                shape = RoundedCornerShape(10.dp),
+            )
+            .border(
+                width = 1.dp,
+                color = GlassStroke.copy(alpha = 0.36f),
+                shape = RoundedCornerShape(10.dp),
+            )
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = TitleInk,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = FontFamily.Serif,
+            maxLines = 1,
+            softWrap = false,
+        )
+    }
+}
+
+@Composable
+private fun SpacerCell(
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.height(58.dp))
+}
+
+@Composable
+private fun StoneActionButton(
+    text: String,
+    onClick: () -> Unit,
+) {
+    StoneStyleButton(
+        text = text,
+        onClick = onClick,
+    )
 }

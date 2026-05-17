@@ -10,13 +10,9 @@ import java.io.FileOutputStream
 object TemplateOverrideStore {
 
     private const val DIR_NAME = "template_overrides"
-    private const val PREFS_NAME = "app_prefs"
-    private const val KEY_START_BATTLE_MATCH_MODE = "start_battle_match_mode"
-    private const val MATCH_MODE_COLOR = "color"
-    private const val MATCH_MODE_TEMPLATE = "template"
 
     const val START_BATTLE_TEMPLATE_FILE_NAME = "__start_battle_template__.png"
-    const val START_BATTLE_TEMPLATE_THRESHOLD = 0.90f
+    const val START_BATTLE_TEMPLATE_THRESHOLD = 0.75f
 
     private fun overrideDir(context: Context): File =
         File(context.filesDir, DIR_NAME).apply {
@@ -67,24 +63,5 @@ object TemplateOverrideStore {
         } else {
             "$fileName#asset"
         }
-    }
-
-    fun isStartBattleTemplateMode(context: Context): Boolean {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_START_BATTLE_MATCH_MODE, MATCH_MODE_COLOR) == MATCH_MODE_TEMPLATE
-    }
-
-    fun enableStartBattleTemplateMode(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_START_BATTLE_MATCH_MODE, MATCH_MODE_TEMPLATE)
-            .apply()
-    }
-
-    fun disableStartBattleTemplateMode(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_START_BATTLE_MATCH_MODE, MATCH_MODE_COLOR)
-            .apply()
     }
 }

@@ -1,6 +1,10 @@
-package com.example.yuanassist.ui
+﻿package com.example.yuanassist.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -9,26 +13,34 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.text.InputFilter
+import android.util.Patterns
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
-import cn.bmob.v3.exception.BmobException
-import cn.bmob.v3.listener.QueryListener
-import cn.bmob.v3.BmobQuery
+import com.bumptech.glide.signature.ObjectKey
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.R
+import com.example.yuanassist.model.MyUser
+import com.example.yuanassist.model.strategy_comment
 import com.example.yuanassist.model.strategy_detail
+import com.example.yuanassist.network.FavoriteState
+import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.SupabaseTimeFormatter
 import retrofit2.Call
 
 class JobStationActivity : AppCompatActivity() {
@@ -37,6 +49,9 @@ class JobStationActivity : AppCompatActivity() {
         const val EXTRA_COPILOT_ID = "extra_copilot_id"
         const val EXTRA_STRATEGY_ID = "extra_strategy_id"
         const val EXTRA_ASSET_FILE_NAME = "extra_asset_file_name"
+        private const val PREFS_STRATEGY_STATS = "strategy_detail_stats"
+        private const val KEY_LAST_VIEW_PREFIX = "last_view_"
+        private const val VIEW_THROTTLE_WINDOW_MS = 10 * 60 * 1000L
         private const val MAA_YUAN_HOME_URL = "https://maayuan.top/"
         private const val MAA_YUAN_SHARE_URL = "https://share.maayuan.top/"
         private const val TURN_COLUMN_WIDTH_DP = 42f
@@ -46,10 +61,18 @@ class JobStationActivity : AppCompatActivity() {
 
     private var currentDetailCall: Call<*>? = null
     private var detailRequestVersion = 0
+    private lateinit var statsPrefs: SharedPreferences
+    private var currentStrategyDetail: strategy_detail? = null
+    private var isFavorited = false
+    private var favoriteInFlight = false
+    private var favoriteObjectId: String? = null
+    private var commentsRequestVersion = 0
+    private var commentSubmitInFlight = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_job_station)
+        statsPrefs = getSharedPreferences(PREFS_STRATEGY_STATS, MODE_PRIVATE)
         applyStatusBarInsets()
         findViewById<ImageView>(R.id.btn_job_station_back).setOnClickListener { finish() }
 
@@ -63,7 +86,7 @@ class JobStationActivity : AppCompatActivity() {
         renderLoadingState()
         when {
             copilotId > 0L -> loadMaaYuanDetail(copilotId)
-            strategyId.isNotBlank() -> loadBmobDetail(strategyId)
+            strategyId.isNotBlank() -> loadStrategyDetail(strategyId)
             else -> {
                 Toast.makeText(this, "缺少攻略 id", Toast.LENGTH_SHORT).show()
                 finish()
@@ -95,6 +118,9 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun renderLoadingState() {
+        currentStrategyDetail = null
+        favoriteObjectId = null
+        favoriteInFlight = false
         RunLogger.i("攻略详情页进入加载态")
         findViewById<TextView>(R.id.tv_detail_title).text = "加载中..."
         findViewById<TextView>(R.id.tv_detail_summary).apply {
@@ -116,9 +142,16 @@ class JobStationActivity : AppCompatActivity() {
         findViewById<View>(R.id.tv_detail_agent_image_label).visibility = View.GONE
         findViewById<View>(R.id.iv_detail_agent_image).visibility = View.GONE
         findViewById<View>(R.id.card_maayuan_notice).visibility = View.GONE
+        findViewById<View>(R.id.card_comments).visibility = View.GONE
+        findViewById<TextView>(R.id.btn_detail_original_link).visibility = View.GONE
+        findViewById<TextView>(R.id.btn_favorite).visibility = View.GONE
+        updateFavoriteUi(false, 0)
     }
 
     private fun loadMaaYuanDetail(copilotId: Long) {
+        currentStrategyDetail = null
+        favoriteObjectId = null
+        commentsRequestVersion += 1
         currentDetailCall?.cancel()
         val requestVersion = ++detailRequestVersion
         RunLogger.i("开始加载 MaaYuan 详情 copilotId=$copilotId requestVersion=$requestVersion")
@@ -143,32 +176,34 @@ class JobStationActivity : AppCompatActivity() {
         )
     }
 
-    private fun loadBmobDetail(strategyId: String) {
-        val query = BmobQuery<strategy_detail>()
-        query.include("author")
-        query.getObject(strategyId, object : QueryListener<strategy_detail>() {
-            override fun done(detail: strategy_detail?, e: BmobException?) {
-                runOnUiThread {
-                    if (isFinishing || isDestroyed) return@runOnUiThread
-                    if (e != null || detail == null) {
-                        Toast.makeText(
-                            this@JobStationActivity,
-                            "攻略详情加载失败: ${e?.message ?: "未找到该攻略"}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        finish()
-                        return@runOnUiThread
-                    }
-
-                    val data = JobStationAssetRepository.fromBmobDetailData(detail)
-                    renderDetailSafely(
-                        source = "Bmob",
-                        detailKey = "strategyId=$strategyId",
-                        data = data
-                    )
+    private fun loadStrategyDetail(strategyId: String) {
+        SupabaseRepository.getStrategyDetail(
+            context = this,
+            strategyId = strategyId,
+            onSuccess = { detail ->
+                if (isFinishing || isDestroyed) return@getStrategyDetail
+                currentStrategyDetail = detail
+                favoriteObjectId = null
+                updateFavoriteUi(false, detail.favoriteCount ?: 0)
+                val shouldIncreaseViewCount = recordStrategyViewIfNeeded(detail)
+                if (shouldIncreaseViewCount) {
+                    detail.viewCount = (detail.viewCount ?: 0) + 1
                 }
-            }
-        })
+                val data = JobStationAssetRepository.fromCommunityDetailData(detail)
+                renderDetailSafely(
+                    source = "Supabase",
+                    detailKey = "strategyId=$strategyId",
+                    data = data
+                )
+                syncFavoriteState(detail)
+                loadStrategyComments(strategyId)
+            },
+            onError = { message ->
+                if (isFinishing || isDestroyed) return@getStrategyDetail
+                Toast.makeText(this, "攻略详情加载失败: $message", Toast.LENGTH_SHORT).show()
+                finish()
+            },
+        )
     }
 
     private fun renderDetailSafely(
@@ -275,6 +310,7 @@ class JobStationActivity : AppCompatActivity() {
             strategyImageView.visibility = View.VISIBLE
             Glide.with(this)
                 .load(strategyImageUrl)
+                .signature(ObjectKey(JobStationAssetRepository.IMAGE_CACHE_SIGNATURE))
                 .placeholder(R.drawable.cover)
                 .error(R.drawable.cover)
                 .into(strategyImageView)
@@ -289,6 +325,7 @@ class JobStationActivity : AppCompatActivity() {
             agentImageView.visibility = View.VISIBLE
             Glide.with(this)
                 .load(agentImageUrl)
+                .signature(ObjectKey(JobStationAssetRepository.IMAGE_CACHE_SIGNATURE))
                 .placeholder(R.drawable.cover)
                 .error(R.drawable.cover)
                 .into(agentImageView)
@@ -333,14 +370,27 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun bindBottomBar(data: JobStationAssetRepository.JobStationDetailData) {
-        findViewById<TextView>(R.id.tv_stats).text = "点赞 ${data.likeCount}    阅读 ${data.readCount}"
+        findViewById<TextView>(R.id.tv_stats).text = "收藏 ${data.likeCount}    阅读 ${data.readCount}"
 
-        findViewById<TextView>(R.id.btn_original_link).setOnClickListener {
-            if (data.originalLink.isNotBlank()) {
-                openExternalLink(data.originalLink, "无法打开原帖链接")
+        findViewById<TextView>(R.id.btn_detail_original_link).apply {
+            if (data.originalLink.isBlank()) {
+                visibility = View.GONE
             } else {
-                Toast.makeText(this, "未找到原帖链接", Toast.LENGTH_SHORT).show()
+                visibility = View.VISIBLE
+                text = if (data.isFromMaaYuan) "原帖链接" else "复制链接"
+                setOnClickListener {
+                    if (data.isFromMaaYuan) {
+                        openExternalLink(data.originalLink, "无法打开原帖链接")
+                    } else {
+                        copyLinkToClipboard(data.originalLink)
+                    }
+                }
             }
+        }
+
+        findViewById<TextView>(R.id.btn_favorite).apply {
+            visibility = if (currentStrategyDetail != null) View.VISIBLE else View.GONE
+            setOnClickListener { handleFavoriteClick() }
         }
 
         findViewById<TextView>(R.id.btn_import_script).setOnClickListener {
@@ -353,6 +403,503 @@ class JobStationActivity : AppCompatActivity() {
             importScriptToService(payload)
             Toast.makeText(this, payload.notice, Toast.LENGTH_SHORT).show()
         }
+
+        findViewById<TextView>(R.id.btn_write_comment).setOnClickListener {
+            showCommentInputDialog()
+        }
+    }
+
+    private fun handleFavoriteClick() {
+        val detail = currentStrategyDetail ?: return
+        if (favoriteInFlight) return
+        val currentUser = SupabaseRepository.getCurrentUser(this)
+        if (currentUser == null) {
+            showFavoriteLoginDialog()
+            return
+        }
+        if (isFavorited) {
+            removeFavorite(detail, currentUser)
+        } else {
+            addFavorite(detail, currentUser, false)
+        }
+    }
+
+    private fun syncFavoriteState(detail: strategy_detail) {
+        val strategyId = detail.objectId ?: return
+        val currentUser = SupabaseRepository.getCurrentUser(this) ?: run {
+            favoriteObjectId = null
+            updateFavoriteUi(false, detail.favoriteCount ?: 0)
+            return
+        }
+        SupabaseRepository.getFavoriteState(
+            context = this,
+            strategyId = strategyId,
+            onSuccess = { state ->
+                if (currentStrategyDetail?.objectId != strategyId) return@getFavoriteState
+                favoriteObjectId = state.favoriteObjectId.takeIf { it.isNotBlank() }
+                currentStrategyDetail?.favoriteCount = state.favoriteCount
+                updateFavoriteUi(state.favorited, state.favoriteCount)
+                refreshBottomStats()
+            },
+            onError = {
+                if (currentUser.objectId != null) {
+                    favoriteObjectId = null
+                    updateFavoriteUi(false, currentStrategyDetail?.favoriteCount ?: 0)
+                }
+            },
+        )
+    }
+
+    private fun showFavoriteLoginDialog() {
+        val detail = currentStrategyDetail ?: return
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("登录后即可收藏")
+            .setMessage("收藏的攻略会出现在“我的收藏”里。")
+            .setNegativeButton("暂不", null)
+            .setPositiveButton("一键登录并收藏", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                performOneClickLogin(
+                    onSuccess = {
+                        runOnUiThread {
+                            dialog.dismiss()
+                            addFavorite(detail, it, true)
+                        }
+                    },
+                    onError = {
+                        runOnUiThread { Toast.makeText(this, it, Toast.LENGTH_SHORT).show() }
+                    }
+                )
+            }
+        }
+        dialog.show()
+    }
+
+    private fun performOneClickLogin(onSuccess: (MyUser) -> Unit, onError: (String) -> Unit) {
+        val currentUser = SupabaseRepository.getCurrentUser(this)
+        if (currentUser != null) {
+            onSuccess(currentUser)
+            return
+        }
+        SupabaseRepository.loginWithDevice(
+            context = this,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    private fun addFavorite(detail: strategy_detail, user: MyUser, fromLogin: Boolean) {
+        val strategyId = detail.objectId ?: return
+        favoriteInFlight = true
+        SupabaseRepository.setFavorite(
+            context = this,
+            strategyId = strategyId,
+            favorited = true,
+            onSuccess = { state: FavoriteState ->
+                favoriteInFlight = false
+                favoriteObjectId = state.favoriteObjectId.takeIf { it.isNotBlank() }
+                currentStrategyDetail?.favoriteCount = state.favoriteCount
+                updateFavoriteUi(true, state.favoriteCount)
+                refreshBottomStats()
+                Toast.makeText(
+                    this,
+                    if (fromLogin) "登录成功，已加入收藏" else "已收藏",
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onError = { message ->
+                favoriteInFlight = false
+                Toast.makeText(this, "收藏失败: $message", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    private fun removeFavorite(detail: strategy_detail, user: MyUser) {
+        val strategyId = detail.objectId ?: return
+        favoriteInFlight = true
+        SupabaseRepository.setFavorite(
+            context = this,
+            strategyId = strategyId,
+            favorited = false,
+            onSuccess = { state: FavoriteState ->
+                favoriteInFlight = false
+                favoriteObjectId = state.favoriteObjectId.takeIf { it.isNotBlank() }
+                currentStrategyDetail?.favoriteCount = state.favoriteCount
+                updateFavoriteUi(false, state.favoriteCount)
+                refreshBottomStats()
+                Toast.makeText(this, "已取消收藏", Toast.LENGTH_SHORT).show()
+            },
+            onError = { message ->
+                favoriteInFlight = false
+                Toast.makeText(this, "取消收藏失败: $message", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    private fun updateFavoriteUi(favorited: Boolean, count: Int) {
+        isFavorited = favorited
+        findViewById<TextView>(R.id.btn_favorite).apply {
+            text = if (favorited) "已收藏" else "收藏"
+            if (favorited) {
+                setBackgroundResource(R.drawable.bg_job_station_chip)
+                backgroundTintList = ColorStateList.valueOf(Color.parseColor("#B89B62"))
+                setTextColor(Color.WHITE)
+            } else {
+                setBackgroundResource(R.drawable.bg_job_station_icon_button)
+                backgroundTintList = null
+                setTextColor(Color.parseColor("#82683A"))
+            }
+        }
+    }
+
+    private fun refreshBottomStats() {
+        val detail = currentStrategyDetail ?: return
+        val data = JobStationAssetRepository.fromCommunityDetailData(detail)
+        findViewById<TextView>(R.id.tv_stats).text = "收藏 ${data.likeCount}    阅读 ${data.readCount}"
+    }
+
+    private fun loadStrategyComments(strategyId: String) {
+        val requestVersion = ++commentsRequestVersion
+        showCommentsLoadingState()
+        SupabaseRepository.listComments(
+            strategyId = strategyId,
+            onSuccess = { list ->
+                if (requestVersion != commentsRequestVersion || isFinishing || isDestroyed) return@listComments
+                renderComments(list)
+            },
+            onError = { message ->
+                if (requestVersion != commentsRequestVersion || isFinishing || isDestroyed) return@listComments
+                showCommentsErrorState(message.ifBlank { "评论加载失败" })
+            },
+        )
+    }
+
+    private fun showCommentsLoadingState() {
+        findViewById<View>(R.id.card_comments).visibility = if (currentStrategyDetail != null) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.tv_comments_title).text = "评论"
+        findViewById<TextView>(R.id.tv_comments_hint).apply {
+            visibility = View.VISIBLE
+            text = "正在加载评论..."
+        }
+        findViewById<LinearLayout>(R.id.ll_comments_container).removeAllViews()
+    }
+
+    private fun showCommentsErrorState(message: String) {
+        findViewById<View>(R.id.card_comments).visibility = if (currentStrategyDetail != null) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.tv_comments_title).text = "评论"
+        findViewById<TextView>(R.id.tv_comments_hint).apply {
+            visibility = View.VISIBLE
+            text = "评论加载失败：$message"
+        }
+        findViewById<LinearLayout>(R.id.ll_comments_container).removeAllViews()
+    }
+
+    private fun renderComments(comments: List<strategy_comment>) {
+        findViewById<View>(R.id.card_comments).visibility = if (currentStrategyDetail != null) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.tv_comments_title).text = "评论 ${comments.size}"
+        val hintView = findViewById<TextView>(R.id.tv_comments_hint)
+        val container = findViewById<LinearLayout>(R.id.ll_comments_container)
+        container.removeAllViews()
+
+        if (comments.isEmpty()) {
+            hintView.visibility = View.VISIBLE
+            hintView.text = "还没有评论，来抢个沙发吧。"
+            return
+        }
+
+        hintView.visibility = View.GONE
+        comments.forEachIndexed { index, comment ->
+            container.addView(createCommentItemView(comment))
+            if (index < comments.lastIndex) {
+                container.addView(View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        dpToPx(1f)
+                    ).apply {
+                        topMargin = dpToPx(12f)
+                    }
+                    setBackgroundColor(Color.parseColor("#F2EDE1"))
+                })
+            }
+        }
+    }
+
+    private fun createCommentItemView(comment: strategy_comment): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+
+            val headerLayout = LinearLayout(this@JobStationActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            val avatarView = ImageView(this@JobStationActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(dpToPx(30f), dpToPx(30f))
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setBackgroundResource(R.drawable.bg_job_station_avatar)
+                clipToOutline = true
+                outlineProvider = ViewOutlineProvider.BACKGROUND
+            }
+            val avatarUrl = comment.user?.avatarUrl.orEmpty()
+            if (avatarUrl.isBlank()) {
+                avatarView.setImageResource(R.drawable.cover)
+            } else {
+                Glide.with(this@JobStationActivity)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.cover)
+                    .error(R.drawable.cover)
+                    .circleCrop()
+                    .into(avatarView)
+            }
+            headerLayout.addView(avatarView)
+
+            headerLayout.addView(LinearLayout(this@JobStationActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = dpToPx(10f)
+                }
+
+                addView(TextView(this@JobStationActivity).apply {
+                    text = resolveUserDisplayName(comment.user)
+                    textSize = 14f
+                    setTextColor(Color.parseColor("#2F261B"))
+                    setTypeface(typeface, Typeface.BOLD)
+                })
+
+                addView(TextView(this@JobStationActivity).apply {
+                    text = SupabaseTimeFormatter.formatToBeijing(comment.createdAt)
+                    textSize = 11f
+                    setTextColor(Color.parseColor("#9C8E77"))
+                })
+            })
+
+            headerLayout.addView(LinearLayout(this@JobStationActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+
+                addView(createCommentActionButton("回复") {
+                    showCommentInputDialog(comment)
+                })
+
+                if (isOwnComment(comment)) {
+                    addView(createCommentActionButton("删除") {
+                        showDeleteCommentDialog(comment)
+                    }.apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            marginStart = dpToPx(8f)
+                        }
+                    })
+                }
+            })
+
+            addView(headerLayout)
+
+            addView(TextView(this@JobStationActivity).apply {
+                text = buildCommentContent(comment)
+                textSize = 14f
+                setLineSpacing(dpToPx(2f).toFloat(), 1f)
+                setTextColor(Color.parseColor("#524634"))
+                setPadding(0, dpToPx(10f), 0, 0)
+            })
+        }
+    }
+
+    private fun createCommentActionButton(text: String, onClick: () -> Unit): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 12f
+            setTextColor(Color.parseColor("#8F6A2B"))
+            setTypeface(typeface, Typeface.BOLD)
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#F8F2E5"))
+                setStroke(dpToPx(1f), Color.parseColor("#D8C18A"))
+                cornerRadius = dpToPx(999f).toFloat()
+            }
+            setPadding(dpToPx(10f), dpToPx(4f), dpToPx(10f), dpToPx(4f))
+            setOnClickListener { onClick() }
+        }
+    }
+
+    private fun buildCommentContent(comment: strategy_comment): String {
+        val replyTargetName = resolveReplyTargetName(comment)
+        val content = comment.content.trim()
+        return if (replyTargetName.isBlank()) {
+            content
+        } else {
+            "回复 $replyTargetName：$content"
+        }
+    }
+
+    private fun resolveReplyTargetName(comment: strategy_comment): String {
+        return comment.replyToUserName.takeIf { it.isNotBlank() }
+            ?: resolveUserDisplayName(comment.replyToUser).takeIf { it != "热心玩家" }
+            ?: ""
+    }
+
+    private fun resolveUserDisplayName(user: MyUser?): String {
+        if (user == null) return "热心玩家"
+        return user.nickname.takeIf { it.isNotBlank() }
+            ?: user.username?.takeIf { it.isNotBlank() }
+            ?: "热心玩家"
+    }
+
+    private fun isOwnComment(comment: strategy_comment): Boolean {
+        val currentUserId = SupabaseRepository.getCurrentUser(this)?.objectId
+        val commentUserId = comment.user?.objectId
+        return !currentUserId.isNullOrBlank() && currentUserId == commentUserId
+    }
+
+    private fun showDeleteCommentDialog(comment: strategy_comment) {
+        val strategyId = currentStrategyDetail?.objectId ?: return
+        if (commentSubmitInFlight) return
+
+        val titleView = TextView(this).apply {
+            text = "删除评论"
+            textSize = 20f
+            gravity = Gravity.CENTER
+            setTextColor(Color.parseColor("#3D3222"))
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dpToPx(24f), dpToPx(24f), dpToPx(24f), dpToPx(8f))
+        }
+        val messageView = TextView(this).apply {
+            text = "确定删除这条评论吗？"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setLineSpacing(dpToPx(2f).toFloat(), 1f)
+            setTextColor(Color.parseColor("#6C5B43"))
+            setPadding(dpToPx(24f), dpToPx(8f), dpToPx(24f), dpToPx(4f))
+        }
+
+        AlertDialog.Builder(this)
+            .setCustomTitle(titleView)
+            .setView(messageView)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("删除", null)
+            .create()
+            .also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.window?.setBackgroundDrawableResource(R.drawable.bg_job_station_card)
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+                        setTextColor(Color.parseColor("#8F7A56"))
+                    }
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                        deleteComment(comment, strategyId, dialog)
+                    }
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+                        setTextColor(Color.parseColor("#C25B4A"))
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun showCommentInputDialog(replyTarget: strategy_comment? = null) {
+        val detail = currentStrategyDetail ?: return
+        if (commentSubmitInFlight) return
+
+        val editText = EditText(this).apply {
+            hint = if (replyTarget == null) "写下你的评论..." else "回复 ${resolveUserDisplayName(replyTarget.user)}"
+            minLines = 4
+            gravity = Gravity.TOP or Gravity.START
+            setTextColor(Color.parseColor("#2F261B"))
+            setHintTextColor(Color.parseColor("#A89B84"))
+            background = GradientDrawable().apply {
+                setColor(Color.parseColor("#FBF8F1"))
+                setStroke(dpToPx(1f), Color.parseColor("#E0DCD3"))
+                cornerRadius = dpToPx(12f).toFloat()
+            }
+            setPadding(dpToPx(12f), dpToPx(12f), dpToPx(12f), dpToPx(12f))
+            filters = arrayOf(InputFilter.LengthFilter(500))
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(if (replyTarget == null) "发表评论" else "回复 ${resolveUserDisplayName(replyTarget.user)}")
+            .setView(editText)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("发布", null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                val content = editText.text?.toString()?.trim().orEmpty()
+                if (content.isBlank()) {
+                    editText.error = "请输入评论内容"
+                    return@setOnClickListener
+                }
+                ensureLoggedIn(
+                    onSuccess = { user ->
+                        submitComment(detail, user, content, replyTarget, dialog)
+                    },
+                    onError = { message ->
+                        runOnUiThread { Toast.makeText(this, message, Toast.LENGTH_SHORT).show() }
+                    }
+                )
+            }
+        }
+        dialog.show()
+    }
+
+    private fun ensureLoggedIn(onSuccess: (MyUser) -> Unit, onError: (String) -> Unit) {
+        val currentUser = SupabaseRepository.getCurrentUser(this)
+        if (currentUser != null) {
+            onSuccess(currentUser)
+            return
+        }
+        performOneClickLogin(onSuccess, onError)
+    }
+
+    private fun submitComment(
+        detail: strategy_detail,
+        user: MyUser,
+        content: String,
+        replyTarget: strategy_comment?,
+        dialog: AlertDialog
+    ) {
+        val strategyId = detail.objectId ?: return
+        commentSubmitInFlight = true
+        SupabaseRepository.createComment(
+            context = this,
+            strategyId = strategyId,
+            content = content,
+            replyTarget = replyTarget,
+            onSuccess = {
+                if (isFinishing || isDestroyed) return@createComment
+                commentSubmitInFlight = false
+                dialog.dismiss()
+                Toast.makeText(this, "评论已发布", Toast.LENGTH_SHORT).show()
+                loadStrategyComments(strategyId)
+            },
+            onError = { message ->
+                if (isFinishing || isDestroyed) return@createComment
+                commentSubmitInFlight = false
+                Toast.makeText(this, "评论发布失败: $message", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+
+    private fun deleteComment(comment: strategy_comment, strategyId: String, dialog: AlertDialog) {
+        val commentId = comment.objectId ?: return
+        commentSubmitInFlight = true
+        SupabaseRepository.deleteComment(
+            context = this,
+            commentId = commentId,
+            onSuccess = {
+                if (isFinishing || isDestroyed) return@deleteComment
+                commentSubmitInFlight = false
+                dialog.dismiss()
+                Toast.makeText(this, "评论已删除", Toast.LENGTH_SHORT).show()
+                loadStrategyComments(strategyId)
+            },
+            onError = { message ->
+                if (isFinishing || isDestroyed) return@deleteComment
+                commentSubmitInFlight = false
+                Toast.makeText(this, "删除评论失败: $message", Toast.LENGTH_SHORT).show()
+            },
+        )
     }
 
     private fun bindRosterCard(data: JobStationAssetRepository.JobStationDetailData) {
@@ -443,7 +990,7 @@ class JobStationActivity : AppCompatActivity() {
 
                 oper.discs.forEach { discId ->
                     if (discId != 0) {
-                        discsContainer.addView(createDiscChip(oper.name, discId))
+                        discsContainer.addView(createDiscChip(oper.name, discId, data.isFromMaaYuan))
                     }
                 }
                 operLayout.addView(discsContainer)
@@ -451,6 +998,20 @@ class JobStationActivity : AppCompatActivity() {
 
             rosterContainer.addView(operLayout)
         }
+    }
+
+    private fun recordStrategyViewIfNeeded(detail: strategy_detail): Boolean {
+        val strategyId = detail.objectId ?: return false
+        val key = KEY_LAST_VIEW_PREFIX + strategyId
+        val lastViewedAt = statsPrefs.getLong(key, 0L)
+        val now = System.currentTimeMillis()
+        if (now - lastViewedAt < VIEW_THROTTLE_WINDOW_MS) return false
+        statsPrefs.edit().putLong(key, now).apply()
+        SupabaseRepository.incrementStrategyView(strategyId) { message ->
+            statsPrefs.edit().putLong(key, lastViewedAt).apply()
+            RunLogger.e("Supabase 阅读量自增失败 strategyId=$strategyId message=$message")
+        }
+        return true
     }
 
     private fun bindTableAndOtherActions(data: JobStationAssetRepository.JobStationDetailData) {
@@ -712,6 +1273,8 @@ class JobStationActivity : AppCompatActivity() {
                 Triple("#FFF4F6", "#E2A3B7", "#A63F67")
             label.contains("橙星检测") ->
                 Triple("#FFF6E8", "#E3B15F", "#B76A11")
+            label.contains("紫星检测") ->
+                Triple("#FBF2FF", "#C9A2E6", "#7B43B6")
             label.contains("切换左侧目标") || label.contains("切换右侧目标") ->
                 Triple("#EEF5FF", "#9BBBE7", "#3F6EA6")
             else ->
@@ -719,8 +1282,12 @@ class JobStationActivity : AppCompatActivity() {
         }
     }
 
-    private fun createDiscChip(agentName: String, discId: Int): TextView {
-        val discSpec = JobStationAssetRepository.resolveMaaDiscDisplaySpec(this, agentName, discId)
+    private fun createDiscChip(agentName: String, discId: Int, isFromMaaYuan: Boolean): TextView {
+        val discSpec = if (isFromMaaYuan) {
+            JobStationAssetRepository.resolveMaaDiscDisplaySpec(this, agentName, discId)
+        } else {
+            JobStationAssetRepository.resolveCommunityDiscDisplaySpec(agentName, discId)
+        }
         val (bgColor, strokeColor, textColor, displayName) = when {
             discSpec.forbidden -> listOf(
                 "#FFF3F3",
@@ -845,11 +1412,72 @@ class JobStationActivity : AppCompatActivity() {
     }
 
     private fun openExternalLink(url: String, failureMessage: String) {
+        val normalizedUrl = normalizeExternalLink(url)
+        if (normalizedUrl == null) {
+            RunLogger.e("外链打开失败，链接格式无效 raw=${url.take(200)}")
+            Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl)).apply {
+            addCategory(Intent.CATEGORY_BROWSABLE)
+        }
+        val resolvedActivity = intent.resolveActivity(packageManager)
+        if (resolvedActivity == null) {
+            RunLogger.e("外链打开失败，未找到可处理应用 url=$normalizedUrl")
+            Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            startActivity(intent)
         }.onFailure {
+            RunLogger.e("外链打开异常 url=$normalizedUrl", it)
             Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun normalizeExternalLink(rawUrl: String?): String? {
+        val trimmed = rawUrl
+            ?.trim()
+            ?.takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+            ?: return null
+
+        val extractedUrl = extractExternalUrl(trimmed) ?: trimmed
+        val cleanedUrl = extractedUrl.trim().trimEnd('。', '，', ',', '.', '；', ';', '！', '!', '？', '?', '）', ')', '】', ']', '》', '>', '\"', '\'')
+        if (cleanedUrl.isBlank()) return null
+
+        val normalizedUrl = when {
+            cleanedUrl.startsWith("https://", ignoreCase = true) ||
+                cleanedUrl.startsWith("http://", ignoreCase = true) -> cleanedUrl
+            cleanedUrl.startsWith("//") -> "https:$cleanedUrl"
+            Patterns.WEB_URL.matcher(cleanedUrl).matches() -> "https://$cleanedUrl"
+            else -> return null
+        }
+
+        val uri = Uri.parse(normalizedUrl)
+        val scheme = uri.scheme?.lowercase()
+        val host = uri.host?.trim().orEmpty()
+        return normalizedUrl.takeIf {
+            (scheme == "http" || scheme == "https") && host.isNotBlank()
+        }
+    }
+
+    private fun extractExternalUrl(text: String): String? {
+        val regexes = listOf(
+            Regex("""(?i)https?://[^\s<>"'()（）]+"""),
+            Regex("""(?i)(?:www\.)[^\s<>"'()（）]+"""),
+            Regex("""(?i)(?:[a-z0-9-]+\.)+[a-z]{2,}(?:/[^\s<>"'()（）]*)?""")
+        )
+        return regexes.asSequence()
+            .mapNotNull { it.find(text)?.value }
+            .firstOrNull()
+    }
+
+    private fun copyLinkToClipboard(link: String) {
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("原帖链接", link))
+        Toast.makeText(this, "原帖链接已复制", Toast.LENGTH_SHORT).show()
     }
 
     private fun dpToPx(dp: Float): Int {
@@ -860,3 +1488,4 @@ class JobStationActivity : AppCompatActivity() {
         ).toInt()
     }
 }
+

@@ -72,14 +72,9 @@ class CellLayoutAnalyzer(
         return segments
     }
 
-    fun isComplexCell(crop: Mat): Boolean {
-        val segments = analyze(crop)
-        return segments.count { !it.isNoise } >= 2
-    }
-
     fun splitLines(crop: Mat, padding: Int = 2): List<Mat> {
         val segments = analyze(crop)
-        val valid = segments.filter { !it.isNoise }
+        val valid = dropTinySecondarySegments(segments.filter { !it.isNoise })
         if (valid.size <= 1) return emptyList()
 
         val height = crop.rows()
@@ -87,6 +82,14 @@ class CellLayoutAnalyzer(
             val top = maxOf(0, seg.top - padding)
             val bottom = minOf(height, seg.bottom + padding)
             crop.submat(top, bottom, 0, crop.cols()).clone()
+        }
+    }
+
+    private fun dropTinySecondarySegments(segments: List<LineSegment>): List<LineSegment> {
+        if (segments.size <= 1) return segments
+        val maxHeight = segments.maxOf { it.height }.coerceAtLeast(1)
+        return segments.filter { segment ->
+            segment.height >= 12 || segment.height * 100 >= maxHeight * 60
         }
     }
 }

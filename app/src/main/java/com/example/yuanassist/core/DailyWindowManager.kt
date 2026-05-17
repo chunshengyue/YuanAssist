@@ -28,9 +28,11 @@ import android.widget.TextView
 import android.widget.Toast
 import com.example.yuanassist.R
 import com.example.yuanassist.model.BirdFoodConfig
+import com.example.yuanassist.model.CharacterImportConfig
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.Mainline624Config
 import com.example.yuanassist.network.OcrManager
+import com.example.yuanassist.ui.CharacterImportReviewActivity
 import com.example.yuanassist.ui.MainActivity
 import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.MyStoneStore
@@ -42,6 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -70,11 +73,22 @@ class DailyWindowManager(private val service: AccessibilityService) {
         refreshActionButton()
     }
     private val stitchEngine = InventoryStitchEngine(service)
+    private val characterImportEngine = CharacterImportEngine(service)
     private val windowManager =
         service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val handler = Handler(Looper.getMainLooper())
     private val gson = Gson()
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scriptRecorderManager = DailyScriptRecorderManager(
+        service = service,
+        onScriptSaved = { scriptName, plan, templateDir ->
+            submitTaskPlan(plan, scriptName, templateDir)
+            showWindow()
+        },
+        onVisibilityChanged = { isVisible ->
+            updateOverlayState(isOpen = isVisible || floatView != null)
+        }
+    )
     private val deviceId: String by lazy {
         Settings.Secure.getString(service.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
     }
@@ -83,9 +97,12 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private var coordinatePickerView: View? = null
     private var currentTaskPlan: DailyTaskPlan? = null
     private var currentScriptName: String? = null
+    private var currentTemplateDir: File? = null
     private var currentBirdFoodConfig: BirdFoodConfig? = null
     private var currentMainline624Config: Mainline624Config? = null
+    private var currentCharacterImportConfig: CharacterImportConfig? = null
     private var inventoryStitchPrepared = false
+    private var inventoryStitchArchiveId = MyStoneStore.DEFAULT_ARCHIVE_ID
     private var inventoryStitchType = MyStoneStore.TYPE_MAIN
     private var isStoneOcrProcessing = false
     private var lastWindowX = 100
@@ -130,13 +147,17 @@ class DailyWindowManager(private val service: AccessibilityService) {
         updateOverlayState(isOpen = false)
     }
 
-    fun isWindowVisible(): Boolean = floatView != null
+    fun isWindowVisible(): Boolean =
+        floatView != null || scriptRecorderManager.isVisible
 
-    fun submitTaskPlan(plan: DailyTaskPlan, scriptName: String) {
+    fun submitTaskPlan(plan: DailyTaskPlan, scriptName: String, templateDir: File? = null) {
+        scriptRecorderManager.stop()
         currentBirdFoodConfig = null
         currentMainline624Config = null
+        currentCharacterImportConfig = null
         currentTaskPlan = plan
         currentScriptName = scriptName
+        currentTemplateDir = templateDir
         showWindow()
         refreshActionButton()
     }
@@ -148,11 +169,29 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
     }
 
+    fun submitTaskPlanJson(
+        fileName: String,
+        jsonContent: String,
+        templateDirPath: String?
+    ): Result<Unit> {
+        return runCatching {
+            val plan = gson.fromJson(jsonContent, DailyTaskPlan::class.java)
+            val templateDir = templateDirPath
+                ?.takeIf { it.isNotBlank() }
+                ?.let(::File)
+                ?.takeIf { it.exists() && it.isDirectory }
+            submitTaskPlan(plan, fileName, templateDir)
+        }
+    }
+
     fun submitBirdFoodConfig(config: BirdFoodConfig) {
+        scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
+        currentTemplateDir = null
         inventoryStitchPrepared = false
         currentMainline624Config = null
+        currentCharacterImportConfig = null
         currentBirdFoodConfig = config
         birdFoodRuntimeManager.prepare(config)
         showWindow()
@@ -160,27 +199,67 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun submitMainline624Config(config: Mainline624Config) {
+        scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
+        currentTemplateDir = null
         inventoryStitchPrepared = false
         currentBirdFoodConfig = null
+        currentCharacterImportConfig = null
         currentMainline624Config = config
         mainline624RuntimeManager.prepare(config)
         showWindow()
         refreshActionButton()
     }
 
-    fun startCoordinatePickerMode() {
+    fun submitCharacterImportConfig(config: CharacterImportConfig) {
+        scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
+        currentTemplateDir = null
+        inventoryStitchPrepared = false
         currentBirdFoodConfig = null
         currentMainline624Config = null
+        currentCharacterImportConfig = config
+        characterImportEngine.prepare(config)
+        showWindow()
+        refreshActionButton()
+    }
+
+    fun startCoordinatePickerMode() {
+        scriptRecorderManager.stop()
+        currentTaskPlan = null
+        currentScriptName = null
+        currentTemplateDir = null
+        currentBirdFoodConfig = null
+        currentMainline624Config = null
+        currentCharacterImportConfig = null
         inventoryStitchPrepared = false
         showWindow()
         startCoordinatePicker()
     }
 
-    fun prepareInventoryStitching(stoneType: String) {
+    fun startScriptRecorderMode() {
+        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
+            Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
+            return
+        }
+        stopCoordinatePicker()
+        scriptRecorderManager.stop()
+        currentTaskPlan = null
+        currentScriptName = null
+        currentTemplateDir = null
+        currentBirdFoodConfig = null
+        currentMainline624Config = null
+        currentCharacterImportConfig = null
+        inventoryStitchPrepared = false
+        removeWindow()
+        scriptRecorderManager.show()
+        updateOverlayState(isOpen = true)
+    }
+
+    fun prepareInventoryStitching(stoneType: String, archiveId: String? = null) {
+        scriptRecorderManager.stop()
         showWindow()
         if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
@@ -188,14 +267,18 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
         currentTaskPlan = null
         currentScriptName = null
+        currentTemplateDir = null
         currentBirdFoodConfig = null
         currentMainline624Config = null
+        currentCharacterImportConfig = null
         inventoryStitchType = MyStoneStore.normalizeType(stoneType)
+        inventoryStitchArchiveId = MyStoneStore.resolveArchiveId(service, archiveId)
+        MyStoneStore.setSelectedArchiveId(service, inventoryStitchArchiveId)
         MyStoneStore.setSelectedType(service, inventoryStitchType)
         inventoryStitchPrepared = true
         Toast.makeText(
             service,
-            "${MyStoneStore.displayName(inventoryStitchType)}拼图已就绪，请点击悬浮窗开始按钮",
+            "${MyStoneStore.getSelectedArchive(service).name}的${MyStoneStore.displayName(inventoryStitchType)}拼图已就绪，请点击悬浮窗开始按钮",
             Toast.LENGTH_SHORT
         ).show()
         refreshActionButton()
@@ -206,6 +289,13 @@ class DailyWindowManager(private val service: AccessibilityService) {
             stitchEngine.stop()
             refreshActionButton()
             Toast.makeText(service, "星石拼图已停止", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (characterImportEngine.isRunning) {
+            characterImportEngine.stop(showLog = true)
+            refreshActionButton()
+            Toast.makeText(service, "角色导入已停止", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -248,11 +338,35 @@ class DailyWindowManager(private val service: AccessibilityService) {
             return
         }
 
+        currentCharacterImportConfig?.let {
+            if (!characterImportEngine.start { success ->
+                    handler.post {
+                        refreshActionButton()
+                        Toast.makeText(
+                            service,
+                            if (success) "角色导入已完成" else "角色导入已停止",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        if (success) {
+                            openCharacterImportReview(characterImportEngine.snapshotRecords())
+                        }
+                    }
+                }
+            ) {
+                Toast.makeText(service, "角色导入启动失败", Toast.LENGTH_SHORT).show()
+                openDailyPage()
+                return
+            }
+            refreshActionButton()
+            return
+        }
+
         if (inventoryStitchPrepared) {
             if (stitchEngine.isRunning) return
             RunLogger.clear()
             RunLogger.i("开始${MyStoneStore.displayName(inventoryStitchType)}拼图")
             stitchEngine.startStitching(
+                archiveId = inventoryStitchArchiveId,
                 stoneType = inventoryStitchType,
                 onStatusUpdate = { message ->
                     RunLogger.i("日常工具状态：$message")
@@ -300,23 +414,26 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     }
                     Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
                 }
-            }
+            },
+            templateDir = currentTemplateDir
         )
     }
 
     private fun stopCurrentWork() {
         birdFoodRuntimeManager.stop()
         mainline624RuntimeManager.stop()
+        characterImportEngine.stop(showLog = false)
         engine.stop()
         if (stitchEngine.isRunning) stitchEngine.stop()
         stopCoordinatePicker()
+        scriptRecorderManager.stop()
         refreshActionButton()
     }
 
     private fun refreshActionButton() {
         handler.post {
             val button = floatView?.findViewById<ImageButton>(R.id.btn_daily_action) ?: return@post
-            if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stitchEngine.isRunning) {
+            if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
                 button.setImageResource(R.drawable.ic_action_pause)
                 button.contentDescription = "暂停"
             } else {
@@ -327,8 +444,8 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     private fun showStoneOcrPrompt() {
-        val record = MyStoneStore.loadRecord(service, inventoryStitchType) ?: return
-        if (MyStoneStore.imageFiles(service, inventoryStitchType, record).isEmpty()) return
+        val record = MyStoneStore.loadRecord(service, inventoryStitchType, inventoryStitchArchiveId) ?: return
+        if (MyStoneStore.imageFiles(service, inventoryStitchType, record, inventoryStitchArchiveId).isEmpty()) return
 
         DialogUtils.safeShowOverlayDialog(
             AlertDialog.Builder(DialogUtils.getThemeContext(service))
@@ -347,8 +464,8 @@ class DailyWindowManager(private val service: AccessibilityService) {
             return
         }
 
-        val record = MyStoneStore.loadRecord(service, inventoryStitchType)
-        val imageFiles = record?.let { MyStoneStore.imageFiles(service, inventoryStitchType, it) }.orEmpty()
+        val record = MyStoneStore.loadRecord(service, inventoryStitchType, inventoryStitchArchiveId)
+        val imageFiles = record?.let { MyStoneStore.imageFiles(service, inventoryStitchType, it, inventoryStitchArchiveId) }.orEmpty()
         if (imageFiles.isEmpty()) {
             Toast.makeText(service, "未找到可统计的${MyStoneStore.displayName(inventoryStitchType)}截图", Toast.LENGTH_SHORT).show()
             return
@@ -415,7 +532,8 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     stoneType = inventoryStitchType,
                     rows = rows,
                     statsLines = lines,
-                    ocrStrategy = strategyUsed.joinToString(",")
+                    ocrStrategy = strategyUsed.joinToString(","),
+                    archiveId = inventoryStitchArchiveId
                 )
 
                 if (hasPendingRows) {
@@ -440,7 +558,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     Intent.FLAG_ACTIVITY_SINGLE_TOP or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP
             )
-            putExtra(MainActivity.EXTRA_TARGET_TAB, MainActivity.TARGET_TAB_DAILY)
+            putExtra(MainActivity.EXTRA_TARGET_TAB, MainActivity.TARGET_TAB_HOME)
         }
         service.startActivity(intent)
     }
@@ -583,7 +701,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
             params.y = topSafeMargin.coerceAtMost(maxY)
             lastWindowX = params.x
             lastWindowY = params.y
-            windowManager.updateViewLayout(targetView, params)
+            safelyUpdateViewLayout(targetView, params, "更新悬浮窗位置失败")
         }
     }
 
@@ -598,11 +716,30 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
     }
 
+    private fun openCharacterImportReview(records: List<com.example.yuanassist.model.ImportedCharacterRecord>) {
+        val intent = CharacterImportReviewActivity.createIntent(service, records).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        service.startActivity(intent)
+    }
+
     private fun updateOverlayState(isOpen: Boolean) {
         service.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
             .edit()
             .putBoolean("daily_window_open", isOpen)
             .apply()
+    }
+
+    private fun safelyUpdateViewLayout(
+        targetView: View,
+        params: WindowManager.LayoutParams,
+        logLabel: String
+    ) {
+        try {
+            windowManager.updateViewLayout(targetView, params)
+        } catch (t: Throwable) {
+            RunLogger.e(logLabel, t)
+        }
     }
 
     private fun overlayType(): Int =
@@ -635,7 +772,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     MotionEvent.ACTION_MOVE -> {
                         params.x = initialX + (event.rawX - initialTouchX).toInt()
                         params.y = initialY + (event.rawY - initialTouchY).toInt()
-                        windowManager.updateViewLayout(targetView, params)
+                        safelyUpdateViewLayout(targetView, params, "拖动悬浮窗失败")
                         return true
                     }
                     MotionEvent.ACTION_UP -> {

@@ -19,6 +19,12 @@ data class LineSegment(
 
 data class RowResult(val roundLabel: String, val actions: List<String>)
 
+data class TableOcrPreviewResult(
+    val rows: List<RowResult>,
+    val rowImages: List<android.graphics.Bitmap>,
+    val rowColumnWidths: List<List<Int>>
+)
+
 enum class ConfidenceLevel { HIGH, MEDIUM, LOW }
 
 data class ParseResult(

@@ -7,12 +7,16 @@ import android.widget.Toast
 import com.example.yuanassist.model.BirdFoodConfig
 import com.example.yuanassist.model.BirdFoodStopCondition
 import com.example.yuanassist.model.BirdFoodTaskType
+import com.example.yuanassist.model.DaiBanGongWuEntry
 import com.example.yuanassist.model.DaiBanGongWuOption
 import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
 import com.example.yuanassist.model.TaskParams
+import com.example.yuanassist.utils.BIRD_FOOD_NAV_TEST_TASK_KEY
+import com.example.yuanassist.utils.DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.google.gson.Gson
 
 class BirdFoodRuntimeManager(
@@ -21,16 +25,12 @@ class BirdFoodRuntimeManager(
 ) {
 
     companion object {
-        private const val COOL_DOWN_MS = 5 * 60 * 1000L + 10 * 1000L
+        private const val DEFAULT_COOL_DOWN_MS = 5 * 60 * 1000L + 10 * 1000L
+        private const val SHORT_COOL_DOWN_MS = 35 * 1000L
         private const val RETURN_AFTER_TASK_DELAY_MS = 1000L
         private const val ENTRY_CHECK_DELAY_MS = 1200L
+        private const val DEBUG_COOLDOWN_LOG_INTERVAL_MS = 30_000L
         private const val MAX_BACK_STEPS = 4
-        private val TASK_EXECUTION_ORDER = listOf(
-            BirdFoodTaskType.TU_FA_QING_KUANG,
-            BirdFoodTaskType.XIAO_DAO_XIAO_XI,
-            BirdFoodTaskType.DAI_BAN_GONG_WU,
-            BirdFoodTaskType.TA_DE_CHUAN_WEN
-        )
     }
 
     private val engine = AutoTaskEngine(service)
@@ -39,10 +39,18 @@ class BirdFoodRuntimeManager(
 
     private var generation = 0L
     private var config: BirdFoodConfig? = null
-    private val activeTasks = linkedSetOf<BirdFoodTaskType>()
-    private val nextReadyAt = mutableMapOf<BirdFoodTaskType, Long>()
+    private var nextReadyAtMs: Long? = null
+    private var cooldownAwaitingReadyLog = false
     private var totalCompletedRuns = 0
     private var startTimeMs = 0L
+
+    private fun cooldownMsFor(taskType: BirdFoodTaskType): Long {
+        return when (taskType) {
+            BirdFoodTaskType.TU_FA_QING_KUANG,
+            BirdFoodTaskType.XIAO_DAO_XIAO_XI -> SHORT_COOL_DOWN_MS
+            else -> DEFAULT_COOL_DOWN_MS
+        }
+    }
 
     var isRunning = false
         private set
@@ -50,24 +58,29 @@ class BirdFoodRuntimeManager(
     fun prepare(config: BirdFoodConfig) {
         this.config = config
         engine.debugRoiEnabled = config.debugModeEnabled
+        engine.debugScreenshotEnabled = config.saveDebugScreenshotsEnabled
         engine.verboseLoggingEnabled = true
+        engine.diagnosticLoggingEnabled = config.debugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
     }
 
     fun start(): Boolean {
-        val currentConfig = config ?: return false
+        config ?: return false
         generation += 1
         handler.removeCallbacksAndMessages(null)
-        activeTasks.clear()
-        activeTasks.addAll(currentConfig.selectedTasks.distinct())
-        nextReadyAt.clear()
+        nextReadyAtMs = null
+        cooldownAwaitingReadyLog = false
         totalCompletedRuns = 0
         startTimeMs = System.currentTimeMillis()
         isRunning = true
         onRunningChanged(true)
         RunLogger.clear()
+        engine.logDiagnosticSessionStart()
         RunLogger.i("鸟食任务运行开始")
-        ensureYuanBaoScreen(0, generation)
+        scheduleDebugCooldownSnapshot(generation)
+        ensureYuanBaoScreen(0, generation) {
+            scheduleNextTask(generation)
+        }
         return true
     }
 
@@ -75,6 +88,8 @@ class BirdFoodRuntimeManager(
         generation += 1
         handler.removeCallbacksAndMessages(null)
         if (engine.isRunning) engine.stop()
+        nextReadyAtMs = null
+        cooldownAwaitingReadyLog = false
         isRunning = false
         onRunningChanged(false)
         if (showToast) {
@@ -82,7 +97,7 @@ class BirdFoodRuntimeManager(
         }
     }
 
-    private fun ensureYuanBaoScreen(backAttempts: Int, generation: Long) {
+    private fun ensureYuanBaoScreen(backAttempts: Int, generation: Long, onReady: () -> Unit) {
         if (!isRunning || generation != this.generation) return
         RunLogger.i("检查鸢报界面，第${backAttempts + 1}轮")
 
@@ -95,7 +110,7 @@ class BirdFoodRuntimeManager(
             generation = generation,
             onDetected = {
                 RunLogger.i("已确认当前处于鸢报界面")
-                scheduleNextTask(generation)
+                onReady()
             },
             onMissed = {
                 RunLogger.i("未识别到突发情况按钮，尝试识别鸢报按钮")
@@ -109,7 +124,7 @@ class BirdFoodRuntimeManager(
                     onDetected = {
                         RunLogger.i("识别到鸢报按钮，点击进入鸢报界面")
                         handler.postDelayed({
-                            ensureYuanBaoScreen(0, generation)
+                            ensureYuanBaoScreen(0, generation, onReady)
                         }, ENTRY_CHECK_DELAY_MS)
                     },
                     onMissed = {
@@ -120,7 +135,7 @@ class BirdFoodRuntimeManager(
                         RunLogger.i("未识别到鸢报按钮，执行返回，第${backAttempts + 1}次")
                         service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
                         handler.postDelayed({
-                            ensureYuanBaoScreen(backAttempts + 1, generation)
+                            ensureYuanBaoScreen(backAttempts + 1, generation, onReady)
                         }, ENTRY_CHECK_DELAY_MS)
                     }
                 )
@@ -132,32 +147,18 @@ class BirdFoodRuntimeManager(
         if (!isRunning || generation != this.generation) return
         if (shouldStopBeforeNextTask()) return
 
-        if (activeTasks.isEmpty()) {
-            finishSuccessfully("没有可执行的鸟食任务")
-            return
-        }
+        val taskType = config?.selectedTask ?: return
 
         val now = System.currentTimeMillis()
-        val readyTask = TASK_EXECUTION_ORDER.firstOrNull { task ->
-            activeTasks.contains(task) && now >= (nextReadyAt[task] ?: 0L)
-        }
-
-        if (readyTask != null) {
-            RunLogger.i("调度任务 ${readyTask.displayName}")
-            executeTask(readyTask, generation)
+        emitCooldownReadyLogs(now, taskType)
+        val readyAt = nextReadyAtMs ?: 0L
+        if (now >= readyAt) {
+            RunLogger.i("执行任务 ${taskType.displayName}")
+            executeTask(taskType, generation)
             return
         }
 
-        val nearestReadyAt = activeTasks
-            .mapNotNull { nextReadyAt[it] }
-            .minOrNull()
-
-        if (nearestReadyAt == null) {
-            finishSuccessfully("没有可执行的鸟食任务")
-            return
-        }
-
-        val delay = (nearestReadyAt - now).coerceAtLeast(300L)
+        val delay = (readyAt - now).coerceAtLeast(300L)
         RunLogger.i("当前无可立即执行任务，等待 ${delay}ms 后重试调度")
         handler.postDelayed({
             scheduleNextTask(generation)
@@ -167,7 +168,7 @@ class BirdFoodRuntimeManager(
     private fun executeTask(taskType: BirdFoodTaskType, generation: Long) {
         if (!isRunning || generation != this.generation) return
         val now = System.currentTimeMillis()
-        val readyAt = nextReadyAt[taskType] ?: 0L
+        val readyAt = nextReadyAtMs ?: 0L
         if (now < readyAt) {
             val delay = (readyAt - now).coerceAtLeast(300L)
             RunLogger.i("${taskType.displayName} 仍在冷却中，${delay}ms 后再尝试调度")
@@ -218,8 +219,13 @@ class BirdFoodRuntimeManager(
     }
 
     private fun buildScriptVariables(): Map<String, String> {
+        val currentConfig = config
         return mapOf(
-            "auto_eat_enabled" to if (config?.autoEatEnabled == true) "1" else "0"
+            "auto_eat_enabled" to if (currentConfig?.autoEatEnabled == true) "1" else "0",
+            "game_variant" to when (currentConfig?.taDeChuanWenOption?.name) {
+                "DAIHAOYUAN" -> "daihaoyuan"
+                else -> "ruyuan"
+            }
         )
     }
 
@@ -230,9 +236,14 @@ class BirdFoodRuntimeManager(
     ) {
         totalCompletedRuns += 1
         if (taskType.hasCooldown) {
+            val cooldownMs = cooldownMsFor(taskType)
             val cooldownBase = cooldownStartedAtMs ?: System.currentTimeMillis()
-            nextReadyAt[taskType] = cooldownBase + COOL_DOWN_MS
-            RunLogger.i("${taskType.displayName} 冷却开始，预计 ${COOL_DOWN_MS / 1000} 秒后重试")
+            nextReadyAtMs = cooldownBase + cooldownMs
+            cooldownAwaitingReadyLog = true
+            RunLogger.i("【冷却开始】${taskType.displayName}，预计 ${cooldownMs / 1000} 秒后重试")
+        } else {
+            nextReadyAtMs = null
+            cooldownAwaitingReadyLog = false
         }
         RunLogger.i("${taskType.name} 执行成功")
         handler.postDelayed({
@@ -240,7 +251,9 @@ class BirdFoodRuntimeManager(
             RunLogger.i("任务结束后执行返回，准备回到鸢报界面")
             service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
             handler.postDelayed({
-                ensureYuanBaoScreen(0, generation)
+                ensureYuanBaoScreen(0, generation) {
+                    scheduleNextTask(generation)
+                }
             }, ENTRY_CHECK_DELAY_MS)
         }, RETURN_AFTER_TASK_DELAY_MS)
     }
@@ -250,12 +263,13 @@ class BirdFoodRuntimeManager(
         terminalNote: String?,
         generation: Long
     ) {
-        activeTasks.remove(taskType)
+        nextReadyAtMs = null
+        cooldownAwaitingReadyLog = false
         val message = terminalNote ?: "${taskType.name} 已耗尽"
-        RunLogger.i(message)
-        Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
         handler.postDelayed({
-            ensureYuanBaoScreen(0, generation)
+            ensureYuanBaoScreen(0, generation) {
+                finishSuccessfully(message)
+            }
         }, ENTRY_CHECK_DELAY_MS)
     }
 
@@ -265,16 +279,69 @@ class BirdFoodRuntimeManager(
         generation: Long,
         cooldownStartedAtMs: Long? = null
     ) {
+        if (!taskType.hasCooldown) {
+            handler.postDelayed({
+                ensureYuanBaoScreen(0, generation) {
+                    scheduleNextTask(generation)
+                }
+            }, ENTRY_CHECK_DELAY_MS)
+            return
+        }
+        val cooldownMs = cooldownMsFor(taskType)
         val cooldownBase = cooldownStartedAtMs ?: System.currentTimeMillis()
-        val newReadyAt = cooldownBase + COOL_DOWN_MS
-        nextReadyAt[taskType] = newReadyAt
-        val message = terminalNote ?: "${taskType.displayName} 倒计时中，5分10秒后重试"
-        RunLogger.i(message)
+        nextReadyAtMs = cooldownBase + cooldownMs
+        cooldownAwaitingReadyLog = true
+        val message = terminalNote ?: "${taskType.displayName} 倒计时中，${formatDuration(cooldownMs)}后重试"
+        RunLogger.i("【冷却开始】${taskType.displayName}，预计 ${cooldownMs / 1000} 秒后重试")
         Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
         handler.postDelayed({
-            RunLogger.i("任务冷却处理中，返回鸢报界面继续调度其他任务")
-            ensureYuanBaoScreen(0, generation)
+            RunLogger.i("任务冷却处理中，返回鸢报界面等待下次执行")
+            ensureYuanBaoScreen(0, generation) {
+                scheduleNextTask(generation)
+            }
         }, ENTRY_CHECK_DELAY_MS)
+    }
+
+    private fun scheduleDebugCooldownSnapshot(generation: Long) {
+        if (config?.debugModeEnabled != true) return
+        handler.postDelayed({
+            if (!isRunning || generation != this.generation) return@postDelayed
+            logCooldownSnapshot()
+            scheduleDebugCooldownSnapshot(generation)
+        }, DEBUG_COOLDOWN_LOG_INTERVAL_MS)
+    }
+
+    private fun logCooldownSnapshot() {
+        val currentConfig = config ?: return
+        val selectedTask = currentConfig.selectedTask
+        val now = System.currentTimeMillis()
+        val readyAt = nextReadyAtMs ?: return
+        val hasPendingState = now < readyAt
+        if (!hasPendingState) return
+        emitCooldownReadyLogs(now, selectedTask)
+        val snapshot = "${selectedTask.displayName}:${describeTaskState(now)}"
+        RunLogger.i("【冷却状态】$snapshot")
+    }
+
+    private fun emitCooldownReadyLogs(now: Long, taskType: BirdFoodTaskType) {
+        val readyAt = nextReadyAtMs ?: return
+        if (cooldownAwaitingReadyLog && now >= readyAt) {
+            RunLogger.i("【冷却结束】${taskType.displayName}，已恢复可执行")
+            cooldownAwaitingReadyLog = false
+        }
+    }
+
+    private fun describeTaskState(now: Long): String {
+        val readyAt = nextReadyAtMs ?: return "就绪"
+        if (now >= readyAt) return "就绪"
+        return "冷却中(${formatDuration(readyAt - now)})"
+    }
+
+    private fun formatDuration(durationMs: Long): String {
+        val totalSeconds = (durationMs.coerceAtLeast(0L) + 999L) / 1000L
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return "%02d:%02d".format(minutes, seconds)
     }
 
     private fun shouldStopBeforeNextTask(): Boolean {
@@ -331,7 +398,7 @@ class BirdFoodRuntimeManager(
                 DailyTask(
                     id = 1,
                     action = "MATCH_TEMPLATE",
-                    delay = 300,
+                    delay = 500,
                     params = TaskParams(
                         template_name = templateName,
                         threshold = 0.85f,
@@ -345,7 +412,7 @@ class BirdFoodRuntimeManager(
         )
 
         engine.startPlan(
-            plan = plan,
+            plan = TemplateDelayOverrideStore.applyToPlan(service, BIRD_FOOD_NAV_TEST_TASK_KEY, plan),
             onCompleted = { success, _ ->
                 if (!isRunning || generation != this.generation) return@startPlan
                 if (success) {
@@ -363,7 +430,11 @@ class BirdFoodRuntimeManager(
         return try {
             service.assets.open("daily_scripts/$fileName").use { input ->
                 val plan = gson.fromJson(input.reader(), DailyTaskPlan::class.java)
-                customizePlan(fileName, plan)
+                TemplateDelayOverrideStore.applyToPlan(
+                    service,
+                    fileName,
+                    applyStartBattleDelayOverrides(fileName, customizePlan(fileName, plan))
+                )
             }
         } catch (t: Throwable) {
             RunLogger.e("加载鸟食脚本失败：$fileName", t)
@@ -373,23 +444,99 @@ class BirdFoodRuntimeManager(
 
     private fun customizePlan(fileName: String, plan: DailyTaskPlan): DailyTaskPlan {
         val currentConfig = config ?: return plan
-        if (fileName != BirdFoodTaskType.DAI_BAN_GONG_WU.scriptFileName) return plan
-        if (currentConfig.daiBanGongWuOption != DaiBanGongWuOption.WU_ZHU_QIAN) return plan
-
         val updatedTasks = plan.tasks.map { task ->
-            if (task.params?.template_name == "xuanze.png") {
-                task.copy(
-                    params = task.params.copy(
-                        roi = task.params.roi?.copy(
-                            x = 838f,
-                            y = 1150f
+            when {
+                fileName == BirdFoodTaskType.DAI_BAN_GONG_WU.scriptFileName &&
+                    currentConfig.daiBanGongWuOption == DaiBanGongWuOption.WU_ZHU_QIAN &&
+                    task.params?.template_name == "xuanze.png" -> {
+                    task.copy(
+                        params = task.params.copy(
+                            roi = task.params.roi?.copy(
+                                x = 838f,
+                                y = 1150f
+                            )
                         )
                     )
-                )
-            } else {
-                task
+                }
+
+                else -> task
             }
         }
-        return plan.copy(tasks = updatedTasks)
+        val customizedPlan = plan.copy(tasks = updatedTasks)
+        if (fileName != BirdFoodTaskType.DAI_BAN_GONG_WU.scriptFileName) {
+            return customizedPlan
+        }
+        return applyDaiBanGongWuSkipEntries(
+            customizedPlan,
+            currentConfig.skippedDaiBanGongWuEntries
+        )
+    }
+
+    private fun applyDaiBanGongWuSkipEntries(
+        plan: DailyTaskPlan,
+        skippedEntries: Set<DaiBanGongWuEntry>
+    ): DailyTaskPlan {
+        if (skippedEntries.isEmpty()) return plan
+
+        val allEntries = DaiBanGongWuEntry.values().toList()
+        val enabledEntries = allEntries.filterNot { skippedEntries.contains(it) }
+        if (enabledEntries.isEmpty()) return plan
+
+        val enabledEntrySet = enabledEntries.toSet()
+        val firstEnabledTaskId = enabledEntries.first().taskId
+        val nextTaskIdByEntry = allEntries.associate { entry ->
+            entry.taskId to findNextEnabledGongWuEntry(entry, allEntries, enabledEntrySet).taskId
+        }
+        val nextTaskIdByBranch = allEntries.associate { entry ->
+            entry.branchValue to (nextTaskIdByEntry[entry.taskId] ?: firstEnabledTaskId)
+        }
+
+        return plan.copy(
+            start_task_id = plan.start_task_id,
+            tasks = plan.tasks.map { task ->
+                when (task.id) {
+                    2 -> task.copy(on_success = firstEnabledTaskId)
+                    31, 32, 33, 34 -> {
+                        val nextTaskId = nextTaskIdByEntry[task.id] ?: task.on_fail
+                        task.copy(on_fail = nextTaskId)
+                    }
+                    99 -> task.copy(
+                        params = task.params?.copy(branch_routes = nextTaskIdByBranch)
+                    )
+                    else -> task
+                }
+            }
+        )
+    }
+
+    private fun findNextEnabledGongWuEntry(
+        currentEntry: DaiBanGongWuEntry,
+        allEntries: List<DaiBanGongWuEntry>,
+        enabledEntries: Set<DaiBanGongWuEntry>
+    ): DaiBanGongWuEntry {
+        val startIndex = allEntries.indexOf(currentEntry)
+        for (offset in 1..allEntries.size) {
+            val nextEntry = allEntries[(startIndex + offset) % allEntries.size]
+            if (enabledEntries.contains(nextEntry)) {
+                return nextEntry
+            }
+        }
+        return currentEntry
+    }
+
+    private fun applyStartBattleDelayOverrides(fileName: String, plan: DailyTaskPlan): DailyTaskPlan {
+        if (fileName != BirdFoodTaskType.DAI_BAN_GONG_WU.scriptFileName) return plan
+        val incrementMs = TemplateDelayOverrideStore.getIncrementMs(
+            service,
+            fileName,
+            DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
+        )
+        if (incrementMs <= 0L) return plan
+        return plan.copy(
+            tasks = plan.tasks.map { task ->
+                if (task.action != "OCR") return@map task
+                task.copy(delay = (task.delay + incrementMs).coerceAtLeast(0L))
+            }
+        )
     }
 }

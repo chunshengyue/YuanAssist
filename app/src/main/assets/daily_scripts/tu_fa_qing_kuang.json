@@ -40,7 +40,7 @@
         "var_name": "branch",
         "var_value": "0-1"
       },
-      "on_success": 4,
+      "on_success": 202,
       "on_fail": -1
     },
     {
@@ -60,7 +60,26 @@
         }
       },
       "on_success": 301,
-      "on_fail": -4
+      "on_fail": 54
+    },
+    {
+      "id": 54,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "diaocha.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": {
+          "x": 544,
+          "y": 1012,
+          "w": 200,
+          "h": 300,
+          "align": "top"
+        }
+      },
+      "on_success": 201,
+      "on_fail": 3
     },
     {
       "id": 301,
@@ -70,8 +89,27 @@
         "var_name": "branch",
         "var_value": "0-2"
       },
-      "on_success": 4,
+      "on_success": 202,
       "on_fail": -1
+    },
+    {
+      "id": 202,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "kuaisudiaocha.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": {
+          "x": 765,
+          "y": 1163,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 27,
+      "on_fail": 4
     },
     {
       "id": 302,
@@ -84,7 +122,7 @@
     {
       "id": 4,
       "action": "MATCH_TEMPLATE",
-      "delay": 1000,
+      "delay": 800,
       "params": {
         "template_name": "sherou.png",
         "threshold": 0.85,
@@ -108,7 +146,7 @@
     {
       "id": 402,
       "action": "MATCH_TEMPLATE",
-      "delay": 1500,
+      "delay": 1000,
       "params": {
         "template_name": "queren.png",
         "threshold": 0.75,
@@ -145,7 +183,7 @@
       "params": {
         "ref_task_id": 2
       },
-      "on_success": 6,
+      "on_success": 504,
       "on_fail": -1
     },
     {
@@ -155,8 +193,27 @@
       "params": {
         "ref_task_id": 3
       },
-      "on_success": 6,
+      "on_success": 504,
       "on_fail": -1
+    },
+    {
+      "id": 504,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "kuaisudiaocha.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": {
+          "x": 765,
+          "y": 1163,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 27,
+      "on_fail": 6
     },
     {
       "id": 6,
@@ -173,15 +230,15 @@
     {
       "id": 7,
       "action": "MATCH_TEMPLATE",
-      "delay": 1500,
+      "delay": 2000,
       "params": {
         "template_name": "jiedao1.png",
         "threshold": 0.85,
         "roi": {
           "x": 331,
           "y": 829,
-          "w": 300,
-          "h": 300,
+          "w": 400,
+          "h": 400,
           "align": "top"
         }
       },
@@ -527,15 +584,15 @@
     {
       "id": 22,
       "action": "MATCH_TEMPLATE",
-      "delay": 300,
+      "delay": 400,
       "params": {
         "template_name": "cunzi4.png",
         "threshold": 0.75,
         "roi": {
           "x": 935,
           "y": 949,
-          "w": 300,
-          "h": 300,
+          "w": 400,
+          "h": 400,
           "align": "top"
         }
       },
@@ -580,7 +637,7 @@
     {
       "id": 25,
       "action": "CLICK",
-      "delay": 1500,
+      "delay": 2000,
       "params": {
         "x": 818,
         "y": 1024,
@@ -625,15 +682,15 @@
     {
       "id": 28,
       "action": "MATCH_TEMPLATE",
-      "delay": 300,
+      "delay": 400,
       "params": {
         "template_name": "shulin.png",
         "threshold": 0.85,
         "roi": {
           "x": 208,
           "y": 890,
-          "w": 300,
-          "h": 300,
+          "w": 400,
+          "h": 400,
           "align": "top"
         }
       },
@@ -738,15 +795,15 @@
     {
       "id": 36,
       "action": "MATCH_TEMPLATE",
-      "delay": 300,
+      "delay": 400,
       "params": {
         "template_name": "jiedao2.png",
         "threshold": 0.85,
         "roi": {
           "x": 227,
           "y": 1439,
-          "w": 300,
-          "h": 300,
+          "w": 400,
+          "h": 400,
           "align": "top"
         }
       },
@@ -851,7 +908,7 @@
     {
       "id": 44,
       "action": "MATCH_TEMPLATE",
-      "delay": 300,
+      "delay": 400,
       "params": {
         "template_name": "taohua.png",
         "threshold": 0.85,
@@ -859,8 +916,8 @@
         "roi": {
           "x": 240,
           "y": 836,
-          "w": 300,
-          "h": 300,
+          "w": 400,
+          "h": 400,
           "align": "top"
         }
       },

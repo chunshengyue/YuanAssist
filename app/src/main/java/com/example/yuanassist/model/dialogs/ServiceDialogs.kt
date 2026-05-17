@@ -1,13 +1,11 @@
 // 文件路径：yuanassist/ui/dialogs/ServiceDialogs.kt
 package com.example.yuanassist.ui.dialogs
 
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.text.InputType
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -19,21 +17,32 @@ object ServiceDialogs {
 
     fun showTextImportDialog(context: Context, onImport: (String) -> Unit) {
         val themeContext = DialogUtils.getThemeContext(context)
-        val container = LinearLayout(themeContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 40)
-        }
-        val editText = EditText(themeContext).apply {
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "导入文字"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "粘贴跟打表格文本后确认导入"))
+
+        val editText = StyledDialogUi.createStyledInput(themeContext, "请在此处粘贴文本...").apply {
             hint = "请在此处粘贴文本..."
-            setTextColor(Color.BLACK)
             minLines = 5
             gravity = Gravity.TOP or Gravity.START
+            setPadding(
+                StyledDialogUi.dpToPx(themeContext, 14f),
+                StyledDialogUi.dpToPx(themeContext, 12f),
+                StyledDialogUi.dpToPx(themeContext, 14f),
+                StyledDialogUi.dpToPx(themeContext, 12f)
+            )
             disableShowSoftInput()
         }
-        val btnPaste = Button(themeContext).apply {
+        rootLayout.addView(
+            editText,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                StyledDialogUi.dpToPx(themeContext, 150f)
+            ).apply { topMargin = StyledDialogUi.dpToPx(themeContext, 12f) }
+        )
+
+        val btnPaste = StyledDialogUi.createActionButton(themeContext, "点击粘贴剪贴板内容", false).apply {
             text = "点击粘贴剪贴板内容"
-            setTextColor(Color.WHITE)
-            background.setTint(0xFF1976D2.toInt())
             setOnClickListener {
                 editText.requestFocus()
                 if (editText.onTextContextMenuItem(android.R.id.paste)) {
@@ -43,51 +52,60 @@ object ServiceDialogs {
                 }
             }
         }
-        container.addView(editText)
-        container.addView(
+        rootLayout.addView(
             btnPaste,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = 20 }
+            ).apply { topMargin = StyledDialogUi.dpToPx(themeContext, 10f) }
         )
 
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(themeContext)
-                .setTitle("导入文字")
-                .setView(container)
-                .setPositiveButton("确定") { _, _ -> onImport(editText.text.toString()) }
-                .setNegativeButton("取消", null)
-        )
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnConfirm = StyledDialogUi.createActionButton(themeContext, "确定", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnConfirm, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
+
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnConfirm.setOnClickListener {
+            onImport(editText.text.toString())
+            dialog.dismiss()
+        }
     }
 
     fun showInsertTurnDialog(context: Context, onInsert: (Int) -> Unit) {
         val themeContext = DialogUtils.getThemeContext(context)
-        val layout = LinearLayout(themeContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 40)
-        }
-        val etTurn = EditText(themeContext).apply {
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "新增回合"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "输入要在哪个回合后插入空回合"))
+        rootLayout.addView(StyledDialogUi.createFieldLabel(themeContext, "目标回合"))
+        val etTurn = StyledDialogUi.createStyledInput(themeContext, "在第几回合后新增？(例如: 12)").apply {
             hint = "在第几回合后新增？(例如: 12)"
             inputType = InputType.TYPE_CLASS_NUMBER
             disableShowSoftInput()
         }
-        layout.addView(etTurn)
+        rootLayout.addView(etTurn)
 
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(themeContext)
-                .setTitle("新增回合")
-                .setView(layout)
-                .setPositiveButton("确定") { _, _ ->
-                    val turnStr = etTurn.text.toString()
-                    if (turnStr.isNotEmpty()) {
-                        onInsert(turnStr.toInt())
-                    } else {
-                        Toast.makeText(context, "请输入回合数", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .setNegativeButton("取消", null)
-        )
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnConfirm = StyledDialogUi.createActionButton(themeContext, "确定", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnConfirm, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
+
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnConfirm.setOnClickListener {
+            val turnStr = etTurn.text.toString()
+            if (turnStr.isNotEmpty()) {
+                onInsert(turnStr.toInt())
+                dialog.dismiss()
+            } else {
+                Toast.makeText(context, "请输入回合数", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     fun showEditActionDialog(
@@ -97,24 +115,52 @@ object ServiceDialogs {
         onClear: () -> Unit
     ) {
         val themeContext = DialogUtils.getThemeContext(context)
-        val editText = EditText(themeContext).apply {
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "编辑"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "修改当前格子的动作内容"))
+        val editText = StyledDialogUi.createStyledInput(themeContext, "").apply {
             setText(currentText)
-            setTextColor(Color.BLACK)
             disableShowSoftInput()
-            setPadding(50, 50, 50, 50)
         }
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(themeContext)
-                .setTitle("编辑")
-                .setView(editText)
-                .setPositiveButton("确定") { _, _ -> onSave(editText.text.toString()) }
-                .setNegativeButton("取消", null)
-                .setNeutralButton("清空") { _, _ -> onClear() }
+        rootLayout.addView(
+            editText,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = StyledDialogUi.dpToPx(themeContext, 12f) }
         )
+
+        val clearRow = StyledDialogUi.createActionRow(themeContext)
+        val btnClear = StyledDialogUi.createActionButton(themeContext, "清空", false).apply {
+            setTextColor(Color.parseColor("#B64D3C"))
+        }
+        clearRow.addView(btnClear)
+        rootLayout.addView(clearRow)
+
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnConfirm = StyledDialogUi.createActionButton(themeContext, "确定", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnConfirm, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
+
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnClear.setOnClickListener {
+            onClear()
+            dialog.dismiss()
+        }
+        btnConfirm.setOnClickListener {
+            onSave(editText.text.toString())
+            dialog.dismiss()
+        }
     }
 
     fun showExportImageSettingsDialog(context: Context, onExport: (Array<String>) -> Unit) {
         val themeContext = DialogUtils.getThemeContext(context)
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "导出设置"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "设置导出图片的五列标题"))
         val dialogView =
             LayoutInflater.from(themeContext).inflate(R.layout.dialog_edit_headers, null)
         val ets = arrayOf(
@@ -130,44 +176,59 @@ object ServiceDialogs {
             et.setOnLongClickListener { true }
             et.setTextIsSelectable(false)
         }
-
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(themeContext)
-                .setTitle("导出设置")
-                .setView(dialogView)
-                .setPositiveButton("生成图片") { _, _ ->
-                    onExport(Array(5) { i -> ets[i].text.toString() })
-                }
-                .setNegativeButton("取消", null)
+        rootLayout.addView(
+            dialogView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = StyledDialogUi.dpToPx(themeContext, 12f) }
         )
+
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnConfirm = StyledDialogUi.createActionButton(themeContext, "生成图片", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnConfirm, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
+
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnConfirm.setOnClickListener {
+            onExport(Array(5) { i -> ets[i].text.toString() })
+            dialog.dismiss()
+        }
     }
 
     fun showSaveToLibraryDialog(context: Context, defaultName: String, onSave: (String) -> Unit) {
         val themeContext = DialogUtils.getThemeContext(context)
-        val layout = LinearLayout(themeContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 40)
-        }
-        val etName = EditText(themeContext).apply {
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "导出到脚本库"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "输入脚本名称后保存到本地脚本库"))
+        rootLayout.addView(StyledDialogUi.createFieldLabel(themeContext, "脚本名称"))
+        val etName = StyledDialogUi.createStyledInput(themeContext, "请输入脚本名称").apply {
             hint = "请输入脚本名称"
             setText(defaultName)
             disableShowSoftInput()
         }
-        layout.addView(etName)
+        rootLayout.addView(etName)
 
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(themeContext)
-                .setTitle("导出到脚本库")
-                .setView(layout)
-                .setPositiveButton("确认") { _, _ ->
-                    val scriptName = etName.text.toString().trim()
-                    if (scriptName.isEmpty()) {
-                        Toast.makeText(context, "名称不能为空", Toast.LENGTH_SHORT).show()
-                    } else {
-                        onSave(scriptName)
-                    }
-                }
-                .setNegativeButton("取消", null)
-        )
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnConfirm = StyledDialogUi.createActionButton(themeContext, "确认", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnConfirm, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
+
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnConfirm.setOnClickListener {
+            val scriptName = etName.text.toString().trim()
+            if (scriptName.isEmpty()) {
+                Toast.makeText(context, "名称不能为空", Toast.LENGTH_SHORT).show()
+            } else {
+                onSave(scriptName)
+                dialog.dismiss()
+            }
+        }
     }
 }

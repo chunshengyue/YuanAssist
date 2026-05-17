@@ -1,6 +1,5 @@
 package com.example.yuanassist.ui.dialogs
 
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
@@ -8,12 +7,11 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import com.example.yuanassist.R
 import com.example.yuanassist.model.TurnData
 import com.example.yuanassist.utils.DialogUtils
 
@@ -26,13 +24,11 @@ object NoteDialogs {
         onDataChanged: () -> Unit // 数据变更时的回调
     ) {
         val themeContext = DialogUtils.getThemeContext(context)
-        val rootLayout = LinearLayout(themeContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20, 20, 20, 20)
-        }
-        val scrollView = ScrollView(themeContext)
-        val listContainer = LinearLayout(themeContext).apply { orientation = LinearLayout.VERTICAL }
-        scrollView.addView(listContainer)
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "备注管理"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "点击备注编辑，右侧按钮删除"))
+
+        val listContainer = StyledDialogUi.createScrollableContainer(themeContext, rootLayout)
 
         fun refreshList() {
             listContainer.removeAllViews()
@@ -41,9 +37,15 @@ object NoteDialogs {
             if (notedTurns.isEmpty()) {
                 listContainer.addView(TextView(themeContext).apply {
                     text = "暂无备注，请点击下方按钮添加"
-                    setTextColor(Color.GRAY)
+                    setTextColor(Color.parseColor("#8C7A61"))
                     textSize = 14f
-                    setPadding(20, 40, 20, 40)
+                    setBackgroundResource(R.drawable.bg_job_station_icon_button)
+                    setPadding(
+                        StyledDialogUi.dpToPx(themeContext, 16f),
+                        StyledDialogUi.dpToPx(themeContext, 28f),
+                        StyledDialogUi.dpToPx(themeContext, 16f),
+                        StyledDialogUi.dpToPx(themeContext, 28f)
+                    )
                     gravity = Gravity.CENTER
                 })
             } else {
@@ -51,12 +53,28 @@ object NoteDialogs {
                     val row = LinearLayout(themeContext).apply {
                         orientation = LinearLayout.HORIZONTAL
                         gravity = Gravity.CENTER_VERTICAL
-                        setPadding(0, 15, 0, 15)
+                        setBackgroundResource(R.drawable.bg_job_station_icon_button)
+                        setPadding(
+                            StyledDialogUi.dpToPx(themeContext, 14f),
+                            StyledDialogUi.dpToPx(themeContext, 12f),
+                            StyledDialogUi.dpToPx(themeContext, 14f),
+                            StyledDialogUi.dpToPx(themeContext, 12f)
+                        )
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            if (listContainer.childCount > 0) {
+                                topMargin = StyledDialogUi.dpToPx(themeContext, 10f)
+                            }
+                        }
+                        isClickable = true
+                        isFocusable = true
                     }
                     val tvInfo = TextView(themeContext).apply {
                         text = "T${turnData.turnNumber}: ${turnData.remark}"
                         textSize = 15f
-                        setTextColor(Color.BLACK)
+                        setTextColor(Color.parseColor("#2F261B"))
                         layoutParams =
                             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                         setOnClickListener {
@@ -67,11 +85,18 @@ object NoteDialogs {
                         }
                     }
                     val btnDelete = TextView(themeContext).apply {
-                        text = "×"
-                        textSize = 20f
-                        setTextColor(Color.RED)
+                        text = "删除"
+                        textSize = 12f
+                        gravity = Gravity.CENTER
+                        setTextColor(Color.parseColor("#B64D3C"))
                         setTypeface(null, Typeface.BOLD)
-                        setPadding(40, 0, 20, 0)
+                        setBackgroundResource(R.drawable.bg_job_station_icon_button)
+                        setPadding(
+                            StyledDialogUi.dpToPx(themeContext, 10f),
+                            StyledDialogUi.dpToPx(themeContext, 5f),
+                            StyledDialogUi.dpToPx(themeContext, 10f),
+                            StyledDialogUi.dpToPx(themeContext, 5f)
+                        )
                         setOnClickListener {
                             turnData.remark = ""
                             refreshList()
@@ -81,37 +106,34 @@ object NoteDialogs {
                     }
                     row.addView(tvInfo)
                     row.addView(btnDelete)
+                    row.setOnClickListener {
+                        showEditDialog(themeContext, currentDisplayData, turnData) {
+                            refreshList()
+                            onDataChanged()
+                        }
+                    }
                     listContainer.addView(row)
-                    listContainer.addView(View(themeContext).apply {
-                        setBackgroundColor(Color.LTGRAY)
-                        layoutParams =
-                            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1)
-                    })
                 }
             }
         }
         refreshList()
 
-        rootLayout.addView(
-            scrollView,
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
-        )
-        rootLayout.addView(Button(themeContext).apply {
-            text = "+ 新增备注"
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnAdd = StyledDialogUi.createActionButton(themeContext, "+ 新增备注", true).apply {
             setOnClickListener {
                 showEditDialog(themeContext, currentDisplayData, null) {
                     refreshList()
                     onDataChanged()
                 }
             }
-        })
+        }
+        val btnClose = StyledDialogUi.createActionButton(themeContext, "关闭", false)
+        buttonRow.addView(btnAdd, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnClose, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
 
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(themeContext)
-                .setTitle("备注管理")
-                .setView(rootLayout)
-                .setPositiveButton("关闭", null)
-        )
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnClose.setOnClickListener { dialog.dismiss() }
     }
 
     // 显示新增/编辑备注的弹窗
@@ -121,11 +143,11 @@ object NoteDialogs {
         targetData: TurnData?,
         onSave: () -> Unit
     ) {
-        val layout = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 40)
-        }
-        val etTurn = EditText(context).apply {
+        val rootLayout = StyledDialogUi.createDialogCard(context)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(context, if (targetData == null) "新增备注" else "编辑备注"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(context, "设置指定回合的备注内容"))
+
+        val etTurn = StyledDialogUi.createStyledInput(context, "第几回合 (例如: 1)").apply {
             hint = "第几回合 (例如: 1)"
             inputType = InputType.TYPE_CLASS_NUMBER
             if (targetData != null) {
@@ -133,45 +155,48 @@ object NoteDialogs {
                 isEnabled = false
             }
         }
-        val etContent = EditText(context).apply {
+        val etContent = StyledDialogUi.createStyledInput(context, "请输入备注内容").apply {
             hint = "请输入备注内容"
             setText(targetData?.remark ?: "")
         }
 
-        layout.addView(TextView(context).apply { text = "回合数:"; textSize = 12f })
-        layout.addView(etTurn)
-        layout.addView(View(context).apply { layoutParams = LinearLayout.LayoutParams(1, 20) })
-        layout.addView(TextView(context).apply { text = "备注内容:"; textSize = 12f })
-        layout.addView(etContent)
+        rootLayout.addView(StyledDialogUi.createFieldLabel(context, "回合数"))
+        rootLayout.addView(etTurn)
+        rootLayout.addView(StyledDialogUi.createFieldLabel(context, "备注内容"))
+        rootLayout.addView(etContent)
 
-        DialogUtils.safeShowOverlayDialog(
-            AlertDialog.Builder(context)
-                .setTitle(if (targetData == null) "新增备注" else "编辑备注")
-                .setView(layout)
-                .setPositiveButton("保存") { _, _ ->
-                    val turnStr = etTurn.text.toString()
-                    val content = etContent.text.toString()
-                    if (turnStr.isEmpty()) {
-                        Toast.makeText(context, "请输入回合数", Toast.LENGTH_SHORT).show()
-                        return@setPositiveButton
-                    }
+        val buttonRow = StyledDialogUi.createActionRow(context)
+        val btnCancel = StyledDialogUi.createActionButton(context, "取消", false)
+        val btnSave = StyledDialogUi.createActionButton(context, "保存", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(context, false))
+        buttonRow.addView(btnSave, StyledDialogUi.createWeightedButtonParams(context, true))
+        rootLayout.addView(buttonRow)
 
-                    val turnNum = turnStr.toInt()
-                    val target = currentDisplayData.find { it.turnNumber == turnNum }
+        val dialog = StyledDialogUi.showStyledDialog(context, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnSave.setOnClickListener {
+            val turnStr = etTurn.text.toString()
+            val content = etContent.text.toString()
+            if (turnStr.isEmpty()) {
+                Toast.makeText(context, "请输入回合数", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-                    if (target != null) {
-                        target.remark = content
-                        onSave()
-                        Toast.makeText(context, "备注已保存", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "未找到第 $turnNum 回合，请先录制或添加回合",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-                .setNegativeButton("取消", null)
-        )
+            val turnNum = turnStr.toInt()
+            val target = currentDisplayData.find { it.turnNumber == turnNum }
+
+            if (target != null) {
+                target.remark = content
+                onSave()
+                Toast.makeText(context, "备注已保存", Toast.LENGTH_SHORT).show()
+                dialog.dismiss()
+            } else {
+                Toast.makeText(
+                    context,
+                    "未找到第 $turnNum 回合，请先录制或添加回合",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 }

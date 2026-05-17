@@ -1,7 +1,9 @@
-package com.example.yuanassist.ui
+﻿package com.example.yuanassist.ui
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import android.view.Gravity
@@ -15,7 +17,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
+import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
+import com.bumptech.glide.signature.ObjectKey
 import com.example.yuanassist.R
+import java.security.MessageDigest
 
 class JobStationListAdapter(
     items: List<JobStationAssetRepository.JobStationListItem>,
@@ -27,7 +33,7 @@ class JobStationListAdapter(
 
     companion object {
         private const val VIEW_TYPE_MAA = 1
-        private const val VIEW_TYPE_BMOB = 2
+        private const val VIEW_TYPE_COMMUNITY = 2
         private const val VIEW_TYPE_LOAD_MORE = 3
     }
 
@@ -51,7 +57,7 @@ class JobStationListAdapter(
             return VIEW_TYPE_LOAD_MORE
         }
         return when (items[position].type) {
-            JobStationAssetRepository.JobStationListItemType.BMOB -> VIEW_TYPE_BMOB
+            JobStationAssetRepository.JobStationListItemType.COMMUNITY -> VIEW_TYPE_COMMUNITY
             JobStationAssetRepository.JobStationListItemType.MAA -> VIEW_TYPE_MAA
         }
     }
@@ -59,7 +65,7 @@ class JobStationListAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
-            VIEW_TYPE_BMOB -> BmobViewHolder(
+            VIEW_TYPE_COMMUNITY -> CommunityViewHolder(
                 inflater.inflate(R.layout.item_job_station_strategy_entry, parent, false),
                 onClick
             )
@@ -79,7 +85,7 @@ class JobStationListAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
             is MaaViewHolder -> holder.bind(items[position])
-            is BmobViewHolder -> holder.bind(items[position])
+            is CommunityViewHolder -> holder.bind(items[position])
             is LoadMoreViewHolder -> holder.bind(isLoadingMore)
         }
     }
@@ -208,7 +214,7 @@ class JobStationListAdapter(
         }
     }
 
-    private class BmobViewHolder(
+    private class CommunityViewHolder(
         itemView: View,
         onClick: (JobStationAssetRepository.JobStationListItem) -> Unit
     ) : BaseViewHolder(itemView, onClick) {
@@ -228,9 +234,12 @@ class JobStationListAdapter(
             agentsView.text = item.agentsText.ifBlank { "未配置阵容" }
             bindTags(tagsContainer, item.tags)
 
-            if (item.coverUrl.isNotBlank()) {
+            val displayCoverUrl = item.agentImageUrl.ifBlank { item.coverUrl }
+            if (displayCoverUrl.isNotBlank()) {
                 Glide.with(coverView.context)
-                    .load(item.coverUrl)
+                    .load(displayCoverUrl)
+                    .signature(ObjectKey(JobStationAssetRepository.IMAGE_CACHE_SIGNATURE))
+                    .transform(CommunityCoverCrop())
                     .placeholder(R.drawable.cover)
                     .error(R.drawable.cover)
                     .into(coverView)
@@ -266,4 +275,40 @@ class JobStationListAdapter(
             button.isEnabled = !isLoading
         }
     }
+
+    private class CommunityCoverCrop : BitmapTransformation() {
+        override fun transform(
+            pool: BitmapPool,
+            toTransform: Bitmap,
+            outWidth: Int,
+            outHeight: Int
+        ): Bitmap {
+            if (toTransform.width == outWidth && toTransform.height == outHeight) return toTransform
+
+            val scale = maxOf(
+                outWidth.toFloat() / toTransform.width,
+                outHeight.toFloat() / toTransform.height
+            )
+
+            val matrix = Matrix().apply {
+                setScale(scale, scale)
+                // 封面固定从左上角开始裁切：
+                // 常规竖图裁掉底部，极宽横图裁掉右侧。
+                postTranslate(0f, 0f)
+            }
+
+            val result = pool.get(outWidth, outHeight, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(result)
+            val paint = android.graphics.Paint(
+                android.graphics.Paint.DITHER_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG
+            )
+            canvas.drawBitmap(toTransform, matrix, paint)
+            return result
+        }
+
+        override fun updateDiskCacheKey(messageDigest: MessageDigest) {
+            messageDigest.update("JobStationCommunityCoverCrop".toByteArray())
+        }
+    }
 }
+

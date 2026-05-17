@@ -32,12 +32,16 @@ import com.example.yuanassist.model.decodeStageAutoNavTarget
 import com.example.yuanassist.model.isCaveTarget
 import com.example.yuanassist.model.isStageAutoNavAutoEnterNextFloorEnabled
 import com.example.yuanassist.utils.AppConfig
+import com.example.yuanassist.utils.BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION
+import com.example.yuanassist.utils.BATTLE_FLOW_START_BATTLE_OCR_DELAY_KEY
+import com.example.yuanassist.utils.BATTLE_FLOW_TEST_TASK_KEY
 import com.example.yuanassist.utils.GameConstants
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.StartBattleShared
+import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.example.yuanassist.utils.TemplateOverrideStore
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
+import com.example.yuanassist.tableocr.PaddleTextRecognizer
+import com.example.yuanassist.tableocr.PaddleTextResult
 import kotlinx.coroutines.*
 import kotlin.coroutines.resume
 import org.opencv.android.Utils
@@ -110,13 +114,28 @@ class CombatEngine(
         val candidate: OrangeStarCandidate? = null
     )
 
-    private data class RedRegionMatch(
-        val center: PointF,
-        val confidence: Float,
-        val areaRatio: Float,
-        val fillRatio: Float,
-        val rednessScore: Float
-    )
+    private enum class StarDetectionMode(
+        val instructionType: InstructionType,
+        val label: String,
+        val colorLabel: String,
+        val glowThreshold: Float,
+        val glowRatioThreshold: Float
+    ) {
+        ORANGE(
+            instructionType = InstructionType.ORANGE_STAR_CHECK,
+            label = "橙星检测",
+            colorLabel = "橙色辉光",
+            glowThreshold = 0.25f,
+            glowRatioThreshold = 0.50f
+        ),
+        PURPLE(
+            instructionType = InstructionType.PURPLE_STAR_CHECK,
+            label = "紫星检测",
+            colorLabel = "紫色辉光",
+            glowThreshold = 0.15f,
+            glowRatioThreshold = 0.30f
+        )
+    }
 
     private data class DeathCheckResult(
         val slotIndex: Int,
@@ -134,6 +153,18 @@ class CombatEngine(
             get() = hitChars.size
     }
 
+    private data class StartBattleOcrLineMatch(
+        val lineText: String,
+        val normalizedLineText: String,
+        val hitChars: List<Char>,
+        val center: PointF,
+        val containsPhrase: Boolean,
+        val area: Int
+    ) {
+        val hitCount: Int
+            get() = hitChars.size
+    }
+
     companion object {
         private val REGEX_PARSE_NUM_ACTION = Regex("(\\d+)([A-Z↑↓圈]+)")
         private val REGEX_PARSE_PURE_ACTION = Regex("^([A-Z↑↓圈]+)$")
@@ -142,11 +173,11 @@ class CombatEngine(
         private const val ORANGE_STAR_CENTER_X = 163f
         private const val ORANGE_STAR_CENTER_Y = 302f
         private const val ORANGE_STAR_ROI_SIZE = 200f
-        private const val ORANGE_STAR_THRESHOLD = 0.60f
+        private const val ORANGE_STAR_THRESHOLD = 0.61f
+        private const val PURPLE_STAR_THRESHOLD = 0.61f
         private const val ORANGE_STAR_ATTEMPTS = 3
         private const val ORANGE_STAR_ATTEMPT_INTERVAL_MS = 500L
-        private const val ORANGE_STAR_SHAPE_THRESHOLD = 0.34f
-        private const val ORANGE_STAR_MIN_GLOW_RATIO = 0.07f
+        private const val ORANGE_STAR_SHAPE_THRESHOLD = 0.40f
         private const val ORANGE_STAR_RECOVERY_TEMPLATE = "queding2.png"
         private const val ORANGE_STAR_RECOVERY_THRESHOLD = 0.80f
         private const val ORANGE_STAR_RECOVERY_CENTER_X = 759f
@@ -157,8 +188,9 @@ class CombatEngine(
         private const val ALL_WIPE_TEMPLATE_CENTER_X = 785f
         private const val ALL_WIPE_TEMPLATE_CENTER_Y = 1699f
         private const val ALL_WIPE_TEMPLATE_ROI_SIZE = 300f
-        private const val ALL_WIPE_RETRY_DELAY_MS = 1500L
+        private const val ALL_WIPE_RETRY_DELAY_MS = 2500L
         private const val ALL_WIPE_RESTART_DELAY_MS = 4000L
+        private const val MID_FLOW_START_BATTLE_DELAY_MS = StartBattleShared.TASK_DELAY_MS
         private const val STAGE_HOME_RECOVERY_MAX_BACK_STEPS = 4
         private const val STAGE_HOME_RECOVERY_BACK_DELAY_MS = 1200L
         private const val STAGE_HOME_RECOVERY_BETWEEN_TEMPLATES_DELAY_MS = 500L
@@ -236,11 +268,11 @@ class CombatEngine(
         private const val STAGE_AUTO_SELECT_ENTRY_OFFSET_DP = 200f
         private const val STAGE_AUTO_SELECT_ENTRY_SETTLE_DELAY_MS = 1500L
         private const val STAGE_AUTO_SELECT_POST_CONFIRM_DELAY_MS = 5000L
-        private const val START_BATTLE_RED_THRESHOLD = 0.72f
-        private const val START_BATTLE_RED_CENTER_X = 540f
-        private const val START_BATTLE_RED_CENTER_Y = 1700f
-        private const val START_BATTLE_RED_ROI_WIDTH = 500f
-        private const val START_BATTLE_RED_ROI_HEIGHT = 400f
+        private const val START_BATTLE_RED_THRESHOLD = StartBattleShared.RED_THRESHOLD
+        private const val START_BATTLE_RED_CENTER_X = StartBattleShared.CENTER_X
+        private const val START_BATTLE_RED_CENTER_Y = StartBattleShared.CENTER_Y
+        private const val START_BATTLE_RED_ROI_WIDTH = StartBattleShared.ROI_WIDTH
+        private const val START_BATTLE_RED_ROI_HEIGHT = StartBattleShared.ROI_HEIGHT
         private const val STAGE_BATTLE_OCR_ROI_WIDTH = 400f
         private const val STAGE_BATTLE_OCR_ROI_HEIGHT = 300f
         private const val STAGE_BATTLE_OCR_MIN_HIT_COUNT = 2
@@ -462,7 +494,7 @@ class CombatEngine(
         RunLogger.i(
             "$logPrefix 识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
         )
-        delay(config.delayAfterStartBattleClickMs)
+        delay(resolvePostStartBattleDelayMs(config.delayAfterStartBattleClickMs))
         if (isRunning) {
             onReady()
         }
@@ -709,13 +741,15 @@ class CombatEngine(
                 (
                     it.type == InstructionType.ALL_WIPE_CHECK ||
                         it.type == InstructionType.DEATH_CHECK ||
-                        it.type == InstructionType.ORANGE_STAR_CHECK
+                        it.type == InstructionType.ORANGE_STAR_CHECK ||
+                        it.type == InstructionType.PURPLE_STAR_CHECK
                     )
         }.sortedBy { task ->
             when (task.type) {
                 InstructionType.ALL_WIPE_CHECK -> 0
                 InstructionType.DEATH_CHECK -> 1
-                InstructionType.ORANGE_STAR_CHECK -> 2
+                InstructionType.ORANGE_STAR_CHECK,
+                InstructionType.PURPLE_STAR_CHECK -> 2
                 else -> 3
             }
         }
@@ -726,13 +760,17 @@ class CombatEngine(
                         InstructionType.ALL_WIPE_CHECK -> "全灭检测"
                         InstructionType.DEATH_CHECK -> "阵亡检测(${task.value})"
                         InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
+                        InstructionType.PURPLE_STAR_CHECK -> "紫星检测"
                         else -> task.type.name
                     }
                 }
         )
         val shouldUseSharedScreenshot =
             shouldCheckCaveNextFloorAtTurnStart ||
-                tasks.any { it.type != InstructionType.ORANGE_STAR_CHECK } ||
+                tasks.any {
+                    it.type != InstructionType.ORANGE_STAR_CHECK &&
+                        it.type != InstructionType.PURPLE_STAR_CHECK
+                } ||
                 (getConfig().enableTurnNumberCheck && turn >= 2)
 
         serviceScope.launch {
@@ -816,6 +854,17 @@ class CombatEngine(
                     if (!isRunning) return
                 }
                 val shouldContinue = performOrangeStarCheck()
+                if (shouldContinue && isRunning) {
+                    performTurnStartInstructions(turn, tasks, index + 1, onComplete, sharedScreenshot)
+                }
+            }
+            InstructionType.PURPLE_STAR_CHECK -> {
+                onHudUpdated("紫星检测", true)
+                if (sharedScreenshot != null) {
+                    delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+                    if (!isRunning) return
+                }
+                val shouldContinue = performPurpleStarCheck()
                 if (shouldContinue && isRunning) {
                     performTurnStartInstructions(turn, tasks, index + 1, onComplete, sharedScreenshot)
                 }
@@ -911,7 +960,7 @@ class CombatEngine(
         delay(ALL_WIPE_RETRY_DELAY_MS)
         if (!isRunning) return false
 
-        val startBattlePoint = findStartBattleRedPoint()
+        val startBattlePoint = findStartBattleOcrPoint()
         if (startBattlePoint == null) {
             RunLogger.e("全灭恢复未识别到开始战斗按钮，已退出")
             showToast("未识别到开始战斗，已停止", true)
@@ -999,12 +1048,7 @@ class CombatEngine(
                 )
             }
 
-            startBattlePoint = withContext(Dispatchers.Default) {
-                findStartBattleRedPointFromScreenshot(
-                    screenshot = initialScreenshot,
-                    logLowConfidence = false
-                )
-            }
+            startBattlePoint = findStartBattlePointFromScreenshot(initialScreenshot)
             if (startBattlePoint != null) {
                 continueAfterStageStartBattleDetected(
                     config = config,
@@ -1127,10 +1171,10 @@ class CombatEngine(
         RunLogger.i(
             "${config.target.description} 自动导航识别到 ${config.entryTemplateRegion.templateName}，点击 x=${entryPoint.x.toInt()} y=${entryPoint.y.toInt()}"
         )
-        delay(config.delayAfterEntryClickMs)
+        delay(resolveBattleFlowStartBattleDetectDelayMs(config.delayAfterEntryClickMs))
         if (!isRunning) return
 
-        val postEntryStartBattlePoint = findStartBattleRedPoint()
+        val postEntryStartBattlePoint = findStartBattleOcrPoint()
         if (postEntryStartBattlePoint == null) {
             RunLogger.e("${config.target.description} 自动导航点击进入挑战后未识别到开始战斗，已停止")
             showToast("未识别到开始战斗，已停止", true)
@@ -1269,10 +1313,10 @@ class CombatEngine(
         RunLogger.i(
             "${config.target.description} 自动导航识别到 ${config.entryTemplateRegion.templateName}，点击 x=${qianwangtaofaPoint.x.toInt()} y=${qianwangtaofaPoint.y.toInt()}"
         )
-        delay(config.delayAfterEntryClickMs)
+        delay(resolveBattleFlowStartBattleDetectDelayMs(config.delayAfterEntryClickMs))
         if (!isRunning) return true
 
-        val startBattlePoint = findStartBattleRedPoint()
+        val startBattlePoint = findStartBattleOcrPoint()
         if (!isRunning) return true
         if (startBattlePoint == null) {
             RunLogger.e("${config.target.description} 自动导航点击前往讨伐后未识别到开始战斗，已停止")
@@ -1695,7 +1739,7 @@ class CombatEngine(
         tryStartBattleFirst: Boolean = true
     ): Boolean {
         if (tryStartBattleFirst) {
-            val startBattlePoint = findStartBattleRedPoint()
+            val startBattlePoint = findStartBattleOcrPoint()
             if (!isRunning) return true
             if (startBattlePoint != null) {
                 return continueAfterStageStartBattleDetected(
@@ -1734,7 +1778,7 @@ class CombatEngine(
         delay(config.delayAfterEntryClickMs)
         if (!isRunning) return true
 
-        val postEntryStartBattlePoint = findStartBattleRedPoint()
+        val postEntryStartBattlePoint = findStartBattleOcrPoint()
         if (postEntryStartBattlePoint == null) {
             RunLogger.e("${config.target.description} 自动导航点击进入挑战后未识别到开始战斗，已停止")
             showToast("未识别到开始战斗，已停止", true)
@@ -1781,17 +1825,25 @@ class CombatEngine(
     }
 
     private suspend fun performOrangeStarCheck(): Boolean {
+        return performStarCheck(StarDetectionMode.ORANGE)
+    }
+
+    private suspend fun performPurpleStarCheck(): Boolean {
+        return performStarCheck(StarDetectionMode.PURPLE)
+    }
+
+    private suspend fun performStarCheck(mode: StarDetectionMode): Boolean {
         var shapeWithoutGlow: OrangeStarAttemptResult? = null
 
         repeat(ORANGE_STAR_ATTEMPTS) { index ->
-            val result = detectOrangeStarAttempt(index + 1)
+            val result = detectOrangeStarAttempt(index + 1, mode)
             if (!isRunning) return false
 
             when (result.status) {
                 OrangeStarAttemptStatus.HIT -> {
                     val candidate = result.candidate!!
                     RunLogger.i(
-                        "橙星检测第${result.attemptIndex}次命中 center=(${candidate.center.x.toInt()},${candidate.center.y.toInt()}) " +
+                        "${mode.label}第${result.attemptIndex}次命中 center=(${candidate.center.x.toInt()},${candidate.center.y.toInt()}) " +
                             "score=${"%.3f".format(Locale.US, candidate.confidence)} " +
                             "glow=${"%.3f".format(Locale.US, candidate.glowScore)} " +
                             "glowRatio=${"%.3f".format(Locale.US, candidate.glowRatio)} " +
@@ -1799,14 +1851,14 @@ class CombatEngine(
                             "arm=${"%.3f".format(Locale.US, candidate.armContinuity)} " +
                             "size=${candidate.boundsWidth}x${candidate.boundsHeight}"
                     )
-                    showToast("橙星检测命中", false)
+                    showToast("${mode.label}命中", false)
                     return true
                 }
 
                 OrangeStarAttemptStatus.SHAPE_NO_ORANGE -> {
                     val candidate = result.candidate!!
                     RunLogger.i(
-                        "橙星检测第${result.attemptIndex}次检测到观星形状但未见橙色辉光 " +
+                        "${mode.label}第${result.attemptIndex}次检测到观星形状但未见${mode.colorLabel} " +
                             "score=${"%.3f".format(Locale.US, candidate.confidence)} " +
                             "glow=${"%.3f".format(Locale.US, candidate.glowScore)} " +
                             "glowRatio=${"%.3f".format(Locale.US, candidate.glowRatio)} " +
@@ -1820,7 +1872,7 @@ class CombatEngine(
                 }
 
                 OrangeStarAttemptStatus.NO_SHAPE -> {
-                    RunLogger.i("橙星检测第${result.attemptIndex}次未检测到观星形状")
+                    RunLogger.i("${mode.label}第${result.attemptIndex}次未检测到观星形状")
                 }
             }
 
@@ -1831,15 +1883,15 @@ class CombatEngine(
 
         if (shapeWithoutGlow != null) {
             handleBackRecoveryAndStop(
-                reasonLabel = "橙星检测",
-                toastMessage = "橙星未命中，已执行一次返回",
-                successLog = "橙星检测三次确认未命中，已执行一次全局返回",
-                failureLog = "橙星检测未命中后执行全局返回失败"
+                reasonLabel = mode.label,
+                toastMessage = "${mode.label}未命中，已执行一次返回",
+                successLog = "${mode.label}三次确认未命中，已执行一次全局返回",
+                failureLog = "${mode.label}未命中后执行全局返回失败"
             )
             return false
         }
 
-        RunLogger.e("未检测到密探观星，请确认检测区域是否正确")
+        RunLogger.e("${mode.label}未检测到密探观星，请确认检测区域是否正确")
         tryRecoveryTemplateAfterReturn()
         return isRunning
     }
@@ -2006,16 +2058,16 @@ class CombatEngine(
         }
     }
 
-    private suspend fun detectOrangeStar(): OrangeStarCandidate? {
+    private suspend fun detectOrangeStar(mode: StarDetectionMode): OrangeStarCandidate? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            RunLogger.e("橙星检测仅支持 Android 11 及以上")
+            RunLogger.e("${mode.label}仅支持 Android 11 及以上")
             return null
         }
 
         val screenshot = captureScreenshotBitmap() ?: return null
         return try {
             withContext(Dispatchers.Default) {
-                findOrangeStarCandidate(screenshot)
+                findOrangeStarCandidate(screenshot, mode)
             }
         } finally {
             if (!screenshot.isRecycled) {
@@ -2024,8 +2076,11 @@ class CombatEngine(
         }
     }
 
-    private suspend fun detectOrangeStarAttempt(attemptIndex: Int): OrangeStarAttemptResult {
-        val candidate = detectOrangeStar()
+    private suspend fun detectOrangeStarAttempt(
+        attemptIndex: Int,
+        mode: StarDetectionMode
+    ): OrangeStarAttemptResult {
+        val candidate = detectOrangeStar(mode)
         if (candidate == null || candidate.shapeScore < ORANGE_STAR_SHAPE_THRESHOLD) {
             return OrangeStarAttemptResult(
                 attemptIndex = attemptIndex,
@@ -2033,9 +2088,10 @@ class CombatEngine(
             )
         }
 
+        // 旧逻辑：shape 过线后，直接按 confidence + glowRatio 判命中。
         val isOrangeHit =
-            candidate.confidence >= ORANGE_STAR_THRESHOLD &&
-                candidate.glowRatio >= ORANGE_STAR_MIN_GLOW_RATIO
+            candidate.glowScore >= mode.glowThreshold &&
+                candidate.glowRatio >= mode.glowRatioThreshold
 
         return OrangeStarAttemptResult(
             attemptIndex = attemptIndex,
@@ -2206,10 +2262,10 @@ class CombatEngine(
         RunLogger.i(
             "$triggerLabel 识别到${CAVE_NEXT_FLOOR_TEMPLATE}，点击 x=${nextFloorPoint.x.toInt()} y=${nextFloorPoint.y.toInt()}"
         )
-        delay(config.delayAfterEntryClickMs)
+        delay(resolveBattleFlowStartBattleDetectDelayMs(MID_FLOW_START_BATTLE_DELAY_MS))
         if (!isRunning) return true
 
-        val startBattlePoint = findStartBattleRedPoint()
+        val startBattlePoint = findStartBattleOcrPoint()
         if (!isRunning) return true
         if (startBattlePoint == null) {
             RunLogger.e("$triggerLabel 点击下一层后未识别到开始战斗，已停止")
@@ -2228,7 +2284,7 @@ class CombatEngine(
         RunLogger.i(
             "$triggerLabel 识别到开始战斗，点击 x=${startBattlePoint.x.toInt()} y=${startBattlePoint.y.toInt()}"
         )
-        delay(config.delayAfterStartBattleClickMs)
+        delay(resolvePostStartBattleDelayMs(config.delayAfterStartBattleClickMs))
         if (isRunning) {
             restartFromFirstTurn("已进入下一层，重新从第1回合开始")
         }
@@ -2293,10 +2349,10 @@ class CombatEngine(
         RunLogger.i(
             "${config.target.description} 重开路线识别到 ${selectionRegion.templateName}，点击 x=${selectionPoint.x.toInt()} y=${selectionPoint.y.toInt()}"
         )
-        delay(config.delayAfterEntryClickMs)
+        delay(resolveBattleFlowStartBattleDetectDelayMs(MID_FLOW_START_BATTLE_DELAY_MS))
         if (!isRunning) return true
 
-        val startBattlePoint = findStartBattleRedPoint()
+        val startBattlePoint = findStartBattleOcrPoint()
         if (startBattlePoint == null) {
             RunLogger.e("${config.target.description} 重开路线未识别到开始战斗，已停止")
             showToast("未识别到开始战斗，已停止", true)
@@ -2374,6 +2430,17 @@ class CombatEngine(
     ): PointF? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
 
+        val delayIncrementMs = TemplateDelayOverrideStore.getIncrementMs(
+            accessibilityService,
+            BATTLE_FLOW_TEST_TASK_KEY,
+            templateName
+        )
+        if (delayIncrementMs > 0L) {
+            RunLogger.i("$logLabel 应用素材延迟增量 ${delayIncrementMs}ms template=$templateName")
+            delay(delayIncrementMs)
+            if (!isRunning) return null
+        }
+
         val screenshot = captureScreenshotBitmap() ?: return null
         return try {
             withContext(Dispatchers.Default) {
@@ -2396,17 +2463,53 @@ class CombatEngine(
         }
     }
 
-    private suspend fun findStartBattleRedPoint(): PointF? {
+    private suspend fun findStartBattleOcrPoint(): PointF? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
         val screenshot = captureScreenshotBitmap() ?: return null
         return try {
-            withContext(Dispatchers.Default) {
-                findStartBattleRedPointFromScreenshot(screenshot, logLowConfidence = true)
-            }
+            findStartBattlePointFromScreenshot(screenshot)
         } finally {
             if (!screenshot.isRecycled) {
                 screenshot.recycle()
             }
+        }
+    }
+
+    private fun resolvePostStartBattleDelayMs(baseDelayMs: Long): Long {
+        val incrementMs = TemplateDelayOverrideStore.getIncrementMs(
+            accessibilityService,
+            BATTLE_FLOW_TEST_TASK_KEY,
+            BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION
+        )
+        return (baseDelayMs + incrementMs).coerceAtLeast(0L)
+    }
+
+    private fun resolveBattleFlowStartBattleDetectDelayMs(baseDelayMs: Long): Long {
+        val incrementMs = TemplateDelayOverrideStore.getIncrementMs(
+            accessibilityService,
+            BATTLE_FLOW_TEST_TASK_KEY,
+            BATTLE_FLOW_START_BATTLE_OCR_DELAY_KEY
+        )
+        return (baseDelayMs + incrementMs).coerceAtLeast(0L)
+    }
+
+    private suspend fun findStartBattlePointFromScreenshot(screenshot: Bitmap): PointF? {
+        return if (TemplateOverrideStore.hasOverride(accessibilityService, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)) {
+            withContext(Dispatchers.Default) {
+                findTemplatePointInVisionRoiFromScreenshot(
+                    screenshot = screenshot,
+                    templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
+                    centerX = START_BATTLE_RED_CENTER_X,
+                    centerY = START_BATTLE_RED_CENTER_Y,
+                    align = "bottom",
+                    roiWidth = START_BATTLE_RED_ROI_WIDTH,
+                    roiHeight = START_BATTLE_RED_ROI_HEIGHT,
+                    threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
+                    logLabel = "开始战斗模板"
+                )
+            }
+        } else {
+            findStartBattleOcrPointFromScreenshot(screenshot, logLabel = "开始战斗OCR")
         }
     }
 
@@ -2479,127 +2582,62 @@ class CombatEngine(
         }
     }
 
-    private fun findStartBattleRedPointFromScreenshot(
+    private suspend fun findStartBattleOcrPointFromScreenshot(
         screenshot: Bitmap,
-        logLowConfidence: Boolean
+        logLabel: String
     ): PointF? {
-        if (TemplateOverrideStore.isStartBattleTemplateMode(accessibilityService)) {
-            val templatePoint = findTemplatePointInVisionRoiFromScreenshot(
-                screenshot = screenshot,
-                templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
-                centerX = START_BATTLE_RED_CENTER_X,
-                centerY = START_BATTLE_RED_CENTER_Y,
-                align = "bottom",
-                roiWidth = START_BATTLE_RED_ROI_WIDTH,
-                roiHeight = START_BATTLE_RED_ROI_HEIGHT,
-                threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
-                logLabel = "开始战斗模板"
-            )
-            if (templatePoint != null) return templatePoint
-            return findCaveStartBattleFallbackPointFromScreenshot(screenshot, logLabel = "开始战斗模板 fallback")
-        }
-
-        val match = findRedRegionInVisionRoiFromScreenshot(
+        val region = buildVisionSearchRegion(
             screenshot = screenshot,
             centerX = START_BATTLE_RED_CENTER_X,
             centerY = START_BATTLE_RED_CENTER_Y,
             align = "bottom",
             roiWidth = START_BATTLE_RED_ROI_WIDTH,
             roiHeight = START_BATTLE_RED_ROI_HEIGHT
-        )
-        if (match == null) {
-            return findCaveStartBattleFallbackPointFromScreenshot(
-                screenshot = screenshot,
-                logLabel = "开始战斗 fallback"
-            )
-        }
-
-        if (match.confidence < START_BATTLE_RED_THRESHOLD) {
-            val fallbackPoint = findCaveStartBattleFallbackPointFromScreenshot(
-                screenshot = screenshot,
-                logLabel = "开始战斗 fallback"
-            )
-            if (fallbackPoint != null) return fallbackPoint
-            if (logLowConfidence) {
-                RunLogger.e(
-                    "开始战斗红色区域未达阈值 score=${"%.3f".format(Locale.US, match.confidence)} " +
-                        "area=${"%.3f".format(Locale.US, match.areaRatio)} " +
-                        "fill=${"%.3f".format(Locale.US, match.fillRatio)} " +
-                        "red=${"%.3f".format(Locale.US, match.rednessScore)}"
-                )
-            }
-            return null
-        }
-
-        return match.center
-    }
-
-    private fun findCaveStartBattleFallbackPointFromScreenshot(
-        screenshot: Bitmap,
-        logLabel: String
-    ): PointF? {
-        val target = getSelectedStageAutoNavTarget() ?: return null
-        if (target != BattleStageTarget.DONG_KU_LEFT && target != BattleStageTarget.DONG_KU_RIGHT) {
-            return null
-        }
-        return findTemplatePointInVisionRoiFromScreenshot(
-            screenshot = screenshot,
-            templateName = CAVE_START_BATTLE_TEMPLATE_FALLBACK,
-            centerX = START_BATTLE_RED_CENTER_X,
-            centerY = START_BATTLE_RED_CENTER_Y,
-            align = "bottom",
-            roiWidth = START_BATTLE_RED_ROI_WIDTH,
-            roiHeight = START_BATTLE_RED_ROI_HEIGHT,
-            threshold = CAVE_START_BATTLE_TEMPLATE_FALLBACK_THRESHOLD,
-            logLabel = logLabel
-        )
-    }
-
-    private fun findRedRegionInVisionRoiFromScreenshot(
-        screenshot: Bitmap,
-        centerX: Float,
-        centerY: Float,
-        align: String,
-        roiWidth: Float,
-        roiHeight: Float,
-        referenceArea: Float? = null,
-        excludeNearWhite: Boolean = false,
-        areaWeight: Float = 0.45f,
-        fillWeight: Float = 0.25f,
-        redWeight: Float = 0.30f
-    ): RedRegionMatch? {
-        val region = buildVisionSearchRegion(
-            screenshot = screenshot,
-            centerX = centerX,
-            centerY = centerY,
-            align = align,
-            roiWidth = roiWidth,
-            roiHeight = roiHeight
         ) ?: return null
-
-        var normalizedBitmap: Bitmap? = null
         return try {
-            normalizedBitmap = normalizeBitmapForDetection(region.bitmap)
-            val bitmapForDetection = normalizedBitmap ?: region.bitmap
-            val localMatch = findRedRegionMatch(
-                bitmap = bitmapForDetection,
-                referenceAreaOverride = referenceArea,
-                excludeNearWhite = excludeNearWhite,
-                areaWeight = areaWeight,
-                fillWeight = fillWeight,
-                redWeight = redWeight
-            ) ?: return null
-            val (displayWidth, displayHeight) = getRealScreenSize()
-            val displayX = (region.left + localMatch.center.x) * (displayWidth / screenshot.width.toFloat())
-            val displayY = (region.top + localMatch.center.y) * (displayHeight / screenshot.height.toFloat())
-            localMatch.copy(center = PointF(displayX, displayY))
-        } finally {
-            if (normalizedBitmap != null && !normalizedBitmap.isRecycled) {
-                normalizedBitmap.recycle()
+            val text = recognizeChineseTextResult(region.bitmap)
+            val rawText = text?.text.orEmpty()
+            val normalizedText = rawText.filterNot { it.isWhitespace() }
+            val lineMatch = text?.let(::findStartBattleOcrLineMatch)
+            if (lineMatch == null) {
+                RunLogger.i(
+                    "$logLabel raw=${formatOcrLogText(rawText)} " +
+                        "normalized=${formatOcrLogText(normalizedText)} " +
+                        "line=无 hits=无 count=0"
+                )
+                return null
             }
+
+            val (displayWidth, displayHeight) = getRealScreenSize()
+            val displayX = (region.left + lineMatch.center.x) * (displayWidth / screenshot.width.toFloat())
+            val displayY = (region.top + lineMatch.center.y) * (displayHeight / screenshot.height.toFloat())
+            RunLogger.i(
+                "$logLabel raw=${formatOcrLogText(rawText)} " +
+                    "normalized=${formatOcrLogText(normalizedText)} " +
+                    "line=${formatOcrLogText(lineMatch.lineText)} " +
+                    "lineNormalized=${formatOcrLogText(lineMatch.normalizedLineText)} " +
+                    "hits=${lineMatch.hitChars.joinToString("")} " +
+                    "count=${lineMatch.hitCount} " +
+                    "x=${displayX.toInt()} y=${displayY.toInt()}"
+            )
+            PointF(displayX, displayY)
+        } finally {
             if (!region.bitmap.isRecycled) {
                 region.bitmap.recycle()
             }
+        }
+    }
+
+    private fun findStartBattleOcrLineMatch(text: PaddleTextResult): StartBattleOcrLineMatch? {
+        return StartBattleShared.findBestOcrLineMatch(text)?.let { match ->
+            StartBattleOcrLineMatch(
+                lineText = match.lineText,
+                normalizedLineText = match.normalizedLineText,
+                hitChars = match.hitChars,
+                center = match.center,
+                containsPhrase = match.containsPhrase,
+                area = match.area
+            )
         }
     }
 
@@ -2660,29 +2698,18 @@ class CombatEngine(
         }
     }
 
-    private suspend fun recognizeChineseText(bitmap: Bitmap): String? =
-        suspendCancellableCoroutine { continuation ->
-            val recognizer = TextRecognition.getClient(
-                ChineseTextRecognizerOptions.Builder().build()
-            )
-            continuation.invokeOnCancellation {
-                recognizer.close()
+    private suspend fun recognizeChineseTextResult(bitmap: Bitmap): PaddleTextResult? =
+        withContext(Dispatchers.IO) {
+            try {
+                PaddleTextRecognizer.recognize(accessibilityService, bitmap)
+            } catch (error: Throwable) {
+                RunLogger.e("战斗OCR识别失败: ${error.message}", error)
+                null
             }
-            recognizer.process(InputImage.fromBitmap(bitmap, 0))
-                .addOnSuccessListener { text ->
-                    recognizer.close()
-                    if (!continuation.isCompleted) {
-                        continuation.resume(text.text) {}
-                    }
-                }
-                .addOnFailureListener { error ->
-                    recognizer.close()
-                    RunLogger.e("战斗OCR识别失败: ${error.message}", error)
-                    if (!continuation.isCompleted) {
-                        continuation.resume(null) {}
-                    }
-                }
         }
+
+    private suspend fun recognizeChineseText(bitmap: Bitmap): String? =
+        recognizeChineseTextResult(bitmap)?.text
 
     private fun formatOcrLogText(text: String): String {
         if (text.isEmpty()) return "\"\""
@@ -2733,7 +2760,10 @@ class CombatEngine(
             )
         }
 
-    private fun findOrangeStarCandidate(bitmap: Bitmap): OrangeStarCandidate? {
+    private fun findOrangeStarCandidate(
+        bitmap: Bitmap,
+        mode: StarDetectionMode
+    ): OrangeStarCandidate? {
         val (displayWidth, displayHeight) = getRealScreenSize()
         if (displayWidth <= 0f || displayHeight <= 0f) return null
 
@@ -2759,7 +2789,7 @@ class CombatEngine(
 
         val roiBitmap = Bitmap.createBitmap(bitmap, left, top, width, height)
         return try {
-            findOrangeStarInRegion(roiBitmap)?.let { candidate ->
+            findOrangeStarInRegion(roiBitmap, mode)?.let { candidate ->
                 candidate.copy(
                     center = PointF(candidate.center.x + left, candidate.center.y + top)
                 )
@@ -2771,7 +2801,10 @@ class CombatEngine(
         }
     }
 
-    private fun findOrangeStarInRegion(bitmap: Bitmap): OrangeStarCandidate? {
+    private fun findOrangeStarInRegion(
+        bitmap: Bitmap,
+        mode: StarDetectionMode
+    ): OrangeStarCandidate? {
         val width = bitmap.width
         val height = bitmap.height
         if (width <= 0 || height <= 0) return null
@@ -2779,20 +2812,23 @@ class CombatEngine(
         val pixelCount = width * height
         val coreScores = FloatArray(pixelCount)
         val glowScores = FloatArray(pixelCount)
-        val signalScores = FloatArray(pixelCount)
+        val shapeSignalScores = FloatArray(pixelCount)
+        // 旧逻辑：形状信号把 glow 一起混进去，橙色灯团会直接抬高 shape。
+        // val signalScores = FloatArray(pixelCount)
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val index = y * width + x
                 val color = bitmap.getPixel(x, y)
                 val coreScore = computeStarCoreScore(color)
-                val glowScore = computeOrangePixelScore(color)
+                val glowScore = computeStarGlowScore(color, mode)
                 val highlightScore = computeStarHighlightScore(color)
                 coreScores[index] = coreScore
                 glowScores[index] = glowScore
-                signalScores[index] = maxOf(coreScore, glowScore * 0.92f, highlightScore * 0.85f)
+                shapeSignalScores[index] = maxOf(coreScore, highlightScore * 0.85f)
+                // signalScores[index] = maxOf(coreScore, glowScore * 0.92f, highlightScore * 0.85f)
             }
         }
-        val centers = buildStarCenterCandidates(width, height, coreScores, signalScores)
+        val centers = buildStarCenterCandidates(width, height, coreScores, shapeSignalScores)
         var best: OrangeStarCandidate? = null
         for (center in centers) {
             val candidate = evaluateStarCandidate(
@@ -2800,11 +2836,23 @@ class CombatEngine(
                 height = height,
                 coreScores = coreScores,
                 glowScores = glowScores,
-                signalScores = signalScores,
+                signalScores = shapeSignalScores,
                 centerX = center.first,
                 centerY = center.second
             ) ?: continue
-            if (best == null || candidate.confidence > best!!.confidence) {
+            val currentBest = best
+            // 旧逻辑：直接选 confidence 最高的候选，橙色灯团会因为 glow 高而抢赢真正的四芒星。
+            // if (best == null || candidate.confidence > best!!.confidence) {
+            //     best = candidate
+            // }
+            val shouldReplace =
+                currentBest == null ||
+                    candidate.shapeScore > currentBest.shapeScore ||
+                    (
+                        kotlin.math.abs(candidate.shapeScore - currentBest.shapeScore) < 0.0001f &&
+                            candidate.confidence > currentBest.confidence
+                        )
+            if (shouldReplace) {
                 best = candidate
             }
         }
@@ -3206,145 +3254,6 @@ class CombatEngine(
         )
     }
 
-    private fun findRedRegionMatch(
-        bitmap: Bitmap,
-        referenceAreaOverride: Float? = null,
-        excludeNearWhite: Boolean = false,
-        areaWeight: Float = 0.45f,
-        fillWeight: Float = 0.25f,
-        redWeight: Float = 0.30f
-    ): RedRegionMatch? {
-        val width = bitmap.width
-        val height = bitmap.height
-        if (width <= 0 || height <= 0) return null
-
-        val step = if (width >= 300 || height >= 300) 2 else 1
-        val sampleWidth = (width + step - 1) / step
-        val sampleHeight = (height + step - 1) / step
-        val mask = BooleanArray(sampleWidth * sampleHeight)
-        val queue = IntArray(mask.size)
-        val redness = FloatArray(mask.size)
-
-        var hasRed = false
-        for (sy in 0 until sampleHeight) {
-            val y = sy * step
-            for (sx in 0 until sampleWidth) {
-                val x = sx * step
-                val index = sy * sampleWidth + sx
-                val redScore = computeRednessScore(
-                    color = bitmap.getPixel(x, y),
-                    excludeNearWhite = excludeNearWhite
-                )
-                redness[index] = redScore
-                if (redScore > 0f) {
-                    mask[index] = true
-                    hasRed = true
-                }
-            }
-        }
-        if (!hasRed) return null
-
-        var bestCount = 0
-        var bestMinX = 0
-        var bestMaxX = 0
-        var bestMinY = 0
-        var bestMaxY = 0
-        var bestRednessSum = 0f
-        val neighbors = intArrayOf(-1, 0, 1, 0, -1)
-
-        for (sy in 0 until sampleHeight) {
-            for (sx in 0 until sampleWidth) {
-                val startIndex = sy * sampleWidth + sx
-                if (!mask[startIndex]) continue
-
-                var head = 0
-                var tail = 0
-                queue[tail++] = startIndex
-                mask[startIndex] = false
-
-                var count = 0
-                var minX = sx
-                var maxX = sx
-                var minY = sy
-                var maxY = sy
-                var rednessSum = 0f
-
-                while (head < tail) {
-                    val index = queue[head++]
-                    val cx = index % sampleWidth
-                    val cy = index / sampleWidth
-                    count += 1
-                    rednessSum += redness[index]
-                    if (cx < minX) minX = cx
-                    if (cx > maxX) maxX = cx
-                    if (cy < minY) minY = cy
-                    if (cy > maxY) maxY = cy
-
-                    for (n in 0 until 4) {
-                        val nx = cx + neighbors[n]
-                        val ny = cy + neighbors[n + 1]
-                        if (nx !in 0 until sampleWidth || ny !in 0 until sampleHeight) continue
-                        val nextIndex = ny * sampleWidth + nx
-                        if (!mask[nextIndex]) continue
-                        mask[nextIndex] = false
-                        queue[tail++] = nextIndex
-                    }
-                }
-
-                if (count > bestCount) {
-                    bestCount = count
-                    bestMinX = minX
-                    bestMaxX = maxX
-                    bestMinY = minY
-                    bestMaxY = maxY
-                    bestRednessSum = rednessSum
-                }
-            }
-        }
-
-        if (bestCount < 12) return null
-
-        val bboxWidth = bestMaxX - bestMinX + 1
-        val bboxHeight = bestMaxY - bestMinY + 1
-        val bboxArea = (bboxWidth * bboxHeight).coerceAtLeast(1)
-        val estimatedPixelArea = bestCount * step * step
-        val referenceButtonArea = referenceAreaOverride ?: (300f * 50f)
-        val areaRatio = (estimatedPixelArea / referenceButtonArea).coerceIn(0f, 1f)
-        val fillRatio = bestCount.toFloat() / bboxArea.toFloat()
-        val rednessScore = (bestRednessSum / bestCount.toFloat()).coerceIn(0f, 1f)
-        val compactnessScore = ((fillRatio - 0.15f) / 0.85f).coerceIn(0f, 1f)
-        val weightSum = (areaWeight + fillWeight + redWeight).coerceAtLeast(0.0001f)
-        val confidence = (
-            areaRatio * areaWeight +
-                compactnessScore * fillWeight +
-                rednessScore * redWeight
-            ) / weightSum
-        val centerX = ((bestMinX + bestMaxX + 1) * step / 2f).coerceIn(0f, (width - 1).toFloat())
-        val centerY = ((bestMinY + bestMaxY + 1) * step / 2f).coerceIn(0f, (height - 1).toFloat())
-        val finalConfidence = confidence.coerceIn(0f, 1f)
-        return RedRegionMatch(
-            center = PointF(centerX, centerY),
-            confidence = finalConfidence,
-            areaRatio = areaRatio,
-            fillRatio = fillRatio,
-            rednessScore = rednessScore
-        )
-    }
-
-    private fun computeRednessScore(color: Int, excludeNearWhite: Boolean = false): Float {
-        val r = Color.red(color)
-        val g = Color.green(color)
-        val b = Color.blue(color)
-        if (r < 95) return 0f
-        if (r - g < 20 || r - b < 20) return 0f
-        if (g > 185 || b > 185) return 0f
-
-        val redLevel = ((r - 95f) / 160f).coerceIn(0f, 1f)
-        val dominance = (((r - maxOf(g, b)) - 20f) / 180f).coerceIn(0f, 1f)
-        val saturation = ((255f - (g + b) / 2f) / 255f).coerceIn(0f, 1f)
-        return (redLevel * 0.45f + dominance * 0.4f + saturation * 0.15f).coerceIn(0f, 1f)
-    }
-
     private fun computeCenterMeanSaturation(bitmap: Bitmap): Float {
         val width = bitmap.width
         val height = bitmap.height
@@ -3414,6 +3323,31 @@ class CombatEngine(
                 brightnessScore * 0.25f
             ).coerceIn(0f, 1f)
     }
+
+    private fun computePurplePixelScore(color: Int): Float {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
+        val hue = hsv[0]
+        val saturation = hsv[1]
+        val brightness = hsv[2]
+        if (hue < 260f || hue > 330f) return 0f
+        if (saturation < 0.20f || brightness < 0.45f) return 0f
+
+        val hueScore = (1f - kotlin.math.abs(hue - 292f) / 38f).coerceIn(0f, 1f)
+        val saturationScore = ((saturation - 0.20f) / 0.80f).coerceIn(0f, 1f)
+        val brightnessScore = ((brightness - 0.45f) / 0.55f).coerceIn(0f, 1f)
+        return (
+            hueScore * 0.50f +
+                saturationScore * 0.25f +
+                brightnessScore * 0.25f
+            ).coerceIn(0f, 1f)
+    }
+
+    private fun computeStarGlowScore(color: Int, mode: StarDetectionMode): Float =
+        when (mode) {
+            StarDetectionMode.ORANGE -> computeOrangePixelScore(color)
+            StarDetectionMode.PURPLE -> computePurplePixelScore(color)
+        }
 
     private fun computeStarHighlightScore(color: Int): Float {
         val hsv = FloatArray(3)

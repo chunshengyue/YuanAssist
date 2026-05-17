@@ -30,21 +30,21 @@
           "align": "bottom"
         }
       },
-      "on_success": 3,
+      "on_success": 33,
       "on_fail": -2
     },
     {
       "id": 3,
       "action": "MATCH_TEMPLATE",
-      "delay": 1000,
+      "delay": 700,
       "params": {
         "template_name": "zhuyu.png",
         "threshold": 0.85,
         "terminal_note": "当前任务鸟食耗尽",
         "branch_var": "auto_eat_enabled",
         "branch_routes": {
-          "1": 32,
-          "0": -3
+          "0": -3,
+          "1": 32
         },
         "roi": {
           "x": 217,
@@ -55,34 +55,7 @@
         }
       },
       "on_success": 32,
-      "on_fail": 5
-    },
-    {
-      "id": 32,
-      "action": "MATCH_TEMPLATE",
-      "delay": 1500,
-      "params": {
-        "template_name": "queren.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 544,
-          "y": 1359,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
-      },
-      "on_success": 31,
-      "on_fail": 5
-    },
-    {
-      "id": 31,
-      "action": "BACK",
-      "delay": 1500,
-      "params": {},
-      "on_success": 4,
-      "on_fail": -1
+      "on_fail": 37
     },
     {
       "id": 4,
@@ -91,7 +64,7 @@
       "params": {
         "ref_task_id": 2
       },
-      "on_success": 5,
+      "on_success": 35,
       "on_fail": -1
     },
     {
@@ -194,22 +167,19 @@
     },
     {
       "id": 12,
-      "action": "MATCH_TEMPLATE",
-      "delay": 2000,
+      "action": "SET_VAR",
+      "delay": 0,
       "params": {
-        "template_name": "xuanxiang.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 166,
-          "y": 995,
-          "w": 200,
-          "h": 500,
-          "align": "center"
+        "var_name": "selection_route",
+        "var_value": "his_story_selection",
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 1201,
+          "ruyuan": 1202
         }
       },
-      "on_success": 13,
-      "on_fail": 131
+      "on_success": 1202,
+      "on_fail": -1
     },
     {
       "id": 13,
@@ -220,25 +190,6 @@
       },
       "on_success": 12,
       "on_fail": -1
-    },
-    {
-      "id": 131,
-      "action": "MATCH_TEMPLATE",
-      "delay": 1500,
-      "params": {
-        "template_name": "tiaoguo.png",
-        "threshold": 0.75,
-        "click": 1,
-        "roi": {
-          "x": 963,
-          "y": 236,
-          "w": 200,
-          "h": 300,
-          "align": "top"
-        }
-      },
-      "on_success": 12,
-      "on_fail": 14
     },
     {
       "id": 14,
@@ -258,30 +209,6 @@
       },
       "on_success": 1401,
       "on_fail": -2
-    },
-    {
-      "id": 1401,
-      "action": "CLICK",
-      "delay": 1500,
-      "params": {
-        "x": 549,
-        "y": 1138,
-        "align": "center"
-      },
-      "on_success": 1402,
-      "on_fail": -1
-    },
-    {
-      "id": 1402,
-      "action": "CLICK",
-      "delay": 1500,
-      "params": {
-        "x": 549,
-        "y": 1138,
-        "align": "center"
-      },
-      "on_success": -1,
-      "on_fail": -1
     },
     {
       "id": 15,
@@ -313,6 +240,228 @@
       },
       "on_success": 161,
       "on_fail": -1
+    },
+    {
+      "id": 17,
+      "action": "CLICK",
+      "delay": 700,
+      "params": {
+        "x": 158,
+        "y": 611,
+        "align": "center"
+      },
+      "on_success": 171,
+      "on_fail": -1
+    },
+    {
+      "id": 18,
+      "action": "CLICK",
+      "delay": 700,
+      "params": {
+        "x": 158,
+        "y": 611,
+        "align": "center"
+      },
+      "on_success": 181,
+      "on_fail": -1
+    },
+    {
+      "id": 31,
+      "action": "BACK",
+      "delay": 1500,
+      "params": {},
+      "on_success": 4,
+      "on_fail": -1
+    },
+    {
+      "id": 32,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "queren.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 544,
+          "y": 1359,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 31,
+      "on_fail": 5
+    },
+    {
+      "id": 33,
+      "action": "MATCH_TEMPLATE",
+      "delay": 3000,
+      "params": {
+        "template_name": "jiangli.png",
+        "threshold": 0.77,
+        "terminal_note": "他的传闻路径错误",
+        "roi": {
+          "x": 540,
+          "y": 522,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 34,
+      "on_fail": 3
+    },
+    {
+      "id": 34,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "ref_task_id": 2
+      },
+      "on_success": 2,
+      "on_fail": -1
+    },
+    {
+      "id": 35,
+      "action": "MATCH_TEMPLATE",
+      "delay": 3000,
+      "params": {
+        "template_name": "jiangli.png",
+        "threshold": 0.77,
+        "terminal_note": "他的传闻路径错误",
+        "roi": {
+          "x": 540,
+          "y": 522,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 36,
+      "on_fail": 37
+    },
+    {
+      "id": 36,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "ref_task_id": 2
+      },
+      "on_success": 2,
+      "on_fail": -1
+    },
+    {
+      "id": 37,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "tiyan.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": {
+          "x": 765,
+          "y": 1163,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 5,
+      "on_fail": 38
+    },
+    {
+      "id": 38,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "large_diaocha.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "他的传闻路径错误",
+        "roi": {
+          "x": 930,
+          "y": 1717,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 33,
+      "on_fail": -2
+    },
+    {
+      "id": 131,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "tiaoguo.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": {
+          "x": 963,
+          "y": 236,
+          "w": 200,
+          "h": 300,
+          "align": "top"
+        }
+      },
+      "on_success": 12,
+      "on_fail": 14
+    },
+    {
+      "id": 141,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "chukou.png",
+        "threshold": 0.85,
+        "terminal_note": "他的传闻路径错误",
+        "roi": {
+          "x": 540,
+          "y": 817,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 1411,
+      "on_fail": 17
+    },
+    {
+      "id": 142,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "chukou.png",
+        "threshold": 0.85,
+        "roi": {
+          "x": 540,
+          "y": 817,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 1421,
+      "on_fail": 18
+    },
+    {
+      "id": 143,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "chukou.png",
+        "threshold": 0.85,
+        "roi": {
+          "x": 540,
+          "y": 817,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 1431,
+      "on_fail": -2
     },
     {
       "id": 161,
@@ -348,61 +497,6 @@
         "align": "center"
       },
       "on_success": 141,
-      "on_fail": -1
-    },
-    {
-      "id": 141,
-      "action": "MATCH_TEMPLATE",
-      "delay": 1500,
-      "params": {
-        "template_name": "chukou.png",
-        "threshold": 0.85,
-        "terminal_note": "他的传闻路径错误",
-        "roi": {
-          "x": 540,
-          "y": 817,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
-      },
-      "on_success": 1411,
-      "on_fail": 17
-    },
-    {
-      "id": 1411,
-      "action": "CLICK",
-      "delay": 1500,
-      "params": {
-        "x": 549,
-        "y": 1138,
-        "align": "center"
-      },
-      "on_success": 1412,
-      "on_fail": -1
-    },
-    {
-      "id": 1412,
-      "action": "CLICK",
-      "delay": 1500,
-      "params": {
-        "x": 549,
-        "y": 1138,
-        "align": "center"
-      },
-      "on_success": -1,
-      "on_fail": -1
-    },
-    {
-      "id": 17,
-      "action": "CLICK",
-      "delay": 700,
-      "params": {
-        "x": 158,
-        "y": 611,
-        "align": "center"
-      },
-      "on_success": 171,
       "on_fail": -1
     },
     {
@@ -442,60 +536,6 @@
       "on_fail": -1
     },
     {
-      "id": 142,
-      "action": "MATCH_TEMPLATE",
-      "delay": 1500,
-      "params": {
-        "template_name": "chukou.png",
-        "threshold": 0.85,
-        "roi": {
-          "x": 540,
-          "y": 817,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
-      },
-      "on_success": 1421,
-      "on_fail": 18
-    },
-    {
-      "id": 1421,
-      "action": "CLICK",
-      "delay": 1500,
-      "params": {
-        "x": 549,
-        "y": 1138,
-        "align": "center"
-      },
-      "on_success": 1422,
-      "on_fail": -1
-    },
-    {
-      "id": 1422,
-      "action": "CLICK",
-      "delay": 1500,
-      "params": {
-        "x": 549,
-        "y": 1138,
-        "align": "center"
-      },
-      "on_success": -1,
-      "on_fail": -1
-    },
-    {
-      "id": 18,
-      "action": "CLICK",
-      "delay": 700,
-      "params": {
-        "x": 158,
-        "y": 611,
-        "align": "center"
-      },
-      "on_success": 181,
-      "on_fail": -1
-    },
-    {
       "id": 181,
       "action": "CLICK",
       "delay": 700,
@@ -520,22 +560,114 @@
       "on_fail": -1
     },
     {
-      "id": 143,
+      "id": 1201,
       "action": "MATCH_TEMPLATE",
-      "delay": 1500,
+      "delay": 2000,
       "params": {
-        "template_name": "chukou.png",
+        "template_name": "xuanxiang2.png",
         "threshold": 0.85,
+        "click": 1,
         "roi": {
-          "x": 540,
-          "y": 817,
+          "x": 166,
+          "y": 995,
           "w": 200,
-          "h": 300,
+          "h": 500,
           "align": "center"
         }
       },
-      "on_success": 1431,
-      "on_fail": -2
+      "on_success": 13,
+      "on_fail": 131
+    },
+    {
+      "id": 1202,
+      "action": "MATCH_TEMPLATE",
+      "delay": 2000,
+      "params": {
+        "template_name": "xuanxiang.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 166,
+          "y": 995,
+          "w": 200,
+          "h": 500,
+          "align": "center"
+        }
+      },
+      "on_success": 13,
+      "on_fail": 131
+    },
+    {
+      "id": 1401,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 549,
+        "y": 1138,
+        "align": "center"
+      },
+      "on_success": 1402,
+      "on_fail": -1
+    },
+    {
+      "id": 1402,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 549,
+        "y": 1138,
+        "align": "center"
+      },
+      "on_success": -1,
+      "on_fail": -1
+    },
+    {
+      "id": 1411,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 549,
+        "y": 1138,
+        "align": "center"
+      },
+      "on_success": 1412,
+      "on_fail": -1
+    },
+    {
+      "id": 1412,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 549,
+        "y": 1138,
+        "align": "center"
+      },
+      "on_success": -1,
+      "on_fail": -1
+    },
+    {
+      "id": 1421,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 549,
+        "y": 1138,
+        "align": "center"
+      },
+      "on_success": 1422,
+      "on_fail": -1
+    },
+    {
+      "id": 1422,
+      "action": "CLICK",
+      "delay": 1500,
+      "params": {
+        "x": 549,
+        "y": 1138,
+        "align": "center"
+      },
+      "on_success": -1,
+      "on_fail": -1
     },
     {
       "id": 1431,

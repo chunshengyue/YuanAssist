@@ -1,12 +1,10 @@
 package com.example.yuanassist.ui.dialogs
 
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.text.InputType
 import android.view.Gravity
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
@@ -27,10 +25,9 @@ object SettingsDialog {
         val themeContext = DialogUtils.getThemeContext(context)
         val currentConfig = ConfigManager.getAllConfig(context)
 
-        val layout = LinearLayout(themeContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 40)
-        }
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "参数设置"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "调整战斗悬浮窗和录制参数"))
 
         val scrollView = ScrollView(themeContext)
         val scrollContent = LinearLayout(themeContext).apply {
@@ -46,13 +43,13 @@ object SettingsDialog {
             val tvLabel = TextView(themeContext).apply {
                 text = label
                 textSize = 14f
-                setTextColor(Color.DKGRAY)
-                width = (140 * context.resources.displayMetrics.density).toInt()
+                setTextColor(Color.parseColor("#6C5B43"))
+                width = StyledDialogUi.dpToPx(themeContext, 140f)
             }
-            val editText = EditText(themeContext).apply {
+            val editText = StyledDialogUi.createStyledInput(themeContext, "").apply {
                 setText(defaultValue)
                 this.inputType = inputType
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                layoutParams = LinearLayout.LayoutParams(0, StyledDialogUi.dpToPx(themeContext, 44f), 1f)
             }
             row.addView(tvLabel)
             row.addView(editText)
@@ -79,8 +76,8 @@ object SettingsDialog {
             val tvLabel = TextView(themeContext).apply {
                 text = label
                 textSize = 14f
-                setTextColor(Color.DKGRAY)
-                width = (140 * context.resources.displayMetrics.density).toInt()
+                setTextColor(Color.parseColor("#6C5B43"))
+                width = StyledDialogUi.dpToPx(themeContext, 140f)
             }
             val switchView = Switch(themeContext).apply {
                 isChecked = checked
@@ -100,7 +97,7 @@ object SettingsDialog {
         scrollContent.addView(TextView(themeContext).apply {
             text = TURN_CHECK_HINT
             textSize = 12f
-            setTextColor(Color.GRAY)
+            setTextColor(Color.parseColor("#8C7A61"))
             setPadding(0, 0, 0, 12)
         })
         val etThreshold = createIntRow("滑动阈值:", currentConfig.swipeThreshold.toString())
@@ -110,7 +107,7 @@ object SettingsDialog {
         val speedLabel = TextView(themeContext).apply {
             text = "游戏倍速"
             textSize = 14f
-            setTextColor(Color.DKGRAY)
+            setTextColor(Color.parseColor("#6C5B43"))
             setPadding(0, 20, 0, 10)
         }
         scrollContent.addView(speedLabel)
@@ -134,7 +131,7 @@ object SettingsDialog {
         val actionConfigLabel = TextView(themeContext).apply {
             text = "战斗动作距离底部"
             textSize = 14f
-            setTextColor(Color.DKGRAY)
+            setTextColor(Color.parseColor("#6C5B43"))
             setPadding(0, 20, 0, 10)
         }
         scrollContent.addView(actionConfigLabel)
@@ -145,18 +142,27 @@ object SettingsDialog {
         val etCircleY = createFloatRow("圈 距离底部距离:", currentConfig.circleYFromBottom.toString())
 
         scrollView.addView(scrollContent)
-        layout.addView(scrollView)
+        rootLayout.addView(
+            scrollView,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            ).apply {
+                topMargin = StyledDialogUi.dpToPx(themeContext, 10f)
+            }
+        )
 
-        val builder = AlertDialog.Builder(themeContext)
-            .setTitle("参数设置")
-            .setView(layout)
-            .setPositiveButton("保存", null)
-            .setNegativeButton("取消", null)
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnSave = StyledDialogUi.createActionButton(themeContext, "保存", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnSave, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
 
-        val dialog = DialogUtils.safeShowOverlayDialog(builder)
-        dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnSave.setOnClickListener {
             try {
                 val attack = etAttack.text.toString().toLong()
                 val skill = etSkill.text.toString().toLong()

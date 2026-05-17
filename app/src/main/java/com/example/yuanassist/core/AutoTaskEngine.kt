@@ -20,16 +20,26 @@ import android.view.WindowManager
 import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
+import com.example.yuanassist.utils.BirdFoodDebugScreenshotStore
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.StartBattleShared
 import com.example.yuanassist.utils.TemplateOverrideStore
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
+import com.example.yuanassist.tableocr.PaddleTextBlock
+import com.example.yuanassist.tableocr.PaddleTextElement
+import com.example.yuanassist.tableocr.PaddleTextLine
+import com.example.yuanassist.tableocr.PaddleTextRecognizer
+import com.example.yuanassist.tableocr.PaddleTextResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
+import java.io.File
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -44,7 +54,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     var lastMatchX = 0f
     var lastMatchY = 0f
     var debugRoiEnabled = true
+    var debugScreenshotEnabled = false
     var verboseLoggingEnabled = true
+    var diagnosticLoggingEnabled = false
     var globalDelayOffsetMs = 0L
 
     private var currentTaskPlan: DailyTaskPlan? = null
@@ -61,11 +73,31 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private var debugRoiView: View? = null
     private var cooldownStartedAtMs: Long? = null
     private var treatFailMinusOneAsSuccess = false
+    private var currentTemplateDir: File? = null
+    private var ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private fun verboseInfo(message: String) {
         if (!verboseLoggingEnabled) return
         if (shouldSuppressInfoLog(message)) return
         RunLogger.i(message)
+    }
+
+    private fun diagnosticInfo(message: String) {
+        if (!diagnosticLoggingEnabled) return
+        RunLogger.i("[调试诊断] $message")
+    }
+
+    private fun diagnosticError(message: String) {
+        if (!diagnosticLoggingEnabled) return
+        RunLogger.e("[调试诊断] $message")
+    }
+
+    fun logDiagnosticSessionStart() {
+        if (!diagnosticLoggingEnabled) return
+        diagnosticInfo(
+            "设备=${Build.BRAND} ${Build.MODEL} " +
+                "Android=${Build.VERSION.RELEASE} SDK=${Build.VERSION.SDK_INT}"
+        )
     }
 
     private fun shouldSuppressInfoLog(message: String): Boolean {
@@ -102,13 +134,38 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val ownsBitmap: Boolean
     )
 
-    private data class RedRegionMatch(
+    private data class StartBattleOcrHit(
+        val lineText: String,
+        val normalizedLineText: String,
+        val hitChars: List<Char>,
         val center: PointF,
-        val confidence: Float,
-        val areaRatio: Float,
-        val fillRatio: Float,
-        val rednessScore: Float
+        val containsPhrase: Boolean,
+        val area: Int
+    ) {
+        val hitCount: Int
+            get() = hitChars.size
+    }
+
+    private data class OcrConfig(
+        val targetChars: List<Char>,
+        val minHitCount: Int,
+        val roi: ROI?,
+        val preprocess: String?,
+        val templateName: String?,
+        val threshold: Float,
+        val clickOnSuccess: Boolean,
     )
+
+    private data class OcrHit(
+        val lineText: String,
+        val normalizedLineText: String,
+        val hitChars: List<Char>,
+        val center: PointF,
+        val area: Int
+    ) {
+        val hitCount: Int
+            get() = hitChars.size
+    }
 
     fun startPlan(
         plan: DailyTaskPlan,
@@ -116,10 +173,13 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         onCustomAction: ((DailyTask, () -> Unit, () -> Unit) -> Unit)? = null,
         onCompletedDetailed: ((DailyPlanCompletion) -> Unit)? = null,
         initialVariables: Map<String, String> = emptyMap(),
-        treatFailMinusOneAsSuccess: Boolean = false
+        treatFailMinusOneAsSuccess: Boolean = false,
+        templateDir: File? = null
     ) {
         runGeneration += 1
         handler.removeCallbacksAndMessages(null)
+        ocrScope.cancel()
+        ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         clearDebugRoi()
         currentTaskPlan = plan
         currentTaskId = plan.start_task_id
@@ -134,6 +194,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         this.onPlanCompletedDetailed = onCompletedDetailed
         customActionHandler = onCustomAction
         this.treatFailMinusOneAsSuccess = treatFailMinusOneAsSuccess
+        currentTemplateDir = templateDir
         logDisplayMetrics("startPlan")
         verboseInfo("引擎已启动")
         executeNextTask()
@@ -152,11 +213,13 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     fun release() {
         stop()
+        ocrScope.cancel()
         currentTaskPlan = null
         currentTaskId = -1
         onPlanCompleted = null
         onPlanCompletedDetailed = null
         customActionHandler = null
+        currentTemplateDir = null
         templateCache.evictAll()
     }
 
@@ -220,7 +283,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     }
                     val msg = when (task.action) {
                         "MATCH_TEMPLATE" -> "未找到模板:${task.params?.template_name}"
-                        "CLICK_OCR_TEXT" -> "未识别到文字:${task.params?.target_text ?: task.params?.button_name}"
+                        "OCR" -> "未识别到文字"
                         "CLICK_DYNAMIC_BUTTON" -> "未找到动态按钮:${task.params?.button_name}"
                         else -> "任务失败:${task.action}"
                     }
@@ -229,8 +292,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     return
                 }
                 else -> {
-                    RunLogger.e("任务 ${task.id} 失败，跳转=${task.on_fail}")
-                    currentTaskId = task.on_fail
+                    val nextTaskId = resolveFailTaskId(task)
+                    RunLogger.e("任务 ${task.id} 失败，跳转=${nextTaskId}")
+                    currentTaskId = nextTaskId
                     executeNextTask()
                     return
                 }
@@ -298,8 +362,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             return
         }
 
-        val effectiveDelay = (task.delay + globalDelayOffsetMs).coerceAtLeast(0L)
-        verboseInfo("准备执行任务 ${task.id} ${task.action}，延迟=${task.delay}+${globalDelayOffsetMs}=${effectiveDelay}")
+        val baseDelay = task.delay
+        val effectiveDelay = (baseDelay + globalDelayOffsetMs).coerceAtLeast(0L)
+        verboseInfo("准备执行任务 ${task.id} ${task.action}，延迟=${baseDelay}+${globalDelayOffsetMs}=${effectiveDelay}")
         handler.postDelayed({
             if (!isRunning || generation != runGeneration) return@postDelayed
             try {
@@ -309,9 +374,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     "BACK" -> executeGlobalBack(task)
                     "SET_VAR" -> executeSetVar(task)
                     "CLICK_LAST_MATCH", "CLICK_LAST_OCR" -> executeContextClick(task)
-                    "CLICK_OCR_TEXT" -> executeOcrTextClick(task)
-                    "CLICK_RED_REGION" -> executeRedRegionClick(task)
                     "MATCH_TEMPLATE" -> executeMatchTemplate(task)
+                    "OCR" -> executeOcrTask(task)
                     else -> {
                         val custom = customActionHandler
                         if (custom != null) {
@@ -406,14 +470,60 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         finishTask(task, true)
     }
 
-    private fun executeOcrTextClick(task: DailyTask) {
+    private fun executeOcrTask(task: DailyTask) {
         val p = task.params ?: return finishTask(task, false)
+        val targetChars = p.target_chars
+            ?.mapNotNull { it.trim().firstOrNull() }
+            ?.distinct()
+            .orEmpty()
         val targetText = (p.target_text ?: p.button_name)?.trim().orEmpty()
-        val matchAnyChinese = targetText.isEmpty()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return finishTask(task, false)
+        val useStartBattlePreset = targetChars.isEmpty() && targetText.isBlank()
+        val templateName = p.template_name
+        if (templateName != null && TemplateOverrideStore.hasOverride(service, templateName)) {
+            return executeTemplateSearch(
+                task = task,
+                templateName = templateName,
+                threshold = p.threshold,
+                clickOnSuccess = p.click == 1,
+                logLabel = "OCR替换模板",
+                roiOverride = p.roi,
+            )
+        }
+        if (useStartBattlePreset && TemplateOverrideStore.hasOverride(service, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)) {
+            return executeTemplateSearch(
+                task = task,
+                templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
+                threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
+                clickOnSuccess = p.click != 0,
+                logLabel = "开始战斗模板",
+                roiOverride = StartBattleShared.buildRoi(),
+            )
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            diagnosticError("任务 ${task.id} OCR截图不支持，当前 SDK=${Build.VERSION.SDK_INT}")
+            return finishTask(task, false)
+        }
 
+        val config = OcrConfig(
+            targetChars = targetChars,
+            minHitCount = (p.min_hit_count ?: targetChars.size).coerceAtLeast(1),
+            roi = if (useStartBattlePreset) StartBattleShared.buildRoi() else p.roi,
+            preprocess = p.preprocess,
+            templateName = templateName,
+            threshold = p.threshold,
+            clickOnSuccess = p.click == 1 || useStartBattlePreset,
+        )
         val generation = runGeneration
-        verboseInfo("任务 ${task.id} OCR识别文字=$targetText，区域=${formatRoi(p.roi)}")
+        verboseInfo(
+            "任务 ${task.id} OCR，区域=${formatRoi(config.roi)}，" +
+                if (useStartBattlePreset) {
+                    "目标=开始战斗，命中条件=同一行至少${StartBattleShared.OCR_MIN_HIT_COUNT}个字"
+                } else if (targetChars.isNotEmpty()) {
+                    "目标=${targetChars.joinToString("")}，命中条件=至少${config.minHitCount}个字"
+                } else {
+                    "目标=${formatOcrLog(targetText)}"
+                }
+        )
 
         service.takeScreenshot(
             Display.DEFAULT_DISPLAY,
@@ -429,11 +539,10 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     var searchRegion: SearchRegion? = null
                     var ocrBitmap: Bitmap? = null
                     var buffer: android.hardware.HardwareBuffer? = null
-                    var hwBitmap: Bitmap? = null
 
                     try {
                         buffer = result.hardwareBuffer
-                        hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
+                        val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                         if (swBitmap == null) {
                             RunLogger.e("任务 ${task.id} OCR截图转换失败")
@@ -442,49 +551,66 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         }
 
                         val mapping = buildScreenshotMapping(swBitmap)
-                        searchRegion = buildSearchRegionForOcr(swBitmap, p.roi, mapping, task.id)
-                        val recognizer = TextRecognition.getClient(
-                            ChineseTextRecognizerOptions.Builder().build()
-                        )
-                        ocrBitmap = if (matchAnyChinese) createYellowTextOcrBitmap(searchRegion.bitmap) else null
-                        val image = InputImage.fromBitmap(ocrBitmap ?: searchRegion.bitmap, 0)
-                        recognizer.process(image)
-                            .addOnSuccessListener { text ->
-                                recognizer.close()
+                        searchRegion = buildSearchRegionForOcr(swBitmap, config.roi, mapping, task.id)
+                        saveDebugScreenshots(swBitmap, searchRegion.bitmap)
+                        val preprocess = config.preprocess ?: if (targetText.isBlank() && targetChars.isEmpty() && !useStartBattlePreset) "yellow_text" else null
+                        ocrBitmap = createConfiguredOcrBitmap(searchRegion.bitmap, preprocess)
+                        val bitmapForOcr = ocrBitmap ?: searchRegion.bitmap
+                        ocrScope.launch {
+                            try {
+                                val text = PaddleTextRecognizer.recognize(service, bitmapForOcr)
+                                withContext(Dispatchers.Main) {
                                 if (!isRunning || generation != runGeneration) {
                                     if (ocrBitmap != null && ocrBitmap !== searchRegion?.bitmap) ocrBitmap?.recycle()
                                     searchRegion?.release()
                                     swBitmap?.recycle()
-                                    return@addOnSuccessListener
+                                    return@withContext
                                 }
 
-                                val center = findOcrTargetCenter(text, targetText, matchAnyChinese)
-                                if (center == null) {
+                                val hit = when {
+                                    useStartBattlePreset -> findStartBattleOcrHit(text)?.toOcrHit()
+                                    targetChars.isNotEmpty() -> findOcrHitByChars(text, config)
+                                    else -> findOcrHitByText(text, targetText, targetText.isBlank())
+                                }
+                                logOcrResult(task.id, text, hit, config, targetText, useStartBattlePreset)
+                                if (hit == null) {
                                     finishTask(task, false)
                                 } else {
-                                    val screenshotX = searchRegion.offsetX + center.x
-                                    val screenshotY = searchRegion.offsetY + center.y
+                                    val screenshotX = searchRegion.offsetX + hit.center.x
+                                    val screenshotY = searchRegion.offsetY + hit.center.y
                                     lastMatchX = screenshotX * mapping.screenshotToDisplayX
                                     lastMatchY = screenshotY * mapping.screenshotToDisplayY
                                     matchedPointsByTaskId[task.id] = PointF(lastMatchX, lastMatchY)
-                                    verboseInfo("任务 ${task.id} OCR命中 x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}")
-                                    dispatchClick(lastMatchX, lastMatchY) {
-                                        if (generation == runGeneration && isRunning) finishTask(task, true)
+                                    verboseInfo(
+                                        "任务 ${task.id} OCR命中 " +
+                                            "line=${formatOcrLog(hit.lineText)} " +
+                                            "hits=${hit.hitChars.joinToString("")} " +
+                                            "count=${hit.hitCount} " +
+                                            "x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}"
+                                    )
+                                    if (config.clickOnSuccess) {
+                                        dispatchClick(lastMatchX, lastMatchY) {
+                                            if (generation == runGeneration && isRunning) finishTask(task, true)
+                                        }
+                                    } else {
+                                        finishTask(task, true)
                                     }
                                 }
 
                                 if (ocrBitmap != null && ocrBitmap !== searchRegion?.bitmap) ocrBitmap?.recycle()
                                 searchRegion?.release()
                                 swBitmap?.recycle()
-                            }
-                            .addOnFailureListener { error ->
-                                recognizer.close()
-                                RunLogger.e("任务 ${task.id} OCR识别失败: ${error.message}")
+                                }
+                            } catch (error: Throwable) {
+                                withContext(Dispatchers.Main) {
+                                RunLogger.e("任务 ${task.id} OCR识别失败: ${error.message}", error)
                                 if (generation == runGeneration && isRunning) finishTask(task, false)
                                 if (ocrBitmap != null && ocrBitmap !== searchRegion?.bitmap) ocrBitmap?.recycle()
                                 searchRegion?.release()
                                 swBitmap?.recycle()
+                                }
                             }
+                        }
                     } catch (t: Throwable) {
                         RunLogger.e("任务 ${task.id} OCR执行失败", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
@@ -492,12 +618,12 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         searchRegion?.release()
                         swBitmap?.recycle()
                     } finally {
-                        hwBitmap?.recycle()
                         buffer?.close()
                     }
                 }
 
                 override fun onFailure(errorCode: Int) {
+                    diagnosticError("任务 ${task.id} OCR截图失败 errorCode=$errorCode")
                     RunLogger.e("任务 ${task.id} OCR截图失败，错误码=$errorCode")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
@@ -505,17 +631,33 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         )
     }
 
-    private fun executeRedRegionClick(task: DailyTask) {
-        if (TemplateOverrideStore.isStartBattleTemplateMode(service)) {
-            executeStartBattleTemplateClick(task)
-            return
+    private fun executeStartBattleTemplateClick(task: DailyTask) {
+        if (!TemplateOverrideStore.hasOverride(service, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)) {
+            RunLogger.e("任务 ${task.id} 未找到开始战斗模板，请重新上传截图后一键替换")
+            return finishTask(task, false)
         }
-        val p = task.params ?: return finishTask(task, false)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return finishTask(task, false)
-        val minConfidence = p.threshold.coerceIn(0f, 1f)
+        executeTemplateSearch(
+            task = task,
+            templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
+            threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
+            clickOnSuccess = true,
+            logLabel = "开始战斗模板",
+            roiOverride = StartBattleShared.buildRoi()
+        )
+    }
+
+    private fun executeStartBattleOcrClick(task: DailyTask) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            diagnosticError("任务 ${task.id} 开始战斗OCR截图不支持，当前 SDK=${Build.VERSION.SDK_INT}")
+            return finishTask(task, false)
+        }
+        val startBattleRoi = StartBattleShared.buildRoi()
 
         val generation = runGeneration
-        verboseInfo("任务 ${task.id} 颜色匹配红色区域，区域=${formatRoi(p.roi)}，阈值=${"%.2f".format(minConfidence)}")
+        verboseInfo(
+            "任务 ${task.id} 开始战斗OCR，区域=${formatRoi(startBattleRoi)}，" +
+                "命中条件=同一行至少${StartBattleShared.OCR_MIN_HIT_COUNT}个字"
+        )
 
         service.takeScreenshot(
             Display.DEFAULT_DISPLAY,
@@ -530,208 +672,81 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     var swBitmap: Bitmap? = null
                     var searchRegion: SearchRegion? = null
                     var buffer: android.hardware.HardwareBuffer? = null
-                    var hwBitmap: Bitmap? = null
 
                     try {
                         buffer = result.hardwareBuffer
-                        hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
+                        val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                         if (swBitmap == null) {
-                            RunLogger.e("任务 ${task.id} 红色区域截图转换失败")
+                            RunLogger.e("任务 ${task.id} 开始战斗OCR截图转换失败")
                             finishTask(task, false)
                             return
                         }
 
                         val mapping = buildScreenshotMapping(swBitmap)
-                        searchRegion = buildSearchRegionForOcr(swBitmap, p.roi, mapping, task.id)
-                        val match = findRedRegionMatch(searchRegion.bitmap)
-                        if (match == null) {
-                            finishTask(task, false)
-                        } else if (match.confidence < minConfidence) {
-                            verboseInfo(
-                                "任务 ${task.id} 红色候选置信度=${"%.3f".format(match.confidence)} " +
-                                    "面积=${"%.3f".format(match.areaRatio)} " +
-                                    "完整=${"%.3f".format(match.fillRatio)} " +
-                                    "红度=${"%.3f".format(match.rednessScore)}"
-                            )
-                            finishTask(task, false)
-                        } else {
-                            val screenshotX = searchRegion.offsetX + match.center.x
-                            val screenshotY = searchRegion.offsetY + match.center.y
-                            lastMatchX = screenshotX * mapping.screenshotToDisplayX
-                            lastMatchY = screenshotY * mapping.screenshotToDisplayY
-                            matchedPointsByTaskId[task.id] = PointF(lastMatchX, lastMatchY)
-                            verboseInfo(
-                                "任务 ${task.id} 红色命中 x=${lastMatchX.toInt()} y=${lastMatchY.toInt()} " +
-                                    "score=${"%.3f".format(match.confidence)} " +
-                                    "area=${"%.3f".format(match.areaRatio)} " +
-                                    "fill=${"%.3f".format(match.fillRatio)} " +
-                                    "red=${"%.3f".format(match.rednessScore)}"
-                            )
-                            dispatchClick(lastMatchX, lastMatchY) {
-                                if (generation == runGeneration && isRunning) finishTask(task, true)
+                        searchRegion = buildSearchRegionForOcr(swBitmap, startBattleRoi, mapping, task.id)
+                        saveDebugScreenshots(swBitmap, searchRegion.bitmap)
+                        ocrScope.launch {
+                            try {
+                                val text = PaddleTextRecognizer.recognize(service, searchRegion.bitmap)
+                                withContext(Dispatchers.Main) {
+                                if (!isRunning || generation != runGeneration) {
+                                    searchRegion?.release()
+                                    swBitmap?.recycle()
+                                    return@withContext
+                                }
+
+                                val hit = findStartBattleOcrHit(text)
+                                logStartBattleOcr(task.id, text, hit)
+                                if (hit == null) {
+                                    finishTask(task, false)
+                                } else {
+                                    val screenshotX = searchRegion.offsetX + hit.center.x
+                                    val screenshotY = searchRegion.offsetY + hit.center.y
+                                    lastMatchX = screenshotX * mapping.screenshotToDisplayX
+                                    lastMatchY = screenshotY * mapping.screenshotToDisplayY
+                                    matchedPointsByTaskId[task.id] = PointF(lastMatchX, lastMatchY)
+                                    verboseInfo(
+                                            "任务 ${task.id} 开始战斗OCR命中 " +
+                                            "line=${formatOcrLog(hit.lineText)} " +
+                                            "hits=${hit.hitChars.joinToString("")} " +
+                                            "count=${hit.hitCount} " +
+                                            "x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}"
+                                    )
+                                    dispatchClick(lastMatchX, lastMatchY) {
+                                        if (generation == runGeneration && isRunning) finishTask(task, true)
+                                    }
+                                }
+
+                                searchRegion?.release()
+                                swBitmap?.recycle()
+                                }
+                            } catch (error: Throwable) {
+                                withContext(Dispatchers.Main) {
+                                RunLogger.e("任务 ${task.id} 开始战斗OCR识别失败: ${error.message}", error)
+                                if (generation == runGeneration && isRunning) finishTask(task, false)
+                                searchRegion?.release()
+                                swBitmap?.recycle()
+                                }
                             }
                         }
-
-                        searchRegion?.release()
-                        swBitmap?.recycle()
                     } catch (t: Throwable) {
-                        RunLogger.e("任务 ${task.id} 红色区域执行失败", t)
+                        RunLogger.e("任务 ${task.id} 开始战斗OCR执行失败", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
                         searchRegion?.release()
                         swBitmap?.recycle()
                     } finally {
-                        hwBitmap?.recycle()
                         buffer?.close()
                     }
                 }
 
                 override fun onFailure(errorCode: Int) {
-                    RunLogger.e("任务 ${task.id} 红色区域截图失败，错误码=$errorCode")
+                    diagnosticError("任务 ${task.id} 开始战斗OCR截图失败 errorCode=$errorCode")
+                    RunLogger.e("任务 ${task.id} 开始战斗OCR截图失败，错误码=$errorCode")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
             }
         )
-    }
-
-    private fun executeStartBattleTemplateClick(task: DailyTask) {
-        if (!TemplateOverrideStore.hasOverride(service, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)) {
-            RunLogger.e("任务 ${task.id} 未找到开始战斗模板，请先在功能测试中确认替换")
-            return finishTask(task, false)
-        }
-        executeTemplateSearch(
-            task = task,
-            templateName = TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME,
-            threshold = TemplateOverrideStore.START_BATTLE_TEMPLATE_THRESHOLD,
-            clickOnSuccess = true,
-            logLabel = "开始战斗模板"
-        )
-    }
-
-    private fun findRedRegionMatch(bitmap: Bitmap): RedRegionMatch? {
-        val width = bitmap.width
-        val height = bitmap.height
-        if (width <= 0 || height <= 0) return null
-
-        val step = if (width >= 300 || height >= 300) 2 else 1
-        val sampleWidth = (width + step - 1) / step
-        val sampleHeight = (height + step - 1) / step
-        val mask = BooleanArray(sampleWidth * sampleHeight)
-        val queue = IntArray(mask.size)
-        val redness = FloatArray(mask.size)
-
-        var hasRed = false
-        for (sy in 0 until sampleHeight) {
-            val y = sy * step
-            for (sx in 0 until sampleWidth) {
-                val x = sx * step
-                val index = sy * sampleWidth + sx
-                val redScore = computeRednessScore(bitmap.getPixel(x, y))
-                redness[index] = redScore
-                if (redScore > 0f) {
-                    mask[index] = true
-                    hasRed = true
-                }
-            }
-        }
-        if (!hasRed) return null
-
-        var bestCount = 0
-        var bestMinX = 0
-        var bestMaxX = 0
-        var bestMinY = 0
-        var bestMaxY = 0
-        var bestRednessSum = 0f
-        val neighbors = intArrayOf(-1, 0, 1, 0, -1)
-
-        for (sy in 0 until sampleHeight) {
-            for (sx in 0 until sampleWidth) {
-                val startIndex = sy * sampleWidth + sx
-                if (!mask[startIndex]) continue
-
-                var head = 0
-                var tail = 0
-                queue[tail++] = startIndex
-                mask[startIndex] = false
-
-                var count = 0
-                var minX = sx
-                var maxX = sx
-                var minY = sy
-                var maxY = sy
-                var rednessSum = 0f
-
-                while (head < tail) {
-                    val index = queue[head++]
-                    val cx = index % sampleWidth
-                    val cy = index / sampleWidth
-                    count += 1
-                    rednessSum += redness[index]
-                    if (cx < minX) minX = cx
-                    if (cx > maxX) maxX = cx
-                    if (cy < minY) minY = cy
-                    if (cy > maxY) maxY = cy
-
-                    for (n in 0 until 4) {
-                        val nx = cx + neighbors[n]
-                        val ny = cy + neighbors[n + 1]
-                        if (nx !in 0 until sampleWidth || ny !in 0 until sampleHeight) continue
-                        val nextIndex = ny * sampleWidth + nx
-                        if (!mask[nextIndex]) continue
-                        mask[nextIndex] = false
-                        queue[tail++] = nextIndex
-                    }
-                }
-
-                if (count > bestCount) {
-                    bestCount = count
-                    bestMinX = minX
-                    bestMaxX = maxX
-                    bestMinY = minY
-                    bestMaxY = maxY
-                    bestRednessSum = rednessSum
-                }
-            }
-        }
-
-        if (bestCount < 12) return null
-
-        val bboxWidth = bestMaxX - bestMinX + 1
-        val bboxHeight = bestMaxY - bestMinY + 1
-        val bboxArea = (bboxWidth * bboxHeight).coerceAtLeast(1)
-        val estimatedPixelArea = bestCount * step * step
-        val referenceButtonArea = 300f * 50f
-        val areaRatio = (estimatedPixelArea / referenceButtonArea).coerceIn(0f, 1f)
-        val fillRatio = bestCount.toFloat() / bboxArea.toFloat()
-        val rednessScore = (bestRednessSum / bestCount.toFloat()).coerceIn(0f, 1f)
-        val compactnessScore = ((fillRatio - 0.15f) / 0.85f).coerceIn(0f, 1f)
-        val confidence = (
-            areaRatio * 0.45f +
-                compactnessScore * 0.25f +
-                rednessScore * 0.30f
-            ).coerceIn(0f, 1f)
-
-        val centerX = ((bestMinX + bestMaxX + 1) * step / 2f).coerceIn(0f, (width - 1).toFloat())
-        val centerY = ((bestMinY + bestMaxY + 1) * step / 2f).coerceIn(0f, (height - 1).toFloat())
-        return RedRegionMatch(PointF(centerX, centerY), confidence, areaRatio, fillRatio, rednessScore)
-    }
-
-    private fun isRelaxedRed(color: Int): Boolean {
-        return computeRednessScore(color) > 0f
-    }
-
-    private fun computeRednessScore(color: Int): Float {
-        val r = Color.red(color)
-        val g = Color.green(color)
-        val b = Color.blue(color)
-        if (r < 95) return 0f
-        if (r - g < 20 || r - b < 20) return 0f
-        if (g > 185 || b > 185) return 0f
-
-        val redLevel = ((r - 95f) / 160f).coerceIn(0f, 1f)
-        val dominance = (((r - maxOf(g, b)) - 20f) / 180f).coerceIn(0f, 1f)
-        val saturation = ((255f - (g + b) / 2f) / 255f).coerceIn(0f, 1f)
-        return (redLevel * 0.45f + dominance * 0.4f + saturation * 0.15f).coerceIn(0f, 1f)
     }
 
     private fun buildSearchRegionForOcr(
@@ -754,7 +769,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         var debugWidth = swBitmap.width
         var debugHeight = swBitmap.height
 
-        if (roi?.align == "dynamic_avatar_bounds") {
+        if (roi?.w == 0f && roi.h == 0f) {
+            verboseInfo("任务 $taskId ROI宽高为0，按全屏识别处理")
+        } else if (roi?.align == "dynamic_avatar_bounds") {
             val topBound = 1254f * gameScale
             val bottomBound = swBitmap.height - (313f * gameScale)
             val safeY = topBound.toInt().coerceAtLeast(0)
@@ -823,6 +840,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         }
     }
 
+    private fun saveDebugScreenshots(originalBitmap: Bitmap, croppedBitmap: Bitmap) {
+        if (!debugScreenshotEnabled) return
+        BirdFoodDebugScreenshotStore.saveSnapshots(service, originalBitmap, croppedBitmap)
+    }
+
     private fun createYellowTextOcrBitmap(source: Bitmap): Bitmap? {
         return try {
             val width = source.width
@@ -845,62 +867,207 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         }
     }
 
-    private fun findOcrTargetCenter(text: Text, targetText: String, matchAnyChinese: Boolean): PointF? {
-        if (matchAnyChinese) {
-            findAnyChineseCenter(text.textBlocks.flatMap { block -> block.lines })?.let { return it }
-            findAnyChineseCenter(text.textBlocks.flatMap { block -> block.lines.flatMap { line -> line.elements } })?.let {
-                return it
-            }
-            return findAnyChineseCenter(text.textBlocks)
+    private fun createConfiguredOcrBitmap(source: Bitmap, preprocess: String?): Bitmap? {
+        return when (preprocess?.lowercase()) {
+            "yellow_text" -> createYellowTextOcrBitmap(source)
+            "light_text" -> createLightTextOcrBitmap(source)
+            else -> null
         }
-
-        findExactTextCenter(text.textBlocks.flatMap { block -> block.lines.flatMap { line -> line.elements } }, targetText)?.let {
-            return it
-        }
-        findExactTextCenter(text.textBlocks.flatMap { block -> block.lines }, targetText)?.let { return it }
-        return findExactTextCenter(text.textBlocks, targetText)
     }
 
-    private fun findAnyChineseCenter(components: List<Any>): PointF? {
-        var bestBox: android.graphics.Rect? = null
-        var bestArea = -1
-        for (component in components) {
-            val text = extractOcrText(component)
-            val box = extractOcrBoundingBox(component)
-            if (!containsChinese(text) || box == null) continue
-            val area = box.width() * box.height()
-            if (area > bestArea) {
-                bestArea = area
-                bestBox = box
+    private fun createLightTextOcrBitmap(source: Bitmap): Bitmap? {
+        return try {
+            val width = source.width
+            val height = source.height
+            val input = IntArray(width * height)
+            val output = IntArray(width * height)
+            source.getPixels(input, 0, width, 0, 0, width, height)
+            for (i in input.indices) {
+                val color = input[i]
+                val r = Color.red(color)
+                val g = Color.green(color)
+                val b = Color.blue(color)
+                val isLightWarmText = r >= 145 && g >= 120 && b >= 90 && r >= b - 10 && g >= b - 35
+                output[i] = if (isLightWarmText) Color.BLACK else Color.WHITE
             }
+            Bitmap.createBitmap(output, width, height, Bitmap.Config.ARGB_8888)
+        } catch (t: Throwable) {
+            RunLogger.e("OCR light-text preprocess failed", t)
+            null
         }
-        val box = bestBox ?: return null
-        return PointF(box.exactCenterX(), box.exactCenterY())
     }
 
-    private fun findExactTextCenter(components: List<Any>, targetText: String): PointF? {
-        val normalizedTarget = normalizeOcrText(targetText)
-        for (component in components) {
-            val componentText = normalizeOcrText(extractOcrText(component))
-            val box = extractOcrBoundingBox(component)
-            if (box != null && componentText.contains(normalizedTarget)) {
-                return PointF(box.exactCenterX(), box.exactCenterY())
+    private fun findStartBattleOcrHit(text: PaddleTextResult): StartBattleOcrHit? {
+        return StartBattleShared.findBestOcrLineMatch(text)?.let { match ->
+            StartBattleOcrHit(
+                lineText = match.lineText,
+                normalizedLineText = match.normalizedLineText,
+                hitChars = match.hitChars,
+                center = match.center,
+                containsPhrase = match.containsPhrase,
+                area = match.area
+            )
+        }
+    }
+
+    private fun StartBattleOcrHit.toOcrHit(): OcrHit =
+        OcrHit(
+            lineText = lineText,
+            normalizedLineText = normalizedLineText,
+            hitChars = hitChars,
+            center = center,
+            area = area,
+        )
+
+    private fun findOcrHitByChars(
+        text: PaddleTextResult,
+        config: OcrConfig,
+    ): OcrHit? {
+        return text.blocks
+            .flatMap { it.lines }
+            .mapNotNull { line ->
+                val boundingBox = line.boundingBox
+                val normalizedLineText = line.text.filterNot { it.isWhitespace() }
+                val hitChars = config.targetChars.filter { normalizedLineText.contains(it) }
+                if (hitChars.size < config.minHitCount) {
+                    return@mapNotNull null
+                }
+                OcrHit(
+                    lineText = line.text,
+                    normalizedLineText = normalizedLineText,
+                    hitChars = hitChars,
+                    center = PointF(boundingBox.exactCenterX(), boundingBox.exactCenterY()),
+                    area = boundingBox.width() * boundingBox.height(),
+                )
             }
+            .maxWithOrNull(compareBy<OcrHit>({ it.hitCount }, { it.area }))
+    }
+
+    private fun findOcrHitByText(
+        text: PaddleTextResult,
+        targetText: String,
+        matchAnyChinese: Boolean,
+    ): OcrHit? {
+        val components = listOf(
+            text.blocks.flatMap { block -> block.lines.flatMap { line -> line.elements } },
+            text.blocks.flatMap { block -> block.lines },
+            text.blocks,
+        )
+        for (group in components) {
+            findOcrComponentHit(group, targetText, matchAnyChinese)?.let { return it }
         }
         return null
     }
 
+    private fun findOcrComponentHit(
+        components: List<Any>,
+        targetText: String,
+        matchAnyChinese: Boolean,
+    ): OcrHit? {
+        var bestBox: android.graphics.Rect? = null
+        var bestText = ""
+        var bestArea = -1
+        val normalizedTarget = normalizeOcrText(targetText)
+        for (component in components) {
+            val textValue = extractOcrText(component)
+            val normalizedText = normalizeOcrText(textValue)
+            val box = extractOcrBoundingBox(component) ?: continue
+            val matched = if (matchAnyChinese) containsChinese(textValue) else normalizedText.contains(normalizedTarget)
+            if (!matched) continue
+            val area = box.width() * box.height()
+            if (area > bestArea) {
+                bestArea = area
+                bestBox = box
+                bestText = textValue
+            }
+        }
+        val box = bestBox ?: return null
+        return OcrHit(
+            lineText = bestText,
+            normalizedLineText = normalizeOcrText(bestText),
+            hitChars = if (matchAnyChinese) bestText.filter { it in '\u4E00'..'\u9FFF' }.toList() else normalizedTarget.toList(),
+            center = PointF(box.exactCenterX(), box.exactCenterY()),
+            area = bestArea,
+        )
+    }
+
+    private fun logOcrResult(
+        taskId: Int,
+        text: PaddleTextResult,
+        hit: OcrHit?,
+        config: OcrConfig,
+        targetText: String,
+        startBattlePreset: Boolean,
+    ) {
+        val rawText = text.text
+        val normalizedText = rawText.filterNot { it.isWhitespace() }
+        val targetLabel = when {
+            startBattlePreset -> "开始战斗"
+            config.targetChars.isNotEmpty() -> config.targetChars.joinToString("")
+            targetText.isNotBlank() -> targetText
+            else -> "任意中文"
+        }
+        if (hit == null) {
+            verboseInfo(
+                "任务 $taskId OCR " +
+                    "target=${formatOcrLog(targetLabel)} " +
+                    "raw=${formatOcrLog(rawText)} " +
+                    "normalized=${formatOcrLog(normalizedText)} " +
+                    "line=无 hits=无 count=0"
+            )
+            return
+        }
+        verboseInfo(
+            "任务 $taskId OCR " +
+                "target=${formatOcrLog(targetLabel)} " +
+                "raw=${formatOcrLog(rawText)} " +
+                "normalized=${formatOcrLog(normalizedText)} " +
+                "line=${formatOcrLog(hit.lineText)} " +
+                "lineNormalized=${formatOcrLog(hit.normalizedLineText)} " +
+                "hits=${hit.hitChars.joinToString("")} " +
+                "count=${hit.hitCount}"
+        )
+    }
+
+    private fun logStartBattleOcr(taskId: Int, text: PaddleTextResult, hit: StartBattleOcrHit?) {
+        val rawText = text.text
+        val normalizedText = rawText.filterNot { it.isWhitespace() }
+        if (hit == null) {
+            verboseInfo(
+                "任务 $taskId 开始战斗OCR " +
+                    "raw=${formatOcrLog(rawText)} " +
+                    "normalized=${formatOcrLog(normalizedText)} " +
+                    "line=无 hits=无 count=0"
+            )
+            return
+        }
+        verboseInfo(
+            "任务 $taskId 开始战斗OCR " +
+                "raw=${formatOcrLog(rawText)} " +
+                "normalized=${formatOcrLog(normalizedText)} " +
+                "line=${formatOcrLog(hit.lineText)} " +
+                "lineNormalized=${formatOcrLog(hit.normalizedLineText)} " +
+                "hits=${hit.hitChars.joinToString("")} " +
+                "count=${hit.hitCount}"
+        )
+    }
+
+    private fun formatOcrLog(text: String): String {
+        if (text.isEmpty()) return "\"\""
+        return "\"" + text.replace("\n", "\\n") + "\""
+    }
+
     private fun extractOcrText(component: Any): String = when (component) {
-        is Text.TextBlock -> component.text
-        is Text.Line -> component.text
-        is Text.Element -> component.text
+        is PaddleTextBlock -> component.text
+        is PaddleTextLine -> component.text
+        is PaddleTextElement -> component.text
         else -> ""
     }
 
     private fun extractOcrBoundingBox(component: Any): android.graphics.Rect? = when (component) {
-        is Text.TextBlock -> component.boundingBox
-        is Text.Line -> component.boundingBox
-        is Text.Element -> component.boundingBox
+        is PaddleTextBlock -> component.boundingBox
+        is PaddleTextLine -> component.boundingBox
+        is PaddleTextElement -> component.boundingBox
         else -> null
     }
 
@@ -920,8 +1087,23 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         return routes[value] ?: task.on_success
     }
 
+    private fun resolveFailTaskId(task: DailyTask): Int {
+        val p = task.params ?: return task.on_fail
+        val varName = p.fail_branch_var ?: return task.on_fail
+        val routes = p.fail_branch_routes ?: return task.on_fail
+        val value = variables[varName] ?: return task.on_fail
+        return routes[value] ?: task.on_fail
+    }
+
     private fun loadTemplateFromAssets(fileName: String): Bitmap? {
-        val cacheKey = TemplateOverrideStore.cacheKey(service, fileName)
+        val localTemplateFile = currentTemplateDir
+            ?.let { File(it, fileName) }
+            ?.takeIf { it.exists() }
+        val cacheKey = if (localTemplateFile != null) {
+            "${localTemplateFile.absolutePath}#${localTemplateFile.lastModified()}"
+        } else {
+            TemplateOverrideStore.cacheKey(service, fileName)
+        }
         templateCache.get(cacheKey)?.let {
             if (!it.isRecycled) {
                 verboseInfo("模板缓存命中 $fileName")
@@ -930,7 +1112,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             templateCache.remove(cacheKey)
         }
         return try {
-            val bitmap = TemplateOverrideStore.loadBitmap(service, service.assets, fileName)
+            val bitmap = if (localTemplateFile != null) {
+                BitmapFactory.decodeFile(localTemplateFile.absolutePath)
+            } else {
+                TemplateOverrideStore.loadBitmap(service, service.assets, fileName)
+            }
             if (bitmap != null) {
                 templateCache.put(cacheKey, bitmap)
                 verboseInfo("模板已加载 $fileName ${bitmap.width}x${bitmap.height}")
@@ -961,12 +1147,17 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         templateName: String,
         threshold: Float,
         clickOnSuccess: Boolean,
-        logLabel: String
+        logLabel: String,
+        roiOverride: ROI? = null
     ) {
         val p = task.params ?: return finishTask(task, false)
         val generation = runGeneration
-        verboseInfo("任务 ${task.id} 匹配${logLabel}=$templateName，区域=${formatRoi(p.roi)}")
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return finishTask(task, false)
+        val effectiveRoi = roiOverride ?: p.roi
+        verboseInfo("任务 ${task.id} 匹配${logLabel}=$templateName，区域=${formatRoi(effectiveRoi)}")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            diagnosticError("任务 ${task.id} 模板截图不支持，当前 SDK=${Build.VERSION.SDK_INT} template=$templateName")
+            return finishTask(task, false)
+        }
 
         service.takeScreenshot(
             Display.DEFAULT_DISPLAY,
@@ -982,15 +1173,15 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     var scaledTemplate: Bitmap? = null
                     var ownsScaledTemplate = false
                     var buffer: android.hardware.HardwareBuffer? = null
-                    var hwBitmap: Bitmap? = null
                     try {
                         buffer = result.hardwareBuffer
-                        hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
+                        val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                             ?: return finishTask(task, false)
                         val mapping = buildScreenshotMapping(swBitmap)
-                        searchRegion = buildSearchRegionForOcr(swBitmap, p.roi, mapping, task.id)
+                        searchRegion = buildSearchRegionForOcr(swBitmap, effectiveRoi, mapping, task.id)
                         val searchBitmap = searchRegion.bitmap
+                        saveDebugScreenshots(swBitmap, searchBitmap)
                         val rawTemplate = loadTemplateFromAssets(templateName)
                             ?: return finishTask(task, false)
                         val gameScale = min(swBitmap.width / BASE_W, swBitmap.height / BASE_H)
@@ -1032,7 +1223,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         RunLogger.e("任务 ${task.id} 匹配崩溃，模板=$templateName", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
                     } finally {
-                        hwBitmap?.recycle()
                         buffer?.close()
                         if (ownsScaledTemplate) scaledTemplate?.recycle()
                         searchRegion?.release()
@@ -1041,6 +1231,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 }
 
                 override fun onFailure(errorCode: Int) {
+                    diagnosticError("任务 ${task.id} 模板截图失败 errorCode=$errorCode template=$templateName")
                     RunLogger.e("任务 ${task.id} 截图失败，错误码=$errorCode，模板=$templateName")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }

@@ -256,7 +256,8 @@ object InstructionDialogs {
             when (type) {
                 InstructionType.PAUSE,
                 InstructionType.ALL_WIPE_CHECK,
-                InstructionType.ORANGE_STAR_CHECK -> {
+                InstructionType.ORANGE_STAR_CHECK,
+                InstructionType.PURPLE_STAR_CHECK -> {
                     valueContainer.visibility = View.GONE
                     btnStage.visibility = View.GONE
                     tvStageOptionLabel.visibility = View.GONE

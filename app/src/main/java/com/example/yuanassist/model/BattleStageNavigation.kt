@@ -87,8 +87,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 1000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.DONG_KU_LEFT to DirectStageNavigationConfig(
             target = BattleStageTarget.DONG_KU_LEFT,
@@ -110,8 +110,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.DONG_KU_RIGHT to DirectStageNavigationConfig(
             target = BattleStageTarget.DONG_KU_RIGHT,
@@ -133,8 +133,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.YI_JI_ONE to DirectStageNavigationConfig(
             target = BattleStageTarget.YI_JI_ONE,
@@ -156,8 +156,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.YI_JI_TWO to DirectStageNavigationConfig(
             target = BattleStageTarget.YI_JI_TWO,
@@ -179,8 +179,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.YI_JI_THREE to DirectStageNavigationConfig(
             target = BattleStageTarget.YI_JI_THREE,
@@ -202,8 +202,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.YI_JI_FOUR to DirectStageNavigationConfig(
             target = BattleStageTarget.YI_JI_FOUR,
@@ -225,8 +225,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         ),
         BattleStageTarget.YI_JI_FIVE to DirectStageNavigationConfig(
             target = BattleStageTarget.YI_JI_FIVE,
@@ -248,8 +248,8 @@ object BattleStageNavigationRegistry {
                 height = 300f,
                 threshold = 0.80f
             ),
-            delayAfterEntryClickMs = 2000L,
-            delayAfterStartBattleClickMs = 4000L
+            delayAfterEntryClickMs = 3000L,
+            delayAfterStartBattleClickMs = 6000L
         )
     )
 

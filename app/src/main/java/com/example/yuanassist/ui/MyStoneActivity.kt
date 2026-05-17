@@ -39,6 +39,7 @@ import com.example.yuanassist.utils.StoneStat
 import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StoneOcrParser
+import com.example.yuanassist.utils.applyYuanInputStyle
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,6 +68,10 @@ class MyStoneActivity : AppCompatActivity() {
     private lateinit var titleView: TextView
     private lateinit var statsSummaryView: TextView
     private lateinit var statsCardsContainer: LinearLayout
+    private lateinit var archiveNameView: TextView
+    private lateinit var archiveSwitchButton: TextView
+    private lateinit var archiveCreateButton: TextView
+    private lateinit var archiveRenameButton: TextView
     private lateinit var mainTypeView: TextView
     private lateinit var supportTypeView: TextView
     private lateinit var addStoneButton: TextView
@@ -90,6 +95,7 @@ class MyStoneActivity : AppCompatActivity() {
     private var currentRecord: MyStoneRecord? = null
     private var currentImageFiles: List<File> = emptyList()
     private var currentRows: MutableList<MyStoneRow> = mutableListOf()
+    private var currentArchiveId: String = MyStoneStore.DEFAULT_ARCHIVE_ID
     private var currentStoneType: String = MyStoneStore.TYPE_MAIN
     private var isImagesExpanded = false
     private var isRowsExpanded = false
@@ -117,6 +123,10 @@ class MyStoneActivity : AppCompatActivity() {
         titleView = findViewById(R.id.tv_my_stone_updated_at)
         statsSummaryView = findViewById(R.id.tv_my_stone_stats_summary)
         statsCardsContainer = findViewById(R.id.layout_my_stone_stats_cards)
+        archiveNameView = findViewById(R.id.tv_my_stone_archive_name)
+        archiveSwitchButton = findViewById(R.id.btn_my_stone_archive_switch)
+        archiveCreateButton = findViewById(R.id.btn_my_stone_archive_create)
+        archiveRenameButton = findViewById(R.id.btn_my_stone_archive_rename)
         mainTypeView = findViewById(R.id.tv_my_stone_type_main)
         supportTypeView = findViewById(R.id.tv_my_stone_type_support)
         addStoneButton = findViewById(R.id.btn_my_stone_add)
@@ -159,6 +169,9 @@ class MyStoneActivity : AppCompatActivity() {
         rowsSectionHeading.setOnClickListener {
             setRowsExpanded(!isRowsExpanded)
         }
+        archiveSwitchButton.setOnClickListener { showArchiveSwitchDialog() }
+        archiveCreateButton.setOnClickListener { showCreateArchiveDialog() }
+        archiveRenameButton.setOnClickListener { showRenameArchiveDialog() }
         mainTypeView.setOnClickListener { switchStoneType(MyStoneStore.TYPE_MAIN) }
         supportTypeView.setOnClickListener { switchStoneType(MyStoneStore.TYPE_SUPPORT) }
         addStoneButton.setOnClickListener { showAddStoneDialog() }
@@ -171,13 +184,15 @@ class MyStoneActivity : AppCompatActivity() {
 
     private fun renderStoneRecord() {
         MyStoneStore.migrateLegacyMainRecordIfNeeded(this)
+        currentArchiveId = MyStoneStore.getSelectedArchiveId(this)
         currentStoneType = MyStoneStore.getSelectedType(this)
 
         currentStoneType = MyStoneStore.normalizeType(currentStoneType)
+        renderArchiveSelection()
         renderTypeSelection()
 
-        val record = MyStoneStore.loadRecord(this, currentStoneType)
-        val imageFiles = record?.let { MyStoneStore.imageFiles(this, currentStoneType, it) }.orEmpty()
+        val record = MyStoneStore.loadRecord(this, currentStoneType, currentArchiveId)
+        val imageFiles = record?.let { MyStoneStore.imageFiles(this, currentStoneType, it, currentArchiveId) }.orEmpty()
         currentRecord = record
         currentImageFiles = imageFiles
 
@@ -189,7 +204,7 @@ class MyStoneActivity : AppCompatActivity() {
                 .format(Date(record.updatedAt))
             "最近更新：$timeText"
         } else {
-            "最近更新：${MyStoneStore.displayName(currentStoneType)}暂无结果"
+            "最近更新：${archiveNameView.text}暂无${MyStoneStore.displayName(currentStoneType)}结果"
         }
 
         currentRows = record?.rows?.map { row ->
@@ -281,10 +296,10 @@ class MyStoneActivity : AppCompatActivity() {
         imageSectionRecognizeButton.isEnabled = !isProcessing
         imageSectionRecognizeButton.text = if (isProcessing) "识别中..." else "识别"
         imageSectionRecognizeButton.setBackgroundResource(
-            if (isProcessing) R.drawable.btn_dark_hollow else R.drawable.btn_dark_gold
+            if (isProcessing) R.drawable.btn_stone_light else R.drawable.btn_dark_gold
         )
         imageSectionRecognizeButton.setTextColor(
-            if (isProcessing) Color.parseColor("#E5C07B") else Color.parseColor("#1A1A1A")
+            if (isProcessing) Color.parseColor("#9A6435") else Color.parseColor("#1A1A1A")
         )
     }
 
@@ -300,6 +315,7 @@ class MyStoneActivity : AppCompatActivity() {
         }
 
         val requestStoneType = currentStoneType
+        val requestArchiveId = currentArchiveId
         val imageFiles = currentImageFiles.toList()
         ocrProcessingStoneType = requestStoneType
         renderRecognizeButton()
@@ -362,7 +378,8 @@ class MyStoneActivity : AppCompatActivity() {
                     stoneType = requestStoneType,
                     rows = rows,
                     statsLines = lines,
-                    ocrStrategy = strategyUsed.joinToString(",")
+                    ocrStrategy = strategyUsed.joinToString(","),
+                    archiveId = requestArchiveId
                 )
 
                 if (hasPendingRows) {
@@ -373,7 +390,7 @@ class MyStoneActivity : AppCompatActivity() {
                     Toast.makeText(this@MyStoneActivity, "OCR 统计完成", Toast.LENGTH_LONG).show()
                 }
 
-                if (currentStoneType == requestStoneType) {
+                if (currentStoneType == requestStoneType && currentArchiveId == requestArchiveId) {
                     renderStoneRecord()
                 }
             } catch (t: Throwable) {
@@ -393,14 +410,14 @@ class MyStoneActivity : AppCompatActivity() {
 
         Glide.with(this)
             .load(currentImageFiles[0])
-            .signature(ObjectKey("stone_${currentStoneType}_${imageVersion}_1"))
+            .signature(ObjectKey("stone_${currentArchiveId}_${currentStoneType}_${imageVersion}_1"))
             .into(imageOneView)
 
         if (currentImageFiles.size > 1) {
             imageTwoView.isVisible = true
             Glide.with(this)
                 .load(currentImageFiles[1])
-                .signature(ObjectKey("stone_${currentStoneType}_${imageVersion}_2"))
+                .signature(ObjectKey("stone_${currentArchiveId}_${currentStoneType}_${imageVersion}_2"))
                 .into(imageTwoView)
         } else {
             imageTwoView.isVisible = false
@@ -466,7 +483,7 @@ class MyStoneActivity : AppCompatActivity() {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.bg_stone_stat_card)
-            setPadding(dp(10), dp(10), dp(10), dp(10))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
             layoutParams = LinearLayout.LayoutParams(
                 0,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -498,18 +515,17 @@ class MyStoneActivity : AppCompatActivity() {
 
         val nameView = TextView(this).apply {
             text = buildStoneTitle(card)
-            setTextColor(Color.parseColor("#F6D28D"))
+            setTextColor(Color.parseColor("#75322D"))
             textSize = 12f
             typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             letterSpacing = 0.05f
-            setShadowLayer(dp(3).toFloat(), 0f, dp(1).toFloat(), Color.parseColor("#66210F05"))
         }
 
         val countView = TextView(this).apply {
             text = "x${card.totalCount}"
             gravity = Gravity.CENTER
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            setTextColor(Color.parseColor("#F9E7BF"))
+            setTextColor(Color.parseColor("#75322D"))
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setBackgroundResource(R.drawable.bg_gold_border)
@@ -517,7 +533,7 @@ class MyStoneActivity : AppCompatActivity() {
         }
 
         val toggleView = TextView(this).apply {
-            setTextColor(Color.parseColor("#B7C0D8"))
+            setTextColor(Color.parseColor("#8A6B5E"))
             textSize = 10f
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -587,7 +603,7 @@ class MyStoneActivity : AppCompatActivity() {
         val nameEnd = card.name.length
         val styled = SpannableString(title)
         styled.setSpan(
-            ForegroundColorSpan(Color.parseColor("#F6D28D")),
+            ForegroundColorSpan(Color.parseColor("#75322D")),
             0,
             nameEnd,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -605,7 +621,7 @@ class MyStoneActivity : AppCompatActivity() {
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         styled.setSpan(
-            ForegroundColorSpan(Color.parseColor("#C8B58A")),
+            ForegroundColorSpan(Color.parseColor("#8A6B5E")),
             nameEnd,
             title.length,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -628,12 +644,95 @@ class MyStoneActivity : AppCompatActivity() {
         renderStoneRecord()
     }
 
+    private fun renderArchiveSelection() {
+        archiveNameView.text = MyStoneStore.getSelectedArchive(this).name
+    }
+
+    private fun showArchiveSwitchDialog() {
+        val archives = MyStoneStore.listArchives(this)
+        if (archives.isEmpty()) return
+
+        val labels = archives.map { archive ->
+            if (archive.id == currentArchiveId) "当前：${archive.name}" else archive.name
+        }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("切换存档")
+            .setItems(labels) { _, which ->
+                val archive = archives[which]
+                currentArchiveId = archive.id
+                MyStoneStore.setSelectedArchiveId(this, archive.id)
+                renderStoneRecord()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showCreateArchiveDialog() {
+        showArchiveInputDialog(
+            title = "新建存档",
+            positiveText = "创建",
+            initialValue = ""
+        ) { archiveName ->
+            try {
+                val archive = MyStoneStore.createArchive(this, archiveName)
+                currentArchiveId = archive.id
+                Toast.makeText(this, "已创建存档：${archive.name}", Toast.LENGTH_SHORT).show()
+                renderStoneRecord()
+            } catch (e: IllegalArgumentException) {
+                Toast.makeText(this, e.message ?: "创建存档失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showRenameArchiveDialog() {
+        val currentArchive = MyStoneStore.getSelectedArchive(this)
+        showArchiveInputDialog(
+            title = "重命名存档",
+            positiveText = "保存",
+            initialValue = currentArchive.name
+        ) { archiveName ->
+            try {
+                MyStoneStore.renameArchive(this, currentArchive.id, archiveName)
+                Toast.makeText(this, "存档已重命名", Toast.LENGTH_SHORT).show()
+                renderStoneRecord()
+            } catch (e: IllegalArgumentException) {
+                Toast.makeText(this, e.message ?: "重命名失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showArchiveInputDialog(
+        title: String,
+        positiveText: String,
+        initialValue: String,
+        onConfirm: (String) -> Unit
+    ) {
+        val input = EditText(this).apply {
+            setText(initialValue)
+            setSelection(text.length)
+            hint = "请输入存档名称"
+            setSingleLine()
+            applyYuanInputStyle()
+        }
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(input)
+            .setPositiveButton(positiveText) { _, _ ->
+                onConfirm(input.text.toString())
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
     private fun renderTypeSelection() {
         val isMainSelected = currentStoneType == MyStoneStore.TYPE_MAIN
-        mainTypeView.setBackgroundResource(if (isMainSelected) R.drawable.btn_dark_gold else R.drawable.btn_dark_hollow)
-        mainTypeView.setTextColor(if (isMainSelected) Color.parseColor("#1A1A1A") else Color.parseColor("#E5C07B"))
-        supportTypeView.setBackgroundResource(if (isMainSelected) R.drawable.btn_dark_hollow else R.drawable.btn_dark_gold)
-        supportTypeView.setTextColor(if (isMainSelected) Color.parseColor("#E5C07B") else Color.parseColor("#1A1A1A"))
+        mainTypeView.setBackgroundResource(if (isMainSelected) R.drawable.btn_stone_soft_selected else R.drawable.btn_stone_light)
+        mainTypeView.setTextColor(Color.parseColor("#75322D"))
+        supportTypeView.setBackgroundResource(if (isMainSelected) R.drawable.btn_stone_light else R.drawable.btn_stone_soft_selected)
+        supportTypeView.setTextColor(Color.parseColor("#75322D"))
+        addStoneButton.setBackgroundResource(R.drawable.btn_stone_soft_selected)
+        addStoneButton.setTextColor(Color.parseColor("#75322D"))
         addStoneButton.text = "新增${MyStoneStore.displayName(currentStoneType)}"
     }
 
@@ -721,7 +820,7 @@ class MyStoneActivity : AppCompatActivity() {
             text = title
             gravity = Gravity.CENTER_VERTICAL
             setTextColor(color)
-            textSize = 11f
+            textSize = 12f
             typeface = Typeface.DEFAULT_BOLD
             letterSpacing = 0.06f
             setBackgroundResource(R.drawable.bg_stone_section_tag)
@@ -886,7 +985,8 @@ class MyStoneActivity : AppCompatActivity() {
     private fun createRowView(rowIndex: Int, row: MyStoneRow): View {
         val outer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(10), dp(10), dp(10))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setBackgroundResource(R.drawable.bg_stone_section_card)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -899,8 +999,9 @@ class MyStoneActivity : AppCompatActivity() {
 
         val label = TextView(this).apply {
             text = "第 ${rowIndex + 1} 行"
-            setTextColor(Color.parseColor("#E5C07B"))
+            setTextColor(Color.parseColor("#75322D"))
             textSize = 13f
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
         }
         outer.addView(label)
 
@@ -930,7 +1031,7 @@ class MyStoneActivity : AppCompatActivity() {
     ): View {
         val cellLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_run_log_console)
+            setBackgroundResource(R.drawable.bg_stone_empty_panel)
             setPadding(dp(6), dp(6), dp(6), dp(6))
             layoutParams = LinearLayout.LayoutParams(
                 0,
@@ -983,12 +1084,12 @@ class MyStoneActivity : AppCompatActivity() {
     ): ImageView {
         return ImageView(this).apply {
             setImageResource(iconRes)
-            setColorFilter(Color.parseColor("#E5C07B"))
+            setColorFilter(Color.parseColor("#9A6435"))
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             minimumWidth = 0
             minimumHeight = 0
             adjustViewBounds = true
-            setBackgroundResource(R.drawable.btn_dark_hollow)
+            setBackgroundResource(R.drawable.btn_stone_light)
             setPadding(dp(3), dp(3), dp(3), dp(3))
             layoutParams = LinearLayout.LayoutParams(
                 0,
@@ -1010,14 +1111,14 @@ class MyStoneActivity : AppCompatActivity() {
             text = "×"
             textSize = 14f
             gravity = Gravity.CENTER
-            setTextColor(Color.parseColor("#FF8A80"))
+            setTextColor(Color.parseColor("#B84D4D"))
             typeface = Typeface.DEFAULT_BOLD
             includeFontPadding = false
             minWidth = 0
             minimumWidth = 0
             minHeight = 0
             minimumHeight = 0
-            setBackgroundResource(R.drawable.btn_dark_hollow)
+            setBackgroundResource(R.drawable.btn_stone_light)
             layoutParams = LinearLayout.LayoutParams(
                 0,
                 dp(22),
@@ -1034,9 +1135,9 @@ class MyStoneActivity : AppCompatActivity() {
         val resolved = StoneOcrParser.isRowResolved(row)
         rowView.setBackgroundColor(
             if (resolved) {
-                Color.parseColor("#3A1F1A12")
+                Color.parseColor("#26C79C5C")
             } else {
-                Color.parseColor("#66C0392B")
+                Color.parseColor("#35E8A8A0")
             }
         )
     }
@@ -1045,10 +1146,10 @@ class MyStoneActivity : AppCompatActivity() {
         val levelValid = StoneOcrParser.isValidLevel(cell.level)
         val nameValid = StoneOcrParser.isCellNameValid(cell)
         levelView.setTextColor(
-            if (levelValid || cell.level.isBlank()) Color.parseColor("#F3E9D0") else Color.parseColor("#FFB3B3")
+            if (levelValid || cell.level.isBlank()) Color.parseColor("#8A6B5E") else Color.parseColor("#B84D4D")
         )
         nameView.setTextColor(
-            if (nameValid || cell.name.isBlank()) Color.parseColor("#F3E9D0") else Color.parseColor("#FF8A80")
+            if (nameValid || cell.name.isBlank()) Color.parseColor("#75322D") else Color.parseColor("#B84D4D")
         )
     }
 
@@ -1246,7 +1347,8 @@ class MyStoneActivity : AppCompatActivity() {
             context = this,
             stoneType = currentStoneType,
             rows = currentRows,
-            statsLines = statsLines
+            statsLines = statsLines,
+            archiveId = currentArchiveId
         )
         currentRecord?.let { record ->
             val timeText = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA)

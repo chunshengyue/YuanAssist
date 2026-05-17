@@ -4,6 +4,8 @@ package com.example.yuanassist.core
 import android.text.SpannableStringBuilder
 import android.view.MotionEvent
 import com.example.yuanassist.model.HistoryAction
+import com.example.yuanassist.model.InstructionType
+import com.example.yuanassist.model.ScriptInstruction
 import com.example.yuanassist.model.TurnData
 import com.example.yuanassist.utils.AppConfig
 import kotlin.math.abs
@@ -27,6 +29,78 @@ class RecordEngine(
     init {
         // 初始化第一回合
         recordData.add(TurnData(1, currentStep = 1))
+    }
+
+    fun recordCircleAction(
+        charIndex: Int,
+        clickX: Float,
+        clickY: Float,
+        isSimulating: Boolean,
+        isFollowMode: Boolean,
+        onActionDone: (() -> Unit)? = null
+    ): Boolean {
+        if (isSimulating || isFollowMode) return false
+
+        val safeCharIndex = charIndex.coerceIn(0, 4)
+        val appConfig = getConfig()
+
+        dispatchRecordedAction(
+            charIndex = safeCharIndex,
+            actionSymbol = "圈",
+            actionType = "click",
+            startX = clickX,
+            startY = clickY,
+            endX = clickX,
+            endY = clickY,
+            recordDelay = appConfig.recordDelay,
+            onActionDone = onActionDone
+        )
+        return true
+    }
+
+    fun recordTargetSwitchInstruction(type: InstructionType): Boolean {
+        if (recordData.isEmpty()) return false
+
+        val turnIndex = recordData.lastIndex
+        val currentTurn = recordData[turnIndex]
+        val step = (currentTurn.currentStep - 1).coerceAtLeast(0)
+        val previousInstructions = cloneInstructions(currentTurn.instructions)
+        val previousRemark = currentTurn.remark
+        val newInstructions = cloneInstructions(currentTurn.instructions).toMutableList().apply {
+            add(
+                ScriptInstruction(
+                    turn = currentTurn.turnNumber,
+                    step = step,
+                    type = type,
+                    value = 1
+                ).normalized()
+            )
+        }
+        val newRemark = appendRemark(
+            previousRemark,
+            buildTargetSwitchRemark(currentTurn, step, type)
+        )
+
+        recordInstructionChange(
+            turnIndex = turnIndex,
+            previousInstructions = previousInstructions,
+            newInstructions = newInstructions,
+            previousRemark = previousRemark,
+            newRemark = newRemark
+        )
+
+        currentTurn.instructions.clear()
+        currentTurn.instructions.addAll(newInstructions)
+        currentTurn.remark = newRemark
+        onDataUpdated(turnIndex)
+        onActionRecorded(
+            when (type) {
+                InstructionType.TARGET_SWITCH_LEFT -> "左切目标"
+                InstructionType.TARGET_SWITCH_RIGHT, InstructionType.TARGET_SWITCH -> "右切目标"
+                else -> type.description
+            }
+        )
+        return true
     }
 
     fun handleTouch(event: MotionEvent, isSimulating: Boolean, isFollowMode: Boolean) {
@@ -67,30 +141,15 @@ class RecordEngine(
                     var charIndex = (relativeX / coordinateManager.colWidth).toInt()
                     charIndex = charIndex.coerceIn(0, 4)
 
-                    val uiTask = {
-                        if (recordData.isNotEmpty()) {
-                            val turnIndex = recordData.size - 1
-                            val currentTurn = recordData.last()
-                            val oldText = currentTurn.characterActions[charIndex]
-                            val oldStep = currentTurn.currentStep
-                            val newStep = oldStep + 1
-
-                            val newText =
-                                SpannableStringBuilder(oldText).append("$oldStep$actionSymbol")
-                            recordAction(turnIndex, charIndex, oldText, newText, oldStep, newStep)
-
-                            currentTurn.characterActions[charIndex] = newText
-                            currentTurn.currentStep = newStep
-
-                            onDataUpdated(turnIndex)
-                            onActionRecorded("$oldStep$actionSymbol")
-                        }
-                    }
-
-                    // 執行穿透 (帶上 UI 任務)
-                    gestureDispatcher.performActionPenetrate(
-                        touchStartX, touchStartY, actionType == "click", endX, endY,
-                        appConfig.recordDelay, uiTask
+                    dispatchRecordedAction(
+                        charIndex = charIndex,
+                        actionSymbol = actionSymbol,
+                        actionType = actionType,
+                        startX = touchStartX,
+                        startY = touchStartY,
+                        endX = endX,
+                        endY = endY,
+                        recordDelay = appConfig.recordDelay
                     )
                 } else {
                     // 區域外點擊 (無 UI 任務)
@@ -123,7 +182,7 @@ class RecordEngine(
                 onTurnRemoved(lastIndex)
                 return true // 撤回了新建回合
             }
-        } else {
+        } else if (action.type == 0) {
             if (action.turnIndex < recordData.size) {
                 val turnData = recordData[action.turnIndex]
                 turnData.characterActions[action.charIndex] = action.previousText
@@ -131,6 +190,16 @@ class RecordEngine(
                 redoStack.add(action)
                 onDataUpdated(action.turnIndex)
                 return true // 撤回了動作
+            }
+        } else if (action.type == 2) {
+            if (action.turnIndex < recordData.size) {
+                val turnData = recordData[action.turnIndex]
+                turnData.instructions.clear()
+                turnData.instructions.addAll(cloneInstructions(action.previousInstructions))
+                turnData.remark = action.previousRemark
+                redoStack.add(action)
+                onDataUpdated(action.turnIndex)
+                return true // 撤回了指令/备注
             }
         }
         return false
@@ -155,5 +224,115 @@ class RecordEngine(
         val action = HistoryAction(0, turnIndex, charIndex, oldText, newText, oldStep, newStep)
         undoStack.add(action)
         redoStack.clear()
+    }
+
+    private fun recordInstructionChange(
+        turnIndex: Int,
+        previousInstructions: List<ScriptInstruction>,
+        newInstructions: List<ScriptInstruction>,
+        previousRemark: String,
+        newRemark: String
+    ) {
+        undoStack.add(
+            HistoryAction(
+                type = 2,
+                turnIndex = turnIndex,
+                previousRemark = previousRemark,
+                newRemark = newRemark,
+                previousInstructions = cloneInstructions(previousInstructions),
+                newInstructions = cloneInstructions(newInstructions)
+            )
+        )
+        redoStack.clear()
+    }
+
+    private fun dispatchRecordedAction(
+        charIndex: Int,
+        actionSymbol: String,
+        actionType: String,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float,
+        recordDelay: Long,
+        onActionDone: (() -> Unit)? = null
+    ) {
+        val uiTask = buildRecordUiTask(charIndex, actionSymbol, onActionDone)
+        gestureDispatcher.performActionPenetrate(
+            startX,
+            startY,
+            actionType == "click",
+            endX,
+            endY,
+            recordDelay,
+            uiTask
+        )
+    }
+
+    private fun buildRecordUiTask(
+        charIndex: Int,
+        actionSymbol: String,
+        onActionDone: (() -> Unit)? = null
+    ): () -> Unit = {
+        if (recordData.isNotEmpty()) {
+            val turnIndex = recordData.size - 1
+            val currentTurn = recordData.last()
+            val oldText = currentTurn.characterActions[charIndex]
+            val oldStep = currentTurn.currentStep
+            val newStep = oldStep + 1
+
+            val newText = SpannableStringBuilder(oldText).append("$oldStep$actionSymbol")
+            recordAction(turnIndex, charIndex, oldText, newText, oldStep, newStep)
+
+            currentTurn.characterActions[charIndex] = newText
+            currentTurn.currentStep = newStep
+
+            onDataUpdated(turnIndex)
+            onActionRecorded("$oldStep$actionSymbol")
+        }
+        onActionDone?.invoke()
+    }
+
+    private fun buildTargetSwitchRemark(
+        turnData: TurnData,
+        step: Int,
+        type: InstructionType
+    ): String {
+        val direction = when (type) {
+            InstructionType.TARGET_SWITCH_LEFT -> "左切目标"
+            InstructionType.TARGET_SWITCH_RIGHT, InstructionType.TARGET_SWITCH -> "右切目标"
+            else -> type.description
+        }
+        val anchor = if (step == 0) {
+            "在1x前"
+        } else {
+            "在${findStepActionLabel(turnData, step) ?: "${step}x"}后"
+        }
+        return anchor + direction
+    }
+
+    private fun findStepActionLabel(turnData: TurnData, step: Int): String? {
+        val pattern = Regex("""(\d+)([A-Z↑↓圈])""")
+        for (actionText in turnData.characterActions) {
+            val text = actionText.toString()
+            pattern.findAll(text).forEach { match ->
+                val currentStep = match.groupValues[1].toIntOrNull() ?: return@forEach
+                if (currentStep == step) {
+                    return match.value
+                }
+            }
+        }
+        return null
+    }
+
+    private fun appendRemark(original: String, addition: String): String {
+        if (addition.isBlank()) return original
+        if (original.isBlank()) return addition
+        if (original.contains(addition)) return original
+        return "$original；$addition"
+    }
+
+    private fun cloneInstructions(instructions: List<ScriptInstruction>): List<ScriptInstruction> {
+        return instructions.map { it.copy() }
     }
 }

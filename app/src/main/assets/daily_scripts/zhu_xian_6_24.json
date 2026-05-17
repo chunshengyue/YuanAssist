@@ -2,37 +2,246 @@
   "start_task_id": 15,
   "tasks": [
     {
-      "id": 15,
+      "id": 1,
+      "action": "MATCH_TEMPLATE",
+      "delay": 500,
+      "params": {
+        "template_name": "gushi.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 907,
+          "y": 1253,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        },
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 99,
+          "ruyuan": 10
+        }
+      },
+      "on_success": 10,
+      "on_fail": 2
+    },
+    {
+      "id": 2,
+      "action": "BACK",
+      "delay": 1000,
+      "params": {},
+      "on_success": 3,
+      "on_fail": -1
+    },
+    {
+      "id": 3,
       "action": "MATCH_TEMPLATE",
       "delay": 1200,
       "params": {
-        "template_name": "6-24.png",
+        "template_name": "gushi.png",
         "threshold": 0.85,
         "click": 1,
-        "terminal_note": "未找到6-24入口，请确认当前是否在第六章"
+        "roi": {
+          "x": 907,
+          "y": 1253,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        },
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 99,
+          "ruyuan": 10
+        }
       },
-      "on_success": 151,
+      "on_success": 10,
+      "on_fail": 4
+    },
+    {
+      "id": 4,
+      "action": "BACK",
+      "delay": 1000,
+      "params": {},
+      "on_success": 5,
+      "on_fail": -1
+    },
+    {
+      "id": 5,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "gushi.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 907,
+          "y": 1253,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        },
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 99,
+          "ruyuan": 10
+        }
+      },
+      "on_success": 10,
+      "on_fail": 6
+    },
+    {
+      "id": 6,
+      "action": "BACK",
+      "delay": 1000,
+      "params": {},
+      "on_success": 7,
+      "on_fail": -1
+    },
+    {
+      "id": 7,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "gushi.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 907,
+          "y": 1253,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        },
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 99,
+          "ruyuan": 10
+        }
+      },
+      "on_success": 10,
+      "on_fail": 8
+    },
+    {
+      "id": 8,
+      "action": "BACK",
+      "delay": 1000,
+      "params": {},
+      "on_success": 9,
+      "on_fail": -1
+    },
+    {
+      "id": 9,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "gushi.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "未找到故事入口，请确认当前是否在主页",
+        "roi": {
+          "x": 907,
+          "y": 1253,
+          "w": 300,
+          "h": 300,
+          "align": "center"
+        },
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 99,
+          "ruyuan": 10
+        }
+      },
+      "on_success": 10,
       "on_fail": -2
     },
     {
-      "id": 151,
+      "id": 10,
+      "action": "SWIPE",
+      "delay": 1500,
+      "params": {
+        "startX": 540,
+        "startY": 960,
+        "endX": 540,
+        "endY": 1680,
+        "duration": 1000,
+        "align": "center"
+      },
+      "on_success": 11,
+      "on_fail": -1
+    },
+    {
+      "id": 11,
+      "action": "SWIPE",
+      "delay": 1000,
+      "params": {
+        "startX": 540,
+        "startY": 960,
+        "endX": 540,
+        "endY": 1680,
+        "duration": 1000,
+        "align": "center"
+      },
+      "on_success": 12,
+      "on_fail": -1
+    },
+    {
+      "id": 12,
       "action": "MATCH_TEMPLATE",
       "delay": 1200,
       "params": {
-        "template_name": "jinruguanqia.png",
+        "template_name": "chapter6.png",
         "threshold": 0.85,
         "click": 1,
-        "terminal_note": "6-24路径错误",
-        "roi": {
-          "x": 540,
-          "y": 1286,
-          "w": 200,
-          "h": 300,
-          "align": "center"
+        "terminal_note": "未找到第六章入口，请确认当前是否在主线任务界面"
+      },
+      "on_success": 13,
+      "on_fail": -2
+    },
+    {
+      "id": 13,
+      "action": "SWIPE",
+      "delay": 1200,
+      "params": {
+        "startX": 540,
+        "startY": 960,
+        "endX": 540,
+        "endY": 1680,
+        "duration": 1000,
+        "align": "center"
+      },
+      "on_success": 14,
+      "on_fail": -1
+    },
+    {
+      "id": 14,
+      "action": "SWIPE",
+      "delay": 1000,
+      "params": {
+        "startX": 540,
+        "startY": 960,
+        "endX": 540,
+        "endY": 1680,
+        "duration": 1000,
+        "align": "center"
+      },
+      "on_success": -1,
+      "on_fail": -1
+    },
+    {
+      "id": 15,
+      "action": "SET_VAR",
+      "delay": 0,
+      "params": {
+        "var_name": "mainline_entry_route",
+        "var_value": "6-24",
+        "branch_var": "game_variant",
+        "branch_routes": {
+          "daihaoyuan": 1501,
+          "ruyuan": 1502
         }
       },
-      "on_success": 16,
-      "on_fail": -2
+      "on_success": 1502,
+      "on_fail": -1
     },
     {
       "id": 16,
@@ -110,8 +319,8 @@
     },
     {
       "id": 21,
-      "action": "CLICK_RED_REGION",
-      "delay": 2200,
+      "action": "OCR",
+      "delay": 3000,
       "params": {
         "threshold": 0.72,
         "terminal_note": "第一场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
@@ -242,8 +451,8 @@
     },
     {
       "id": 29,
-      "action": "CLICK_RED_REGION",
-      "delay": 2200,
+      "action": "OCR",
+      "delay": 3000,
       "params": {
         "threshold": 0.72,
         "terminal_note": "第二场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
@@ -351,7 +560,7 @@
     {
       "id": 35,
       "action": "CLICK",
-      "delay":1500,
+      "delay": 1500,
       "params": {
         "x": 816,
         "y": 1037,
@@ -374,8 +583,8 @@
     },
     {
       "id": 37,
-      "action": "CLICK_RED_REGION",
-      "delay": 2200,
+      "action": "OCR",
+      "delay": 3000,
       "params": {
         "threshold": 0.72,
         "terminal_note": "第三场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
@@ -534,6 +743,91 @@
       },
       "on_success": -1,
       "on_fail": -1
+    },
+    {
+      "id": 99,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "youzhou.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": {
+          "x": 963,
+          "y": 236,
+          "w": 400,
+          "h": 400,
+          "align": "top"
+        }
+      },
+      "on_success": 10,
+      "on_fail": 100
+    },
+    {
+      "id": 100,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "jinru.png",
+        "threshold": 0.75,
+        "click": 1,
+        "terminal_note": "未找到幽州或进入入口，任务终止",
+        "roi": {
+          "x": 540,
+          "y": 1440,
+          "w": 1080,
+          "h": 960,
+          "align": "center"
+        }
+      },
+      "on_success": 10,
+      "on_fail": -2
+    },
+    {
+      "id": 151,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "jinruguanqia.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "6-24路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1286,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 16,
+      "on_fail": -2
+    },
+    {
+      "id": 1501,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "6-24(1).png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "未找到6-24入口，请确认当前是否在第六章"
+      },
+      "on_success": 151,
+      "on_fail": -2
+    },
+    {
+      "id": 1502,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1200,
+      "params": {
+        "template_name": "6-24.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "未找到6-24入口，请确认当前是否在第六章"
+      },
+      "on_success": 151,
+      "on_fail": -2
     }
   ]
 }

@@ -8,6 +8,7 @@ enum class InstructionType(val description: String) {
     ALL_WIPE_CHECK("全灭检测"),
     DEATH_CHECK("阵亡检测"),
     ORANGE_STAR_CHECK("橙星检测"),
+    PURPLE_STAR_CHECK("紫星检测"),
     TARGET_SWITCH("向右切换目标"),
     TARGET_SWITCH_LEFT("向左切换目标"),
     TARGET_SWITCH_RIGHT("向右切换目标");
@@ -18,7 +19,8 @@ enum class InstructionType(val description: String) {
         this == STAGE_AUTO_NAV ||
             this == ALL_WIPE_CHECK ||
             this == DEATH_CHECK ||
-            this == ORANGE_STAR_CHECK
+            this == ORANGE_STAR_CHECK ||
+            this == PURPLE_STAR_CHECK
 
     fun normalizeTurn(turn: Int): Int = if (this == STAGE_AUTO_NAV) 1 else turn
 
@@ -29,7 +31,10 @@ enum class InstructionType(val description: String) {
         val normalizedStep = normalizeStep(step)
         return when {
             this == STAGE_AUTO_NAV -> "开战前"
-            this == ALL_WIPE_CHECK || this == DEATH_CHECK || this == ORANGE_STAR_CHECK -> "第 $normalizedTurn 回合"
+            this == ALL_WIPE_CHECK ||
+                this == DEATH_CHECK ||
+                this == ORANGE_STAR_CHECK ||
+                this == PURPLE_STAR_CHECK -> "第 $normalizedTurn 回合"
             normalizedStep == 0 -> "第 $normalizedTurn 回合 - 整回合"
             else -> "第 $normalizedTurn 回合 - 动作 $normalizedStep 后"
         }
@@ -75,7 +80,8 @@ data class ScriptInstruction(
             InstructionType.DEATH_CHECK -> "第${normalized.value}人"
             InstructionType.PAUSE,
             InstructionType.ALL_WIPE_CHECK,
-            InstructionType.ORANGE_STAR_CHECK -> ""
+            InstructionType.ORANGE_STAR_CHECK,
+            InstructionType.PURPLE_STAR_CHECK -> ""
         }
         val suffix = valueStr.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
         return "$timingText : ${normalized.type.description}$suffix"
@@ -123,7 +129,8 @@ fun ScriptInstruction.toDisplaySummary(): String {
         InstructionType.TARGET_SWITCH_RIGHT -> "${normalized.value} 次"
         InstructionType.PAUSE,
         InstructionType.ALL_WIPE_CHECK,
-        InstructionType.ORANGE_STAR_CHECK -> null
+        InstructionType.ORANGE_STAR_CHECK,
+        InstructionType.PURPLE_STAR_CHECK -> null
     }
     return buildString {
         append(normalized.type.formatTiming(normalized.turn, normalized.step))

@@ -1,10 +1,14 @@
 package com.example.yuanassist.model
 
-import cn.bmob.v3.BmobObject
+const val ISSUE_FEEDBACK_STATUS_PENDING = 0
+const val ISSUE_FEEDBACK_STATUS_REPLIED = 1
 
-// 繼承 BmobObject 的類別會自動對應到 Bmob 雲端的一張資料表
-class Feedback : BmobObject() {
-    var title: String? = null
-    var content: String? = null
-    var deviceId: String? = null
+class issue_feedback : SupabaseRecord() {
+    var deviceId: String = ""
+    var user: MyUser? = null
+    var description: String = ""
+    var logContent: String = ""
+    var imageUrls: String = ""
+    var reply: String = ""
+    var status: Int = ISSUE_FEEDBACK_STATUS_PENDING
 }

@@ -7,6 +7,7 @@ data class DailyTaskPlan(
 
 data class DailyTask(
     val id: Int,
+    val name: String? = null,
     val action: String, // CLICK, MATCH_TEMPLATE, OCR, CLICK_LAST_MATCH...
     val delay: Long = 0,
     val params: TaskParams?, // 有些指令可能没有 params
@@ -36,10 +37,15 @@ data class TaskParams(
     val button_name: String? = null,
     val ref_task_id: Int? = null,
     val click: Int? = null,
+    val target_chars: List<String>? = null,
+    val min_hit_count: Int? = null,
+    val preprocess: String? = null,
     val var_name: String? = null,
     val var_value: String? = null,
     val branch_var: String? = null,
     val branch_routes: Map<String, Int>? = null,
+    val fail_branch_var: String? = null,
+    val fail_branch_routes: Map<String, Int>? = null,
     val terminal_note: String? = null
 )
 

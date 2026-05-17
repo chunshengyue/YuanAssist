@@ -1,0 +1,4 @@
+project_id = "yuanassist"
+
+[functions.yuanassist-api]
+verify_jwt = false

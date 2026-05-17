@@ -1,4 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.YuanAssist" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:alertDialogTheme">@style/ThemeOverlay.YuanAssist.AlertDialog</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.YuanAssist.AlertDialog</item>
+        <item name="android:editTextStyle">@style/Widget.YuanAssist.EditText</item>
+        <item name="editTextStyle">@style/Widget.YuanAssist.EditText</item>
+        <item name="colorAccent">#B89B62</item>
+    </style>
+
     <!-- Base application theme. -->
     <style name="Theme.GameAssist" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
@@ -11,6 +19,10 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:alertDialogTheme">@style/ThemeOverlay.YuanAssist.AlertDialog</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.YuanAssist.AlertDialog</item>
+        <item name="android:editTextStyle">@style/Widget.YuanAssist.EditText</item>
+        <item name="editTextStyle">@style/Widget.YuanAssist.EditText</item>
         <!-- Customize your theme here. -->
     </style>
     <style name="Theme.Transparent" parent="Theme.AppCompat.NoActionBar">
@@ -18,5 +30,42 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <style name="ThemeOverlay.YuanAssist.AlertDialog" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_job_station_card</item>
+        <item name="android:colorAccent">#B89B62</item>
+        <item name="colorAccent">#B89B62</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textColorPrimary">#2F261B</item>
+        <item name="android:textColorSecondary">#6C5B43</item>
+        <item name="colorSurface">#FFFDF8</item>
+        <item name="colorOnSurface">#2F261B</item>
+        <item name="android:windowMinWidthMajor">88%</item>
+        <item name="android:windowMinWidthMinor">88%</item>
+        <item name="android:buttonBarButtonStyle">@style/Widget.YuanAssist.DialogButton</item>
+        <item name="buttonBarButtonStyle">@style/Widget.YuanAssist.DialogButton</item>
+        <item name="android:editTextStyle">@style/Widget.YuanAssist.EditText</item>
+        <item name="editTextStyle">@style/Widget.YuanAssist.EditText</item>
+    </style>
+
+    <style name="Widget.YuanAssist.DialogButton" parent="@android:style/Widget.Button">
+        <item name="android:background">@drawable/bg_job_station_icon_button</item>
+        <item name="android:textColor">#8C6C33</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+    </style>
+
+    <style name="Widget.YuanAssist.EditText" parent="@android:style/Widget.EditText">
+        <item name="android:background">@drawable/bg_job_station_icon_button</item>
+        <item name="android:textColor">#4E3C1E</item>
+        <item name="android:textColorHint">#9A8A71</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
     </style>
 </resources>

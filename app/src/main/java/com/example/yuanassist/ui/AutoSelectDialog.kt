@@ -1,11 +1,8 @@
 package com.example.yuanassist.ui.dialogs
 
-import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
-import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
@@ -25,33 +22,41 @@ object AutoSelectDialog {
         onSave: (isEnabled: Boolean, newAgents: Array<String>) -> Unit
     ) {
         val themeContext = DialogUtils.getThemeContext(context)
-        val layout = LinearLayout(themeContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(50, 40, 50, 40)
-        }
+        val rootLayout = StyledDialogUi.createDialogCard(themeContext)
+        rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "自动选择角色设置"))
 
         val switchAutoSelect = Switch(themeContext).apply {
             text = "开启自动选择密探"
             isChecked = isCurrentlyEnabled
             textSize = 16f
-            setPadding(0, 0, 0, 10)
+            setTextColor(Color.parseColor("#2F261B"))
+            setPadding(0, StyledDialogUi.dpToPx(themeContext, 10f), 0, StyledDialogUi.dpToPx(themeContext, 8f))
         }
-        layout.addView(switchAutoSelect)
+        rootLayout.addView(switchAutoSelect)
 
         val tvHint = TextView(themeContext).apply {
             text =
                 "小提示：\n若选择开启，必须在编队（选人）界面点击开始跟打。\n若关闭，开始战斗后画面稳定再点击开始跟打。"
             textSize = 12f
-            setTextColor(Color.GRAY)
-            setPadding(0, 0, 0, 40)
+            setTextColor(Color.parseColor("#8C7A61"))
+            setPadding(0, 0, 0, StyledDialogUi.dpToPx(themeContext, 12f))
         }
-        layout.addView(tvHint)
+        rootLayout.addView(tvHint)
 
         val inputFields = Array(5) { i ->
             AutoCompleteTextView(themeContext).apply {
                 hint = "请输入 ${i + 1} 号位角色名"
                 setText(currentAgents[i])
-                setTextColor(Color.BLACK)
+                textSize = 14f
+                setTextColor(Color.parseColor("#4E3C1E"))
+                setHintTextColor(Color.parseColor("#9A8A71"))
+                setBackgroundResource(com.example.yuanassist.R.drawable.bg_job_station_icon_button)
+                setPadding(
+                    StyledDialogUi.dpToPx(themeContext, 12f),
+                    0,
+                    StyledDialogUi.dpToPx(themeContext, 12f),
+                    0
+                )
                 setSingleLine()
                 val adapter = ArrayAdapter(
                     themeContext,
@@ -68,33 +73,35 @@ object AutoSelectDialog {
             val row = LinearLayout(themeContext).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 10, 0, 10)
+                setPadding(0, StyledDialogUi.dpToPx(themeContext, 5f), 0, StyledDialogUi.dpToPx(themeContext, 5f))
             }
             val tvLabel = TextView(themeContext).apply {
                 text = "${i + 1}号位:"
                 textSize = 14f
-                setTextColor(Color.DKGRAY)
-                width = (60 * context.resources.displayMetrics.density).toInt()
+                setTextColor(Color.parseColor("#6C5B43"))
+                width = StyledDialogUi.dpToPx(themeContext, 60f)
             }
-            val lp = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            val lp = LinearLayout.LayoutParams(0, StyledDialogUi.dpToPx(themeContext, 44f), 1f)
             inputFields[i].layoutParams = lp
 
             row.addView(tvLabel)
             row.addView(inputFields[i])
-            layout.addView(row)
+            rootLayout.addView(row)
         }
 
-        val builder = AlertDialog.Builder(themeContext)
-            .setTitle("自动选择角色设置")
-            .setView(layout)
-            .setPositiveButton("保存", null)
-            .setNegativeButton("取消", null)
+        val buttonRow = StyledDialogUi.createActionRow(themeContext)
+        val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
+        val btnSave = StyledDialogUi.createActionButton(themeContext, "保存", true)
+        buttonRow.addView(btnCancel, StyledDialogUi.createWeightedButtonParams(themeContext, false))
+        buttonRow.addView(btnSave, StyledDialogUi.createWeightedButtonParams(themeContext, true))
+        rootLayout.addView(buttonRow)
 
-        // 使用我們剛寫好的 Utils
-        val dialog = DialogUtils.safeShowOverlayDialog(builder)
-        dialog.window?.clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        val dialog = StyledDialogUi.showStyledDialog(themeContext, rootLayout)
 
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+        btnSave.setOnClickListener {
             val isChecked = switchAutoSelect.isChecked
             val tempNames = Array(5) { "" }
             var allFilled = true

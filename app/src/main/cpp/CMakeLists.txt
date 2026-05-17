@@ -10,6 +10,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 add_library(paddle_ocr_jni SHARED
     native_ocr_jni.cpp
     rec_wrapper.cc
+    det_wrapper.cc
 )
 
 # Paddle Lite shared library

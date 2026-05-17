@@ -125,7 +125,7 @@
     {
       "id": 34,
       "action": "MATCH_TEMPLATE",
-      "delay": 1000,
+      "delay": 3000,
       "params": {
         "template_name": "qianwang.png",
         "threshold": 0.85,
@@ -139,7 +139,7 @@
         }
       },
       "on_success": 341,
-      "on_fail": -4
+      "on_fail": 31
     },
     {
       "id": 341,
@@ -153,30 +153,29 @@
       "on_fail": -1
     },
     {
-  "id": 40,
-  "action": "MATCH_TEMPLATE",
-  "delay": 1500,
-  "params": {
-    "template_name": "jizhi.png",
-    "threshold": 0.85,
-    "terminal_note": "当前任务鸟食耗尽",
-    "branch_var": "auto_eat_enabled",
-    "branch_routes": {
-      "1": 4,
-      "0": -3
+      "id": 40,
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "params": {
+        "template_name": "jizhi.png",
+        "threshold": 0.85,
+        "terminal_note": "当前任务鸟食耗尽",
+        "branch_var": "auto_eat_enabled",
+        "branch_routes": {
+          "0": -3,
+          "1": 4
+        },
+        "roi": {
+          "x": 217,
+          "y": 954,
+          "w": 200,
+          "h": 300,
+          "align": "center"
+        }
+      },
+      "on_success": 4,
+      "on_fail": 6
     },
-    "roi": {
-      "x": 217,
-      "y": 954,
-      "w": 200,
-      "h": 300,
-      "align": "center"
-    }
-  },
-  "on_success": 4,
-  "on_fail": 6
-    },
-
     {
       "id": 4,
       "action": "MATCH_TEMPLATE",
@@ -255,78 +254,28 @@
     },
     {
       "id": 6,
-      "action": "CLICK_RED_REGION",
-      "delay": 700,
+      "action": "OCR",
+      "delay": 1500,
       "params": {
-        "threshold": 0.72,
+        "template_name": "saodang.png",
+        "threshold": 0.8,
+        "terminal_note": "未识别到扫荡按钮",
         "roi": {
-          "x": 540,
-          "y": 1700,
-          "w": 500,
-          "h": 400,
+          "x": 335,
+          "y": 1703,
+          "w": 300,
+          "h": 280,
           "align": "bottom"
-        }
+        },
+        "target_chars": [
+          "扫",
+          "荡"
+        ],
+        "min_hit_count": 1,
+        "preprocess": "light_text"
       },
-      "on_success": 7,
+      "on_success": 103,
       "on_fail": 10
-    },
-    {
-      "id": 7,
-      "action": "MATCH_TEMPLATE",
-      "delay": 5000,
-      "params": {
-        "template_name": "queding.png",
-        "threshold": 0.85,
-        "click": 1,
-        "terminal_note": "战斗超时或者路径错误",
-        "roi": {
-          "x": 540,
-          "y": 1692,
-          "w": 200,
-          "h": 300,
-          "align": "bottom"
-        }
-      },
-      "on_success": 103,
-      "on_fail": 8
-    },
-    {
-      "id": 8,
-      "action": "MATCH_TEMPLATE",
-      "delay": 5000,
-      "params": {
-        "template_name": "queding.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 540,
-          "y": 1692,
-          "w": 200,
-          "h": 300,
-          "align": "bottom"
-        }
-      },
-      "on_success": 103,
-      "on_fail": 9
-    },
-    {
-      "id": 9,
-      "action": "MATCH_TEMPLATE",
-      "delay": 5000,
-      "params": {
-        "template_name": "queding.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 540,
-          "y": 1692,
-          "w": 200,
-          "h": 300,
-          "align": "bottom"
-        }
-      },
-      "on_success": 103,
-      "on_fail": -2
     },
     {
       "id": 99,
@@ -341,7 +290,7 @@
           "1-1": 32,
           "1-2": 33,
           "1-3": 34,
-          "1-4": -1
+          "1-4": 31
         }
       },
       "on_success": -1,
@@ -428,7 +377,6 @@
           "align": "center"
         }
       },
-      "start_cooldown_on_success": true,
       "on_success": 99,
       "on_fail": -2
     },

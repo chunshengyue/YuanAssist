@@ -2,6 +2,8 @@ package com.example.yuanassist.network
 
 import android.graphics.Bitmap
 import android.util.Base64
+import android.util.Log
+import com.example.yuanassist.utils.OcrRouteManager
 import com.example.yuanassist.utils.RunLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -20,7 +22,6 @@ import javax.net.ssl.SSLException
 
 object OcrManager {
 
-    private const val OCR_URL = "https://1404626659-0xl5hg6b23.ap-nanjing.tencentscf.com/release/ocr"
     private const val API_SECRET = "nobodyknows"
 
     private val client = OkHttpClient.Builder()
@@ -148,8 +149,9 @@ object OcrManager {
                 .add("response_mode", responseMode)
                 .build()
 
+            val ocrUrl = OcrRouteManager.getOcrUrl()
             val request = Request.Builder()
-                .url(OCR_URL)
+                .url(ocrUrl)
                 .post(requestBody)
                 .addHeader("X-Device-ID", deviceId)
                 .addHeader("X-Api-Secret", API_SECRET)
@@ -160,7 +162,8 @@ object OcrManager {
 
             while (retryCount <= maxRetries) {
                 try {
-                    RunLogger.i("$requestName 发起请求，第${retryCount + 1}次")
+                    RunLogger.i("$requestName 发起请求，第${retryCount + 1}次，url=$ocrUrl")
+                    Log.i("OcrManager", "$requestName 使用 OCR 中转地址: $ocrUrl")
                     val response = client.newCall(request).execute()
                     val responseStr = response.body?.string() ?: ""
 

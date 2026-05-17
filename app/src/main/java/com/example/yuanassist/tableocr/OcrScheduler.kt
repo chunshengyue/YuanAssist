@@ -1,9 +1,6 @@
 package com.example.yuanassist.tableocr
 
-import android.graphics.Bitmap
-import org.opencv.android.Utils
 import org.opencv.core.Core
-import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Rect
 import org.opencv.core.Size
@@ -11,14 +8,10 @@ import org.opencv.imgproc.Imgproc
 
 object OcrScheduler {
 
+    private const val DEBUG_TAG = "TableOcrV2"
+
     private var ocrFunc: ((Mat) -> String)? = null
     private val analyzer = CellLayoutAnalyzer()
-    
-    private val canonicalAction = Regex("^(?:10|[1-9])A$")
-    private val singleArrowAction = Regex("^(?:10|[1-9])[↑↓]$")
-    private val repeatedSingleAAction = Regex("^(?:10|[1-9])A{2,}$")
-    private val suffixOnlyAction = Regex("^[A↑↓圈]+$")
-    private val repeatedActionTokenSequence = Regex("^((?:10|[1-9])[A↑↓圈]+)\\1+$")
 
     fun setOcrFunction(func: (Mat) -> String) {
         ocrFunc = func
@@ -35,96 +28,29 @@ object OcrScheduler {
     fun ocrActionCell(tableImage: Mat, cell: CellBox): String {
         android.util.Log.d("Scheduler", "ocrActionCell cell[${cell.row},${cell.col}] xy=${cell.x},${cell.y} wh=${cell.w}x${cell.h}")
         val crop = cropCell(tableImage, cell)
-        val prepared = prepareCrop(crop)
-        val fullText = ocrFunc?.invoke(prepared) ?: ""
-        prepared.release()
-
         val lineCrops = analyzer.splitLines(crop)
         if (lineCrops.isNotEmpty()) {
             val parts = mutableListOf<String>()
             var allLinesUsable = true
-            for (lc in lineCrops) {
-                val lp = prepareCrop(lc)
-                val text = ocrFunc?.invoke(lp) ?: ""
-                lp.release()
-                val result = ActionParser.parse(text)
-                val assembled = assembleActionText(text, lc)
+            for ((lineIndex, lc) in lineCrops.withIndex()) {
+                val text = assembleActionText(lc, "cell[${cell.row},${cell.col}] line=$lineIndex")
                 lc.release()
-                val chosen = chooseComponentResult(result.text + result.fragment, assembled)
-                if (chosen.isNotEmpty()) {
-                    parts.add(chosen)
+                if (text.isNotEmpty()) {
+                    parts.add(text)
                 } else {
                     allLinesUsable = false
                 }
             }
             if (allLinesUsable) {
-                val lineResult = parts.joinToString("")
-                if (lineResult.isNotEmpty() && !repeatedActionTokenSequence.matches(lineResult)) {
-                    crop.release()
-                    return lineResult
-                }
-            }
-        }
-
-        val fullResult = ActionParser.parse(fullText)
-        if (fullResult.isComplete && fullResult.text.isNotEmpty() &&
-            !singleArrowAction.matches(fullResult.text) &&
-            !canonicalAction.matches(fullResult.text) &&
-            !repeatedSingleAAction.matches(fullResult.text) &&
-            !suffixOnlyAction.matches(fullResult.text) &&
-            !repeatedActionTokenSequence.matches(fullResult.text)) {
-            if (ActionParser.looksComplex(fullResult.text)) {
-                val assembled = assembleActionText(fullText, crop)
-                val chosen = chooseComponentResult(fullResult.text, assembled)
+                android.util.Log.d(DEBUG_TAG, "cell[${cell.row},${cell.col}] splitResult='${parts.joinToString("")}'")
                 crop.release()
-                return chosen
-            }
-            crop.release()
-            return fullResult.text
-        }
-
-        if (ActionParser.looksComplex(fullText) && !repeatedActionTokenSequence.matches(fullResult.text)) {
-            crop.release()
-            return when {
-                fullResult.text.isNotEmpty() -> fullResult.text + fullResult.fragment
-                else -> fullText
+                return parts.joinToString("")
             }
         }
-
-        val assembled = assembleActionText(fullText, crop)
+        val result = assembleActionText(crop, "cell[${cell.row},${cell.col}] full")
+        android.util.Log.d(DEBUG_TAG, "cell[${cell.row},${cell.col}] fullResult='$result'")
         crop.release()
-        return assembled
-    }
-
-    private fun chooseComponentResult(ocrText: String, componentText: String): String {
-        if (componentText.isEmpty()) return ocrText
-        if (ocrText.isEmpty()) return componentText
-
-        val parsedComponent = ActionParser.parse(componentText)
-        if (parsedComponent.text.isEmpty()) return ocrText
-
-        val normalizedComponent = parsedComponent.text + parsedComponent.fragment
-        if (suffixOnlyAction.matches(ocrText) && !suffixOnlyAction.matches(normalizedComponent)) {
-            return normalizedComponent
-        }
-        if (repeatedActionTokenSequence.matches(ocrText) &&
-            !repeatedActionTokenSequence.matches(normalizedComponent)) {
-            return normalizedComponent
-        }
-
-        val ocrDigitCount = actionDigitCount(ocrText)
-        val componentDigitCount = actionDigitCount(normalizedComponent)
-        return if (componentDigitCount > ocrDigitCount &&
-            parsedComponent.isComplete &&
-            !repeatedActionTokenSequence.matches(normalizedComponent)) {
-            normalizedComponent
-        } else {
-            ocrText
-        }
-    }
-
-    private fun actionDigitCount(text: String): Int {
-        return Regex("10|[1-9]").findAll(text).count()
+        return result
     }
 
     fun ocrCells(tableImage: Mat, boxes: List<CellBox>): Map<Pair<Int, Int>, String> {
@@ -138,15 +64,6 @@ object OcrScheduler {
             }
         }
         return results
-    }
-
-    fun recognizeCellBitmap(bitmap: Bitmap): String {
-        val mat = Mat()
-        Utils.bitmapToMat(bitmap, mat)
-        Imgproc.cvtColor(mat, mat, Imgproc.COLOR_RGBA2BGR)
-        val prepared = prepareCrop(mat)
-        mat.release()
-        return ocrFunc?.invoke(prepared)?.also { prepared.release() } ?: ""
     }
 
     private fun cropCell(image: Mat, cell: CellBox, padding: Int = 2): Mat {
@@ -174,160 +91,241 @@ object OcrScheduler {
         return result
     }
 
-    private fun assembleActionText(fullText: String, crop: Mat): String {
-        val binary = toInvertedBinary(crop)
-        val components = findComponents(binary)
-        val filtered = filterBorderComponents(binary, components)
+    private fun assembleActionText(crop: Mat, debugLabel: String): String {
+        val rawText = recognizeCropText(crop)
+        android.util.Log.d(DEBUG_TAG, "$debugLabel rawCropOcr='$rawText' size=${crop.cols()}x${crop.rows()}")
+        if (isNonActionText(rawText)) return ""
+
+        val binary = ActionComponentAnalyzer.toInvertedBinary(crop)
+        val components = ActionComponentAnalyzer.filterBorderComponents(
+            binary,
+            ActionComponentAnalyzer.findComponents(binary)
+        )
+        val readingComponents = splitTallComponentsByAnchorRows(components, debugLabel)
+        val lines = dropTinyComponentLines(ActionComponentAnalyzer.groupComponentsForReading(readingComponents))
+        android.util.Log.d(
+            DEBUG_TAG,
+            "$debugLabel components=${components.joinToString { rectLabel(it) }} " +
+                "readingComponents=${readingComponents.joinToString { rectLabel(it) }} lines=${lines.size}"
+        )
+        if (lines.isEmpty()) {
+            binary.release()
+            return ""
+        }
+
+        val parts = mutableListOf<String>()
+        for ((lineIndex, line) in lines.withIndex()) {
+            parts.add(transcribeComponentLine(crop, binary, line.sortedBy { it.x }, "$debugLabel componentLine=$lineIndex"))
+        }
         binary.release()
 
-        if (filtered.size < 2) {
-            val parsedFullText = ActionParser.parse(fullText)
-            return assembleSuffixOnlyComponents(crop, filtered).ifEmpty {
-                parsedFullText.text.ifEmpty { fullText }
+        val text = parts.joinToString("")
+        android.util.Log.d(DEBUG_TAG, "$debugLabel assembled='$text'")
+        if (text.isEmpty()) return ""
+        return text
+    }
+
+    private fun splitTallComponentsByAnchorRows(components: List<Rect>, debugLabel: String): List<Rect> {
+        if (components.size < 4) return components
+
+        val medianHeight = components.map { it.height }.sorted()[components.size / 2].coerceAtLeast(1)
+        val tallComponents = components.filter { it.height * 100 >= medianHeight * 155 }
+        if (tallComponents.isEmpty()) return components
+
+        val anchorComponents = components.filter { it !in tallComponents }
+        val anchorLines = ActionComponentAnalyzer.groupComponentsForReading(anchorComponents)
+        if (anchorLines.size < 2) return components
+
+        val rowRanges = anchorLines
+            .map { line -> line.minOf { it.y } to line.maxOf { it.y + it.height } }
+            .sortedBy { it.first + it.second }
+        if (rowRanges.size < 2) return components
+
+        val result = mutableListOf<Rect>()
+        for (component in components) {
+            if (component !in tallComponents) {
+                result.add(component)
+                continue
             }
-        }
-        if (canonicalAction.matches(fullText) && filtered.size <= 2) {
-            return fullText
-        }
 
-        val ordered = orderComponentsForReading(filtered)
-        val digitComp = listOf(ordered[0])
-        val suffixComps = ordered.drop(1)
-        val hasComplexComponents = ordered.size > 2
+            val splitParts = mutableListOf<Rect>()
+            for ((rowIndex, range) in rowRanges.withIndex()) {
+                val previous = rowRanges.getOrNull(rowIndex - 1)
+                val next = rowRanges.getOrNull(rowIndex + 1)
+                val rowTopBoundary = previous?.let { (it.second + range.first) / 2 } ?: component.y
+                val rowBottomBoundary = next?.let { (range.second + it.first) / 2 } ?: component.y + component.height
+                val top = maxOf(component.y, rowTopBoundary)
+                val bottom = minOf(component.y + component.height, rowBottomBoundary)
+                if (bottom - top >= 8) {
+                    splitParts.add(Rect(component.x, top, component.width, bottom - top))
+                }
+            }
 
-        val digitCrop = cropComponents(crop, digitComp)
-        val digitPrepared = prepareCrop(digitCrop, scale = 8)
-        val digitText = ocrFunc?.invoke(digitPrepared) ?: ""
-        digitPrepared.release()
-        digitCrop.release()
-
-        val componentDigitText = recognizeComponentToken(crop, digitComp[0])
-        val rawDigit = ActionParser.extractDigit(digitText).ifEmpty {
-            ActionParser.extractDigit(componentDigitText)
-        }.ifEmpty {
-            if (looksLikeOneDigitComponent(digitComp[0])) "1" else ""
-        }.ifEmpty {
-            ActionParser.extractDigit(fullText)
-        }
-        val digit = correctDigitByShape(rawDigit, digitComp[0])
-        if (digit.isEmpty()) {
-            return assembleSuffixOnlyComponents(crop, ordered).ifEmpty { fullText }
-        }
-
-        val suffixCrop = cropComponents(crop, suffixComps)
-        val suffixPrepared = prepareCrop(suffixCrop, scale = 8)
-        val suffixText = ocrFunc?.invoke(suffixPrepared) ?: ""
-        suffixPrepared.release()
-        suffixCrop.release()
-
-        val componentText = assembleComponentSequence(crop, ordered, digit)
-        if (componentText.isNotEmpty()) {
-            return componentText
-        }
-
-        val suffixResult = ActionParser.parse("$digit$suffixText")
-        if (Regex("\\d").containsMatchIn(suffixText) &&
-            suffixResult.isComplete &&
-            suffixResult.text.isNotEmpty() &&
-            !repeatedActionTokenSequence.matches(suffixResult.text)) {
-            return suffixResult.text
-        }
-
-        val arrowBinary = toInvertedBinary(crop)
-        val arrows = suffixComps.mapNotNull { comp ->
-            classifyArrowComponent(arrowBinary, comp).ifEmpty { null }
-        }.joinToString("")
-        arrowBinary.release()
-
-        val result = when {
-            arrows.isNotEmpty() && "A" in suffixText -> "${digit}${arrows}A"
-            arrows.isNotEmpty() -> "$digit$arrows"
-            "A" in suffixText -> "${digit}A"
-            suffixText.isNotEmpty() && !hasComplexComponents -> "$digit$suffixText"
-            repeatedActionTokenSequence.matches(fullText) -> ""
-            else -> fullText
+            if (splitParts.size >= 2) {
+                android.util.Log.d(
+                    DEBUG_TAG,
+                    "$debugLabel splitTall rect=${rectLabel(component)} -> ${splitParts.joinToString { rectLabel(it) }}"
+                )
+                result.addAll(splitParts)
+            } else {
+                result.add(component)
+            }
         }
         return result
     }
 
-    private fun assembleSuffixOnlyComponents(crop: Mat, components: List<Rect>): String {
-        if (components.isEmpty()) return ""
-
-        val binary = toInvertedBinary(crop)
-        val parts = mutableListOf<String>()
-        var complete = true
-        for (comp in orderComponentsForReading(components)) {
-            val arrow = classifyArrowComponent(binary, comp, relaxedShape = true)
-            if (arrow.isNotEmpty()) {
-                parts.add(arrow)
-                continue
-            }
-            val token = recognizeComponentToken(crop, comp)
-            if (token.isEmpty()) {
-                complete = false
-                break
-            }
-            parts.add(token)
+    private fun dropTinyComponentLines(lines: List<List<Rect>>): List<List<Rect>> {
+        if (lines.size <= 1) return lines
+        val maxLineHeight = lines.maxOf { line -> line.maxOf { it.height } }.coerceAtLeast(1)
+        return lines.filter { line ->
+            val lineHeight = line.maxOf { it.height }
+            lineHeight >= 12 || lineHeight * 100 >= maxLineHeight * 60
         }
-        binary.release()
-
-        if (!complete) return ""
-        val parsed = ActionParser.parse(parts.joinToString(""))
-        return if (parsed.isComplete && parsed.text.isNotEmpty()) parsed.text else ""
     }
 
-    private fun assembleComponentSequence(crop: Mat, components: List<Rect>, firstDigit: String): String {
-        if (components.size < 2) return ""
-
-        val binary = toInvertedBinary(crop)
-        val parts = mutableListOf(firstDigit)
-        var complete = true
-
-        val suffixComponents = components.drop(1)
+    private fun transcribeComponentLine(
+        crop: Mat,
+        binary: Mat,
+        lineComponents: List<Rect>,
+        debugLabel: String
+    ): String {
+        val parts = mutableListOf<String>()
+        var previousCircle: Rect? = null
         var index = 0
-        while (index < suffixComponents.size) {
-            val comp = suffixComponents[index]
-            val arrow = classifyArrowComponent(binary, comp, relaxedShape = true)
-            if (arrow.isNotEmpty()) {
-                val previousIsSuffix = parts.lastOrNull()?.all { it == 'A' || it == '↑' || it == '↓' || it == '圈' } == true
-                if (previousIsSuffix && index + 1 < suffixComponents.size) {
-                    val token = recognizeComponentToken(crop, comp)
-                    val nextToken = recognizeComponentToken(crop, suffixComponents[index + 1])
-                    if (token.isNotEmpty() && token.any { it.isDigit() }) {
-                        parts.add(token)
-                        index++
-                        continue
-                    }
-                    if (arrow == "↑" && nextToken == "0") {
-                        parts.add("10")
-                        index += 2
-                        continue
-                    }
-                    if (arrow == "↑" && classifyArrowComponent(binary, suffixComponents[index + 1], relaxedShape = true).isNotEmpty()) {
-                        parts.add("9")
-                        index++
-                        continue
-                    }
-                }
-                parts.add(arrow)
+        while (index < lineComponents.size) {
+            val component = lineComponents[index]
+            val shapeArrow = ActionComponentAnalyzer.classifyActionArrow(binary, component, lineComponents)
+            val shapeCircle = ActionComponentAnalyzer.classifyCircle(binary, component)
+            val shapeZero = ActionComponentAnalyzer.looksLikeZero(binary, component)
+            val ocrToken = recognizeComponentToken(crop, component)
+            val token = chooseActionToken(ocrToken, shapeArrow, shapeCircle, shapeZero, component)
+            android.util.Log.d(
+                DEBUG_TAG,
+                "$debugLabel index=$index rect=${rectLabel(component)} ocrToken='$ocrToken' " +
+                    "shapeArrow='$shapeArrow' shapeCircle='$shapeCircle' shapeZero=$shapeZero " +
+                    "looksLikeOne=${ActionComponentAnalyzer.looksLikeOneDigit(component)} token='$token'"
+            )
+            val circle = previousCircle
+            if (token == "0" && circle != null && isCircleRightFragment(circle, component)) {
+                android.util.Log.d(
+                    DEBUG_TAG,
+                    "$debugLabel index=$index skipCircleZeroFragment rect=${rectLabel(component)} circle=${rectLabel(circle)}"
+                )
                 index++
                 continue
             }
-
-            val token = recognizeComponentToken(crop, comp)
-            if (token.isEmpty()) {
-                complete = false
-                break
+            if (token.isNotEmpty()) {
+                parts.add(token)
+                previousCircle = if (token == "圈") component else null
+            } else if (looksLikeVisibleCharacter(component, lineComponents)) {
+                val relaxedArrow = ActionComponentAnalyzer.classifyArrow(binary, component, relaxedShape = true)
+                if (relaxedArrow.isNotEmpty()) {
+                    android.util.Log.d(
+                        DEBUG_TAG,
+                        "$debugLabel index=$index relaxedArrow='$relaxedArrow' rect=${rectLabel(component)}"
+                    )
+                    parts.add(relaxedArrow)
+                    previousCircle = null
+                    index++
+                    continue
+                }
+                if (circle == null || !isCircleRightFragment(circle, component)) {
+                    parts.add("?")
+                    previousCircle = null
+                }
             }
-            parts.add(token)
             index++
         }
-        binary.release()
+        android.util.Log.d(DEBUG_TAG, "$debugLabel text='${parts.joinToString("")}'")
+        return parts.joinToString("")
+    }
 
-        if (!complete || parts.size <= 1) return ""
-        val text = parts.joinToString("")
-        val parsed = ActionParser.parse(text)
-        return if (parsed.text.isNotEmpty()) parsed.text + parsed.fragment else ""
+    private fun rectLabel(rect: Rect): String =
+        "(${rect.x},${rect.y},${rect.width}x${rect.height})"
+
+    private fun isCircleRightFragment(circle: Rect, candidate: Rect): Boolean {
+        val gap = candidate.x - (circle.x + circle.width)
+        if (candidate.x >= circle.x &&
+            candidate.y >= circle.y &&
+            candidate.x + candidate.width <= circle.x + circle.width &&
+            candidate.y + candidate.height <= circle.y + circle.height
+        ) {
+            return true
+        }
+        if (candidate.x < circle.x + circle.width / 2) {
+            return false
+        }
+        if (gap > maxOf(3, circle.width / 3)) {
+            return false
+        }
+        val overlapTop = maxOf(circle.y, candidate.y)
+        val overlapBottom = minOf(circle.y + circle.height, candidate.y + candidate.height)
+        val overlap = overlapBottom - overlapTop
+        if (overlap <= 0) {
+            return false
+        }
+        val minHeight = minOf(circle.height, candidate.height)
+        val overlapPercent = overlap * 100 / maxOf(1, minHeight)
+        val widthPercent = candidate.width * 100 / maxOf(1, circle.width)
+        val heightPercent = candidate.height * 100 / maxOf(1, circle.height)
+        if (overlapPercent < 60) {
+            return false
+        }
+        if (widthPercent > 70) {
+            return false
+        }
+        if (heightPercent < 45) {
+            return false
+        }
+        return true
+    }
+
+    private fun looksLikeVisibleCharacter(component: Rect, lineComponents: List<Rect>): Boolean {
+        if (component.width < 4 || component.height < 8) return false
+        if (lineComponents.isEmpty()) return true
+        val medianHeight = lineComponents.map { it.height }.sorted()[lineComponents.size / 2]
+        return component.height * 100 >= medianHeight * 70
+    }
+
+    private fun recognizeCropText(crop: Mat): String {
+        val prepared = prepareCrop(crop)
+        return ocrFunc?.invoke(prepared)?.also { prepared.release() } ?: ""
+    }
+
+    private fun isNonActionText(text: String): Boolean {
+        val compact = text.replace(" ", "").replace("\n", "").replace("\t", "")
+        if (compact.isEmpty()) return false
+        val hasActionChar = compact.any { it == 'A' || it == '↑' || it == '↓' || it == '圈' || it.isDigit() }
+        val hasChinese = compact.any { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN }
+        return hasChinese && !hasActionChar
+    }
+
+    private fun chooseActionToken(
+        ocrToken: String,
+        shapeArrow: String,
+        shapeCircle: String,
+        shapeZero: Boolean,
+        component: Rect
+    ): String {
+        val compact = ocrToken.replace(" ", "").replace("\n", "").replace("\t", "")
+
+        if (shapeArrow.isNotEmpty()) {
+            return shapeArrow
+        }
+        if (shapeCircle.isNotEmpty()) return shapeCircle
+        if ("圈" in compact) return "圈"
+
+        val digit = ActionParser.extractDigit(compact)
+        if (digit.isNotEmpty()) {
+            val suffix = compact.filter { it == 'A' || it == '圈' }
+            return correctDigitByShape(digit, component) + suffix
+        }
+        if ("A" in compact) return compact.filter { it == 'A' }.ifEmpty { "A" }
+        if (ActionComponentAnalyzer.looksLikeOneDigit(component)) {
+            return "1"
+        }
+        if (shapeZero) return "0"
+        return compact.filter { it == 'A' || it == '↑' || it == '↓' || it == '圈' }
     }
 
     private fun recognizeComponentToken(crop: Mat, component: Rect): String {
@@ -337,111 +335,12 @@ object OcrScheduler {
         prepared.release()
         componentCrop.release()
 
-        return normalizeComponentToken(text, component)
+        return ActionComponentAnalyzer.normalizeOcrToken(text, component)
     }
 
     private fun correctDigitByShape(digit: String, component: Rect): String {
-        if (digit == "7" && looksLikeOneDigitComponent(component)) return "1"
+        if (digit == "7" && ActionComponentAnalyzer.looksLikeOneDigit(component)) return "1"
         return digit
-    }
-
-    private fun looksLikeOneDigitComponent(component: Rect): Boolean {
-        return component.width * 100 <= component.height * 50
-    }
-
-    private fun normalizeComponentToken(text: String, component: Rect): String {
-        val compact = text.replace(" ", "").replace("\n", "").replace("\t", "").replace("/", "")
-        if (compact.isEmpty()) return ""
-
-        val result = StringBuilder()
-        for (ch in compact) {
-            when (ch) {
-                'I', 'l' -> result.append('1')
-                'O' -> result.append('0')
-                'A' -> result.append('A')
-                '圈' -> result.append('圈')
-                in '0'..'9' -> result.append(ch)
-            }
-        }
-        val token = result.toString()
-        if (token == "A" && component.width * 100 >= component.height * 140) {
-            val estimatedCount = maxOf(2, (component.width * 100 + component.height * 42) / (component.height * 85))
-            return "A".repeat(estimatedCount)
-        }
-        return token
-    }
-
-    private fun orderComponentsForReading(components: List<Rect>): List<Rect> {
-        if (components.size <= 1) return components
-
-        val lines = mutableListOf<MutableList<Rect>>()
-        val sortedByY = components.sortedWith(compareBy<Rect> { it.y + it.height / 2 }.thenBy { it.x })
-        for (component in sortedByY) {
-            val centerY = component.y + component.height / 2
-            val threshold = maxOf(6, component.height / 2)
-            val line = lines.firstOrNull { existing ->
-                val avgCenter = existing.sumOf { it.y + it.height / 2 } / existing.size
-                kotlin.math.abs(avgCenter - centerY) <= threshold
-            }
-            if (line != null) {
-                line.add(component)
-            } else {
-                lines.add(mutableListOf(component))
-            }
-        }
-
-        return lines
-            .sortedBy { line -> line.sumOf { it.y + it.height / 2 } / line.size }
-            .flatMap { line -> line.sortedBy { it.x } }
-    }
-
-    private fun toInvertedBinary(crop: Mat): Mat {
-        val gray = Mat()
-        Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
-        val binary = Mat()
-        Imgproc.threshold(gray, binary, 0.0, 255.0, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU)
-        gray.release()
-        Core.bitwise_not(binary, binary)
-        return binary
-    }
-
-    private fun findComponents(binary: Mat): List<Rect> {
-        val labels = Mat()
-        val stats = Mat()
-        val centroids = Mat()
-        val numLabels = Imgproc.connectedComponentsWithStats(binary, labels, stats, centroids, 8, CvType.CV_32S)
-        labels.release()
-        centroids.release()
-
-        val components = mutableListOf<Rect>()
-        for (i in 1 until numLabels) {
-            val data = IntArray(5)
-            stats.get(i, 0, data)
-            val x = data[Imgproc.CC_STAT_LEFT]
-            val y = data[Imgproc.CC_STAT_TOP]
-            val w = data[Imgproc.CC_STAT_WIDTH]
-            val h = data[Imgproc.CC_STAT_HEIGHT]
-            val area = data[Imgproc.CC_STAT_AREA]
-            if (area >= 3) {
-                components.add(Rect(x, y, w, h))
-            }
-        }
-        stats.release()
-        components.sortBy { it.x }
-        return components
-    }
-
-    private fun filterBorderComponents(binary: Mat, components: List<Rect>): List<Rect> {
-        val width = binary.cols()
-        val height = binary.rows()
-        return components.filter { comp ->
-            val touchesBorder = comp.x == 0 || comp.y == 0 ||
-                comp.x + comp.width >= width || comp.y + comp.height >= height
-            val looksLikeGridline = comp.width <= 2 || comp.height <= 2 ||
-                comp.width >= maxOf(8, (width * 0.3).toInt()) ||
-                comp.height >= maxOf(8, (height * 0.3).toInt())
-            !(touchesBorder && (looksLikeGridline || components.size > 1))
-        }
     }
 
     private fun cropComponents(crop: Mat, components: List<Rect>, padding: Int = 2): Mat {
@@ -453,42 +352,5 @@ object OcrScheduler {
         val right = minOf(width, components.maxOf { it.x + it.width } + padding)
         val bottom = minOf(height, components.maxOf { it.y + it.height } + padding)
         return Mat(crop, Rect(left, top, right - left, bottom - top)).clone()
-    }
-
-    private fun classifyArrowComponent(binary: Mat, component: Rect, relaxedShape: Boolean = false): String {
-        if (!looksLikeArrowComponent(component, relaxedShape)) return ""
-
-        val mask = Mat(binary, component)
-        if (mask.empty()) {
-            mask.release()
-            return ""
-        }
-
-        val rowSums = IntArray(component.height)
-        val rowData = ByteArray(component.width)
-        for (y in 0 until component.height) {
-            mask.get(y, 0, rowData)
-            rowSums[y] = rowData.sumOf { (it.toInt() and 0xFF) }
-        }
-
-        if (rowSums.size < 3) {
-            mask.release()
-            return ""
-        }
-        val window = maxOf(1, rowSums.size / 3)
-        val topMass = rowSums.take(window).sum()
-        val bottomMass = rowSums.takeLast(window).sum()
-        mask.release()
-
-        return when {
-            topMass >= bottomMass + 2 * 255 -> "↑"
-            bottomMass >= topMass + 2 * 255 -> "↓"
-            else -> ""
-        }
-    }
-
-    private fun looksLikeArrowComponent(component: Rect, relaxedShape: Boolean = false): Boolean {
-        val maxWidthPercent = if (relaxedShape) 70 else 65
-        return component.width * 100 <= component.height * maxWidthPercent
     }
 }

@@ -4,31 +4,60 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
-import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.example.yuanassist.R
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.appcompat.app.AlertDialog
 import com.example.yuanassist.model.BirdFoodTaskType
+import com.example.yuanassist.ui.subpage.SubpageEmptyState
+import com.example.yuanassist.ui.subpage.SubpageScaffold
+import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.utils.ExceptionLogStore
 import com.example.yuanassist.utils.RunLogger
+
+private data class RunLogSection(
+    val title: String,
+    val subtitle: String,
+    val content: String,
+    val expanded: Boolean = false,
+    val entryId: String? = null,
+    val canDelete: Boolean = false,
+)
 
 class RunLogActivity : AppCompatActivity() {
 
     companion object {
-        private const val SCHEDULE_PREFIX = "\u8c03\u5ea6\u4efb\u52a1 "
-        private const val TASK_END_PREFIX = "\u4efb\u52a1 "
-        private const val TASK_END_SEPARATOR = "\u7ed3\u675f\uff1a"
-        private const val SUCCESS_MARKER = "\u6267\u884c\u6210\u529f"
-        private const val FAILURE_MARKER = "\u6267\u884c\u5931\u8d25"
-        private const val COOLDOWN_MARKER = "\u51b7\u5374"
-        private const val EXHAUSTED_MARKER = "\u5df2\u8017\u5c3d"
-        private const val SWITCHED_MARKER = "\u5207\u6362\u5230\u4e0b\u4e00\u4e2a\u4efb\u52a1"
+        private const val SCHEDULE_PREFIX = "调度任务 "
+        private const val TASK_END_PREFIX = "任务 "
+        private const val TASK_END_SEPARATOR = "结束："
+        private const val SUCCESS_MARKER = "执行成功"
+        private const val FAILURE_MARKER = "执行失败"
+        private const val COOLDOWN_MARKER = "冷却"
+        private const val EXHAUSTED_MARKER = "已耗尽"
+        private const val SWITCHED_MARKER = "切换到下一个任务"
         private val LOG_LINE_REGEX = Regex("""^\[([^\]]+)] \[[^\]]+] (.*)$""")
         private val TASK_NAME_MAP = BirdFoodTaskType.values().associate { it.name to it.displayName }
     }
@@ -37,78 +66,62 @@ class RunLogActivity : AppCompatActivity() {
         val title: String,
         val round: Int,
         val lines: MutableList<String>,
-        var endReason: String? = null
+        var endReason: String? = null,
     ) {
         fun toSection(): RunLogSection {
-            val finalReason = endReason ?: "\u672c\u6bb5\u65e5\u5fd7\u7ed3\u675f"
+            val finalReason = endReason ?: "本段日志结束"
             val contentLines = lines.toMutableList()
-            val endMarker = "\u3010${title}\u7b2c${round}\u8f6e\u7ed3\u675f\uff1a$finalReason\u3011"
+            val endMarker = "【${title}第${round}轮结束：$finalReason】"
             if (contentLines.lastOrNull() != endMarker) {
                 contentLines += endMarker
             }
             return RunLogSection(
-                title = "$title \u7b2c$round\u8f6e",
+                title = "${title} 第${round}轮",
                 subtitle = finalReason,
-                content = contentLines.joinToString("\n")
+                content = contentLines.joinToString("\n"),
             )
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_run_log)
-
-        val backButton = findViewById<ImageView>(R.id.btn_back_run_log)
-        val emptyView = findViewById<TextView>(R.id.tv_run_log_empty)
-        val recyclerView = findViewById<RecyclerView>(R.id.rv_run_log_sections)
-        val header = findViewById<View>(R.id.layout_run_log_header)
-        val topSpace = findViewById<View>(R.id.view_run_log_status_space)
-        val adapter = RunLogSectionAdapter { section ->
-            copyText(section.content, "\u8be5\u6bb5\u65e5\u5fd7\u5df2\u590d\u5236")
+        setContent {
+            RunLogScreen(
+                loadSections = {
+                    buildPersistedSections() + buildRuntimeSections()
+                },
+                onCopySection = { section ->
+                    copyText(section.content, "该段日志已复制")
+                },
+                onDeleteSection = { section, onDeleted ->
+                    confirmDeleteSection(section, onDeleted)
+                },
+                onBack = ::finish,
+            )
         }
+    }
 
-        ViewCompat.setOnApplyWindowInsetsListener(header) { _, insets ->
-            val statusBarTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            topSpace.updateLayoutParams {
-                height = statusBarTop / 2
-            }
-            insets
+    private fun buildPersistedSections(): List<RunLogSection> {
+        return ExceptionLogStore.loadEntries(this).map { entry ->
+            RunLogSection(
+                title = if (entry.title == "异常处理") "无障碍权限相关" else entry.title,
+                subtitle = entry.subtitle
+                    .replace("系统权限与服务异常", "无障碍权限相关")
+                    .replace("异常处理", "无障碍权限相关"),
+                content = entry.content.replace(
+                    "【异常处理】",
+                    "【无障碍权限相关】",
+                ),
+                entryId = entry.id,
+                canDelete = true,
+            )
         }
-        ViewCompat.requestApplyInsets(header)
+    }
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-
-        backButton.setOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
-
+    private fun buildRuntimeSections(): List<RunLogSection> {
         val rawLogs = RunLogger.getAllLogs()
-        if (rawLogs.isBlank()) {
-            emptyView.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-            return
-        }
-
-        emptyView.visibility = View.VISIBLE
-        emptyView.text = "\u65e5\u5fd7\u6574\u7406\u4e2d..."
-        recyclerView.visibility = View.GONE
-
-        Thread {
-            val sections = buildSections(rawLogs)
-            runOnUiThread {
-                if (isDestroyed || isFinishing) return@runOnUiThread
-                if (sections.isEmpty()) {
-                    emptyView.visibility = View.VISIBLE
-                    emptyView.text = "\u6682\u65e0\u65e5\u5fd7\u8bb0\u5f55"
-                    recyclerView.visibility = View.GONE
-                } else {
-                    emptyView.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
-                    adapter.submitList(sections)
-                }
-            }
-        }.start()
+        if (rawLogs.isBlank()) return emptyList()
+        return buildSections(rawLogs)
     }
 
     private fun buildSections(rawLogs: String): List<RunLogSection> {
@@ -126,10 +139,10 @@ class RunLogActivity : AppCompatActivity() {
         fun flushLooseLines() {
             if (looseLines.isEmpty()) return
             sections += RunLogSection(
-                title = "\u5176\u4ed6\u65e5\u5fd7",
-                subtitle = "\u672a\u5f52\u5230\u7279\u5b9a\u4efb\u52a1",
+                title = "其他日志",
+                subtitle = "未归到特定任务",
                 content = looseLines.joinToString("\n"),
-                expanded = false
+                expanded = false,
             )
             looseLines.clear()
         }
@@ -155,7 +168,7 @@ class RunLogActivity : AppCompatActivity() {
                 currentSection = MutableSection(
                     title = startedTask,
                     round = round,
-                    lines = mutableListOf(line)
+                    lines = mutableListOf(line),
                 )
                 return@forEach
             }
@@ -173,7 +186,7 @@ class RunLogActivity : AppCompatActivity() {
         }
 
         if (currentSection != null && currentSection?.endReason == null) {
-            currentSection?.endReason = "\u672c\u6bb5\u65e5\u5fd7\u7ed3\u675f"
+            currentSection?.endReason = "本段日志结束"
         }
 
         flushCurrentSection()
@@ -208,16 +221,17 @@ class RunLogActivity : AppCompatActivity() {
 
     private fun deriveStatusText(message: String): String {
         return when {
-            message.contains(FAILURE_MARKER) -> "\u5931\u8d25"
-            message.contains(COOLDOWN_MARKER) -> "\u51b7\u5374\u4e2d"
-            message.contains(EXHAUSTED_MARKER) -> "\u5df2\u8017\u5c3d"
-            message.endsWith(SUCCESS_MARKER) -> "\u5df2\u5b8c\u6210"
+            message.contains(FAILURE_MARKER) -> "失败"
+            message.contains(COOLDOWN_MARKER) -> "冷却中"
+            message.contains(EXHAUSTED_MARKER) -> "已耗尽"
+            message.endsWith(SUCCESS_MARKER) -> "已完成"
             message.startsWith(TASK_END_PREFIX) && message.contains(TASK_END_SEPARATOR) -> {
                 message.substringAfter(TASK_END_SEPARATOR).trim().ifBlank {
-                    "\u5df2\u7ed3\u675f"
+                    "已结束"
                 }
             }
-            else -> "\u5df2\u7ed3\u675f"
+
+            else -> "已结束"
         }
     }
 
@@ -225,5 +239,202 @@ class RunLogActivity : AppCompatActivity() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("run-log", content))
         Toast.makeText(this, toastText, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun confirmDeleteSection(
+        section: RunLogSection,
+        onDeleted: () -> Unit,
+    ) {
+        val entryId = section.entryId ?: return
+        AlertDialog.Builder(this)
+            .setTitle("删除无障碍权限日志")
+            .setMessage("这条“无障碍权限相关”日志删除后不会自动恢复，是否继续？")
+            .setPositiveButton("删除") { _, _ ->
+                val deleted = ExceptionLogStore.deleteEntry(this, entryId)
+                if (deleted) {
+                    Toast.makeText(this, "已删除无障碍权限日志", Toast.LENGTH_SHORT).show()
+                    onDeleted()
+                } else {
+                    Toast.makeText(this, "删除失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+}
+
+@Composable
+private fun RunLogScreen(
+    loadSections: () -> List<RunLogSection>,
+    onCopySection: (RunLogSection) -> Unit,
+    onDeleteSection: (RunLogSection, () -> Unit) -> Unit,
+    onBack: () -> Unit,
+) {
+    var sections by remember { mutableStateOf<List<RunLogSection>>(emptyList()) }
+    var loading by rememberSaveable { mutableStateOf(true) }
+    var expandedTitles by rememberSaveable { mutableStateOf(setOf<String>()) }
+
+    fun reload() {
+        loading = true
+        sections = loadSections().map { section ->
+            section.copy(expanded = expandedTitles.contains(section.title))
+        }
+        loading = false
+    }
+
+    LaunchedEffect(Unit) {
+        reload()
+    }
+
+    SubpageScaffold(
+        title = "运行日志",
+        subtitle = "任务分段 · 展开查看 · 复制留档",
+        onBack = onBack,
+        scrollable = false,
+    ) {
+        when {
+            loading -> {
+                SubpageSectionCard(
+                    title = "日志整理中",
+                    subtitle = "正在汇总运行记录与权限异常记录",
+                ) {
+                    Text("请稍候…")
+                }
+            }
+
+            sections.isEmpty() -> {
+                SubpageEmptyState(
+                    title = "暂无运行日志",
+                    subtitle = "当前没有可展示的运行记录和无障碍权限异常记录。",
+                )
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(sections, key = { it.title + it.subtitle + (it.entryId ?: "") }) { section ->
+                        SubpageSectionCard {
+                            RunLogEntry(
+                                section = section,
+                                onToggle = {
+                                    expandedTitles = if (expandedTitles.contains(section.title)) {
+                                        expandedTitles - section.title
+                                    } else {
+                                        expandedTitles + section.title
+                                    }
+                                    sections = sections.map {
+                                        if (it.title == section.title && it.subtitle == section.subtitle) {
+                                            it.copy(expanded = !it.expanded)
+                                        } else {
+                                            it
+                                        }
+                                    }
+                                },
+                                onCopy = { onCopySection(section) },
+                                onDelete = {
+                                    onDeleteSection(section) {
+                                        expandedTitles = expandedTitles - section.title
+                                        reload()
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RunLogEntry(
+    section: RunLogSection,
+    onToggle: () -> Unit,
+    onCopy: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = section.title,
+                    color = Color(0xFF75322D),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Serif,
+                )
+                Text(
+                    text = section.subtitle,
+                    color = Color(0xFF8A6B5E),
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Serif,
+                )
+            }
+            Text(
+                text = if (section.expanded) "收起" else "展开",
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onToggle,
+                    )
+                    .padding(start = 12.dp),
+                color = Color(0xFF9A6435),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily.Serif,
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Text(
+                text = "复制",
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onCopy,
+                ),
+                color = Color(0xFF9A6435),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Serif,
+            )
+            if (section.canDelete) {
+                Text(
+                    text = "删除",
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDelete,
+                    ),
+                    color = Color(0xFFB84D4D),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = FontFamily.Serif,
+                )
+            }
+        }
+
+        if (section.expanded) {
+            Text(
+                text = section.content,
+                color = Color(0xFF8A6B5E),
+                fontSize = 12.sp,
+                lineHeight = 19.sp,
+                fontFamily = FontFamily.Serif,
+            )
+        }
     }
 }

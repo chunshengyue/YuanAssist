@@ -66,11 +66,6 @@ object ActionParser {
         return ParseResult(joined, isComplete, fragment, confidence, wasFixed)
     }
 
-    fun looksComplex(text: String): Boolean {
-        val compact = text.replace(" ", "")
-        return compact.contains("圈") || Regex("\\d+").findAll(compact).count() >= 2
-    }
-
     fun extractDigit(text: String): String {
         val match = Regex("10|[1-9]").find(text)
         return match?.value ?: ""
@@ -93,6 +88,4 @@ object ActionParser {
         }
         return text
     }
-
-    val singleActionCanonical = Regex("^$digitPattern$suffixPattern${'$'}")
 }

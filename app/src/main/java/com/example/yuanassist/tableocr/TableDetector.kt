@@ -69,20 +69,4 @@ object TableDetector {
         return Pair(Mat(mat, r).clone(), r)
     }
 
-    fun toBinaryGray(mat: Mat): Mat {
-        val gray = Mat()
-        Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY)
-        val blurred = Mat()
-        Imgproc.GaussianBlur(gray, blurred, Size(5.0, 5.0), 0.0)
-        val binary = Mat()
-        Imgproc.adaptiveThreshold(
-            blurred, binary, 255.0,
-            Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
-            Imgproc.THRESH_BINARY_INV,
-            31, 15.0
-        )
-        gray.release()
-        blurred.release()
-        return binary
-    }
 }

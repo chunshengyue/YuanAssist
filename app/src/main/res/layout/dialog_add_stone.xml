@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="18dp"
         android:text="点击选择星石"
-        android:textColor="#F6D28D"
+        android:textColor="#4E3C1E"
         android:textSize="13sp"
         android:textStyle="bold" />
 
@@ -30,7 +30,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:background="@drawable/bg_dark_hollow"
+        android:background="@drawable/bg_job_station_icon_button"
         android:gravity="center"
         android:minHeight="44dp"
         android:paddingStart="12dp"
@@ -72,7 +72,7 @@
         android:layout_width="match_parent"
         android:layout_height="44dp"
         android:layout_marginTop="8dp"
-        android:background="@drawable/bg_dark_hollow"
+        android:background="@drawable/bg_job_station_icon_button"
         android:gravity="center_vertical"
         android:hint="默认 1级"
         android:inputType="text"
@@ -80,8 +80,8 @@
         android:paddingEnd="12dp"
         android:singleLine="true"
         android:text="1级"
-        android:textColor="#F3E9D0"
-        android:textColorHint="#80F3E9D0"
+        android:textColor="#4E3C1E"
+        android:textColorHint="#9A8A71"
         android:textSize="14sp" />
 
     <LinearLayout

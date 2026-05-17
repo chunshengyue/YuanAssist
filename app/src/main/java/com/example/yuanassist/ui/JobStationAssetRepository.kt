@@ -1,4 +1,4 @@
-package com.example.yuanassist.ui
+﻿package com.example.yuanassist.ui
 
 import android.content.Context
 import com.example.yuanassist.model.AgentRepository
@@ -11,19 +11,19 @@ import com.example.yuanassist.model.formatStageAutoNavDisplay
 import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.SupabaseTimeFormatter
 import com.google.gson.Gson
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.TimeZone
 import kotlin.math.abs
 import kotlin.math.max
 
 object JobStationAssetRepository {
 
+    const val IMAGE_CACHE_SIGNATURE = "job_station_image_cache_v20260409"
     private const val ASSET_DIR = "strategy"
     private const val DEFAULT_ATTACK_DELAY_MS = 2500L
     private const val DEFAULT_SKILL_DELAY_MS = 4000L
@@ -31,14 +31,15 @@ object JobStationAssetRepository {
     private val DETAIL_HIGHLIGHT_INSTRUCTION_TYPES = setOf(
         InstructionType.ALL_WIPE_CHECK,
         InstructionType.DEATH_CHECK,
-        InstructionType.ORANGE_STAR_CHECK
+        InstructionType.ORANGE_STAR_CHECK,
+        InstructionType.PURPLE_STAR_CHECK
     )
     @Volatile
     private var maaOperatorDiscCache: Map<String, List<OperatorDiscMeta>>? = null
 
     enum class JobStationListItemType {
         MAA,
-        BMOB
+        COMMUNITY
     }
 
     data class JobStationListItem(
@@ -56,6 +57,7 @@ object JobStationAssetRepository {
         val gameTag: String = "",
         val categoryTag: String = "",
         val coverUrl: String = "",
+        val agentImageUrl: String = "",
         val authorAvatarUrl: String = "",
         val agentsText: String = ""
     )
@@ -90,7 +92,10 @@ object JobStationAssetRepository {
             tags = tags,
             roster = roster,
             author = copilot.uploader.ifBlank { "作者" },
-            publishTime = formatRelativeTime(publishTimestamp, formatRemoteTime(copilot.uploadTime)),
+            publishTime = formatRelativeTime(
+                publishTimestamp,
+                SupabaseTimeFormatter.formatToBeijing(copilot.uploadTime)
+            ),
             publishTimestamp = publishTimestamp,
             hotScore = copilot.views,
             gameTag = resolveGameTagFromStrings(copilot.tags.orEmpty()),
@@ -98,12 +103,12 @@ object JobStationAssetRepository {
         )
     }
 
-    fun fromBmobListItem(detail: strategy_detail): JobStationListItem {
+    fun fromCommunityListItem(detail: strategy_detail): JobStationListItem {
         val roster = parseBmobRoster(detail)
         val title = detail.title.ifBlank { "未命名攻略" }
         val publishTimestamp = parsePublishTimestamp(detail.createdAt)
         return JobStationListItem(
-            type = JobStationListItemType.BMOB,
+            type = JobStationListItemType.COMMUNITY,
             strategyId = detail.objectId,
             assetFileName = "",
             title = title,
@@ -112,12 +117,16 @@ object JobStationAssetRepository {
             author = detail.author?.nickname?.takeIf { it.isNotBlank() }
                 ?: detail.author?.username?.takeIf { it.isNotBlank() }
                 ?: "热心玩家",
-            publishTime = formatRelativeTime(publishTimestamp, formatBmobTime(detail.createdAt)),
+            publishTime = formatRelativeTime(
+                publishTimestamp,
+                SupabaseTimeFormatter.formatToBeijing(detail.createdAt)
+            ),
             publishTimestamp = publishTimestamp,
             hotScore = detail.viewCount?.toLong() ?: 0L,
             gameTag = resolveGameTagFromRuyuan(detail.ruyuan).ifBlank { resolveGameTagFromTitle(title) },
             categoryTag = resolveCategoryTagFromTitle(title),
-            coverUrl = detail.coverUrl.orEmpty(),
+            coverUrl = normalizeImageUrl(detail.coverUrl),
+            agentImageUrl = normalizeImageUrl(detail.agentImageUrl),
             authorAvatarUrl = detail.author?.avatarUrl.orEmpty(),
             agentsText = buildBmobAgentsText(detail, roster)
         )
@@ -163,7 +172,7 @@ object JobStationAssetRepository {
         )
     }
 
-    fun fromBmobDetailData(detail: strategy_detail): JobStationDetailData {
+    fun fromCommunityDetailData(detail: strategy_detail): JobStationDetailData {
         val title = detail.title.ifBlank { "未命名攻略" }
         return JobStationDetailData(
             title = title,
@@ -180,8 +189,8 @@ object JobStationAssetRepository {
             likeCount = formatMetric((detail.favoriteCount ?: 0).toLong()),
             readCount = formatMetric((detail.viewCount ?: 0).toLong()),
             importPayload = buildBmobImportPayload(detail),
-            strategyImageUrl = detail.strategyImage.orEmpty(),
-            agentImageUrl = detail.agentImageUrl.orEmpty()
+            strategyImageUrl = normalizeImageUrl(detail.strategyImage),
+            agentImageUrl = normalizeImageUrl(detail.agentImageUrl)
         )
     }
 
@@ -447,6 +456,7 @@ object JobStationAssetRepository {
         val instructions = mutableListOf<InstructionJson>()
         val stepActionRegex = Regex("""^回合(\d+)行动(\d+)$""")
         val orangeDetectionRegex = Regex("""第(\d+)回合橙星检测""")
+        val purpleDetectionRegex = Regex("""第(\d+)回合紫星检测""")
         val deathDetectionRegex = Regex("""([1-5])号位阵亡检测""")
         val importedTurnStartInstructions = mutableSetOf<String>()
         var hasAllWipeRestart = false
@@ -495,6 +505,21 @@ object JobStationAssetRepository {
                         turn = orangeTurn,
                         step = 0,
                         type = InstructionType.ORANGE_STAR_CHECK.name,
+                        value = 0L
+                    )
+                }
+                return@forEach
+            }
+
+            val purpleTurn = purpleDetectionRegex.find(key)?.groupValues?.getOrNull(1)?.toIntOrNull()
+                ?: purpleDetectionRegex.find(textDoc)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            if (purpleTurn != null) {
+                val dedupeKey = "purple_$purpleTurn"
+                if (importedTurnStartInstructions.add(dedupeKey)) {
+                    instructions += InstructionJson(
+                        turn = purpleTurn,
+                        step = 0,
+                        type = InstructionType.PURPLE_STAR_CHECK.name,
                         value = 0L
                     )
                 }
@@ -830,6 +855,7 @@ object JobStationAssetRepository {
             InstructionType.ALL_WIPE_CHECK -> "全灭检测"
             InstructionType.DEATH_CHECK -> "阵亡检测 · 第${instruction.value}人"
             InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
+            InstructionType.PURPLE_STAR_CHECK -> "紫星检测"
             InstructionType.TARGET_SWITCH_LEFT -> "切换左侧目标"
             InstructionType.TARGET_SWITCH,
             InstructionType.TARGET_SWITCH_RIGHT -> "切换右侧目标"
@@ -1046,6 +1072,42 @@ object JobStationAssetRepository {
         )
     }
 
+    fun resolveCommunityDiscDisplaySpec(
+        agentName: String,
+        discId: Int
+    ): DiscDisplaySpec {
+        val forbidden = discId < 0
+        val normalizedDiscId = abs(discId)
+        if (normalizedDiscId <= 0) {
+            return DiscDisplaySpec(
+                displayName = "命盘",
+                color = "",
+                forbidden = forbidden
+            )
+        }
+
+        val rawTalentText = AgentRepository.AGENT_MAP[normalizeOperatorName(agentName)]
+            ?.talents
+            ?.get(normalizedDiscId)
+            .orEmpty()
+        val displayName = rawTalentText
+            .removePrefix("橙")
+            .removePrefix("紫")
+            .trim()
+            .ifBlank { "命盘$normalizedDiscId" }
+        val color = when {
+            rawTalentText.startsWith("橙") -> "金"
+            rawTalentText.startsWith("紫") -> "紫"
+            else -> "蓝"
+        }
+
+        return DiscDisplaySpec(
+            displayName = displayName,
+            color = color,
+            forbidden = forbidden
+        )
+    }
+
     private fun getMaaOperatorDiscMap(context: Context): Map<String, List<OperatorDiscMeta>> {
         maaOperatorDiscCache?.let { return it }
 
@@ -1143,22 +1205,6 @@ object JobStationAssetRepository {
         }
     }
 
-    private fun formatRemoteTime(uploadTime: String?): String {
-        return uploadTime
-            ?.replace("T", " ")
-            ?.replace("Z", "")
-            ?.take(16)
-            ?.takeIf { it.isNotBlank() }
-            ?: "最近更新"
-    }
-
-    private fun formatBmobTime(createdAt: String?): String {
-        return createdAt
-            ?.take(16)
-            ?.takeIf { it.isNotBlank() }
-            ?: "最近更新"
-    }
-
     private fun formatRelativeTime(timestamp: Long, fallback: String): String {
         if (timestamp <= 0L) return fallback
 
@@ -1175,42 +1221,7 @@ object JobStationAssetRepository {
     }
 
     fun parsePublishTimestamp(rawTime: String?): Long {
-        val normalized = rawTime?.trim()?.takeIf { it.isNotBlank() } ?: return 0L
-
-        parseWithPattern(normalized, "yyyy-MM-dd HH:mm:ss")?.let { return it }
-
-        if (normalized.contains('T')) {
-            parseWithPattern(
-                normalized.substringBefore('.'),
-                "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                TimeZone.getTimeZone("UTC")
-            )?.let { return it }
-            parseWithPattern(
-                normalized.substringBefore('.').removeSuffix("Z"),
-                "yyyy-MM-dd'T'HH:mm:ss"
-            )?.let { return it }
-            parseWithPattern(
-                normalized.replace("T", " ").substringBefore('.').removeSuffix("Z"),
-                "yyyy-MM-dd HH:mm:ss"
-            )?.let { return it }
-        }
-
-        return 0L
-    }
-
-    private fun parseWithPattern(
-        value: String,
-        pattern: String,
-        timeZone: TimeZone? = null
-    ): Long? {
-        return runCatching {
-            SimpleDateFormat(pattern, Locale.getDefault()).apply {
-                isLenient = false
-                if (timeZone != null) {
-                    this.timeZone = timeZone
-                }
-            }.parse(value)?.time
-        }.getOrNull()
+        return SupabaseTimeFormatter.parseTimestamp(rawTime)
     }
 
     private fun parseBmobRoster(detail: strategy_detail): List<String> {
@@ -1289,6 +1300,12 @@ object JobStationAssetRepository {
             ?: "热心玩家"
     }
 
+    private fun normalizeImageUrl(raw: String?): String {
+        return raw?.trim()
+            ?.takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+            .orEmpty()
+    }
+
     private fun buildBmobTags(detail: strategy_detail, title: String): List<String> {
         return buildList {
             resolveGameTagFromRuyuan(detail.ruyuan)
@@ -1334,3 +1351,4 @@ object JobStationAssetRepository {
             .orEmpty()
     }
 }
+
