@@ -68,6 +68,20 @@ class strategy_message : SupabaseRecord() {
     var contentSnapshot: String = ""
     var isRead: Boolean = false
 }
+
+class cloud_daily_script : SupabaseRecord() {
+    var title: String = ""
+    var description: String = ""
+    var tags: String = ""
+    var guideImages: String = "[]"
+    var bundlePath: String = ""
+    var bundleSize: Long = 0L
+    var taskCount: Int = 0
+    var downloadCount: Int = 0
+    var status: String = "published"
+    var author: MyUser? = null
+}
+
 /**
  * 4. 预览与传输用的本地数据包 (不存数据库，仅 Intent 传值用)
  */

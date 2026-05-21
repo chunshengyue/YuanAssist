@@ -7,6 +7,7 @@ import android.provider.Settings
 import com.example.yuanassist.model.MyUser
 import com.example.yuanassist.model.OcrConfig
 import com.example.yuanassist.model.announcement
+import com.example.yuanassist.model.cloud_daily_script
 import com.example.yuanassist.model.issue_feedback
 import com.example.yuanassist.model.strategy_comment
 import com.example.yuanassist.model.strategy_detail
@@ -17,9 +18,12 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 import java.lang.reflect.Type
 
 data class FavoriteState(
@@ -44,6 +48,29 @@ data class StrategySavePayload(
     val agentImageUrl: String,
     val agentTextDesc: String,
     val ruyuan: Int? = null,
+)
+
+data class DailyScriptUploadTicket(
+    val scriptObjectId: String = "",
+    val bundlePath: String = "",
+    val uploadUrl: String = "",
+    val token: String = "",
+)
+
+data class DailyScriptDownloadTicket(
+    val downloadUrl: String = "",
+    val bundlePath: String = "",
+)
+
+data class CloudDailyScriptPublishPayload(
+    val scriptObjectId: String,
+    val title: String,
+    val description: String,
+    val tags: String,
+    val guideImages: List<String>,
+    val bundlePath: String,
+    val bundleSize: Long,
+    val taskCount: Int,
 )
 
 object SupabaseRepository {
@@ -414,6 +441,121 @@ object SupabaseRepository {
         )
     }
 
+    fun createDailyScriptUpload(
+        context: Context,
+        title: String,
+        bundleSize: Long,
+        onSuccess: (DailyScriptUploadTicket) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ensureUser(
+            context = context,
+            onSuccess = {
+                request<DailyScriptUploadTicket>(
+                    action = "create-daily-script-upload",
+                    payload = mapOf(
+                        "deviceId" to currentDeviceId(context),
+                        "title" to title,
+                        "bundleSize" to bundleSize,
+                    ),
+                    type = DailyScriptUploadTicket::class.java,
+                    onSuccess = onSuccess,
+                    onError = onError,
+                )
+            },
+            onError = onError,
+        )
+    }
+
+    fun publishDailyScript(
+        context: Context,
+        payload: CloudDailyScriptPublishPayload,
+        onSuccess: (cloud_daily_script) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ensureUser(
+            context = context,
+            onSuccess = {
+                request<cloud_daily_script>(
+                    action = "publish-daily-script",
+                    payload = mapOf(
+                        "deviceId" to currentDeviceId(context),
+                        "scriptObjectId" to payload.scriptObjectId,
+                        "title" to payload.title,
+                        "description" to payload.description,
+                        "tags" to payload.tags,
+                        "guideImages" to payload.guideImages,
+                        "bundlePath" to payload.bundlePath,
+                        "bundleSize" to payload.bundleSize,
+                        "taskCount" to payload.taskCount,
+                    ),
+                    type = cloud_daily_script::class.java,
+                    onSuccess = onSuccess,
+                    onError = onError,
+                )
+            },
+            onError = onError,
+        )
+    }
+
+    fun listDailyScripts(
+        sortMode: String = "newest",
+        keyword: String = "",
+        limit: Int = 100,
+        onSuccess: (List<cloud_daily_script>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<cloud_daily_script>>(
+            action = "list-daily-scripts",
+            payload = mapOf(
+                "sortMode" to if (sortMode == "hot") "hot" else "newest",
+                "keyword" to keyword,
+                "limit" to limit,
+            ),
+            type = object : TypeToken<List<cloud_daily_script>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun getDailyScriptDetail(
+        scriptId: String,
+        onSuccess: (cloud_daily_script) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<cloud_daily_script>(
+            action = "get-daily-script-detail",
+            payload = mapOf("scriptId" to scriptId),
+            type = cloud_daily_script::class.java,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun createDailyScriptDownloadUrl(
+        scriptId: String,
+        onSuccess: (DailyScriptDownloadTicket) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<DailyScriptDownloadTicket>(
+            action = "create-daily-script-download-url",
+            payload = mapOf("scriptId" to scriptId),
+            type = DailyScriptDownloadTicket::class.java,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun incrementDailyScriptDownload(scriptId: String, onError: ((String) -> Unit)? = null) {
+        request<JsonObject>(
+            action = "increment-daily-script-download",
+            payload = mapOf("scriptId" to scriptId),
+            type = JsonObject::class.java,
+            onSuccess = {},
+            onError = { message -> onError?.invoke(message) },
+        )
+    }
+
     fun listFeedback(
         context: Context,
         onSuccess: (List<issue_feedback>) -> Unit,
@@ -513,6 +655,68 @@ object SupabaseRepository {
             onSuccess = onSuccess,
             onError = onError,
         )
+    }
+
+    fun uploadDailyScriptBundle(
+        uploadUrl: String,
+        zipFile: File,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val request = Request.Builder()
+            .url(uploadUrl)
+            .post(zipFile.asRequestBody("application/zip".toMediaTypeOrNull()))
+            .build()
+        client.newCall(request).enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                dispatchError(onError, "脚本包上传失败")
+            }
+
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                response.use {
+                    if (it.isSuccessful) {
+                        dispatchSuccess(onSuccess, Unit)
+                    } else {
+                        dispatchError(onError, "脚本包上传失败: HTTP ${it.code}")
+                    }
+                }
+            }
+        })
+    }
+
+    fun downloadDailyScriptBundle(
+        downloadUrl: String,
+        targetFile: File,
+        onSuccess: (File) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val request = Request.Builder().url(downloadUrl).get().build()
+        client.newCall(request).enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                dispatchError(onError, "脚本包下载失败")
+            }
+
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                response.use {
+                    if (!it.isSuccessful) {
+                        dispatchError(onError, "脚本包下载失败: HTTP ${it.code}")
+                        return
+                    }
+                    runCatching {
+                        targetFile.parentFile?.mkdirs()
+                        val body = it.body ?: error("响应为空")
+                        targetFile.outputStream().use { output ->
+                            body.byteStream().use { input -> input.copyTo(output) }
+                        }
+                        targetFile
+                    }.onSuccess { file ->
+                        dispatchSuccess(onSuccess, file)
+                    }.onFailure { error ->
+                        dispatchError(onError, error.message ?: "脚本包保存失败")
+                    }
+                }
+            }
+        })
     }
 
     private fun cacheCurrentUser(context: Context, user: MyUser) {
