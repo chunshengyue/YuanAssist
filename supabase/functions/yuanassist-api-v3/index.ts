@@ -94,12 +94,33 @@ type FeedbackRow = {
   user_id: string | null;
 };
 
+type CloudDailyScriptRow = {
+  id: string;
+  object_id: string | null;
+  author_id: string | null;
+  title: string | null;
+  description: string | null;
+  tags: string | null;
+  guide_images: string | null;
+  bundle_path: string | null;
+  bundle_size: number | null;
+  task_count: number | null;
+  download_count: number | null;
+  status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 const db = createClient(supabaseUrl, serviceRoleKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
+
+const DAILY_SCRIPT_BUCKET = "daily-script-bundles";
+const DAILY_SCRIPT_SELECT =
+  "id, object_id, author_id, title, description, tags, guide_images, bundle_path, bundle_size, task_count, download_count, status, created_at, updated_at";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -389,6 +410,49 @@ function mapOcrConfig(row: JsonRecord) {
     createdAt: normalizeTimestamp((row.createdAt as string | null | undefined) ?? null),
     updatedAt: normalizeTimestamp((row.updatedAt as string | null | undefined) ?? null),
   };
+}
+
+function normalizeJsonArrayString(value: unknown): string {
+  if (Array.isArray(value)) {
+    return JSON.stringify(value.map((item) => String(item)).filter((item) => item.trim()));
+  }
+  const text = String(value ?? "").trim();
+  if (!text) return "[]";
+  try {
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? JSON.stringify(parsed.map((item) => String(item)).filter((item) => item.trim())) : "[]";
+  } catch {
+    return "[]";
+  }
+}
+
+function mapCloudDailyScript(row: CloudDailyScriptRow, author: UserRow | null | undefined) {
+  return {
+    objectId: row.object_id,
+    title: row.title ?? "",
+    description: row.description ?? "",
+    tags: row.tags ?? "",
+    guideImages: row.guide_images ?? "[]",
+    bundlePath: row.bundle_path ?? "",
+    bundleSize: row.bundle_size ?? 0,
+    taskCount: row.task_count ?? 0,
+    downloadCount: row.download_count ?? 0,
+    status: row.status ?? "published",
+    createdAt: normalizeTimestamp(row.created_at),
+    updatedAt: normalizeTimestamp(row.updated_at),
+    author: mapUser(author),
+  };
+}
+
+async function getCloudDailyScriptByObjectId(objectId: string): Promise<CloudDailyScriptRow | null> {
+  const { data, error } = await db
+    .from("cloud_daily_scripts")
+    .select(DAILY_SCRIPT_SELECT)
+    .eq("object_id", objectId)
+    .limit(1)
+    .maybeSingle<CloudDailyScriptRow>();
+  if (error) throw error;
+  return data;
 }
 
 async function listPublicStrategies(sortMode: string, limit: number) {
@@ -892,6 +956,105 @@ async function getOcrConfig(key: string) {
   return mapOcrConfig(data);
 }
 
+async function createDailyScriptUpload(body: JsonRecord) {
+  const deviceId = requireString(body.deviceId, "deviceId");
+  const title = requireString(body.title, "title");
+  const bundleSize = Number(body.bundleSize ?? 0);
+  if (bundleSize <= 0) throw new Error("脚本包不能为空");
+  const user = await ensureUserByDeviceId(deviceId);
+  const scriptObjectId = randomObjectId(12);
+  const authorObjectId = user.object_id ?? user.id;
+  const bundlePath = `daily/${authorObjectId}/${scriptObjectId}.zip`;
+  const { data, error } = await db.storage
+    .from(DAILY_SCRIPT_BUCKET)
+    .createSignedUploadUrl(bundlePath);
+  if (error) throw error;
+  return {
+    scriptObjectId,
+    bundlePath,
+    uploadUrl: data.signedUrl,
+    token: data.token,
+    title,
+  };
+}
+
+async function publishDailyScript(body: JsonRecord) {
+  const deviceId = requireString(body.deviceId, "deviceId");
+  const user = await ensureUserByDeviceId(deviceId);
+  const scriptObjectId = requireString(body.scriptObjectId, "scriptObjectId");
+  const title = requireString(body.title, "title");
+  const bundlePath = requireString(body.bundlePath, "bundlePath");
+  const nowIso = new Date().toISOString();
+  const payload = {
+    object_id: scriptObjectId,
+    author_id: user.id,
+    title,
+    description: String(body.description ?? ""),
+    tags: String(body.tags ?? ""),
+    guide_images: normalizeJsonArrayString(body.guideImages),
+    bundle_path: bundlePath,
+    bundle_size: Number(body.bundleSize ?? 0),
+    task_count: Number(body.taskCount ?? 0),
+    status: "published",
+    updated_at: nowIso,
+  };
+  const existing = await getCloudDailyScriptByObjectId(scriptObjectId);
+  const query = existing
+    ? db.from("cloud_daily_scripts").update(payload).eq("id", existing.id)
+    : db.from("cloud_daily_scripts").insert({ id: crypto.randomUUID(), created_at: nowIso, download_count: 0, ...payload });
+  const { data, error } = await query.select(DAILY_SCRIPT_SELECT).single<CloudDailyScriptRow>();
+  if (error) throw error;
+  return mapCloudDailyScript(data, user);
+}
+
+async function listDailyScripts(sortMode: string, keyword: string, limit: number) {
+  const orderColumn = sortMode === "hot" ? "download_count" : "created_at";
+  let query = db
+    .from("cloud_daily_scripts")
+    .select(DAILY_SCRIPT_SELECT)
+    .eq("status", "published")
+    .order(orderColumn, { ascending: false })
+    .limit(Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 100);
+  const normalizedKeyword = keyword.trim();
+  if (normalizedKeyword) {
+    query = query.or(`title.ilike.%${normalizedKeyword}%,description.ilike.%${normalizedKeyword}%,tags.ilike.%${normalizedKeyword}%`);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  const rows = (data as CloudDailyScriptRow[]) ?? [];
+  const authors = await loadUsersByIds(rows.map((item) => item.author_id));
+  return rows.map((item) => mapCloudDailyScript(item, item.author_id ? authors.get(item.author_id) : null));
+}
+
+async function getDailyScriptDetail(scriptObjectId: string) {
+  const row = await getCloudDailyScriptByObjectId(scriptObjectId);
+  if (!row || row.status !== "published") throw new Error("未找到该云端脚本");
+  const author = row.author_id ? (await loadUsersByIds([row.author_id])).get(row.author_id) : null;
+  return mapCloudDailyScript(row, author);
+}
+
+async function createDailyScriptDownloadUrl(scriptObjectId: string) {
+  const row = await getCloudDailyScriptByObjectId(scriptObjectId);
+  if (!row || row.status !== "published" || !row.bundle_path) throw new Error("未找到该云端脚本");
+  const { data, error } = await db.storage
+    .from(DAILY_SCRIPT_BUCKET)
+    .createSignedUrl(row.bundle_path, 60 * 10);
+  if (error) throw error;
+  return { downloadUrl: data.signedUrl, bundlePath: row.bundle_path };
+}
+
+async function incrementDailyScriptDownload(scriptObjectId: string) {
+  const row = await getCloudDailyScriptByObjectId(scriptObjectId);
+  if (!row) throw new Error("未找到该云端脚本");
+  const nextCount = (row.download_count ?? 0) + 1;
+  const { error } = await db
+    .from("cloud_daily_scripts")
+    .update({ download_count: nextCount, updated_at: new Date().toISOString() })
+    .eq("id", row.id);
+  if (error) throw error;
+  return { downloadCount: nextCount };
+}
+
 async function routeAction(action: string, body: JsonRecord) {
   switch (action) {
     case "bootstrap-user":
@@ -977,6 +1140,22 @@ async function routeAction(action: string, body: JsonRecord) {
       return await getLatestAnnouncement();
     case "get-ocr-config":
       return await getOcrConfig(requireString(body.key, "key"));
+    case "create-daily-script-upload":
+      return await createDailyScriptUpload(body);
+    case "publish-daily-script":
+      return await publishDailyScript(body);
+    case "list-daily-scripts":
+      return await listDailyScripts(
+        String(body.sortMode ?? "newest"),
+        String(body.keyword ?? ""),
+        Number(body.limit ?? 100),
+      );
+    case "get-daily-script-detail":
+      return await getDailyScriptDetail(requireString(body.scriptId, "scriptId"));
+    case "create-daily-script-download-url":
+      return await createDailyScriptDownloadUrl(requireString(body.scriptId, "scriptId"));
+    case "increment-daily-script-download":
+      return await incrementDailyScriptDownload(requireString(body.scriptId, "scriptId"));
     default:
       throw new Error(`未知 action: ${action}`);
   }
