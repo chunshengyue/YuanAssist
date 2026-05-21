@@ -1,0 +1,336 @@
+{
+  "start_task_id": 1,
+  "tasks": [
+    {
+      "id": 1,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "前往鸢报界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 2,
+      "on_fail": -2
+    },
+    {
+      "id": 2,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "突发情况 上方入口",
+      "params": {
+        "script_name": "tu_fa_qing_kuang.json",
+        "entry_task_id": 1,
+        "exit_task_id": 3,
+        "inherit_variables": true
+      },
+      "on_success": 201,
+      "on_fail": 201
+    },
+    {
+      "id": 201,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "突发情况 下方入口",
+      "params": {
+        "script_name": "tu_fa_qing_kuang.json",
+        "entry_task_id": 3,
+        "exit_task_id": 2,
+        "inherit_variables": true
+      },
+      "on_success": 3,
+      "on_fail": 3
+    },
+    {
+      "id": 3,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "回鸢报主界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 4,
+      "on_fail": 4
+    },
+    {
+      "id": 4,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "小道消息 完整运行",
+      "params": {
+        "script_name": "xiao_dao_xiao_xi.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 5,
+      "on_fail": 5
+    },
+    {
+      "id": 5,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "回鸢报主界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 6,
+      "on_fail": 6
+    },
+    {
+      "id": 6,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "他的传闻 完整运行",
+      "params": {
+        "script_name": "ta_de_chuan_wen.json",
+        "entry_task_id": 1,
+        "exit_task_id": 34,
+        "inherit_variables": true
+      },
+      "on_success": 7,
+      "on_fail": 7
+    },
+    {
+      "id": 7,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "回鸢报主界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 8,
+      "on_fail": 8
+    },
+
+    {
+      "id": 8,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 进入界面",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 1,
+        "exit_task_id": 31,
+        "inherit_variables": true
+      },
+      "on_success": 9,
+      "on_fail": 9
+    },
+    {
+      "id": 9,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第1入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 31,
+        "exit_task_id": 32,
+        "inherit_variables": true
+      },
+      "on_success": 10,
+      "on_fail": 10
+    },
+    {
+      "id": 10,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第2入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 32,
+        "exit_task_id": 33,
+        "inherit_variables": true
+      },
+      "on_success": 11,
+      "on_fail": 11
+    },
+    {
+      "id": 11,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第3入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 33,
+        "exit_task_id": 34,
+        "inherit_variables": true
+      },
+      "on_success": 12,
+      "on_fail": 12
+    },
+    {
+      "id": 12,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第4入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 34,
+        "exit_task_id": 31,
+        "inherit_variables": true
+      },
+      "on_success": 13,
+      "on_fail": 13
+    },
+    {
+      "id": 13,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "回鸢报主界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 14,
+      "on_fail": 14
+    },
+
+    {
+      "id": 14,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "突发情况 上方入口",
+      "params": {
+        "script_name": "tu_fa_qing_kuang.json",
+        "entry_task_id": 1,
+        "exit_task_id": 3,
+        "inherit_variables": true
+      },
+      "on_success": 141,
+      "on_fail": 141
+    },
+    {
+      "id": 141,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "突发情况 下方入口",
+      "params": {
+        "script_name": "tu_fa_qing_kuang.json",
+        "entry_task_id": 3,
+        "exit_task_id": 2,
+        "inherit_variables": true
+      },
+      "on_success": 15,
+      "on_fail": 15
+    },
+    {
+      "id": 15,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "回鸢报主界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 16,
+      "on_fail": 16
+    },
+
+    {
+      "id": 16,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 进入界面",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 1,
+        "exit_task_id": 31,
+        "inherit_variables": true
+      },
+      "on_success": 17,
+      "on_fail": 17
+    },
+    {
+      "id": 17,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第1入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 31,
+        "exit_task_id": 32,
+        "inherit_variables": true
+      },
+      "on_success": 18,
+      "on_fail": 18
+    },
+    {
+      "id": 18,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第2入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 32,
+        "exit_task_id": 33,
+        "inherit_variables": true
+      },
+      "on_success": 19,
+      "on_fail": 19
+    },
+    {
+      "id": 19,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第3入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 33,
+        "exit_task_id": 34,
+        "inherit_variables": true
+      },
+      "on_success": 20,
+      "on_fail": 20
+    },
+    {
+      "id": 20,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "待办公务 第4入口",
+      "params": {
+        "script_name": "dai_ban_gong_wu.json",
+        "entry_task_id": 34,
+        "exit_task_id": 31,
+        "inherit_variables": true
+      },
+      "on_success": 21,
+      "on_fail": 21
+    },
+    {
+      "id": 21,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "回鸢报主界面",
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 22,
+      "on_fail": 22
+    },
+    {
+      "id": 22,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "name": "小道消息收尾一键收取",
+      "params": {
+        "script_name": "xiao_dao_xiao_xi.json",
+        "entry_task_id": 1,
+        "exit_task_id": 5,
+        "inherit_variables": true
+      },
+      "on_success": -1,
+      "on_fail": -1
+    }
+  ]
+}

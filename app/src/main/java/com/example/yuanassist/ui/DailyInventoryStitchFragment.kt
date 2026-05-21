@@ -70,16 +70,20 @@ class DailyInventoryStitchFragment : Fragment() {
             setContent {
                 var stoneType by rememberSaveable { mutableStateOf(selectedStoneType) }
                 var archiveId by rememberSaveable { mutableStateOf(selectedArchiveId) }
+                var archiveName by rememberSaveable {
+                    mutableStateOf(MyStoneStore.getSelectedArchive(requireContext()).name)
+                }
                 refreshUi = {
                     stoneType = MyStoneStore.getSelectedType(requireContext())
                     archiveId = MyStoneStore.getSelectedArchiveId(requireContext())
+                    archiveName = MyStoneStore.getSelectedArchive(requireContext()).name
                     selectedStoneType = stoneType
                     selectedArchiveId = archiveId
                 }
 
                 DailyInventoryStitchScreen(
                     selectedStoneType = stoneType,
-                    archiveName = MyStoneStore.getSelectedArchive(requireContext()).name,
+                    archiveName = archiveName,
                     exampleBitmap = exampleBitmap,
                     onBack = ::goBack,
                     onSelectStoneType = { type ->
@@ -300,7 +304,7 @@ private fun DailyInventoryStitchScreen(
             title = "导入目标",
             subtitle = "导入结果会写入当前存档下的已选背包类型",
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 SubpageRadioOption(
                     text = "主星",
                     selected = selectedStoneType == MyStoneStore.TYPE_MAIN,

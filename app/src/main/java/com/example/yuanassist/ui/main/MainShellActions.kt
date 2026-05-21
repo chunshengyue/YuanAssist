@@ -5,7 +5,11 @@ data class HomeTabActions(
     val onOpenSettings: () -> Unit,
     val onOpenBirdFood: () -> Unit,
     val onOpenMainline624: () -> Unit,
+    val onOpenStargazing: () -> Unit,
+    val onOpenAilao15Min: () -> Unit,
+    val onOpenPiJingZhanJi: () -> Unit,
     val onOpenInventoryStitch: () -> Unit,
+    val onOpenBoxOcr: () -> Unit,
     val onOpenCoordinatePicker: () -> Unit,
     val onOpenScriptRecorder: () -> Unit,
     val onOpenRunLog: () -> Unit,
@@ -13,7 +17,6 @@ data class HomeTabActions(
     val onOpenFaq: () -> Unit,
     val onOpenFeedback: () -> Unit,
     val onOpenScriptLibrary: () -> Unit,
-    val onOpenExcludedAgents: () -> Unit,
     val onCheckUpdate: () -> Unit,
 )
 
@@ -50,4 +53,6 @@ data class MineTabActions(
     val onOpenFavorite: () -> Unit,
     val onOpenMessage: () -> Unit,
     val onOpenOfficialSite: () -> Unit,
+    val onOpenFeedbackAdmin: () -> Unit,
+    val onOpenExcludedAgents: () -> Unit,
 )

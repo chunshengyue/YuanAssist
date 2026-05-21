@@ -12,18 +12,22 @@ import android.widget.EditText
 import com.example.yuanassist.R
 
 fun EditText.disableShowSoftInput() {
-    this.isFocusable = true
-    this.isFocusableInTouchMode = true
-    this.isClickable = true
-    this.isLongClickable = false
+    protectInputLongPress()
     this.showSoftInputOnFocus = false
-    this.setOnLongClickListener { true }
     this.setOnFocusChangeListener { view, hasFocus ->
         if (hasFocus) {
             val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
             imm?.hideSoftInputFromWindow(view.windowToken, 0)
         }
     }
+}
+
+fun EditText.protectInputLongPress() {
+    this.isFocusable = true
+    this.isFocusableInTouchMode = true
+    this.isClickable = true
+    this.isLongClickable = false
+    this.setOnLongClickListener { true }
 
     val callback = object : ActionMode.Callback {
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean = false

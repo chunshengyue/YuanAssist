@@ -214,7 +214,6 @@ class BirdFoodRuntimeManager(
                 }
             },
             initialVariables = buildScriptVariables(),
-            treatFailMinusOneAsSuccess = true
         )
     }
 
@@ -406,7 +405,7 @@ class BirdFoodRuntimeManager(
                         roi = ROI(x = x, y = y, w = 200f, h = 300f, align = align)
                     ),
                     on_success = -1,
-                    on_fail = -1
+                    on_fail = -2
                 )
             )
         )

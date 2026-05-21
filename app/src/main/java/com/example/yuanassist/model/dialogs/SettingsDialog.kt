@@ -71,20 +71,18 @@ object SettingsDialog {
             val row = LinearLayout(themeContext).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 15, 0, 15)
-            }
-            val tvLabel = TextView(themeContext).apply {
-                text = label
-                textSize = 14f
-                setTextColor(Color.parseColor("#6C5B43"))
-                width = StyledDialogUi.dpToPx(themeContext, 140f)
+                setPadding(0, 6, 0, 6)
             }
             val switchView = Switch(themeContext).apply {
-                isChecked = checked
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                StyledDialogUi.styleCompactCheckControl(
+                    context = themeContext,
+                    button = this,
+                    label = label,
+                    checked = checked,
+                )
             }
-            row.addView(tvLabel)
             row.addView(switchView)
+            row.setOnClickListener { switchView.isChecked = !switchView.isChecked }
             scrollContent.addView(row)
             return switchView
         }
@@ -112,16 +110,14 @@ object SettingsDialog {
         }
         scrollContent.addView(speedLabel)
 
-        val rgSpeed = RadioGroup(themeContext).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
+        val rgSpeed = RadioGroup(themeContext).apply { orientation = LinearLayout.HORIZONTAL }
         val rb2x = RadioButton(themeContext).apply {
-            text = "2倍速"
             id = 2
+            StyledDialogUi.styleCompactCheckControl(themeContext, this, "2倍速", currentConfig.gameSpeed == 2)
         }
         val rb3x = RadioButton(themeContext).apply {
-            text = "3倍速"
             id = 3
+            StyledDialogUi.styleCompactCheckControl(themeContext, this, "3倍速", currentConfig.gameSpeed != 2)
         }
         rgSpeed.addView(rb2x)
         rgSpeed.addView(rb3x)

@@ -80,7 +80,7 @@ class Mainline624RuntimeManager(
             onCompleted = { success, errorMsg ->
                 if (!isRunning || generation != this.generation) return@startPlan
                 if (success) {
-                    executeNextRun(generation)
+                    handleRunSuccess(generation)
                 } else {
                     stopByFailure("6-24进图失败：$errorMsg")
                 }

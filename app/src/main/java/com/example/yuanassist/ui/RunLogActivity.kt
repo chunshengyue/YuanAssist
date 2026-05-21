@@ -25,8 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
@@ -46,6 +49,8 @@ private data class RunLogSection(
     val entryId: String? = null,
     val canDelete: Boolean = false,
 )
+
+private val RUN_LOG_LINE_REGEX = Regex("""^\[([^\]]+)] \[[^\]]+] (.*)$""")
 
 class RunLogActivity : AppCompatActivity() {
 
@@ -428,13 +433,39 @@ private fun RunLogEntry(
         }
 
         if (section.expanded) {
+            val coloredContent = remember(section.content) {
+                buildColoredRunLogText(section.content)
+            }
             Text(
-                text = section.content,
-                color = Color(0xFF8A6B5E),
+                text = coloredContent,
                 fontSize = 12.sp,
                 lineHeight = 19.sp,
                 fontFamily = FontFamily.Serif,
             )
         }
+    }
+}
+
+private fun buildColoredRunLogText(content: String) = buildAnnotatedString {
+    val lines = content.lines()
+    lines.forEachIndexed { index, line ->
+        withStyle(SpanStyle(color = colorForRunLogLine(line))) {
+            append(line)
+        }
+        if (index != lines.lastIndex) append("\n")
+    }
+}
+
+private fun colorForRunLogLine(line: String): Color {
+    val message = RUN_LOG_LINE_REGEX.matchEntire(line)?.groupValues?.getOrNull(2) ?: line
+    return when {
+        line.contains("[E]") -> Color(0xFFB84D4D)
+        message.startsWith("[披荆神秘]") -> Color(0xFFC57A2D)
+        message.startsWith("[披荆答题]") -> Color(0xFF3F6EA8)
+        message.startsWith("[披荆OCR]") -> Color(0xFF2D8C88)
+        message.startsWith("[披荆流程]") -> Color(0xFF8A5A3C)
+        message.startsWith("[调试诊断]") -> Color(0xFF7D7D7D)
+        line.startsWith("【") -> Color(0xFF9A6435)
+        else -> Color(0xFF8A6B5E)
     }
 }

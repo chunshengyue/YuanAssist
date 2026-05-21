@@ -30,6 +30,16 @@ data class PaddleTextElement(
     val boundingBox: Rect
 )
 
+data class PaddleDetectedText(
+    val detectedBoxes: List<Rect>,
+    val lines: List<PaddleTextLine>,
+)
+
+data class PaddleRecognizeByBoxesResult(
+    val detectedBoxes: List<Rect>,
+    val textLines: List<PaddleTextLine>,
+)
+
 object PaddleTextRecognizer {
     private const val MAX_LINE_COUNT = 24
     private const val CROP_PADDING = 4
@@ -37,9 +47,25 @@ object PaddleTextRecognizer {
 
     @Synchronized
     fun recognize(context: Context, bitmap: Bitmap): PaddleTextResult {
+        val detected = recognizeBoxesAndText(context, bitmap)
+        return PaddleTextResult(
+            text = detected.lines.joinToString("\n") { it.text },
+            blocks = detected.lines.map { line ->
+                PaddleTextBlock(
+                    text = line.text,
+                    boundingBox = line.boundingBox,
+                    lines = listOf(line)
+                )
+            },
+            detectedLineCount = detected.detectedBoxes.size,
+        )
+    }
+
+    @Synchronized
+    fun recognizeBoxesAndText(context: Context, bitmap: Bitmap): PaddleDetectedText {
         if (!init(context)) {
             RunLogger.e("Paddle OCR 初始化失败")
-            return PaddleTextResult("", emptyList())
+            return PaddleDetectedText(emptyList(), emptyList())
         }
 
         val source = ensureArgb8888(bitmap)
@@ -63,18 +89,42 @@ object PaddleTextRecognizer {
             }
 
         if (source !== bitmap) source.recycle()
+        return PaddleDetectedText(
+            detectedBoxes = detectedBoxes,
+            lines = lines,
+        )
+    }
 
-        val blocks = lines.map { line ->
-            PaddleTextBlock(
-                text = line.text,
-                boundingBox = line.boundingBox,
-                lines = listOf(line)
-            )
+    @Synchronized
+    fun recognizeLines(context: Context, bitmap: Bitmap): PaddleRecognizeByBoxesResult {
+        if (!init(context)) {
+            RunLogger.e("Paddle OCR 初始化失败")
+            return PaddleRecognizeByBoxesResult(emptyList(), emptyList())
         }
-        return PaddleTextResult(
-            text = lines.joinToString("\n") { it.text },
-            blocks = blocks,
-            detectedLineCount = detectedBoxes.size,
+
+        val source = ensureArgb8888(bitmap)
+        val detectedBoxes = detectTextLines(source)
+        val boxes = detectedBoxes.ifEmpty {
+            listOf(Rect(0, 0, source.width, source.height))
+        }
+        val lines = boxes.mapNotNull { rect ->
+            val padded = rect.padded(source.width, source.height, CROP_PADDING)
+            val text = recognizeCrop(source, padded).trim()
+            if (text.isEmpty()) {
+                null
+            } else {
+                PaddleTextLine(
+                    text = text,
+                    boundingBox = padded,
+                    elements = buildElements(text, padded)
+                )
+            }
+        }
+
+        if (source !== bitmap) source.recycle()
+        return PaddleRecognizeByBoxesResult(
+            detectedBoxes = detectedBoxes,
+            textLines = lines,
         )
     }
 

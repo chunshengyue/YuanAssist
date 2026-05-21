@@ -1,0 +1,33 @@
+{
+  "start_task_id": 1,
+  "tasks": [
+    {
+      "id": 1,
+      "name": "点击刷新",
+      "action": "MATCH_TEMPLATE",
+      "delay": 600,
+      "params": {
+        "template_name": "刷新.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": { "x": 945, "y": 827, "w": 200, "h": 200, "align": "center" }
+      },
+      "on_success": 2,
+      "on_fail": -2
+    },
+    {
+      "id": 2,
+      "name": "确定刷新",
+      "action": "OCR",
+      "delay": 600,
+      "params": {
+        "target_chars": ["确", "定"],
+        "min_hit_count": 1,
+        "roi": { "x": 538, "y": 1114, "w": 200, "h": 200, "align": "center" },
+        "click": 1
+      },
+      "on_success": -1,
+      "on_fail": -2
+    }
+  ]
+}

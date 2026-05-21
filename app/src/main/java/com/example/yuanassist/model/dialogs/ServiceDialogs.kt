@@ -12,6 +12,7 @@ import android.widget.Toast
 import com.example.yuanassist.R
 import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.disableShowSoftInput
+import com.example.yuanassist.utils.protectInputLongPress
 
 object ServiceDialogs {
 
@@ -31,7 +32,7 @@ object ServiceDialogs {
                 StyledDialogUi.dpToPx(themeContext, 14f),
                 StyledDialogUi.dpToPx(themeContext, 12f)
             )
-            disableShowSoftInput()
+            protectInputLongPress()
         }
         rootLayout.addView(
             editText,
@@ -84,7 +85,7 @@ object ServiceDialogs {
         val etTurn = StyledDialogUi.createStyledInput(themeContext, "在第几回合后新增？(例如: 12)").apply {
             hint = "在第几回合后新增？(例如: 12)"
             inputType = InputType.TYPE_CLASS_NUMBER
-            disableShowSoftInput()
+            protectInputLongPress()
         }
         rootLayout.addView(etTurn)
 
@@ -129,6 +130,17 @@ object ServiceDialogs {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = StyledDialogUi.dpToPx(themeContext, 12f) }
         )
+        editText.setSelection(editText.text?.length ?: 0)
+        rootLayout.addView(
+            buildActionKeyboard(themeContext) { key ->
+                editText.requestFocus()
+                handleActionKeyboardKey(editText, key)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = StyledDialogUi.dpToPx(themeContext, 10f) }
+        )
 
         val clearRow = StyledDialogUi.createActionRow(themeContext)
         val btnClear = StyledDialogUi.createActionButton(themeContext, "清空", false).apply {
@@ -171,10 +183,7 @@ object ServiceDialogs {
             dialogView.findViewById<EditText>(R.id.et_header_5)
         )
         for (et in ets) {
-            et.disableShowSoftInput()
-            et.isLongClickable = false
-            et.setOnLongClickListener { true }
-            et.setTextIsSelectable(false)
+            et.protectInputLongPress()
         }
         rootLayout.addView(
             dialogView,
@@ -208,7 +217,7 @@ object ServiceDialogs {
         val etName = StyledDialogUi.createStyledInput(themeContext, "请输入脚本名称").apply {
             hint = "请输入脚本名称"
             setText(defaultName)
-            disableShowSoftInput()
+            protectInputLongPress()
         }
         rootLayout.addView(etName)
 
@@ -229,6 +238,74 @@ object ServiceDialogs {
                 onSave(scriptName)
                 dialog.dismiss()
             }
+        }
+    }
+
+    private fun buildActionKeyboard(context: Context, onKey: (String) -> Unit): LinearLayout {
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                StyledDialogUi.dpToPx(context, 4f),
+                StyledDialogUi.dpToPx(context, 4f),
+                StyledDialogUi.dpToPx(context, 4f),
+                StyledDialogUi.dpToPx(context, 4f)
+            )
+            val rows = listOf(
+                listOf("1", "2", "3", "4", "5", "删"),
+                listOf("6", "7", "8", "9", "0", "清"),
+                listOf("A", "圈", "↑", "↓", "←", "→")
+            )
+            rows.forEachIndexed { rowIndex, keys ->
+                val row = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER
+                }
+                keys.forEachIndexed { keyIndex, key ->
+                    row.addView(
+                        StyledDialogUi.createActionButton(context, key, key == "A" || key == "圈").apply {
+                            minWidth = 0
+                            minimumWidth = 0
+                            setOnClickListener { onKey(key) }
+                        },
+                        LinearLayout.LayoutParams(
+                            0,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            1f
+                        ).apply {
+                            if (keyIndex > 0) leftMargin = StyledDialogUi.dpToPx(context, 4f)
+                        }
+                    )
+                }
+                addView(
+                    row,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        if (rowIndex > 0) topMargin = StyledDialogUi.dpToPx(context, 6f)
+                    }
+                )
+            }
+        }
+    }
+
+    private fun handleActionKeyboardKey(editor: EditText, key: String) {
+        val editable = editor.text ?: return
+        val start = editor.selectionStart.coerceAtLeast(0)
+        val end = editor.selectionEnd.coerceAtLeast(0)
+        val left = minOf(start, end)
+        val right = maxOf(start, end)
+        when (key) {
+            "←" -> editor.setSelection((left - 1).coerceAtLeast(0))
+            "→" -> editor.setSelection((right + 1).coerceAtMost(editable.length))
+            "删" -> {
+                when {
+                    right > left -> editable.delete(left, right)
+                    left > 0 -> editable.delete(left - 1, left)
+                }
+            }
+            "清" -> editable.clear()
+            else -> editable.replace(left, right, key)
         }
     }
 }

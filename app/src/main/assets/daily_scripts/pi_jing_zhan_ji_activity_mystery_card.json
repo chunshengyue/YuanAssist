@@ -1,0 +1,20 @@
+{
+  "start_task_id": 1,
+  "asset_template_dir": "daily_script_templates/pi_jing_zhan_ji_activity",
+  "tasks": [
+    {
+      "id": 1,
+      "name": "点击神秘事件卡牌",
+      "action": "MATCH_TEMPLATE",
+      "delay": 800,
+      "params": {
+        "template_name": "card.png",
+        "threshold": 0.75,
+        "click": 1,
+        "roi": { "x": 542.25, "y": 1136.25, "w": 1075.5, "h": 1000.0, "align": "center" }
+      },
+      "on_success": -1,
+      "on_fail": -2
+    }
+  ]
+}

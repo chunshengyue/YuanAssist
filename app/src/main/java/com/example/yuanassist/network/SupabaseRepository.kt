@@ -428,6 +428,20 @@ object SupabaseRepository {
         )
     }
 
+    fun listFeedbackForAdmin(
+        context: Context,
+        onSuccess: (List<issue_feedback>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<issue_feedback>>(
+            action = "list-feedback-admin",
+            payload = mapOf("deviceId" to currentDeviceId(context)),
+            type = object : TypeToken<List<issue_feedback>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
     fun createFeedback(
         context: Context,
         description: String,
@@ -444,6 +458,26 @@ object SupabaseRepository {
                 "logContent" to logContent,
                 "imageUrls" to imageUrls,
                 "status" to 0,
+            ),
+            type = issue_feedback::class.java,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun replyFeedbackAsAdmin(
+        context: Context,
+        feedbackObjectId: String,
+        reply: String,
+        onSuccess: (issue_feedback) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<issue_feedback>(
+            action = "reply-feedback-admin",
+            payload = mapOf(
+                "deviceId" to currentDeviceId(context),
+                "feedbackObjectId" to feedbackObjectId,
+                "reply" to reply,
             ),
             type = issue_feedback::class.java,
             onSuccess = onSuccess,

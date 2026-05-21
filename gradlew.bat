@@ -35,6 +35,16 @@ set APP_HOME=%DIRNAME%
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
+@rem Keep Gradle and Android state inside the workspace unless explicitly overridden.
+if not defined GRADLE_USER_HOME set GRADLE_USER_HOME=%APP_HOME%\.gradle-user-home
+if not defined ANDROID_USER_HOME set ANDROID_USER_HOME=%APP_HOME%\.android
+set TEMP=%APP_HOME%\.tmp
+set TMP=%TEMP%
+
+if not exist "%GRADLE_USER_HOME%" mkdir "%GRADLE_USER_HOME%" >NUL 2>&1
+if not exist "%ANDROID_USER_HOME%" mkdir "%ANDROID_USER_HOME%" >NUL 2>&1
+if not exist "%TEMP%" mkdir "%TEMP%" >NUL 2>&1
+
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
@@ -70,7 +80,7 @@ goto fail
 :execute
 @rem Setup the command line
 
-set CLASSPATH=
+set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 
 @rem Execute Gradle

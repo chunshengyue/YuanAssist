@@ -11,6 +11,7 @@ import android.graphics.Color
 import android.graphics.Path
 import android.graphics.Point
 import android.graphics.PointF
+import android.graphics.Rect
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
@@ -80,6 +81,7 @@ class CombatEngine(
     private var currentExecutingRowIndex = -1
     private val actionQueue: Queue<ActionItem> = LinkedList()
     private var delayJob: Job? = null
+    private var postActionCritCheckJob: Deferred<Boolean>? = null
     private val random = Random()
     private var lastTurnPauseTriggered = -1
     private var startOnlyInstructionsHandled = false
@@ -152,6 +154,30 @@ class CombatEngine(
         val hitCount: Int
             get() = hitChars.size
     }
+
+    private data class CritLineMatch(
+        val text: String,
+        val redRatio: Float,
+        val redPixelCount: Int,
+        val sampleCount: Int
+    )
+
+    private data class CritDetectionResult(
+        val rawText: String,
+        val normalizedText: String,
+        val containsCritKeyword: Boolean,
+        val digitLineCount: Int,
+        val matchedRedLine: CritLineMatch?
+    ) {
+        val hasRedDamageNumber: Boolean
+            get() = matchedRedLine != null
+    }
+
+    private data class RedPixelStats(
+        val ratio: Float,
+        val redPixelCount: Int,
+        val sampleCount: Int
+    )
 
     private data class StartBattleOcrLineMatch(
         val lineText: String,
@@ -276,6 +302,13 @@ class CombatEngine(
         private const val STAGE_BATTLE_OCR_ROI_WIDTH = 400f
         private const val STAGE_BATTLE_OCR_ROI_HEIGHT = 300f
         private const val STAGE_BATTLE_OCR_MIN_HIT_COUNT = 2
+        private const val CRIT_CHECK_DELAY_MS = 1400L
+        private const val CRIT_CHECK_CENTER_X = 540f
+        private const val CRIT_CHECK_CENTER_Y = 760f
+        private const val CRIT_CHECK_ROI_WIDTH = 860f
+        private const val CRIT_CHECK_ROI_HEIGHT = 900f
+        private const val CRIT_CHECK_RED_RATIO_THRESHOLD = 0.18f
+        private const val CRIT_CHECK_RED_PIXEL_THRESHOLD = 24
     }
 
     private fun getTargetSwitchSettleDelayMs(): Long = 500L
@@ -286,6 +319,8 @@ class CombatEngine(
         lastTurnPauseTriggered = -1
         startOnlyInstructionsHandled = false
         delayJob?.cancel()
+        postActionCritCheckJob?.cancel()
+        postActionCritCheckJob = null
 
         if (followData.isEmpty()) {
             showToast("请先导入数据", false)
@@ -331,6 +366,8 @@ class CombatEngine(
         lastTurnPauseTriggered = -1
         startOnlyInstructionsHandled = false
         delayJob?.cancel()
+        postActionCritCheckJob?.cancel()
+        postActionCritCheckJob = null
         templateCache.evictAll()
         followData.forEach { it.isExecuting = false }
         onRowUpdated(-1)
@@ -373,6 +410,8 @@ class CombatEngine(
         isPaused = !isPaused
         if (isPaused) {
             delayJob?.cancel()
+            postActionCritCheckJob?.cancel()
+            postActionCritCheckJob = null
             showToast("已暂停", false)
             onStateChanged()
             onHudUpdated("已暂停", true) // 🔴 暂停时固定显示
@@ -577,6 +616,12 @@ class CombatEngine(
 
         RunLogger.i("  -> 执行动作: 站位${action.colIndex + 1} ${action.command}")
         val char = action.command[0]
+        val currentTurn = followData[currentExecutingRowIndex].turnNumber
+        val currentStep = action.stepIndex
+        val hasCritCheck =
+            instructionList.any {
+                it.turn == currentTurn && it.step == currentStep && it.type == InstructionType.CRIT_CHECK
+            }
 
         val basePointA = coordinateManager.getActionCoordinates(
             action.colIndex,
@@ -651,14 +696,20 @@ class CombatEngine(
             }
         }
 
+        postActionCritCheckJob?.cancel()
+        postActionCritCheckJob = null
+        if (hasCritCheck) {
+            postActionCritCheckJob = serviceScope.async {
+                performCritCheckAfterAction(currentTurn, currentStep)
+            }
+        }
+
         val speedMultiplier = if (appConfig.gameSpeed == 2) 1.5 else 1.0
         var delay = if (char == '↑') {
             (appConfig.intervalSkill * speedMultiplier).toLong()
         } else {
             (appConfig.intervalAttack * speedMultiplier).toLong()
         }
-        val currentTurn = followData[currentExecutingRowIndex].turnNumber
-        val currentStep = action.stepIndex
 
         val turnDelayDelta = resolveDelayDelta(currentTurn, 0)
         if (turnDelayDelta != 0L) {
@@ -688,16 +739,35 @@ class CombatEngine(
         }
 
         startSafeDelay(delay, nextActionStr, true) {
-            if (stepPauseIns != null) {
-                isPaused = true
-                showToast("指令触发：步骤${currentStep}后暂停", true)
-                onStateChanged()
-                onHudUpdated("已暂停", true) // 🔴 指令触发暂停时显示
-                return@startSafeDelay
-            }
-            val currentTurnNum = followData[currentExecutingRowIndex].turnNumber
-            checkAndSwitchTarget(currentTurnNum, action.stepIndex) {
-                executeActionQueue(onComplete)
+            val critCheckJob = postActionCritCheckJob
+            serviceScope.launch {
+                val shouldContinue = if (critCheckJob != null) {
+                    try {
+                        critCheckJob.await()
+                    } catch (_: CancellationException) {
+                        return@launch
+                    } finally {
+                        if (postActionCritCheckJob === critCheckJob) {
+                            postActionCritCheckJob = null
+                        }
+                    }
+                } else {
+                    true
+                }
+                if (!shouldContinue || !isRunning) {
+                    return@launch
+                }
+                if (stepPauseIns != null) {
+                    isPaused = true
+                    showToast("指令触发：步骤${currentStep}后暂停", true)
+                    onStateChanged()
+                    onHudUpdated("已暂停", true) // 🔴 指令触发暂停时显示
+                    return@launch
+                }
+                val currentTurnNum = followData[currentExecutingRowIndex].turnNumber
+                checkAndSwitchTarget(currentTurnNum, action.stepIndex) {
+                    executeActionQueue(onComplete)
+                }
             }
         }
     }
@@ -1832,6 +1902,69 @@ class CombatEngine(
         return performStarCheck(StarDetectionMode.PURPLE)
     }
 
+    private suspend fun performCritCheckAfterAction(turn: Int, step: Int): Boolean {
+        delay(CRIT_CHECK_DELAY_MS)
+        if (!isRunning) return false
+        onHudUpdated("暴击检测", true)
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            RunLogger.e("暴击检测仅支持 Android 11 及以上")
+            handleBackRecoveryAndStop(
+                reasonLabel = "暴击检测",
+                toastMessage = "暴击检测未命中，已执行一次返回",
+                successLog = "暴击检测因系统版本不支持，已执行一次全局返回",
+                failureLog = "暴击检测因系统版本不支持，执行全局返回失败"
+            )
+            return false
+        }
+
+        val screenshot = captureScreenshotBitmap()
+        if (screenshot == null) {
+            RunLogger.e("暴击检测截图失败 turn=$turn step=$step")
+            handleBackRecoveryAndStop(
+                reasonLabel = "暴击检测",
+                toastMessage = "暴击检测未命中，已执行一次返回",
+                successLog = "暴击检测截图失败，已执行一次全局返回",
+                failureLog = "暴击检测截图失败后执行全局返回失败"
+            )
+            return false
+        }
+
+        val result = try {
+            detectCritFromScreenshot(screenshot)
+        } finally {
+            if (!screenshot.isRecycled) {
+                screenshot.recycle()
+            }
+        }
+        if (!isRunning) return false
+
+        val bestRed = result?.matchedRedLine
+        RunLogger.i(
+            "暴击检测 turn=$turn step=$step " +
+                "raw=${formatOcrLogText(result?.rawText ?: "")} " +
+                "normalized=${formatOcrLogText(result?.normalizedText ?: "")} " +
+                "critText=${result?.containsCritKeyword == true} " +
+                "digitLines=${result?.digitLineCount ?: 0} " +
+                "redLine=${bestRed?.text ?: "无"} " +
+                "redRatio=${bestRed?.redRatio?.let { "%.3f".format(Locale.US, it) } ?: "0.000"} " +
+                "redPixels=${bestRed?.redPixelCount ?: 0}/${bestRed?.sampleCount ?: 0}"
+        )
+
+        if (result != null && (result.containsCritKeyword || result.hasRedDamageNumber)) {
+            showToast("暴击检测命中", false)
+            return true
+        }
+
+        handleBackRecoveryAndStop(
+            reasonLabel = "暴击检测",
+            toastMessage = "暴击检测未命中，已执行一次返回",
+            successLog = "暴击检测未命中，已执行一次全局返回",
+            failureLog = "暴击检测未命中后执行全局返回失败"
+        )
+        return false
+    }
+
     private suspend fun performStarCheck(mode: StarDetectionMode): Boolean {
         var shapeWithoutGlow: OrangeStarAttemptResult? = null
 
@@ -2203,6 +2336,59 @@ class CombatEngine(
         }
     }
 
+    private suspend fun detectCritFromScreenshot(screenshot: Bitmap): CritDetectionResult? {
+        val region = buildVisionSearchRegion(
+            screenshot = screenshot,
+            centerX = CRIT_CHECK_CENTER_X,
+            centerY = CRIT_CHECK_CENTER_Y,
+            align = "center",
+            roiWidth = CRIT_CHECK_ROI_WIDTH,
+            roiHeight = CRIT_CHECK_ROI_HEIGHT
+        ) ?: return null
+        return try {
+            val ocrResult = recognizeChineseTextResult(region.bitmap)
+            val rawText = ocrResult?.text ?: ""
+            val normalizedText = rawText.filterNot { it.isWhitespace() }
+            val containsCritKeyword =
+                normalizedText.contains("暴击") || normalizedText.contains("暴擊")
+            val digitLines = ocrResult
+                ?.blocks
+                ?.flatMap { it.lines }
+                ?.filter { line -> line.text.any { ch -> ch.isDigit() } }
+                .orEmpty()
+            val matchedRedLine = digitLines
+                .mapNotNull { line ->
+                    val redStats = analyzeRedPixelsInRect(region.bitmap, line.boundingBox)
+                    if (
+                        redStats.redPixelCount >= CRIT_CHECK_RED_PIXEL_THRESHOLD &&
+                        redStats.ratio >= CRIT_CHECK_RED_RATIO_THRESHOLD
+                    ) {
+                        CritLineMatch(
+                            text = line.text,
+                            redRatio = redStats.ratio,
+                            redPixelCount = redStats.redPixelCount,
+                            sampleCount = redStats.sampleCount
+                        )
+                    } else {
+                        null
+                    }
+                }
+                .maxWithOrNull(compareBy<CritLineMatch>({ it.redRatio }, { it.redPixelCount }))
+
+            CritDetectionResult(
+                rawText = rawText,
+                normalizedText = normalizedText,
+                containsCritKeyword = containsCritKeyword,
+                digitLineCount = digitLines.size,
+                matchedRedLine = matchedRedLine
+            )
+        } finally {
+            if (!region.bitmap.isRecycled) {
+                region.bitmap.recycle()
+            }
+        }
+    }
+
     private fun getSelectedStageAutoNavTarget(): BattleStageTarget? {
         val navigationTask = instructionList.firstOrNull {
             it.type == InstructionType.STAGE_AUTO_NAV
@@ -2416,6 +2602,45 @@ class CombatEngine(
                 region.bitmap.recycle()
             }
         }
+    }
+
+    private fun analyzeRedPixelsInRect(bitmap: Bitmap, rect: Rect): RedPixelStats {
+        if (bitmap.width <= 0 || bitmap.height <= 0) {
+            return RedPixelStats(ratio = 0f, redPixelCount = 0, sampleCount = 0)
+        }
+        val safeRect = Rect(
+            rect.left.coerceIn(0, bitmap.width),
+            rect.top.coerceIn(0, bitmap.height),
+            rect.right.coerceIn(0, bitmap.width),
+            rect.bottom.coerceIn(0, bitmap.height)
+        )
+        if (safeRect.width() <= 0 || safeRect.height() <= 0) {
+            return RedPixelStats(ratio = 0f, redPixelCount = 0, sampleCount = 0)
+        }
+
+        val step = if (safeRect.width() * safeRect.height() > 4000) 2 else 1
+        var redPixelCount = 0
+        var sampleCount = 0
+        val hsv = FloatArray(3)
+        for (y in safeRect.top until safeRect.bottom step step) {
+            for (x in safeRect.left until safeRect.right step step) {
+                sampleCount += 1
+                Color.colorToHSV(bitmap.getPixel(x, y), hsv)
+                val hue = hsv[0]
+                val saturation = hsv[1]
+                val brightness = hsv[2]
+                val isRedHue = hue <= 20f || hue >= 340f
+                if (isRedHue && saturation >= 0.40f && brightness >= 0.28f) {
+                    redPixelCount += 1
+                }
+            }
+        }
+        val ratio = if (sampleCount == 0) 0f else redPixelCount.toFloat() / sampleCount.toFloat()
+        return RedPixelStats(
+            ratio = ratio,
+            redPixelCount = redPixelCount,
+            sampleCount = sampleCount
+        )
     }
 
     private suspend fun findTemplatePointInVisionRoi(
@@ -3448,6 +3673,8 @@ class CombatEngine(
     private fun restartFromFirstTurn(restartMessage: String = "全灭恢复，重新从第1回合开始") {
         if (!isRunning) return
         delayJob?.cancel()
+        postActionCritCheckJob?.cancel()
+        postActionCritCheckJob = null
         actionQueue.clear()
         currentExecutingRowIndex = -1
         lastTurnPauseTriggered = -1

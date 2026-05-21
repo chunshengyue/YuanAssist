@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -27,6 +28,7 @@ import com.example.yuanassist.utils.BIRD_FOOD_NAV_TEST_TASK_KEY
 import com.example.yuanassist.utils.DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.MAINLINE_624_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.StartBattleShared
+import com.example.yuanassist.utils.StonePaddleLocalRecognizer
 import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.example.yuanassist.utils.TemplateOverrideStore
 import com.example.yuanassist.utils.UserDailyScriptBundle
@@ -63,6 +65,8 @@ class DebugWorkbenchCoordinator(
         private const val DAI_BAN_GONG_WU_SWEEP_LABEL = "待办公务扫荡按钮"
         private const val BATTLE_TURN_OCR_OPTION = "BATTLE_TURN_OCR"
         private const val BATTLE_TURN_OCR_LABEL = "战斗回合 OCR（右上角）"
+        private const val STONE_GRID_DEBUG_OPTION = "STONE_GRID_DEBUG"
+        private const val STONE_GRID_DEBUG_LABEL = "星石区域划分（Paddle划分 + Paddle识别）"
         private const val CHARACTER_NAME_OPTION = "CHARACTER_NAME_OCR"
         private const val CHARACTER_PROFICIENCY_OPTION = "CHARACTER_PROFICIENCY_OCR"
         private const val CHARACTER_PROFICIENCY_LABEL = "角色练度"
@@ -497,6 +501,7 @@ class DebugWorkbenchCoordinator(
             DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION -> runDaiBanGongWuStartBattleDelayTest()
             MAINLINE_624_START_BATTLE_DELAY_OPTION -> runMainline624StartBattleDelayTest()
             BATTLE_TURN_OCR_OPTION -> runBattleTurnOcrTest()
+            STONE_GRID_DEBUG_OPTION -> runStoneGridDebugTest()
             CHARACTER_NAME_OPTION -> runCharacterFateOcrTest()
             CHARACTER_PROFICIENCY_OPTION -> runCharacterProficiencyOcrTest()
             CHARACTER_FATE_OPTION -> runCharacterFateOcrTest()
@@ -668,6 +673,39 @@ class DebugWorkbenchCoordinator(
                 bitmap.recycle()
             },
         )
+    }
+
+    private fun runStoneGridDebugTest() {
+        val source = currentBitmap ?: return
+        log("------------------------")
+        log("Start matching: $STONE_GRID_DEBUG_LABEL")
+        ocrScope.launch {
+            runCatching {
+                val analysis = StonePaddleLocalRecognizer.analyzeForDebug(activity, source)
+                val preview = StonePaddleLocalRecognizer.drawDebugPreview(source, analysis)
+                withContext(Dispatchers.Main) {
+                    previewBitmap = preview
+                    analysis.debugLines.forEach(::log)
+                    analysis.cardRows.forEach { row ->
+                        row.cards.forEach { card ->
+                            log(
+                                "row=${row.rowIndex + 1} col=${card.columnIndex + 1} " +
+                                    "level=${card.levelText.ifBlank { "?" }} name=${card.nameText.ifBlank { "?" }} " +
+                                    "levelROI=${card.levelRect.width()}x${card.levelRect.height()} " +
+                                    "nameROI=${card.nameRect.width()}x${card.nameRect.height()}"
+                            )
+                        }
+                    }
+                    pushState()
+                }
+            }.onFailure { error ->
+                withContext(Dispatchers.Main) {
+                    previewBitmap = source
+                    log("星石区域划分失败: ${error.message}")
+                    pushState()
+                }
+            }
+        }
     }
 
     private fun runStartBattleOcrTest() {
@@ -1822,6 +1860,7 @@ class DebugWorkbenchCoordinator(
             START_BATTLE_OCR_OPTION,
             BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION,
             BATTLE_TURN_OCR_OPTION,
+            STONE_GRID_DEBUG_OPTION,
             CHARACTER_PROFICIENCY_OPTION,
             CHARACTER_FATE_OPTION,
             ORANGE_STAR_OPTION,
@@ -2002,6 +2041,8 @@ class DebugWorkbenchCoordinator(
                 "这个选项用来调整主线624脚本里“点开始战斗前”的等待时间"
             selectedTemplate == BATTLE_TURN_OCR_OPTION ->
                 "使用实战相同的右上角 OCR 区域：400x300，输出 raw/normalized/hits/turn"
+            selectedTemplate == STONE_GRID_DEBUG_OPTION ->
+                "使用 Paddle 检测框聚类候选行并四等分，显示检测框、候选行、等级ROI、名称ROI，并输出每格识别结果"
             selectedTemplate == CHARACTER_PROFICIENCY_OPTION ->
                 "使用角色练度 ROI：数值 bottom(340,1289)，星级 bottom(625,1663)，输出生命/攻击/星级"
             selectedTemplate == CHARACTER_FATE_OPTION ->
@@ -2082,6 +2123,7 @@ class DebugWorkbenchCoordinator(
             templateName == DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION -> "待办公务开始战斗前延时"
             templateName == MAINLINE_624_START_BATTLE_DELAY_OPTION -> "主线624开始战斗前延时"
             templateName == BATTLE_TURN_OCR_OPTION -> BATTLE_TURN_OCR_LABEL
+            templateName == STONE_GRID_DEBUG_OPTION -> STONE_GRID_DEBUG_LABEL
             templateName == CHARACTER_NAME_OPTION -> CHARACTER_FATE_LABEL
             templateName == CHARACTER_PROFICIENCY_OPTION -> CHARACTER_PROFICIENCY_LABEL
             templateName == CHARACTER_FATE_OPTION -> CHARACTER_FATE_LABEL
@@ -2115,6 +2157,7 @@ class DebugWorkbenchCoordinator(
                 optionName == DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION ||
                 optionName == MAINLINE_624_START_BATTLE_DELAY_OPTION ||
                 optionName == BATTLE_TURN_OCR_OPTION ||
+                optionName == STONE_GRID_DEBUG_OPTION ||
                 optionName == CHARACTER_NAME_OPTION ||
                 optionName == CHARACTER_PROFICIENCY_OPTION ||
                 optionName == CHARACTER_FATE_OPTION ||

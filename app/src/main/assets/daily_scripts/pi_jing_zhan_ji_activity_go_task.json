@@ -1,0 +1,19 @@
+{
+  "start_task_id": 1,
+  "asset_template_dir": "daily_script_templates/pi_jing_zhan_ji_activity",
+  "tasks": [
+    {
+      "id": 1,
+      "name": "点击前往",
+      "action": "OCR",
+        "delay": 1000,
+      "params": {
+        "target_text": "前往",
+        "roi": { "x": 840.0, "y": 1029.0, "w": 200.0, "h": 200.0, "align": "center" },
+        "click": 1
+      },
+      "on_success": -1,
+      "on_fail": -1
+    }
+  ]
+}

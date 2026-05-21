@@ -299,7 +299,7 @@
                     android:orientation="vertical">
 
                     <LinearLayout
-                        android:id="@+id/layout_my_stone_images_heading"
+                        android:id="@+id/layout_my_stone_long_heading"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_stone_heading_panel"
@@ -325,13 +325,13 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="serif"
-                                android:text="&#x7ED3;&#x679C;&#x56FE;"
+                                android:text="结果长图"
                                 android:textColor="#75322D"
                                 android:textSize="20sp"
                                 android:textStyle="bold" />
 
                             <TextView
-                                android:id="@+id/tv_my_stone_images_subtitle"
+                                android:id="@+id/tv_my_stone_long_subtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
@@ -341,7 +341,7 @@
                         </LinearLayout>
 
                         <TextView
-                            android:id="@+id/btn_recognize_my_stone_images"
+                            android:id="@+id/btn_recognize_my_stone_long"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
@@ -357,7 +357,23 @@
                             android:visibility="gone" />
 
                         <TextView
-                            android:id="@+id/btn_toggle_my_stone_images"
+                            android:id="@+id/btn_partition_my_stone_long"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/btn_stone_soft_selected"
+                            android:paddingStart="12dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="6dp"
+                            android:text="划分"
+                            android:textColor="#75322D"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/btn_toggle_my_stone_long"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:background="@drawable/btn_stone_light"
@@ -372,7 +388,7 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/layout_my_stone_images_content"
+                        android:id="@+id/layout_my_stone_long_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -381,22 +397,141 @@
                         android:padding="18dp"
                         android:visibility="gone">
 
-                        <ImageView
-                            android:id="@+id/iv_my_stone_result_1"
+                        <LinearLayout
+                            android:id="@+id/layout_my_stone_long_images"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:adjustViewBounds="true"
-                            android:contentDescription="@null"
-                            android:scaleType="fitCenter" />
+                            android:orientation="vertical" />
 
                         <ImageView
-                            android:id="@+id/iv_my_stone_result_2"
+                            android:id="@+id/iv_my_stone_long_partition_preview"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
                             android:adjustViewBounds="true"
                             android:contentDescription="@null"
                             android:scaleType="fitCenter"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/layout_my_stone_loose_heading"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_stone_heading_panel"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="14dp">
+
+                        <View
+                            android:layout_width="5dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_run_log_accent" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="serif"
+                                android:text="结果散图"
+                                android:textColor="#75322D"
+                                android:textSize="20sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tv_my_stone_loose_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="&#x9ED8;&#x8BA4;&#x6536;&#x8D77;"
+                                android:textColor="#8A6B5E"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/btn_recognize_my_stone_loose"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/btn_dark_gold"
+                            android:paddingStart="12dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="6dp"
+                            android:text="识别"
+                            android:textColor="#1A1A1A"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/btn_partition_my_stone_loose"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/btn_stone_soft_selected"
+                            android:paddingStart="12dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="6dp"
+                            android:text="划分"
+                            android:textColor="#75322D"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/btn_toggle_my_stone_loose"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/btn_stone_light"
+                            android:paddingStart="12dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="6dp"
+                            android:text="&#x5C55;&#x5F00;"
+                            android:textColor="#75322D"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layout_my_stone_loose_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_stone_section_card"
+                        android:orientation="vertical"
+                        android:padding="18dp"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:id="@+id/layout_my_stone_loose_images"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <LinearLayout
+                            android:id="@+id/layout_my_stone_loose_partition_previews"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="vertical"
                             android:visibility="gone" />
                     </LinearLayout>
                 </LinearLayout>

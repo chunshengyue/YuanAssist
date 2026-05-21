@@ -26,11 +26,12 @@ object AutoSelectDialog {
         rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "自动选择角色设置"))
 
         val switchAutoSelect = Switch(themeContext).apply {
-            text = "开启自动选择密探"
-            isChecked = isCurrentlyEnabled
-            textSize = 16f
-            setTextColor(Color.parseColor("#2F261B"))
-            setPadding(0, StyledDialogUi.dpToPx(themeContext, 10f), 0, StyledDialogUi.dpToPx(themeContext, 8f))
+            StyledDialogUi.styleCompactCheckControl(
+                context = themeContext,
+                button = this,
+                label = "开启自动选择密探",
+                checked = isCurrentlyEnabled,
+            )
         }
         rootLayout.addView(switchAutoSelect)
 

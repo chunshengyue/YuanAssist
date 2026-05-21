@@ -24,9 +24,13 @@ data class MyStoneRow(
 data class MyStoneRecord(
     val stoneType: String = MyStoneStore.TYPE_MAIN,
     val updatedAt: Long,
-    val images: List<MyStoneImageEntry>,
+    val images: List<MyStoneImageEntry> = emptyList(),
+    val longImages: List<MyStoneImageEntry> = emptyList(),
+    val looseImages: List<MyStoneImageEntry> = emptyList(),
     val statsLines: List<String> = emptyList(),
     val rows: List<MyStoneRow> = emptyList(),
+    val looseOcrCompletedAt: Long = 0L,
+    val longOcrCompletedAt: Long = 0L,
     val ocrStrategy: String? = null
 )
 
@@ -247,12 +251,44 @@ object MyStoneStore {
         return record
     }
 
+    fun saveImageBundles(
+        context: Context,
+        stoneType: String,
+        longBitmaps: List<Bitmap>,
+        looseBitmaps: List<Bitmap>,
+        archiveId: String = getSelectedArchiveId(context)
+    ): MyStoneRecord {
+        ensureInitialized(context)
+        require(longBitmaps.isNotEmpty() || looseBitmaps.isNotEmpty()) { "至少需要一张图片" }
+
+        val resolvedArchiveId = resolveArchiveId(context, archiveId)
+        val normalizedType = normalizeType(stoneType)
+        val dir = storeDir(context, resolvedArchiveId, normalizedType)
+        clearStore(dir)
+
+        val longImages = saveBitmapGroup(dir, "stone_long_result", longBitmaps)
+        val looseImages = saveBitmapGroup(dir, "stone_loose_result", looseBitmaps)
+        val record = MyStoneRecord(
+            stoneType = normalizedType,
+            updatedAt = System.currentTimeMillis(),
+            images = longImages + looseImages,
+            longImages = longImages,
+            looseImages = looseImages,
+        )
+        saveRecord(context, resolvedArchiveId, normalizedType, record)
+        touchArchive(context, resolvedArchiveId, record.updatedAt)
+        setSelectedArchiveId(context, resolvedArchiveId)
+        setSelectedType(context, normalizedType)
+        return record
+    }
+
     fun saveOcrResult(
         context: Context,
         stoneType: String,
         rows: List<MyStoneRow>,
         statsLines: List<String>,
         ocrStrategy: String?,
+        ocrMode: StoneOcrMode? = null,
         archiveId: String = getSelectedArchiveId(context)
     ): MyStoneRecord {
         ensureInitialized(context)
@@ -260,11 +296,20 @@ object MyStoneStore {
         val normalizedType = normalizeType(stoneType)
         val record = loadRecord(context, normalizedType, resolvedArchiveId)
             ?: throw IllegalStateException("没有可更新的星石记录")
+        val now = System.currentTimeMillis()
         val updated = record.copy(
             stoneType = normalizedType,
-            updatedAt = System.currentTimeMillis(),
+            updatedAt = now,
             rows = rows.deepCopyRows(),
             statsLines = statsLines,
+            looseOcrCompletedAt = when (ocrMode) {
+                StoneOcrMode.LOCAL -> now
+                else -> record.looseOcrCompletedAt
+            },
+            longOcrCompletedAt = when (ocrMode) {
+                StoneOcrMode.CLOUD -> now
+                else -> record.longOcrCompletedAt
+            },
             ocrStrategy = ocrStrategy
         )
         saveRecord(context, resolvedArchiveId, normalizedType, updated)
@@ -328,7 +373,35 @@ object MyStoneStore {
         val resolvedArchiveId = resolveArchiveId(context, archiveId)
         val normalizedType = normalizeType(stoneType)
         val dir = storeDir(context, resolvedArchiveId, normalizedType)
-        return record.images.map { File(dir, it.fileName) }.filter { it.exists() }
+        return resolvedImageEntries(record).map { File(dir, it.fileName) }.filter { it.exists() }
+    }
+
+    fun longImageFiles(
+        context: Context,
+        stoneType: String,
+        record: MyStoneRecord,
+        archiveId: String = getSelectedArchiveId(context)
+    ): List<File> {
+        ensureInitialized(context)
+        val resolvedArchiveId = resolveArchiveId(context, archiveId)
+        val normalizedType = normalizeType(stoneType)
+        val dir = storeDir(context, resolvedArchiveId, normalizedType)
+        val images = if (record.longImages.isNotEmpty()) record.longImages else record.images.take(1)
+        return images.map { File(dir, it.fileName) }.filter { it.exists() }
+    }
+
+    fun looseImageFiles(
+        context: Context,
+        stoneType: String,
+        record: MyStoneRecord,
+        archiveId: String = getSelectedArchiveId(context)
+    ): List<File> {
+        ensureInitialized(context)
+        val resolvedArchiveId = resolveArchiveId(context, archiveId)
+        val normalizedType = normalizeType(stoneType)
+        val dir = storeDir(context, resolvedArchiveId, normalizedType)
+        val images = if (record.looseImages.isNotEmpty()) record.looseImages else record.images.drop(1)
+        return images.map { File(dir, it.fileName) }.filter { it.exists() }
     }
 
     fun migrateLegacyMainRecordIfNeeded(context: Context) {
@@ -449,6 +522,36 @@ object MyStoneStore {
 
     private fun saveRecord(context: Context, archiveId: String, stoneType: String, record: MyStoneRecord) {
         recordFile(context, archiveId, stoneType).writeText(gson.toJson(record), Charsets.UTF_8)
+    }
+
+    private fun saveBitmapGroup(
+        dir: File,
+        prefix: String,
+        bitmaps: List<Bitmap>,
+    ): List<MyStoneImageEntry> {
+        return bitmaps.mapIndexed { index, bitmap ->
+            val fileName = "${prefix}_${index + 1}.png"
+            val target = File(dir, fileName)
+            FileOutputStream(target).use { output ->
+                if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                    throw IllegalStateException("保存本地星石图片失败: $fileName")
+                }
+                output.flush()
+            }
+            MyStoneImageEntry(
+                fileName = fileName,
+                width = bitmap.width,
+                height = bitmap.height
+            )
+        }
+    }
+
+    private fun resolvedImageEntries(record: MyStoneRecord): List<MyStoneImageEntry> {
+        return when {
+            record.longImages.isNotEmpty() || record.looseImages.isNotEmpty() ->
+                record.longImages + record.looseImages
+            else -> record.images
+        }
     }
 
     private fun clearStore(dir: File) {

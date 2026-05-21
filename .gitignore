@@ -89,3 +89,14 @@ paddleocr_v5_mobile_android_integration_guide.md
 
 # Local scratch data
 data/
+node_modules/
+package.json
+package-lock.json
+supabase/.temp/
+supabase/functions/yuanassist-api-v3-backup-*/
+findings.md
+progress.md
+task_plan.md
+user_daily_scripts/
+card.png
+*.xlsx

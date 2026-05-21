@@ -11,7 +11,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id":10,
@@ -40,7 +40,7 @@
         "var_value": "1"
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 102,
@@ -51,7 +51,7 @@
         "var_value": "0"
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 2,
@@ -88,7 +88,7 @@
         "align": "center"
       },
       "on_success": 31,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 31,
@@ -100,7 +100,7 @@
         "align": "center"
       },
       "on_success": 32,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 32,
@@ -112,7 +112,7 @@
         "align": "center"
       },
       "on_success": 4,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 4,
@@ -135,7 +135,7 @@
     {
       "id": 41,
       "action": "MATCH_TEMPLATE",
-      "delay": 500,
+      "delay": 2000,
       "params": {
         "template_name": "yezi.png",
         "threshold": 0.8,
@@ -157,8 +157,54 @@
       "params": {
         "ref_task_id": 10
       },
-      "on_success": 6,
+      "on_success": 51,
       "on_fail": -4
+    },
+    {
+      "id": 51,
+      "action": "OCR",
+      "delay": 800,
+      "params": {
+        "target_chars": [
+          "最",
+          "多"
+        ],
+        "min_hit_count": 1,
+        "click": 1,
+        "roi": {
+          "x": 880,
+          "y": 1099,
+          "w": 220,
+          "h": 220,
+          "align": "center"
+        }
+      },
+      "on_success": 52,
+      "on_fail": -2
+    },
+    {
+      "id": 52,
+      "action": "OCR",
+      "delay": 800,
+      "params": {
+        "target_chars": [
+          "前",
+          "往",
+          "收",
+          "集"
+        ],
+        "min_hit_count": 2,
+        "click": 1,
+        "roi": {
+          "x": 533,
+          "y": 1305,
+          "w": 260,
+          "h": 220,
+          "align": "center"
+        }
+      },
+      "on_success": 6,
+      "on_fail": -2
     },
     {
       "id": 6,
@@ -229,7 +275,7 @@
         "ref_task_id": 10
       },
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 61,

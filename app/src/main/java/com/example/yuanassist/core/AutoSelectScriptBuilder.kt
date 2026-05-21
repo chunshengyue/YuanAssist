@@ -87,7 +87,7 @@ object AutoSelectScriptBuilder {
                     delay = delay,
                     params = params,
                     on_success = id + 1,
-                    on_fail = -1
+                    on_fail = -2
                 )
             )
             return id

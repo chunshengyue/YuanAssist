@@ -88,6 +88,14 @@ APP_BASE_NAME=${0##*/}
 # Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
 APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s\n' "$PWD" ) || exit
 
+# Keep Gradle and Android state inside the workspace unless explicitly overridden.
+: "${GRADLE_USER_HOME:="$APP_HOME/.gradle-user-home"}"
+: "${ANDROID_USER_HOME:="$APP_HOME/.android"}"
+export GRADLE_USER_HOME ANDROID_USER_HOME
+export TMPDIR="$APP_HOME/.tmp"
+
+mkdir -p "$GRADLE_USER_HOME" "$ANDROID_USER_HOME" "$TMPDIR"
+
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 
@@ -114,7 +122,7 @@ case "$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
-CLASSPATH="\\\"\\\""
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
 
 
 # Determine the Java command to use to start the JVM.

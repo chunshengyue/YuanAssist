@@ -71,6 +71,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
         private const val DAILY_ASSET_DIR = "daily_scripts"
         private const val PREFS_APP = "app_prefs"
         private const val ACTION_START_COMBAT_WINDOW = "ACTION_START_COMBAT_WINDOW"
+        private const val ACTION_IMPORT_RECORDED_DAILY_PLAN = "ACTION_IMPORT_RECORDED_DAILY_PLAN"
     }
 
     private enum class EntryType {
@@ -265,6 +266,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
         onRefreshEntries: () -> Unit,
     ) {
         val isReadOnly = entry.bundle == null && entry.type == EntryType.DAILY_PLAN
+        val showImportAction = !isDailySelectionMode() && entry.type == EntryType.DAILY_PLAN
         val showDeleteAction = when {
             isRecordedDailyPickerMode() -> entry.bundle != null
             isDailyPickerMode() -> false
@@ -324,16 +326,25 @@ class ScriptLibraryActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    val primaryWeight = if (showImportAction && showDeleteAction) 0.9f else 1f
                     StoneStyleButton(
                         text = primaryActionText(),
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(primaryWeight),
                         onClick = { handlePrimaryAction(entry) },
                     )
+                    if (showImportAction) {
+                        StoneStyleButton(
+                            text = "导入",
+                            selected = false,
+                            modifier = Modifier.weight(0.9f),
+                            onClick = { importDailyPlanToDailyWindow(entry) },
+                        )
+                    }
                     if (showDeleteAction) {
                         StoneStyleButton(
                             text = "删除",
                             selected = false,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(0.9f),
                             onClick = {
                                 confirmDeleteRecordedEntry(entry) {
                                     onRefreshEntries()
@@ -615,6 +626,41 @@ class ScriptLibraryActivity : AppCompatActivity() {
             finish()
         } catch (e: Exception) {
             Toast.makeText(this, "脚本解析失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun importDailyPlanToDailyWindow(entry: LibraryEntry) {
+        if (entry.type != EntryType.DAILY_PLAN) {
+            Toast.makeText(this, "这个文件不是日常任务 JSON", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val content = readEntryText(entry)
+            gson.fromJson(content, DailyTaskPlan::class.java)
+            if (!Settings.canDrawOverlays(this)) {
+                Toast.makeText(this, "请先开启悬浮窗权限", Toast.LENGTH_LONG).show()
+                startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+                return
+            }
+            if (!isAccessibilityServiceEnabled()) {
+                Toast.makeText(this, "请先开启无障碍服务: YuanAssist", Toast.LENGTH_LONG).show()
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                return
+            }
+            startService(Intent(this, YuanAssistService::class.java).apply {
+                action = ACTION_IMPORT_RECORDED_DAILY_PLAN
+                putExtra("EXTRA_DAILY_PLAN_FILE_NAME", entry.name)
+                putExtra("EXTRA_DAILY_PLAN_JSON", content)
+                putExtra("EXTRA_DAILY_PLAN_TEMPLATE_DIR", entry.templateDirPath)
+            })
+            Toast.makeText(this, "正在导入到日常版悬浮窗", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "导入失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -1271,6 +1271,8 @@ class JobStationActivity : AppCompatActivity() {
                 Triple("#FFF1F1", "#E29A9A", "#B23A3A")
             label.contains("阵亡检测") ->
                 Triple("#FFF4F6", "#E2A3B7", "#A63F67")
+            label.contains("暴击检测") ->
+                Triple("#FFF4F0", "#E5A17A", "#B3522A")
             label.contains("橙星检测") ->
                 Triple("#FFF6E8", "#E3B15F", "#B76A11")
             label.contains("紫星检测") ->

@@ -1,0 +1,174 @@
+{
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/pi_jing_zhan_ji_xing_nang",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "script_name": "home_page_two_recover.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 365.183,
+          "y": 1602.2086
+        },
+        "template_name": "据点.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 2,
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 937.68353,
+          "y": 1738.4908
+        },
+        "template_name": "一键收取.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 3,
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "ref_task_id": 2,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 4,
+      "on_fail": 3,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 0,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 567.56995,
+          "y": 505.93582
+        },
+        "template_name": "获得奖励.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 5,
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "ref_task_id": 2,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 6,
+      "on_fail": -2,
+      "on_success": 7,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 708.1843,
+          "y": 1727.6904
+        },
+        "template_name": "快速扫荡.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 7,
+      "on_fail": -2,
+      "on_success": 8,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 553.0645,
+          "y": 1684.6451
+        },
+        "target_chars": ["一", "键", "扫", "荡"],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 8,
+      "name": "确定",
+      "on_fail": -1,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 773.1582,
+          "y": 1165.374
+        },
+        "target_chars": ["确", "定"],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

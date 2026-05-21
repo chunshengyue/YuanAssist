@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -70,6 +71,7 @@ fun MainShellScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
+                    .navigationBarsPadding()
                     .padding(horizontal = 12.dp)
                     .padding(top = 12.dp, bottom = 50.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -119,6 +121,7 @@ fun MainShellScreen(
                 onSelected = onSelectTab,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(horizontal = 12.dp)
                     .zIndex(10f)
                     .fillMaxWidth(0.84f)

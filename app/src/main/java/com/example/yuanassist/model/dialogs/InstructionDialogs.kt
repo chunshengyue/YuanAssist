@@ -266,6 +266,16 @@ object InstructionDialogs {
                     etValue.setText("0")
                 }
 
+                InstructionType.CRIT_CHECK -> {
+                    valueContainer.visibility = View.GONE
+                    btnStage.visibility = View.GONE
+                    tvStageOptionLabel.visibility = View.GONE
+                    btnCaveNextFloor.visibility = View.GONE
+                    tvHint.visibility = View.VISIBLE
+                    tvHint.text = "在该动作执行 1.4 秒后截图，检测红色伤害数字或暴击字样；未命中则走重开分支"
+                    etValue.setText("0")
+                }
+
                 InstructionType.TARGET_SWITCH,
                 InstructionType.TARGET_SWITCH_LEFT,
                 InstructionType.TARGET_SWITCH_RIGHT -> {

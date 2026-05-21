@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yuanassist.ui.main.theme.BodyInk
-import com.example.yuanassist.ui.main.theme.GlassStroke
 import com.example.yuanassist.ui.main.theme.HighlightGold
 import com.example.yuanassist.ui.main.theme.TitleInk
 
@@ -93,18 +90,27 @@ fun SubpageToggleRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f), SubpageShapes.roundBadge)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { onCheckedChange(!checked) },
+            )
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        SubpageSquareIndicator(
+            checked = checked,
+            enabled = true,
+            size = 18.dp,
+        )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(
                 text = title,
-                color = TitleInk,
+                color = if (checked) HighlightGold.copy(alpha = 0.9f) else TitleInk,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.Serif,
@@ -118,14 +124,6 @@ fun SubpageToggleRow(
                 )
             }
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = HighlightGold,
-                checkedTrackColor = GlassStroke.copy(alpha = 0.55f),
-            ),
-        )
     }
 }
 
@@ -143,7 +141,7 @@ fun SubpageChipRow(
         items.forEach { item ->
             val selected = item == selectedItem
             Box(modifier = Modifier.weight(1f)) {
-                StoneStyleChoiceButton(
+                SubpageRadioOption(
                     text = item,
                     selected = selected,
                     onClick = { onSelect(item) },

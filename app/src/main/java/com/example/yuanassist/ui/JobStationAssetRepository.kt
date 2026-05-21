@@ -31,6 +31,7 @@ object JobStationAssetRepository {
     private val DETAIL_HIGHLIGHT_INSTRUCTION_TYPES = setOf(
         InstructionType.ALL_WIPE_CHECK,
         InstructionType.DEATH_CHECK,
+        InstructionType.CRIT_CHECK,
         InstructionType.ORANGE_STAR_CHECK,
         InstructionType.PURPLE_STAR_CHECK
     )
@@ -455,6 +456,7 @@ object JobStationAssetRepository {
         val turnRows = linkedMapOf<Int, Array<StringBuilder>>()
         val instructions = mutableListOf<InstructionJson>()
         val stepActionRegex = Regex("""^回合(\d+)行动(\d+)$""")
+        val critDetectionRegex = Regex("""第(\d+)回合行动(\d+)后暴击检测""")
         val orangeDetectionRegex = Regex("""第(\d+)回合橙星检测""")
         val purpleDetectionRegex = Regex("""第(\d+)回合紫星检测""")
         val deathDetectionRegex = Regex("""([1-5])号位阵亡检测""")
@@ -494,6 +496,24 @@ object JobStationAssetRepository {
                 nextTargets.any { it.contains("全灭重开") }
             ) {
                 hasAllWipeRestart = true
+            }
+
+            val critMatch = critDetectionRegex.find(key) ?: critDetectionRegex.find(textDoc)
+            if (critMatch != null) {
+                val critTurn = critMatch.groupValues.getOrNull(1)?.toIntOrNull()
+                val critStep = critMatch.groupValues.getOrNull(2)?.toIntOrNull()
+                if (critTurn != null && critStep != null) {
+                    val dedupeKey = "crit_${critTurn}_$critStep"
+                    if (importedTurnStartInstructions.add(dedupeKey)) {
+                        instructions += InstructionJson(
+                            turn = critTurn,
+                            step = critStep,
+                            type = InstructionType.CRIT_CHECK.name,
+                            value = 0L
+                        )
+                    }
+                }
+                return@forEach
             }
 
             val orangeTurn = orangeDetectionRegex.find(key)?.groupValues?.getOrNull(1)?.toIntOrNull()
@@ -854,6 +874,7 @@ object JobStationAssetRepository {
         return when (type) {
             InstructionType.ALL_WIPE_CHECK -> "全灭检测"
             InstructionType.DEATH_CHECK -> "阵亡检测 · 第${instruction.value}人"
+            InstructionType.CRIT_CHECK -> "暴击检测"
             InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
             InstructionType.PURPLE_STAR_CHECK -> "紫星检测"
             InstructionType.TARGET_SWITCH_LEFT -> "切换左侧目标"

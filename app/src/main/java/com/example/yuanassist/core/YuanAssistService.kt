@@ -240,8 +240,10 @@ class YuanAssistService : AccessibilityService() {
             if (action != null &&
                 action != "ACTION_START_BIRD_FOOD" &&
                 action != "ACTION_START_MAINLINE_624" &&
+                action != "ACTION_START_STARGAZING" &&
                 action != "ACTION_START_INVENTORY_STITCH" &&
                 action != "ACTION_START_CHARACTER_IMPORT" &&
+                action != "ACTION_START_BOX_OCR" &&
                 action != "ACTION_START_COORDINATE_PICKER" &&
                 action != "ACTION_START_DAILY_SCRIPT_RECORDER" &&
                 action != "ACTION_IMPORT_RECORDED_DAILY_PLAN" &&
@@ -289,6 +291,36 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager?.showWindow()
                 }
             }
+            "ACTION_START_STARGAZING" -> {
+                removeInputWindow()
+                uiManager.removeControlWindow()
+                uiManager.removeMinimizedWindow()
+                if (dailyWindowManager == null) {
+                    dailyWindowManager = DailyWindowManager(this)
+                }
+                val config = StargazingBridge.pendingConfig
+                if (config == null) {
+                    Toast.makeText(this, "观星配置缺失", Toast.LENGTH_SHORT).show()
+                } else {
+                    dailyWindowManager?.submitStargazingConfig(config)
+                    dailyWindowManager?.showWindow()
+                }
+            }
+            "ACTION_START_PI_JING_ZHAN_JI" -> {
+                removeInputWindow()
+                uiManager.removeControlWindow()
+                uiManager.removeMinimizedWindow()
+                if (dailyWindowManager == null) {
+                    dailyWindowManager = DailyWindowManager(this)
+                }
+                val config = PiJingZhanJiBridge.pendingConfig
+                if (config == null) {
+                    Toast.makeText(this, "披荆斩棘配置缺失", Toast.LENGTH_SHORT).show()
+                } else {
+                    dailyWindowManager?.submitPiJingZhanJiConfig(config)
+                    dailyWindowManager?.showWindow()
+                }
+            }
             "ACTION_START_INVENTORY_STITCH" -> {
                 removeInputWindow()
                 uiManager.removeControlWindow()
@@ -318,6 +350,16 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager?.showWindow()
                     updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 }
+            }
+            "ACTION_START_BOX_OCR" -> {
+                removeInputWindow()
+                uiManager.removeControlWindow()
+                uiManager.removeMinimizedWindow()
+                if (dailyWindowManager == null) {
+                    dailyWindowManager = DailyWindowManager(this)
+                }
+                dailyWindowManager?.startBoxOcrMode()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
             }
             "ACTION_START_COORDINATE_PICKER" -> {
                 removeInputWindow()
@@ -588,6 +630,18 @@ class YuanAssistService : AccessibilityService() {
                 dailyWindowManager?.showWindow()
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 appendAccessibilityTrace("6-24 悬浮窗显示完成：${buildWindowVisibilitySummary()}")
+            } else if (pendingAction == "ACTION_START_STARGAZING") {
+                if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
+                StargazingBridge.pendingConfig?.let { dailyWindowManager?.submitStargazingConfig(it) }
+                dailyWindowManager?.showWindow()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
+                appendAccessibilityTrace("无月卡观星悬浮窗显示完成：${buildWindowVisibilitySummary()}")
+            } else if (pendingAction == "ACTION_START_PI_JING_ZHAN_JI") {
+                if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
+                PiJingZhanJiBridge.pendingConfig?.let { dailyWindowManager?.submitPiJingZhanJiConfig(it) }
+                dailyWindowManager?.showWindow()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
+                appendAccessibilityTrace("披荆斩棘悬浮窗显示完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction == "ACTION_START_INVENTORY_STITCH") {
                 if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
                 val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -605,6 +659,11 @@ class YuanAssistService : AccessibilityService() {
                 dailyWindowManager?.showWindow()
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 appendAccessibilityTrace("角色导入悬浮窗准备完成：${buildWindowVisibilitySummary()}")
+            } else if (pendingAction == "ACTION_START_BOX_OCR") {
+                if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
+                dailyWindowManager?.startBoxOcrMode()
+                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
+                appendAccessibilityTrace("框选OCR悬浮窗准备完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction == "ACTION_START_COORDINATE_PICKER") {
                 if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
                 dailyWindowManager?.startCoordinatePickerMode()
@@ -640,7 +699,8 @@ class YuanAssistService : AccessibilityService() {
     override fun onDestroy() {
         appendAccessibilityTrace("onDestroy：${buildAccessibilityStatusSummary()}，${buildWindowVisibilitySummary()}")
         super.onDestroy()
-        dailyWindowManager?.hideWindow()
+        dailyWindowManager?.release()
+        dailyWindowManager = null
         updateOverlayStatePrefs(combatOpen = false, dailyOpen = false)
         stopCombatAnchorPicker()
         autoTaskEngine?.release()

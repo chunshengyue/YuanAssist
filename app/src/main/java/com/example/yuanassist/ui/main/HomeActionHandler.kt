@@ -1,15 +1,20 @@
 package com.example.yuanassist.ui.main
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.Settings
 import android.text.TextUtils
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.example.yuanassist.R
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.update
@@ -20,6 +25,7 @@ import com.example.yuanassist.ui.LegacyFragmentHostActivity
 import com.example.yuanassist.ui.RunLogActivity
 import com.example.yuanassist.ui.ScriptLibraryActivity
 import com.example.yuanassist.ui.SettingsActivity
+import java.io.File
 
 class HomeActionHandler(
     private val activity: AppCompatActivity,
@@ -47,6 +53,18 @@ class HomeActionHandler(
 
     fun openMainline624() {
         openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_MAINLINE_624)
+    }
+
+    fun openStargazing() {
+        openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_STARGAZING)
+    }
+
+    fun openAilao15Min() {
+        openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_AILAO_15_MIN)
+    }
+
+    fun openPiJingZhanJi() {
+        openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_PI_JING_ZHAN_JI)
     }
 
     fun openInventoryStitch() {
@@ -85,6 +103,13 @@ class HomeActionHandler(
         )
     }
 
+    fun startBoxOcr() {
+        startDailyToolService(
+            action = ACTION_START_BOX_OCR,
+            successMessage = "框选OCR已导入到悬浮窗，请点击开始按钮执行",
+        )
+    }
+
     fun startDailyScriptRecorder() {
         startDailyToolService(
             action = ACTION_START_DAILY_SCRIPT_RECORDER,
@@ -118,11 +143,125 @@ class HomeActionHandler(
         AlertDialog.Builder(activity)
             .setTitle("发现新版本 ${updateInfo.versionName}")
             .setMessage(updateInfo.releaseNotes.ifBlank { "检测到新版本，是否前往下载？" })
-            .setPositiveButton("浏览器下载") { _, _ ->
+            .setPositiveButton("应用内下载") { _, _ ->
+                downloadUpdateInApp(updateInfo)
+            }
+            .setNeutralButton("浏览器下载") { _, _ ->
                 openUpdateInBrowser(updateInfo.apkUrl)
             }
             .setNegativeButton("稍后提醒", null)
             .show()
+    }
+
+    private fun downloadUpdateInApp(updateInfo: update) {
+        val apkUrl = updateInfo.apkUrl.trim()
+        if (apkUrl.isBlank()) {
+            openUpdateInBrowser(updateInfo.apkUrl)
+            return
+        }
+
+        val apkFile = updateApkFile(updateInfo)
+        runCatching {
+            apkFile.parentFile?.mkdirs()
+            if (apkFile.exists()) {
+                apkFile.delete()
+            }
+
+            val manager = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val request = DownloadManager.Request(Uri.parse(apkUrl))
+                .setTitle("YuanAssist ${updateInfo.versionName.ifBlank { "新版本" }}")
+                .setDescription("正在下载更新安装包")
+                .setMimeType(APK_MIME_TYPE)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationUri(Uri.fromFile(apkFile))
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+            val downloadId = manager.enqueue(request)
+            registerInstallAfterDownloadReceiver(downloadId, apkFile, manager)
+            Toast.makeText(activity, "已开始应用内下载", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(activity, "系统下载器不可用，改用浏览器下载", Toast.LENGTH_SHORT).show()
+            openUpdateInBrowser(updateInfo.apkUrl)
+        }
+    }
+
+    private fun registerInstallAfterDownloadReceiver(
+        downloadId: Long,
+        apkFile: File,
+        manager: DownloadManager,
+    ) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val completedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+                if (completedId != downloadId) return
+
+                runCatching { context.unregisterReceiver(this) }
+                if (isDownloadSuccessful(manager, downloadId)) {
+                    installDownloadedApk(apkFile)
+                } else {
+                    Toast.makeText(activity, "下载失败，请尝试浏览器下载", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            activity.registerReceiver(receiver, filter)
+        }
+    }
+
+    private fun isDownloadSuccessful(manager: DownloadManager, downloadId: Long): Boolean {
+        manager.query(DownloadManager.Query().setFilterById(downloadId)).use { cursor ->
+            if (!cursor.moveToFirst()) return false
+            val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+            if (statusIndex < 0) return false
+            return cursor.getInt(statusIndex) == DownloadManager.STATUS_SUCCESSFUL
+        }
+    }
+
+    private fun installDownloadedApk(apkFile: File) {
+        if (!apkFile.exists()) {
+            Toast.makeText(activity, "安装包不存在，请重新下载", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !activity.packageManager.canRequestPackageInstalls()) {
+            Toast.makeText(activity, "请允许 YuanAssist 安装未知应用后再安装", Toast.LENGTH_LONG).show()
+            activity.startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:${activity.packageName}"),
+                ),
+            )
+            return
+        }
+
+        val apkUri = FileProvider.getUriForFile(
+            activity,
+            "${activity.packageName}.fileprovider",
+            apkFile,
+        )
+        val installIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(apkUri, APK_MIME_TYPE)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching {
+            activity.startActivity(installIntent)
+        }.onFailure {
+            Toast.makeText(activity, "无法打开安装器，请尝试浏览器下载", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateApkFile(updateInfo: update): File {
+        val safeVersionName = updateInfo.versionName.ifBlank { updateInfo.versionCode.toString() }
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+        return File(
+            activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+            "update/YuanAssist-$safeVersionName.apk",
+        )
     }
 
     private fun openUpdateInBrowser(apkUrl: String) {
@@ -295,7 +434,9 @@ class HomeActionHandler(
         private const val KEY_COMBAT_WINDOW_OPEN = "combat_window_open"
         private const val KEY_DAILY_WINDOW_OPEN = "daily_window_open"
         private const val KEY_PENDING_START_ACTION = "pending_start_action"
+        private const val ACTION_START_BOX_OCR = "ACTION_START_BOX_OCR"
         private const val ACTION_START_COORDINATE_PICKER = "ACTION_START_COORDINATE_PICKER"
         private const val ACTION_START_DAILY_SCRIPT_RECORDER = "ACTION_START_DAILY_SCRIPT_RECORDER"
+        private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
     }
 }

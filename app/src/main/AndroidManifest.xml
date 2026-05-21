@@ -57,6 +57,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".ui.FeedbackAdminActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".ui.MyStoneActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

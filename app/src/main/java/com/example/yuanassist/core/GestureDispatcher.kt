@@ -15,8 +15,8 @@ class GestureDispatcher(
     private val handler: Handler = Handler(Looper.getMainLooper())
 ) {
     companion object {
-        private const val CLICK_DURATION_MS = 80L
-        private const val SWIPE_DURATION_MS = 300L
+        private const val CLICK_DURATION_MS = 50L
+        private const val SWIPE_DURATION_MS = 150L
     }
 
     private var isSimulating = false

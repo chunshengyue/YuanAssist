@@ -18,6 +18,7 @@ data class HomeOverlayState(
 
 data class MineProfileState(
     val isLoggedIn: Boolean = false,
+    val isFeedbackAdmin: Boolean = false,
     val nickname: String = "未登录",
     val detail: String = "点击资料卡进入资料中心",
     val avatarFallback: String = "我",

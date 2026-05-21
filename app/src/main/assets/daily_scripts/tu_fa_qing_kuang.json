@@ -11,7 +11,7 @@
         "align": "center"
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 2,
@@ -41,7 +41,7 @@
         "var_value": "0-1"
       },
       "on_success": 202,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 3,
@@ -90,7 +90,7 @@
         "var_value": "0-2"
       },
       "on_success": 202,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 202,
@@ -117,7 +117,7 @@
       "delay": 1500,
       "params": {},
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 4,
@@ -174,7 +174,7 @@
         }
       },
       "on_success": 5,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 5,
@@ -184,7 +184,7 @@
         "ref_task_id": 2
       },
       "on_success": 504,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 503,
@@ -194,7 +194,7 @@
         "ref_task_id": 3
       },
       "on_success": 504,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 504,
@@ -225,25 +225,84 @@
         "align": "center"
       },
       "on_success": 7,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 7,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 2000,
       "params": {
-        "template_name": "jiedao1.png",
-        "threshold": 0.85,
-        "roi": {
-          "x": 331,
-          "y": 829,
-          "w": 400,
-          "h": 400,
-          "align": "top"
-        }
+        "terminal_note": "识别突发情况场景失败",
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "jiedao1.png",
+            "threshold": 0.85,
+            "roi": {
+              "x": 331,
+              "y": 829,
+              "w": 400,
+              "h": 400,
+              "align": "top"
+            },
+            "on_success": 701
+          },
+          {
+            "type": "template",
+            "template_name": "cunzi4.png",
+            "threshold": 0.75,
+            "roi": {
+              "x": 935,
+              "y": 949,
+              "w": 400,
+              "h": 400,
+              "align": "top"
+            },
+            "on_success": 2201
+          },
+          {
+            "type": "template",
+            "template_name": "shulin.png",
+            "threshold": 0.85,
+            "roi": {
+              "x": 208,
+              "y": 890,
+              "w": 400,
+              "h": 400,
+              "align": "top"
+            },
+            "on_success": 2801
+          },
+          {
+            "type": "template",
+            "template_name": "jiedao2.png",
+            "threshold": 0.85,
+            "roi": {
+              "x": 227,
+              "y": 1439,
+              "w": 400,
+              "h": 400,
+              "align": "top"
+            },
+            "on_success": 3601
+          },
+          {
+            "type": "template",
+            "template_name": "taohua.png",
+            "threshold": 0.85,
+            "roi": {
+              "x": 240,
+              "y": 836,
+              "w": 400,
+              "h": 400,
+              "align": "top"
+            },
+            "on_success": 4401
+          }
+        ]
       },
-      "on_success": 701,
-      "on_fail": 22
+      "on_success": -1,
+      "on_fail": -2
     },
     {
       "id": 701,
@@ -254,7 +313,7 @@
         "var_value": "1-1"
       },
       "on_success": 8,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 8,
@@ -266,7 +325,7 @@
         "align": "center"
       },
       "on_success": 9,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 9,
@@ -278,7 +337,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 10,
@@ -309,7 +368,7 @@
         "align": "bottom"
       },
       "on_success": 12,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 12,
@@ -321,7 +380,7 @@
         "align": "bottom"
       },
       "on_success": 13,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 13,
@@ -333,7 +392,7 @@
         "align": "bottom"
       },
       "on_success": 14,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 14,
@@ -345,7 +404,7 @@
         "align": "bottom"
       },
       "on_success": 15,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 15,
@@ -357,7 +416,7 @@
         "align": "bottom"
       },
       "on_success": 16,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 16,
@@ -367,7 +426,7 @@
         "ref_task_id": 10
       },
       "on_success": 1600,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1600,
@@ -432,7 +491,7 @@
         }
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1711,
@@ -443,7 +502,7 @@
         "var_value": "1-2"
       },
       "on_success": 18,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1721,
@@ -454,7 +513,7 @@
         "var_value": "2-2"
       },
       "on_success": 25,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1731,
@@ -465,7 +524,7 @@
         "var_value": "3-2"
       },
       "on_success": 31,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1741,
@@ -476,7 +535,7 @@
         "var_value": "3-3"
       },
       "on_success": 33,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1751,
@@ -487,7 +546,7 @@
         "var_value": "4-2"
       },
       "on_success": 39,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1752,
@@ -498,7 +557,7 @@
         "var_value": "4-3"
       },
       "on_success": 40,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1761,
@@ -509,7 +568,7 @@
         "var_value": "5-2"
       },
       "on_success": 47,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1762,
@@ -520,7 +579,7 @@
         "var_value": "5-3"
       },
       "on_success": 48,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1763,
@@ -531,7 +590,7 @@
         "var_value": "5-4"
       },
       "on_success": 51,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 18,
@@ -543,7 +602,7 @@
         "align": "center"
       },
       "on_success": 19,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 19,
@@ -555,7 +614,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 20,
@@ -567,7 +626,7 @@
         "align": "center"
       },
       "on_success": 21,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 21,
@@ -579,25 +638,7 @@
         "align": "center"
       },
       "on_success": 27,
-      "on_fail": -1
-    },
-    {
-      "id": 22,
-      "action": "MATCH_TEMPLATE",
-      "delay": 400,
-      "params": {
-        "template_name": "cunzi4.png",
-        "threshold": 0.75,
-        "roi": {
-          "x": 935,
-          "y": 949,
-          "w": 400,
-          "h": 400,
-          "align": "top"
-        }
-      },
-      "on_success": 2201,
-      "on_fail": 28
+      "on_fail": -2
     },
     {
       "id": 2201,
@@ -608,7 +649,7 @@
         "var_value": "2-1"
       },
       "on_success": 23,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 23,
@@ -620,7 +661,7 @@
         "align": "center"
       },
       "on_success": 24,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 24,
@@ -632,7 +673,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 25,
@@ -644,7 +685,7 @@
         "align": "center"
       },
       "on_success": 26,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 26,
@@ -656,7 +697,7 @@
         "align": "center"
       },
       "on_success": 27,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 27,
@@ -680,24 +721,6 @@
       "on_fail": -2
     },
     {
-      "id": 28,
-      "action": "MATCH_TEMPLATE",
-      "delay": 400,
-      "params": {
-        "template_name": "shulin.png",
-        "threshold": 0.85,
-        "roi": {
-          "x": 208,
-          "y": 890,
-          "w": 400,
-          "h": 400,
-          "align": "top"
-        }
-      },
-      "on_success": 2801,
-      "on_fail": 36
-    },
-    {
       "id": 2801,
       "action": "SET_VAR",
       "delay": 1500,
@@ -706,7 +729,7 @@
         "var_value": "3-1"
       },
       "on_success": 29,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 29,
@@ -718,7 +741,7 @@
         "align": "center"
       },
       "on_success": 30,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 30,
@@ -730,7 +753,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 31,
@@ -742,7 +765,7 @@
         "align": "center"
       },
       "on_success": 32,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 32,
@@ -754,7 +777,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 33,
@@ -766,7 +789,7 @@
         "align": "center"
       },
       "on_success": 34,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 34,
@@ -778,7 +801,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 35,
@@ -790,25 +813,7 @@
         "align": "center"
       },
       "on_success": 27,
-      "on_fail": -1
-    },
-    {
-      "id": 36,
-      "action": "MATCH_TEMPLATE",
-      "delay": 400,
-      "params": {
-        "template_name": "jiedao2.png",
-        "threshold": 0.85,
-        "roi": {
-          "x": 227,
-          "y": 1439,
-          "w": 400,
-          "h": 400,
-          "align": "top"
-        }
-      },
-      "on_success": 3601,
-      "on_fail": 44
+      "on_fail": -2
     },
     {
       "id": 3601,
@@ -819,7 +824,7 @@
         "var_value": "4-1"
       },
       "on_success": 37,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 37,
@@ -831,7 +836,7 @@
         "align": "center"
       },
       "on_success": 38,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 38,
@@ -843,7 +848,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 39,
@@ -855,7 +860,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 40,
@@ -867,7 +872,7 @@
         "align": "center"
       },
       "on_success": 41,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 41,
@@ -879,7 +884,7 @@
         "align": "center"
       },
       "on_success": 42,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 42,
@@ -891,7 +896,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 43,
@@ -903,25 +908,6 @@
         "align": "center"
       },
       "on_success": 27,
-      "on_fail": -1
-    },
-    {
-      "id": 44,
-      "action": "MATCH_TEMPLATE",
-      "delay": 400,
-      "params": {
-        "template_name": "taohua.png",
-        "threshold": 0.85,
-        "terminal_note": "识别突发情况场景失败",
-        "roi": {
-          "x": 240,
-          "y": 836,
-          "w": 400,
-          "h": 400,
-          "align": "top"
-        }
-      },
-      "on_success": 4401,
       "on_fail": -2
     },
     {
@@ -933,7 +919,7 @@
         "var_value": "5-1"
       },
       "on_success": 45,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 45,
@@ -945,7 +931,7 @@
         "align": "center"
       },
       "on_success": 46,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 46,
@@ -957,7 +943,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 47,
@@ -969,7 +955,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 48,
@@ -981,7 +967,7 @@
         "align": "center"
       },
       "on_success": 50,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 50,
@@ -993,7 +979,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 51,
@@ -1005,7 +991,7 @@
         "align": "center"
       },
       "on_success": 52,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 52,
@@ -1017,7 +1003,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 53,
@@ -1029,7 +1015,7 @@
         "align": "center"
       },
       "on_success": 27,
-      "on_fail": -1
+      "on_fail": -2
     }
   ]
 }

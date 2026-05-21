@@ -1,0 +1,34 @@
+{
+  "start_task_id": 1,
+  "tasks": [
+    {
+      "id": 1,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "pi_jing_zhan_ji_624_once.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 2,
+      "on_fail": -2
+    },
+    {
+      "id": 2,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "pi_jing_zhan_ji_624_once.json",
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_variables": {
+          "attribute_1": "${attribute_4}",
+          "attribute_2": "${attribute_5}",
+          "attribute_3": "${attribute_6}"
+        }
+      },
+      "on_success": -1,
+      "on_fail": -2
+    }
+  ]
+}

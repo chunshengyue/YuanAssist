@@ -4,71 +4,64 @@
     {
       "id": 1,
       "action": "MATCH_TEMPLATE",
-      "delay": 500,
+      "delay": 800,
       "params": {
-        "template_name": "gushi.png",
-        "threshold": 0.85,
-        "click": 1,
+        "template_name": "624.png",
+        "threshold": 0.75,
         "roi": {
-          "x": 907,
-          "y": 1253,
+          "x": 938,
+          "y": 948,
           "w": 300,
-          "h": 300,
-          "align": "center"
-        },
-        "branch_var": "game_variant",
-        "branch_routes": {
-          "daihaoyuan": 99,
-          "ruyuan": 10
+          "h": 500,
+          "align": "top"
         }
       },
-      "on_success": 10,
+      "on_success": 19,
       "on_fail": 2
     },
     {
       "id": 2,
-      "action": "BACK",
-      "delay": 1000,
-      "params": {},
-      "on_success": 3,
-      "on_fail": -1
+      "action": "MATCH_TEMPLATE",
+      "delay": 800,
+      "params": {
+        "template_name": "6-24(1).png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "已定位到6-24入口页"
+      },
+      "on_success": 151,
+      "on_fail": 3
     },
     {
       "id": 3,
       "action": "MATCH_TEMPLATE",
-      "delay": 1200,
+      "delay": 800,
       "params": {
-        "template_name": "gushi.png",
+        "template_name": "6-24.png",
         "threshold": 0.85,
         "click": 1,
-        "roi": {
-          "x": 907,
-          "y": 1253,
-          "w": 300,
-          "h": 300,
-          "align": "center"
-        },
-        "branch_var": "game_variant",
-        "branch_routes": {
-          "daihaoyuan": 99,
-          "ruyuan": 10
-        }
+        "terminal_note": "已定位到6-24入口页"
       },
-      "on_success": 10,
+      "on_success": 151,
       "on_fail": 4
     },
     {
       "id": 4,
-      "action": "BACK",
-      "delay": 1000,
-      "params": {},
-      "on_success": 5,
-      "on_fail": -1
+      "action": "MATCH_TEMPLATE",
+      "delay": 800,
+      "params": {
+        "template_name": "chapter6.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "已定位到第六章入口页"
+      },
+      "on_success": 13,
+      "on_fail": 5
     },
     {
       "id": 5,
       "action": "MATCH_TEMPLATE",
-      "delay": 1200,
+      "delay": 800,
       "params": {
         "template_name": "gushi.png",
         "threshold": 0.85,
@@ -92,15 +85,15 @@
     {
       "id": 6,
       "action": "BACK",
-      "delay": 1000,
+      "delay": 800,
       "params": {},
       "on_success": 7,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 7,
       "action": "MATCH_TEMPLATE",
-      "delay": 1200,
+      "delay": 800,
       "params": {
         "template_name": "gushi.png",
         "threshold": 0.85,
@@ -124,15 +117,15 @@
     {
       "id": 8,
       "action": "BACK",
-      "delay": 1000,
+      "delay": 800,
       "params": {},
       "on_success": 9,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 9,
       "action": "MATCH_TEMPLATE",
-      "delay": 1200,
+      "delay": 800,
       "params": {
         "template_name": "gushi.png",
         "threshold": 0.85,
@@ -167,7 +160,7 @@
         "align": "center"
       },
       "on_success": 11,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 11,
@@ -182,7 +175,7 @@
         "align": "center"
       },
       "on_success": 12,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 12,
@@ -210,7 +203,7 @@
         "align": "center"
       },
       "on_success": 14,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 14,
@@ -224,8 +217,8 @@
         "duration": 1000,
         "align": "center"
       },
-      "on_success": -1,
-      "on_fail": -1
+      "on_success": 15,
+      "on_fail": -2
     },
     {
       "id": 15,
@@ -241,7 +234,7 @@
         }
       },
       "on_success": 1502,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 16,
@@ -272,7 +265,7 @@
         "align": "center"
       },
       "on_success": 18,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 18,
@@ -303,7 +296,7 @@
         "align": "center"
       },
       "on_success": 20,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 20,
@@ -315,7 +308,7 @@
         "align": "center"
       },
       "on_success": 21,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 21,
@@ -323,6 +316,8 @@
       "delay": 3000,
       "params": {
         "threshold": 0.72,
+        "target_chars": ["开", "始", "战", "斗"],
+        "min_hit_count": 2,
         "terminal_note": "第一场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
         "roi": {
           "x": 540,
@@ -332,8 +327,27 @@
           "align": "bottom"
         }
       },
-      "on_success": 22,
+      "on_success": 211,
       "on_fail": -2
+    },
+    {
+      "id": 211,
+      "action": "OCR",
+      "delay": 5000,
+      "params": {
+        "target_chars": ["手", "动"],
+        "min_hit_count": 2,
+        "click": 1,
+        "roi": {
+          "x": 1021,
+          "y": 976,
+          "w": 200,
+          "h": 200,
+          "align": "center"
+        }
+      },
+      "on_success": 22,
+      "on_fail": 22
     },
     {
       "id": 22,
@@ -411,6 +425,64 @@
         }
       },
       "on_success": 26,
+      "on_fail": 251
+    },
+    {
+      "id": 251,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
+      "on_fail": 252
+    },
+    {
+      "id": 252,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
+      "on_fail": 253
+    },
+    {
+      "id": 253,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第一场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 26,
       "on_fail": -2
     },
     {
@@ -423,7 +495,7 @@
         "align": "center"
       },
       "on_success": 27,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 27,
@@ -435,7 +507,7 @@
         "align": "center"
       },
       "on_success": 28,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 28,
@@ -447,7 +519,7 @@
         "align": "center"
       },
       "on_success": 29,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 29,
@@ -455,6 +527,8 @@
       "delay": 3000,
       "params": {
         "threshold": 0.72,
+        "target_chars": ["开", "始", "战", "斗"],
+        "min_hit_count": 2,
         "terminal_note": "第二场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
         "roi": {
           "x": 540,
@@ -464,8 +538,27 @@
           "align": "bottom"
         }
       },
-      "on_success": 30,
+      "on_success": 291,
       "on_fail": -2
+    },
+    {
+      "id": 291,
+      "action": "OCR",
+      "delay": 5000,
+      "params": {
+        "target_chars": ["手", "动"],
+        "min_hit_count": 2,
+        "click": 1,
+        "roi": {
+          "x": 1021,
+          "y": 976,
+          "w": 200,
+          "h": 200,
+          "align": "center"
+        }
+      },
+      "on_success": 30,
+      "on_fail": 30
     },
     {
       "id": 30,
@@ -543,6 +636,64 @@
         }
       },
       "on_success": 34,
+      "on_fail": 331
+    },
+    {
+      "id": 331,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
+      "on_fail": 332
+    },
+    {
+      "id": 332,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
+      "on_fail": 333
+    },
+    {
+      "id": 333,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第二场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 34,
       "on_fail": -2
     },
     {
@@ -555,7 +706,7 @@
         "align": "center"
       },
       "on_success": 35,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 35,
@@ -567,7 +718,7 @@
         "align": "center"
       },
       "on_success": 36,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 36,
@@ -579,7 +730,7 @@
         "align": "center"
       },
       "on_success": 37,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 37,
@@ -587,6 +738,8 @@
       "delay": 3000,
       "params": {
         "threshold": 0.72,
+        "target_chars": ["开", "始", "战", "斗"],
+        "min_hit_count": 2,
         "terminal_note": "第三场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
         "roi": {
           "x": 540,
@@ -596,8 +749,27 @@
           "align": "bottom"
         }
       },
-      "on_success": 38,
+      "on_success": 371,
       "on_fail": -2
+    },
+    {
+      "id": 371,
+      "action": "OCR",
+      "delay": 5000,
+      "params": {
+        "target_chars": ["手", "动"],
+        "min_hit_count": 2,
+        "click": 1,
+        "roi": {
+          "x": 1021,
+          "y": 976,
+          "w": 200,
+          "h": 200,
+          "align": "center"
+        }
+      },
+      "on_success": 38,
+      "on_fail": 38
     },
     {
       "id": 38,
@@ -675,6 +847,64 @@
         }
       },
       "on_success": 42,
+      "on_fail": 411
+    },
+    {
+      "id": 411,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
+      "on_fail": 412
+    },
+    {
+      "id": 412,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
+      "on_fail": 413
+    },
+    {
+      "id": 413,
+      "action": "MATCH_TEMPLATE",
+      "delay": 5000,
+      "params": {
+        "template_name": "queding.png",
+        "threshold": 0.85,
+        "click": 1,
+        "terminal_note": "第三场战斗超时或者路径错误",
+        "roi": {
+          "x": 540,
+          "y": 1692,
+          "w": 200,
+          "h": 300,
+          "align": "bottom"
+        }
+      },
+      "on_success": 42,
       "on_fail": -2
     },
     {
@@ -687,7 +917,7 @@
         "align": "center"
       },
       "on_success": 43,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 43,
@@ -699,7 +929,7 @@
         "align": "center"
       },
       "on_success": 44,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 44,
@@ -711,7 +941,7 @@
         "align": "center"
       },
       "on_success": 45,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 45,
@@ -742,12 +972,12 @@
         "align": "center"
       },
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 99,
       "action": "MATCH_TEMPLATE",
-      "delay": 1500,
+      "delay": 3000,
       "params": {
         "template_name": "youzhou.png",
         "threshold": 0.75,
@@ -766,7 +996,7 @@
     {
       "id": 100,
       "action": "MATCH_TEMPLATE",
-      "delay": 1500,
+      "delay": 1000,
       "params": {
         "template_name": "jinru.png",
         "threshold": 0.75,
@@ -801,7 +1031,7 @@
         }
       },
       "on_success": 16,
-      "on_fail": -2
+      "on_fail": 17
     },
     {
       "id": 1501,

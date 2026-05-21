@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,9 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import com.example.yuanassist.core.DailyBirdFoodBridge
 import com.example.yuanassist.core.YuanAssistService
@@ -39,7 +36,7 @@ import com.example.yuanassist.model.BirdFoodTaskType
 import com.example.yuanassist.model.DaiBanGongWuEntry
 import com.example.yuanassist.model.DaiBanGongWuOption
 import com.example.yuanassist.model.TaDeChuanWenOption
-import com.example.yuanassist.ui.main.theme.TitleInk
+import com.example.yuanassist.ui.subpage.SubpageCheckOption
 import com.example.yuanassist.ui.subpage.StoneStyleButton
 import com.example.yuanassist.ui.subpage.SubpageRadioOption
 import com.example.yuanassist.ui.subpage.SubpageFieldGroup
@@ -329,16 +326,20 @@ private fun DailyBirdFoodScreen(
                     title = "他的传闻模式",
                     modifier = Modifier.padding(top = 12.dp),
                 ) {
-                    SubpageRadioOption(
-                        text = "如鸢",
-                        selected = taDeChuanWenOption == TaDeChuanWenOption.RUYUAN,
-                        onClick = { taDeChuanWenOption = TaDeChuanWenOption.RUYUAN },
-                    )
-                    SubpageRadioOption(
-                        text = "代号鸢",
-                        selected = taDeChuanWenOption == TaDeChuanWenOption.DAIHAOYUAN,
-                        onClick = { taDeChuanWenOption = TaDeChuanWenOption.DAIHAOYUAN },
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SubpageRadioOption(
+                            text = "如鸢",
+                            selected = taDeChuanWenOption == TaDeChuanWenOption.RUYUAN,
+                            onClick = { taDeChuanWenOption = TaDeChuanWenOption.RUYUAN },
+                            modifier = Modifier.weight(1f),
+                        )
+                        SubpageRadioOption(
+                            text = "代号鸢",
+                            selected = taDeChuanWenOption == TaDeChuanWenOption.DAIHAOYUAN,
+                            onClick = { taDeChuanWenOption = TaDeChuanWenOption.DAIHAOYUAN },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
             if (selectedTask == BirdFoodTaskType.DAI_BAN_GONG_WU) {
@@ -347,16 +348,20 @@ private fun DailyBirdFoodScreen(
                     subtitle = "可跳过识别异常的入口，但至少保留一个",
                     modifier = Modifier.padding(top = 12.dp),
                 ) {
-                    SubpageRadioOption(
-                        text = "兵书",
-                        selected = daiBanGongWuOption == DaiBanGongWuOption.BING_SHU,
-                        onClick = { daiBanGongWuOption = DaiBanGongWuOption.BING_SHU },
-                    )
-                    SubpageRadioOption(
-                        text = "五铢钱",
-                        selected = daiBanGongWuOption == DaiBanGongWuOption.WU_ZHU_QIAN,
-                        onClick = { daiBanGongWuOption = DaiBanGongWuOption.WU_ZHU_QIAN },
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SubpageRadioOption(
+                            text = "兵书",
+                            selected = daiBanGongWuOption == DaiBanGongWuOption.BING_SHU,
+                            onClick = { daiBanGongWuOption = DaiBanGongWuOption.BING_SHU },
+                            modifier = Modifier.weight(1f),
+                        )
+                        SubpageRadioOption(
+                            text = "五铢钱",
+                            selected = daiBanGongWuOption == DaiBanGongWuOption.WU_ZHU_QIAN,
+                            onClick = { daiBanGongWuOption = DaiBanGongWuOption.WU_ZHU_QIAN },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     listOf(
                         DaiBanGongWuEntry.LEFT_TOP to "跳过左上",
                         DaiBanGongWuEntry.RIGHT_TOP to "跳过右上",
@@ -472,20 +477,9 @@ private fun CheckOption(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-        )
-        Text(
-            text = text,
-            color = TitleInk,
-            fontSize = 15.sp,
-            fontFamily = FontFamily.Serif,
-        )
-    }
+    SubpageCheckOption(
+        text = text,
+        checked = checked,
+        onClick = { onCheckedChange(!checked) },
+    )
 }

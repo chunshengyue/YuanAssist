@@ -96,12 +96,11 @@ fun StoneStyleChoiceButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    StoneStyleButton(
+    SubpageRadioOption(
         text = text,
-        selected = selected,
-        enabled = enabled,
         onClick = onClick,
         modifier = modifier,
-        minHeight = 44.dp,
+        selected = selected,
+        enabled = enabled,
     )
 }

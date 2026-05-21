@@ -50,6 +50,7 @@ import com.example.yuanassist.ui.main.MainTab
 import com.example.yuanassist.ui.main.MineProfileState
 import com.example.yuanassist.ui.main.MineTabActions
 import com.example.yuanassist.utils.ConfigManager
+import com.example.yuanassist.utils.isFeedbackAdminDevice
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
@@ -63,6 +64,8 @@ class MainActivity : AppCompatActivity() {
         const val TARGET_TAB_STRATEGY = "strategy"
 
         private const val USER_CACHE_PREFS = "user_cache"
+        private const val ANNOUNCEMENT_PREFS = "announcement_prefs"
+        private const val KEY_LAST_ANNOUNCEMENT_VERSION = "last_announcement_version"
         private const val OFFICIAL_SITE_URL = "https://yuanassist.space"
         private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
         private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
@@ -107,6 +110,7 @@ class MainActivity : AppCompatActivity() {
         debugWorkbenchCoordinator.initialize()
         selectedTab = resolveTargetTab(intent?.getStringExtra(EXTRA_TARGET_TAB))
         refreshShellState()
+        requestLatestAnnouncementOnLaunch()
 
         setContent {
             val imagePicker = rememberLauncherForActivityResult(
@@ -126,7 +130,11 @@ class MainActivity : AppCompatActivity() {
                     onOpenSettings = homeActionHandler::openSettings,
                     onOpenBirdFood = homeActionHandler::openBirdFood,
                     onOpenMainline624 = homeActionHandler::openMainline624,
+                    onOpenStargazing = homeActionHandler::openStargazing,
+                    onOpenAilao15Min = homeActionHandler::openAilao15Min,
+                    onOpenPiJingZhanJi = homeActionHandler::openPiJingZhanJi,
                     onOpenInventoryStitch = homeActionHandler::openInventoryStitch,
+                    onOpenBoxOcr = homeActionHandler::startBoxOcr,
                     onOpenCoordinatePicker = homeActionHandler::startCoordinatePicker,
                     onOpenScriptRecorder = homeActionHandler::startDailyScriptRecorder,
                     onOpenRunLog = homeActionHandler::openRunLog,
@@ -134,7 +142,6 @@ class MainActivity : AppCompatActivity() {
                     onOpenFaq = homeActionHandler::openFaq,
                     onOpenFeedback = homeActionHandler::openFeedbackCenter,
                     onOpenScriptLibrary = homeActionHandler::openScriptLibrary,
-                    onOpenExcludedAgents = ::showExcludedAgentsDialog,
                     onCheckUpdate = homeActionHandler::checkUpdate,
                 ),
                 jobActions = JobTabActions(
@@ -176,6 +183,8 @@ class MainActivity : AppCompatActivity() {
                     onOpenFavorite = { startActivity(Intent(this, MyFavoriteActivity::class.java)) },
                     onOpenMessage = ::openMyMessage,
                     onOpenOfficialSite = ::openOfficialSite,
+                    onOpenFeedbackAdmin = { startActivity(Intent(this, FeedbackAdminActivity::class.java)) },
+                    onOpenExcludedAgents = ::showExcludedAgentsDialog,
                 ),
                 onSelectTab = { selectedTab = it },
             )
@@ -217,6 +226,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestLatestAnnouncementOnLaunch() {
+        SupabaseRepository.getLatestAnnouncement(
+            onSuccess = { announcement ->
+                val onlineVersion = announcement.version
+                if (onlineVersion <= 0) return@getLatestAnnouncement
+
+                val prefs = getSharedPreferences(ANNOUNCEMENT_PREFS, Context.MODE_PRIVATE)
+                val localVersion = prefs.getInt(KEY_LAST_ANNOUNCEMENT_VERSION, 0)
+                if (localVersion >= onlineVersion) return@getLatestAnnouncement
+
+                prefs.edit()
+                    .putInt(KEY_LAST_ANNOUNCEMENT_VERSION, onlineVersion)
+                    .apply()
+                showAnnouncementDialog(
+                    title = announcement.title.ifBlank { "公告" },
+                    content = announcement.content.ifBlank { "暂无公告内容" },
+                )
+            },
+            onError = {},
+        )
+    }
+
+    private fun showAnnouncementDialog(title: String, content: String) {
+        if (isFinishing || isDestroyed) return
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(content)
+            .setPositiveButton("知道了", null)
+            .show()
+    }
+
     private fun refreshHomeOverlayState() {
         homeOverlayState = HomeOverlayState(
             combatWindowOpen = homeActionHandler.isCombatWindowOpen(),
@@ -225,9 +265,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshMineProfileState() {
         val currentUser = SupabaseRepository.getCurrentUser(this)
+        val isFeedbackAdmin = isFeedbackAdminDevice(SupabaseRepository.currentDeviceId(this))
         if (currentUser == null) {
             mineProfileState = MineProfileState(
                 isLoggedIn = false,
+                isFeedbackAdmin = isFeedbackAdmin,
                 nickname = "未登录",
                 detail = "点击下方按钮绑定当前设备",
                 avatarFallback = "我",
@@ -244,6 +286,7 @@ class MainActivity : AppCompatActivity() {
         val detail = "设备ID: ${currentUser.username}"
         mineProfileState = MineProfileState(
             isLoggedIn = true,
+            isFeedbackAdmin = isFeedbackAdmin,
             nickname = nickname,
             detail = detail,
             avatarFallback = nickname.firstOrNull()?.toString() ?: "我",

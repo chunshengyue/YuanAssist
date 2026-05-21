@@ -61,10 +61,13 @@ fun HomeTabScreen(
             actions = listOf(
                 HomeEntryButton("刷鸟食", R.drawable.item_fenggongjiu, R.drawable.decor_xian, onClick = actions.onOpenBirdFood),
                 HomeEntryButton("刷6-24", R.drawable.item_fenggongzhu, R.drawable.decor_xian, onClick = actions.onOpenMainline624),
+                HomeEntryButton("无月卡观星", R.drawable.item_chendeng2, R.drawable.decor_que, onClick = actions.onOpenStargazing),
                 HomeEntryButton("星石拼图", R.drawable.item_shizimiao, R.drawable.decor_que, onClick = actions.onOpenInventoryStitch),
-                HomeEntryButton("无月卡观星", R.drawable.item_chendeng2, R.drawable.decor_que, onClick = {}),
                 HomeEntryButton("屏幕选点", R.drawable.item_zhangmiao, R.drawable.decor_butterfly, onClick = actions.onOpenCoordinatePicker),
+                HomeEntryButton("框选OCR", R.drawable.item_zhouzhong, R.drawable.decor_xian, onClick = actions.onOpenBoxOcr),
                 HomeEntryButton("脚本录制", R.drawable.item_zhouyu, R.drawable.decor_xian, onClick = actions.onOpenScriptRecorder),
+                HomeEntryButton("披荆斩棘", R.drawable.item_chenji, R.drawable.decor_que, onClick = actions.onOpenPiJingZhanJi),
+                HomeEntryButton("哀牢15min", R.drawable.item_caiyan, R.drawable.decor_que, onClick = actions.onOpenAilao15Min),
             ),
         )
         ModeSection(
@@ -73,10 +76,9 @@ fun HomeTabScreen(
             actions = listOf(
                 HomeEntryButton("运行日志", R.drawable.item_zhanghe, R.drawable.decor_yuan, onClick = actions.onOpenRunLog),
                 HomeEntryButton("调试", R.drawable.item_linghumao, R.drawable.decor_yuan, onClick = actions.onOpenDebugTab),
-                HomeEntryButton("常见问题", R.drawable.item_huanggai, R.drawable.decor_butterfly, onClick = actions.onOpenFaq),
-                HomeEntryButton("问题反馈", R.drawable.item_zhenmi, R.drawable.decor_butterfly, onClick = actions.onOpenFeedback),
+                HomeEntryButton("常见问题", R.drawable.item_xunyu, R.drawable.decor_xian, onClick = actions.onOpenFaq),
+                HomeEntryButton("问题反馈", R.drawable.item_xunyou, R.drawable.decor_butterfly, onClick = actions.onOpenFeedback),
                 HomeEntryButton("脚本库", R.drawable.item_zhangzhao, R.drawable.decor_que, onClick = actions.onOpenScriptLibrary),
-                HomeEntryButton("排除密探", R.drawable.item_xunyu, R.drawable.decor_que, onClick = actions.onOpenExcludedAgents),
                 HomeEntryButton("检查更新", R.drawable.item_chendeng, R.drawable.decor_que, onClick = actions.onCheckUpdate),
             ),
         )

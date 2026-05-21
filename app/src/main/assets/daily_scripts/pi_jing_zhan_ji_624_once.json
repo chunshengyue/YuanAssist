@@ -1,0 +1,125 @@
+{
+  "start_task_id": 1,
+  "tasks": [
+    {
+      "id": 1,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "zhu_xian_6_24.json",
+        "entry_task_id": 1,
+        "exit_task_id": 21,
+        "inherit_variables": true
+      },
+      "on_success": 2,
+      "on_fail": -2
+    },
+    {
+      "id": 2,
+      "action": "SET_VAR",
+      "delay": 0,
+      "params": {
+        "var_name": "pjzj_attr_script",
+        "var_value": "pi_jing_zhan_ji_huan_shu_xing_${attribute_1}.json"
+      },
+      "on_success": 3,
+      "on_fail": -2
+    },
+    {
+      "id": 3,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name_var": "pjzj_attr_script",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 4,
+      "on_fail": -2
+    },
+    {
+      "id": 4,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "zhu_xian_6_24.json",
+        "entry_task_id": 21,
+        "exit_task_id": 29,
+        "inherit_variables": true
+      },
+      "on_success": 5,
+      "on_fail": -2
+    },
+    {
+      "id": 5,
+      "action": "SET_VAR",
+      "delay": 0,
+      "params": {
+        "var_name": "pjzj_attr_script",
+        "var_value": "pi_jing_zhan_ji_huan_shu_xing_${attribute_2}.json"
+      },
+      "on_success": 6,
+      "on_fail": -2
+    },
+    {
+      "id": 6,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name_var": "pjzj_attr_script",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 7,
+      "on_fail": -2
+    },
+    {
+      "id": 7,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "zhu_xian_6_24.json",
+        "entry_task_id": 29,
+        "exit_task_id": 37,
+        "inherit_variables": true
+      },
+      "on_success": 8,
+      "on_fail": -2
+    },
+    {
+      "id": 8,
+      "action": "SET_VAR",
+      "delay": 0,
+      "params": {
+        "var_name": "pjzj_attr_script",
+        "var_value": "pi_jing_zhan_ji_huan_shu_xing_${attribute_3}.json"
+      },
+      "on_success": 9,
+      "on_fail": -2
+    },
+    {
+      "id": 9,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name_var": "pjzj_attr_script",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 10,
+      "on_fail": -2
+    },
+    {
+      "id": 10,
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "zhu_xian_6_24.json",
+        "entry_task_id": 37,
+        "inherit_variables": true
+      },
+      "on_success": -1,
+      "on_fail": -2
+    }
+  ]
+}

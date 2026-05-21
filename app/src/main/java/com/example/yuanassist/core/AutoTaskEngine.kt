@@ -20,6 +20,7 @@ import android.view.WindowManager
 import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
+import com.example.yuanassist.model.ScreenshotStep
 import com.example.yuanassist.utils.BirdFoodDebugScreenshotStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StartBattleShared
@@ -29,6 +30,7 @@ import com.example.yuanassist.tableocr.PaddleTextElement
 import com.example.yuanassist.tableocr.PaddleTextLine
 import com.example.yuanassist.tableocr.PaddleTextRecognizer
 import com.example.yuanassist.tableocr.PaddleTextResult
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -40,6 +42,7 @@ import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
 import java.io.File
+import java.io.InputStreamReader
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -72,9 +75,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private var runGeneration = 0L
     private var debugRoiView: View? = null
     private var cooldownStartedAtMs: Long? = null
-    private var treatFailMinusOneAsSuccess = false
     private var currentTemplateDir: File? = null
+    private var currentAssetTemplateDir: String? = null
     private var ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val gson = Gson()
+    private var childScriptEngine: AutoTaskEngine? = null
 
     private fun verboseInfo(message: String) {
         if (!verboseLoggingEnabled) return
@@ -167,13 +172,20 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             get() = hitChars.size
     }
 
+    private data class ScreenshotMatch(
+        val nextTaskId: Int,
+        val clickOnSuccess: Boolean,
+        val centerInScreenshot: PointF,
+        val logMessage: String,
+        val terminalNote: String? = null,
+    )
+
     fun startPlan(
         plan: DailyTaskPlan,
         onCompleted: (Boolean, String) -> Unit,
         onCustomAction: ((DailyTask, () -> Unit, () -> Unit) -> Unit)? = null,
         onCompletedDetailed: ((DailyPlanCompletion) -> Unit)? = null,
         initialVariables: Map<String, String> = emptyMap(),
-        treatFailMinusOneAsSuccess: Boolean = false,
         templateDir: File? = null
     ) {
         runGeneration += 1
@@ -193,8 +205,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         this.onPlanCompleted = onCompleted
         this.onPlanCompletedDetailed = onCompletedDetailed
         customActionHandler = onCustomAction
-        this.treatFailMinusOneAsSuccess = treatFailMinusOneAsSuccess
         currentTemplateDir = templateDir
+        currentAssetTemplateDir = plan.asset_template_dir?.trim()?.takeIf { it.isNotBlank() }
         logDisplayMetrics("startPlan")
         verboseInfo("引擎已启动")
         executeNextTask()
@@ -202,9 +214,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     fun stop() {
         runGeneration += 1
+        isRunning = false
         handler.removeCallbacksAndMessages(null)
         clearDebugRoi()
-        isRunning = false
+        childScriptEngine?.release()
+        childScriptEngine = null
         matchedPointsByTaskId.clear()
         variables.clear()
         verboseInfo("引擎已被用户停止")
@@ -220,6 +234,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         onPlanCompletedDetailed = null
         customActionHandler = null
         currentTemplateDir = null
+        currentAssetTemplateDir = null
+        childScriptEngine?.release()
+        childScriptEngine = null
         templateCache.evictAll()
     }
 
@@ -238,7 +255,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         onPlanCompleted = null
         customActionHandler = null
         cooldownStartedAtMs = null
-        treatFailMinusOneAsSuccess = false
         detailedCallback?.invoke(
             DailyPlanCompletion(
                 success,
@@ -254,11 +270,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     fun finishTask(task: DailyTask, isSuccess: Boolean) {
         if (!isSuccess) {
-            if (treatFailMinusOneAsSuccess && task.on_fail == -1) {
-                verboseInfo("Task ${task.id} on_fail=-1 treated as completed")
-                completePlan(true, "completed", -1, task, task.params?.terminal_note)
-                return
-            }
             when (task.on_fail) {
                 -4, -3, -2 -> {
                     val msg = task.params?.terminal_note
@@ -276,19 +287,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     return
                 }
                 -1 -> {
-                    if (treatFailMinusOneAsSuccess) {
-                        verboseInfo("ä»»åŠ¡ ${task.id} å¤±è´¥åˆ†æ”¯=-1ï¼ŒæŒ‰æ­£å¸¸ç»“æŸå¤„ç†")
-                        completePlan(true, "å·²å®Œæˆ", -1, task, task.params?.terminal_note)
-                        return
-                    }
-                    val msg = when (task.action) {
-                        "MATCH_TEMPLATE" -> "未找到模板:${task.params?.template_name}"
-                        "OCR" -> "未识别到文字"
-                        "CLICK_DYNAMIC_BUTTON" -> "未找到动态按钮:${task.params?.button_name}"
-                        else -> "任务失败:${task.action}"
-                    }
-                    RunLogger.e("任务 ${task.id} 失败：$msg")
-                    completePlan(false, msg, -1, task)
+                    verboseInfo("任务 ${task.id} 失败分支=-1，按正常结束处理")
+                    completePlan(true, "已完成", -1, task, task.params?.terminal_note)
                     return
                 }
                 else -> {
@@ -373,9 +373,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     "SWIPE" -> executeSwipe(task)
                     "BACK" -> executeGlobalBack(task)
                     "SET_VAR" -> executeSetVar(task)
+                    "RUN_SCRIPT_SEGMENT" -> executeRunScriptSegment(task)
                     "CLICK_LAST_MATCH", "CLICK_LAST_OCR" -> executeContextClick(task)
                     "MATCH_TEMPLATE" -> executeMatchTemplate(task)
                     "OCR" -> executeOcrTask(task)
+                    "SCREENSHOT_GROUP" -> executeScreenshotGroup(task)
                     else -> {
                         val custom = customActionHandler
                         if (custom != null) {
@@ -396,20 +398,83 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private fun executeClick(task: DailyTask) {
         val generation = runGeneration
         val p = task.params ?: return finishTask(task, false)
+        val repeatCount = resolveRepeatCount(p)
+        val repeatInterval = resolveRepeatInterval(p)
         val refPoint = p.ref_task_id?.let { matchedPointsByTaskId[it] }
         if (refPoint != null) {
             verboseInfo("任务 ${task.id} 点击 x=${refPoint.x.toInt()} y=${refPoint.y.toInt()}")
-            dispatchClick(refPoint.x, refPoint.y) {
-                if (generation == runGeneration && isRunning) finishTask(task, true)
+            performRepeatedClicks(
+                generation = generation,
+                x = refPoint.x,
+                y = refPoint.y,
+                repeatCount = repeatCount,
+                repeatInterval = repeatInterval
+            ) { success ->
+                if (generation == runGeneration && isRunning) finishTask(task, success)
             }
             return
         }
         if (p.x == null || p.y == null) return finishTask(task, false)
         val (realX, realY) = calculateRealCoordinate(p.x, p.y, p.align)
         verboseInfo("任务 ${task.id} 点击 x=${realX.toInt()} y=${realY.toInt()}")
-        dispatchClick(realX, realY) {
-            if (generation == runGeneration && isRunning) finishTask(task, true)
+        performRepeatedClicks(
+            generation = generation,
+            x = realX,
+            y = realY,
+            repeatCount = repeatCount,
+            repeatInterval = repeatInterval
+        ) { success ->
+            if (generation == runGeneration && isRunning) finishTask(task, success)
         }
+    }
+
+    private fun resolveRepeatCount(params: com.example.yuanassist.model.TaskParams): Int? {
+        params.repeat_count_var?.let { varName ->
+            variables[varName]?.toIntOrNull()?.let { return it }
+        }
+        return params.repeat_count
+    }
+
+    private fun resolveRepeatInterval(params: com.example.yuanassist.model.TaskParams): Long? {
+        params.repeat_interval_var?.let { varName ->
+            variables[varName]?.toLongOrNull()?.let { return it }
+        }
+        return params.repeat_interval
+    }
+
+    private fun performRepeatedClicks(
+        generation: Long,
+        x: Float,
+        y: Float,
+        repeatCount: Int?,
+        repeatInterval: Long?,
+        onComplete: (Boolean) -> Unit
+    ) {
+        val totalCount = (repeatCount ?: 1).coerceAtLeast(1)
+        val intervalMs = (repeatInterval ?: 0L).coerceAtLeast(0L)
+
+        fun runClick(index: Int) {
+            if (!isRunning || generation != runGeneration) {
+                onComplete(false)
+                return
+            }
+            dispatchClick(x, y) {
+                if (!isRunning || generation != runGeneration) {
+                    onComplete(false)
+                    return@dispatchClick
+                }
+                if (index >= totalCount - 1) {
+                    onComplete(true)
+                    return@dispatchClick
+                }
+                handler.postDelayed(
+                    { runClick(index + 1) },
+                    intervalMs
+                )
+            }
+        }
+
+        runClick(0)
     }
 
     private fun executeSwipe(task: DailyTask) {
@@ -465,9 +530,40 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val p = task.params ?: return finishTask(task, false)
         val name = p.var_name ?: return finishTask(task, false)
         val value = p.var_value ?: return finishTask(task, false)
-        variables[name] = value
-        verboseInfo("任务 ${task.id} 设置变量 $name=$value")
+        val resolvedValue = resolveVariablePlaceholders(value)
+        variables[name] = resolvedValue
+        verboseInfo("任务 ${task.id} 设置变量 $name=$resolvedValue")
         finishTask(task, true)
+    }
+
+    private fun executeRunScriptSegment(task: DailyTask) {
+        val p = task.params ?: return finishTask(task, false)
+        val scriptName = resolveScriptName(p) ?: return finishTask(task, false)
+        val entryTaskId = resolveSegmentTaskId(p.entry_task_id, p.entry_task_id_var)
+            ?: return finishTask(task, false)
+        val exitTaskId = resolveSegmentTaskId(p.exit_task_id, p.exit_task_id_var)
+        val childPlan = loadSegmentPlan(scriptName, entryTaskId, exitTaskId)
+            ?: return finishTask(task, false)
+        val childVariables = buildChildVariables(p)
+        verboseInfo("任务 ${task.id} 调度脚本 $scriptName entry=$entryTaskId exit=${exitTaskId ?: "end"}")
+        childScriptEngine?.release()
+        childScriptEngine = AutoTaskEngine(service).also { child ->
+            child.debugRoiEnabled = debugRoiEnabled
+            child.debugScreenshotEnabled = debugScreenshotEnabled
+            child.verboseLoggingEnabled = verboseLoggingEnabled
+            child.diagnosticLoggingEnabled = diagnosticLoggingEnabled
+            child.globalDelayOffsetMs = globalDelayOffsetMs
+        }
+        childScriptEngine?.startPlan(
+            plan = childPlan,
+            onCompleted = { success, _ ->
+                if (!isRunning) return@startPlan
+                childScriptEngine?.release()
+                childScriptEngine = null
+                finishTask(task, success)
+            },
+            initialVariables = childVariables,
+        )
     }
 
     private fun executeOcrTask(task: DailyTask) {
@@ -478,6 +574,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             .orEmpty()
         val targetText = (p.target_text ?: p.button_name)?.trim().orEmpty()
         val useStartBattlePreset = targetChars.isEmpty() && targetText.isBlank()
+        val isExplicitStartBattleTarget = targetChars.size == 4 &&
+            targetChars.containsAll(listOf('开', '始', '战', '斗'))
         val templateName = p.template_name
         if (templateName != null && TemplateOverrideStore.hasOverride(service, templateName)) {
             return executeTemplateSearch(
@@ -511,7 +609,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             preprocess = p.preprocess,
             templateName = templateName,
             threshold = p.threshold,
-            clickOnSuccess = p.click == 1 || useStartBattlePreset,
+            clickOnSuccess = p.click == 1 || useStartBattlePreset || (isExplicitStartBattleTarget && p.click != 0),
         )
         val generation = runGeneration
         verboseInfo(
@@ -629,6 +727,321 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 }
             }
         )
+    }
+
+    private fun executeScreenshotGroup(task: DailyTask) {
+        val params = task.params ?: return finishTask(task, false)
+        val steps = params.screenshot_steps
+            ?.filter { it.type.isNotBlank() }
+            .orEmpty()
+        if (steps.isEmpty()) {
+            RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 未配置 screenshot_steps")
+            return finishTask(task, false)
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            diagnosticError("任务 ${task.id} SCREENSHOT_GROUP 截图不支持，当前 SDK=${Build.VERSION.SDK_INT}")
+            return finishTask(task, false)
+        }
+        val generation = runGeneration
+        verboseInfo("任务 ${task.id} SCREENSHOT_GROUP，候选数=${steps.size}，区域=${formatRoi(params.roi)}")
+        service.takeScreenshot(
+            Display.DEFAULT_DISPLAY,
+            service.mainExecutor,
+            object : AccessibilityService.TakeScreenshotCallback {
+                override fun onSuccess(result: AccessibilityService.ScreenshotResult) {
+                    if (!isRunning || generation != runGeneration) {
+                        result.hardwareBuffer.close()
+                        return
+                    }
+                    var swBitmap: Bitmap? = null
+                    var searchRegion: SearchRegion? = null
+                    var buffer: android.hardware.HardwareBuffer? = null
+                    try {
+                        buffer = result.hardwareBuffer
+                        val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
+                        swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
+                        if (swBitmap == null) {
+                            RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 截图转换失败")
+                            finishTask(task, false)
+                            return
+                        }
+                        val mapping = buildScreenshotMapping(swBitmap)
+                        searchRegion = buildSearchRegionForOcr(swBitmap, params.roi, mapping, task.id)
+                        saveDebugScreenshots(swBitmap, searchRegion.bitmap)
+                        executeScreenshotGroupStep(
+                            task = task,
+                            generation = generation,
+                            params = params,
+                            steps = steps,
+                            index = 0,
+                            swBitmap = swBitmap,
+                            sharedRegion = searchRegion,
+                            mapping = mapping,
+                        )
+                    } catch (t: Throwable) {
+                        RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 执行失败", t)
+                        if (generation == runGeneration && isRunning) finishTask(task, false)
+                        searchRegion?.release()
+                        swBitmap?.recycle()
+                    } finally {
+                        buffer?.close()
+                    }
+                }
+
+                override fun onFailure(errorCode: Int) {
+                    diagnosticError("任务 ${task.id} SCREENSHOT_GROUP 截图失败 errorCode=$errorCode")
+                    RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 截图失败，错误码=$errorCode")
+                    if (generation == runGeneration && isRunning) finishTask(task, false)
+                }
+            }
+        )
+    }
+
+    private fun executeScreenshotGroupStep(
+        task: DailyTask,
+        generation: Long,
+        params: com.example.yuanassist.model.TaskParams,
+        steps: List<ScreenshotStep>,
+        index: Int,
+        swBitmap: Bitmap,
+        sharedRegion: SearchRegion,
+        mapping: ScreenshotMapping,
+    ) {
+        if (!isRunning || generation != runGeneration) {
+            sharedRegion.release()
+            swBitmap.recycle()
+            return
+        }
+        if (index >= steps.size) {
+            sharedRegion.release()
+            swBitmap.recycle()
+            finishTask(task, false)
+            return
+        }
+        val step = steps[index]
+        val loweredType = step.type.trim().lowercase()
+        when (loweredType) {
+            "ocr" -> executeScreenshotGroupOcrStep(
+                task = task,
+                generation = generation,
+                params = params,
+                steps = steps,
+                index = index,
+                step = step,
+                swBitmap = swBitmap,
+                sharedRegion = sharedRegion,
+                mapping = mapping,
+            )
+            "template", "match_template" -> {
+                val match = findScreenshotGroupTemplateMatch(task, step, swBitmap, sharedRegion, mapping)
+                if (match != null) {
+                    applyScreenshotGroupMatch(task, generation, match, sharedRegion, swBitmap, mapping)
+                } else {
+                    executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+                }
+            }
+            else -> {
+                RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 不支持的子类型 ${step.type}")
+                executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+            }
+        }
+    }
+
+    private fun executeScreenshotGroupOcrStep(
+        task: DailyTask,
+        generation: Long,
+        params: com.example.yuanassist.model.TaskParams,
+        steps: List<ScreenshotStep>,
+        index: Int,
+        step: ScreenshotStep,
+        swBitmap: Bitmap,
+        sharedRegion: SearchRegion,
+        mapping: ScreenshotMapping,
+    ) {
+        val stepRoi = step.roi
+        val region = if (stepRoi == null) {
+            sharedRegion
+        } else {
+            buildSearchRegionForOcr(swBitmap, stepRoi, mapping, task.id)
+        }
+        var ocrBitmap: Bitmap? = null
+        try {
+            val targetChars = step.target_chars
+                ?.mapNotNull { it.trim().firstOrNull() }
+                ?.distinct()
+                .orEmpty()
+            val targetText = (step.target_text ?: step.button_name)?.trim().orEmpty()
+            if (targetChars.isEmpty() && targetText.isBlank()) {
+                if (region !== sharedRegion) region.release()
+                executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+                return
+            }
+            val config = OcrConfig(
+                targetChars = targetChars,
+                minHitCount = (step.min_hit_count ?: targetChars.size).coerceAtLeast(1),
+                roi = stepRoi ?: params.roi,
+                preprocess = step.preprocess,
+                templateName = step.template_name,
+                threshold = step.threshold ?: params.threshold,
+                clickOnSuccess = step.click == 1,
+            )
+            val preprocess = config.preprocess ?: if (targetText.isBlank() && targetChars.isEmpty()) "yellow_text" else null
+            ocrBitmap = createConfiguredOcrBitmap(region.bitmap, preprocess)
+            val bitmapForOcr = ocrBitmap ?: region.bitmap
+            ocrScope.launch {
+                try {
+                    val text = PaddleTextRecognizer.recognize(service, bitmapForOcr)
+                    withContext(Dispatchers.Main) {
+                        if (!isRunning || generation != runGeneration) {
+                            if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap?.recycle()
+                            if (region !== sharedRegion) region.release()
+                            sharedRegion.release()
+                            swBitmap.recycle()
+                            return@withContext
+                        }
+                        val hit = if (targetChars.isNotEmpty()) {
+                            findOcrHitByChars(text, config)
+                        } else {
+                            findOcrHitByText(text, targetText, targetText.isBlank())
+                        }
+                        logOcrResult(task.id, text, hit, config, targetText, false)
+                        if (hit == null) {
+                            if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap?.recycle()
+                            if (region !== sharedRegion) region.release()
+                            executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+                            return@withContext
+                        }
+                        val match = ScreenshotMatch(
+                            nextTaskId = step.on_success,
+                            clickOnSuccess = step.click == 1,
+                            centerInScreenshot = PointF(
+                                region.offsetX + hit.center.x,
+                                region.offsetY + hit.center.y
+                            ),
+                            logMessage = "任务 ${task.id} SCREENSHOT_GROUP OCR命中 line=${formatOcrLog(hit.lineText)} hits=${hit.hitChars.joinToString("")} count=${hit.hitCount}",
+                            terminalNote = step.terminal_note,
+                        )
+                        if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap?.recycle()
+                        if (region !== sharedRegion) region.release()
+                        applyScreenshotGroupMatch(task, generation, match, sharedRegion, swBitmap, mapping)
+                    }
+                } catch (error: Throwable) {
+                    withContext(Dispatchers.Main) {
+                        RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP OCR识别失败: ${error.message}", error)
+                        if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap?.recycle()
+                        if (region !== sharedRegion) region.release()
+                        executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP OCR步骤执行失败", t)
+            if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap.recycle()
+            if (region !== sharedRegion) region.release()
+            executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+        }
+    }
+
+    private fun findScreenshotGroupTemplateMatch(
+        task: DailyTask,
+        step: ScreenshotStep,
+        swBitmap: Bitmap,
+        sharedRegion: SearchRegion,
+        mapping: ScreenshotMapping,
+    ): ScreenshotMatch? {
+        val templateName = step.template_name ?: return null
+        val region = if (step.roi == null) {
+            sharedRegion
+        } else {
+            buildSearchRegionForOcr(swBitmap, step.roi, mapping, task.id)
+        }
+        val rawTemplate = loadTemplateFromAssets(templateName)
+        if (rawTemplate == null) {
+            if (region !== sharedRegion) region.release()
+            return null
+        }
+        val gameScale = min(swBitmap.width / BASE_W, swBitmap.height / BASE_H)
+        val scaledWidth = (rawTemplate.width * gameScale).toInt().coerceAtLeast(1)
+        val scaledHeight = (rawTemplate.height * gameScale).toInt().coerceAtLeast(1)
+        var scaledTemplate: Bitmap? = null
+        val ownsScaledTemplate = scaledWidth != rawTemplate.width || scaledHeight != rawTemplate.height
+        try {
+            scaledTemplate = if (ownsScaledTemplate) {
+                Bitmap.createScaledBitmap(rawTemplate, scaledWidth, scaledHeight, true)
+            } else {
+                rawTemplate
+            }
+            if (region.bitmap.width < scaledTemplate.width || region.bitmap.height < scaledTemplate.height) {
+                return null
+            }
+            val matchLoc = matchTemplate(region.bitmap, scaledTemplate, step.threshold ?: 0.8f) ?: return null
+            return ScreenshotMatch(
+                nextTaskId = step.on_success,
+                clickOnSuccess = step.click == 1,
+                centerInScreenshot = PointF(
+                    region.offsetX + matchLoc.x,
+                    region.offsetY + matchLoc.y
+                ),
+                logMessage = "任务 ${task.id} SCREENSHOT_GROUP 模板命中 template=$templateName",
+                terminalNote = step.terminal_note,
+            )
+        } finally {
+            if (ownsScaledTemplate) scaledTemplate?.recycle()
+            if (region !== sharedRegion) region.release()
+        }
+    }
+
+    private fun applyScreenshotGroupMatch(
+        task: DailyTask,
+        generation: Long,
+        match: ScreenshotMatch,
+        sharedRegion: SearchRegion,
+        swBitmap: Bitmap,
+        mapping: ScreenshotMapping,
+    ) {
+        val realX = match.centerInScreenshot.x * mapping.screenshotToDisplayX
+        val realY = match.centerInScreenshot.y * mapping.screenshotToDisplayY
+        lastMatchX = realX
+        lastMatchY = realY
+        matchedPointsByTaskId[task.id] = PointF(realX, realY)
+        verboseInfo("${match.logMessage} x=${realX.toInt()} y=${realY.toInt()}")
+        sharedRegion.release()
+        swBitmap.recycle()
+        if (task.start_cooldown_on_success && cooldownStartedAtMs == null) {
+            cooldownStartedAtMs = System.currentTimeMillis()
+            verboseInfo("任务 ${task.id} 成功，开始记录冷却计时")
+        }
+        fun continueSuccess() {
+            if (!isRunning || generation != runGeneration) return
+            when (match.nextTaskId) {
+                -4, -3, -2 -> {
+                    val msg = match.terminalNote
+                        ?: when (match.nextTaskId) {
+                            -4 -> "任务倒计时中"
+                            -3 -> "资源耗尽"
+                            else -> "任务失败"
+                        }
+                    if (match.nextTaskId == -4 || match.nextTaskId == -3) {
+                        RunLogger.i("任务 ${task.id} 结束：$msg")
+                    } else {
+                        RunLogger.e("任务 ${task.id} 结束：$msg")
+                    }
+                    completePlan(false, msg, match.nextTaskId, task, match.terminalNote)
+                }
+                -1 -> completePlan(true, "已完成", -1, task, match.terminalNote)
+                else -> {
+                    currentTaskId = match.nextTaskId
+                    executeNextTask()
+                }
+            }
+        }
+        if (match.clickOnSuccess) {
+            dispatchClick(realX, realY) {
+                if (generation == runGeneration && isRunning) continueSuccess()
+            }
+        } else {
+            continueSuccess()
+        }
     }
 
     private fun executeStartBattleTemplateClick(task: DailyTask) {
@@ -1095,18 +1508,127 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         return routes[value] ?: task.on_fail
     }
 
+    private fun resolveScriptName(params: com.example.yuanassist.model.TaskParams): String? {
+        params.script_branch_var?.let { branchVar ->
+            val branchValue = variables[branchVar]
+            val routed = branchValue?.let { params.script_name_routes?.get(it) }
+            if (!routed.isNullOrBlank()) {
+                return normalizeScriptFileName(routed)
+            }
+        }
+        params.script_name_var?.let { varName ->
+            val dynamicName = variables[varName]
+            if (!dynamicName.isNullOrBlank()) {
+                return normalizeScriptFileName(dynamicName)
+            }
+        }
+        return params.script_name?.takeIf { it.isNotBlank() }?.let(::normalizeScriptFileName)
+    }
+
+    private fun resolveSegmentTaskId(staticId: Int?, dynamicVarName: String?): Int? {
+        dynamicVarName?.let { varName ->
+            variables[varName]?.toIntOrNull()?.let { return it }
+        }
+        return staticId
+    }
+
+    private fun normalizeScriptFileName(value: String): String {
+        return if (value.endsWith(".json", ignoreCase = true)) value else "$value.json"
+    }
+
+    private fun buildChildVariables(params: com.example.yuanassist.model.TaskParams): Map<String, String> {
+        val inherited = if (params.inherit_variables == false) {
+            mutableMapOf()
+        } else {
+            variables.toMutableMap()
+        }
+        params.script_variables?.forEach { (key, value) ->
+            inherited[key] = resolveVariablePlaceholders(value)
+        }
+        return inherited
+    }
+
+    private fun resolveVariablePlaceholders(value: String): String {
+        var resolved = value
+        variables.forEach { (key, variableValue) ->
+            resolved = resolved.replace("\${$key}", variableValue)
+        }
+        return resolved
+    }
+
+    private fun loadSegmentPlan(
+        scriptName: String,
+        entryTaskId: Int,
+        exitTaskId: Int?
+    ): DailyTaskPlan? {
+        val plan = try {
+            service.assets.open("daily_scripts/$scriptName").use { input ->
+                gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
+            }
+        } catch (t: Throwable) {
+            RunLogger.e("加载子脚本失败：$scriptName", t)
+            null
+        } ?: return null
+        if (plan.tasks.none { it.id == entryTaskId }) {
+            RunLogger.e("子脚本入口无效：$scriptName entry=$entryTaskId")
+            return null
+        }
+        if (exitTaskId == null) {
+            return plan.copy(start_task_id = entryTaskId)
+        }
+        if (plan.tasks.none { it.id == exitTaskId }) {
+            RunLogger.e("子脚本出口无效：$scriptName exit=$exitTaskId")
+            return null
+        }
+        return plan.copy(
+            start_task_id = entryTaskId,
+            tasks = plan.tasks.map { source ->
+                var nextTask = source
+                if (source.on_success == exitTaskId) {
+                    nextTask = nextTask.copy(on_success = -1)
+                }
+                if (source.on_fail == exitTaskId) {
+                    nextTask = nextTask.copy(on_fail = -1)
+                }
+                if (source.params?.branch_routes?.containsValue(exitTaskId) == true) {
+                    val nextRoutes = source.params.branch_routes.mapValues { (_, value) ->
+                        if (value == exitTaskId) -1 else value
+                    }
+                    nextTask = nextTask.copy(
+                        params = source.params.copy(branch_routes = nextRoutes)
+                    )
+                }
+                if (source.params?.fail_branch_routes?.containsValue(exitTaskId) == true) {
+                    val nextFailRoutes = source.params.fail_branch_routes.mapValues { (_, value) ->
+                        if (value == exitTaskId) -1 else value
+                    }
+                    nextTask = nextTask.copy(
+                        params = nextTask.params?.copy(fail_branch_routes = nextFailRoutes)
+                    )
+                }
+                if (nextTask.id == exitTaskId) {
+                    return@map nextTask.copy(on_success = -1, on_fail = -1)
+                }
+                nextTask
+            }
+        )
+    }
+
     private fun loadTemplateFromAssets(fileName: String): Bitmap? {
         val localTemplateFile = currentTemplateDir
             ?.let { File(it, fileName) }
             ?.takeIf { it.exists() }
+        val assetTemplatePath = currentAssetTemplateDir
+            ?.let { dir -> "$dir/$fileName" }
+            ?: fileName
         val cacheKey = if (localTemplateFile != null) {
             "${localTemplateFile.absolutePath}#${localTemplateFile.lastModified()}"
         } else {
-            TemplateOverrideStore.cacheKey(service, fileName)
+            TemplateOverrideStore.cacheKey(service, assetTemplatePath)
         }
         templateCache.get(cacheKey)?.let {
             if (!it.isRecycled) {
-                verboseInfo("模板缓存命中 $fileName")
+                verboseInfo("模板缓存命中 $assetTemplatePath")
                 return it
             }
             templateCache.remove(cacheKey)
@@ -1115,17 +1637,17 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             val bitmap = if (localTemplateFile != null) {
                 BitmapFactory.decodeFile(localTemplateFile.absolutePath)
             } else {
-                TemplateOverrideStore.loadBitmap(service, service.assets, fileName)
+                TemplateOverrideStore.loadBitmap(service, service.assets, assetTemplatePath)
             }
             if (bitmap != null) {
                 templateCache.put(cacheKey, bitmap)
-                verboseInfo("模板已加载 $fileName ${bitmap.width}x${bitmap.height}")
+                verboseInfo("模板已加载 $assetTemplatePath ${bitmap.width}x${bitmap.height}")
             } else {
-                RunLogger.e("模板解码失败 $fileName")
+                RunLogger.e("模板解码失败 $assetTemplatePath")
             }
             bitmap
         } catch (t: Throwable) {
-            RunLogger.e("模板打开失败 $fileName", t)
+            RunLogger.e("模板打开失败 $assetTemplatePath", t)
             null
         }
     }

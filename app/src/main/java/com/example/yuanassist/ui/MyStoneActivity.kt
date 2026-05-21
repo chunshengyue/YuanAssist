@@ -1,6 +1,7 @@
 package com.example.yuanassist.ui
 
 import android.app.AlertDialog
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
@@ -31,20 +32,24 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.signature.ObjectKey
 import com.example.yuanassist.R
-import com.example.yuanassist.network.OcrManager
 import com.example.yuanassist.utils.MyStoneCell
 import com.example.yuanassist.utils.MyStoneRecord
 import com.example.yuanassist.utils.MyStoneRow
-import com.example.yuanassist.utils.StoneStat
-import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.StoneStat
+import com.example.yuanassist.utils.StoneOcrCoordinator
+import com.example.yuanassist.utils.StoneOcrMode
+import com.example.yuanassist.utils.StonePaddleLocalRecognizer
+import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.StoneOcrParser
 import com.example.yuanassist.utils.applyYuanInputStyle
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -53,6 +58,12 @@ class MyStoneActivity : AppCompatActivity() {
     private data class DistributionItem(
         val title: String,
         val value: String
+    )
+
+    private data class PartitionPreviewResult(
+        val bitmap: Bitmap?,
+        val errorMessage: String? = null,
+        val throwable: Throwable? = null,
     )
 
     private data class StoneDisplayCard(
@@ -76,11 +87,19 @@ class MyStoneActivity : AppCompatActivity() {
     private lateinit var supportTypeView: TextView
     private lateinit var addStoneButton: TextView
 
-    private lateinit var imageSectionHeading: View
-    private lateinit var imageSectionSubtitle: TextView
-    private lateinit var imageSectionRecognizeButton: TextView
-    private lateinit var imageSectionToggle: TextView
-    private lateinit var imageSectionContent: View
+    private lateinit var longSectionHeading: View
+    private lateinit var longSectionSubtitle: TextView
+    private lateinit var longSectionRecognizeButton: TextView
+    private lateinit var longSectionPartitionButton: TextView
+    private lateinit var longSectionToggle: TextView
+    private lateinit var longSectionContent: View
+
+    private lateinit var looseSectionHeading: View
+    private lateinit var looseSectionSubtitle: TextView
+    private lateinit var looseSectionRecognizeButton: TextView
+    private lateinit var looseSectionPartitionButton: TextView
+    private lateinit var looseSectionToggle: TextView
+    private lateinit var looseSectionContent: View
 
     private lateinit var rowsSectionHeading: View
     private lateinit var rowsSectionSubtitle: TextView
@@ -89,17 +108,31 @@ class MyStoneActivity : AppCompatActivity() {
     private lateinit var rowHintView: TextView
     private lateinit var rowsContainer: LinearLayout
 
-    private lateinit var imageOneView: ImageView
-    private lateinit var imageTwoView: ImageView
+    private lateinit var longImagesContainer: LinearLayout
+    private lateinit var looseImagesContainer: LinearLayout
+    private lateinit var longPartitionPreviewView: ImageView
+    private lateinit var loosePartitionPreviewsContainer: LinearLayout
 
     private var currentRecord: MyStoneRecord? = null
     private var currentImageFiles: List<File> = emptyList()
+    private var currentLongImageFiles: List<File> = emptyList()
+    private var currentLooseImageFiles: List<File> = emptyList()
     private var currentRows: MutableList<MyStoneRow> = mutableListOf()
     private var currentArchiveId: String = MyStoneStore.DEFAULT_ARCHIVE_ID
     private var currentStoneType: String = MyStoneStore.TYPE_MAIN
-    private var isImagesExpanded = false
+    private var isLongExpanded = false
+    private var isLooseExpanded = false
     private var isRowsExpanded = false
-    private var ocrProcessingStoneType: String? = null
+    private var longOcrProcessingStoneType: String? = null
+    private var looseOcrProcessingStoneType: String? = null
+    private var isLongPartitionProcessing = false
+    private var isLoosePartitionProcessing = false
+    private var longPartitionPreviewJob: Job? = null
+    private var loosePartitionPreviewJob: Job? = null
+    private var longPartitionPreviewBitmap: Bitmap? = null
+    private val loosePartitionPreviewBitmaps = mutableListOf<Bitmap>()
+    private var longPartitionPreviewKey: String? = null
+    private var loosePartitionPreviewKey: String? = null
     private val expandedStatCards = mutableSetOf<String>()
     private val deviceId: String by lazy {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
@@ -131,11 +164,19 @@ class MyStoneActivity : AppCompatActivity() {
         supportTypeView = findViewById(R.id.tv_my_stone_type_support)
         addStoneButton = findViewById(R.id.btn_my_stone_add)
 
-        imageSectionHeading = findViewById(R.id.layout_my_stone_images_heading)
-        imageSectionSubtitle = findViewById(R.id.tv_my_stone_images_subtitle)
-        imageSectionRecognizeButton = findViewById(R.id.btn_recognize_my_stone_images)
-        imageSectionToggle = findViewById(R.id.btn_toggle_my_stone_images)
-        imageSectionContent = findViewById(R.id.layout_my_stone_images_content)
+        longSectionHeading = findViewById(R.id.layout_my_stone_long_heading)
+        longSectionSubtitle = findViewById(R.id.tv_my_stone_long_subtitle)
+        longSectionRecognizeButton = findViewById(R.id.btn_recognize_my_stone_long)
+        longSectionPartitionButton = findViewById(R.id.btn_partition_my_stone_long)
+        longSectionToggle = findViewById(R.id.btn_toggle_my_stone_long)
+        longSectionContent = findViewById(R.id.layout_my_stone_long_content)
+
+        looseSectionHeading = findViewById(R.id.layout_my_stone_loose_heading)
+        looseSectionSubtitle = findViewById(R.id.tv_my_stone_loose_subtitle)
+        looseSectionRecognizeButton = findViewById(R.id.btn_recognize_my_stone_loose)
+        looseSectionPartitionButton = findViewById(R.id.btn_partition_my_stone_loose)
+        looseSectionToggle = findViewById(R.id.btn_toggle_my_stone_loose)
+        looseSectionContent = findViewById(R.id.layout_my_stone_loose_content)
 
         rowsSectionHeading = findViewById(R.id.layout_my_stone_rows_heading)
         rowsSectionSubtitle = findViewById(R.id.tv_my_stone_rows_subtitle)
@@ -144,8 +185,10 @@ class MyStoneActivity : AppCompatActivity() {
         rowHintView = findViewById(R.id.tv_my_stone_rows_hint)
         rowsContainer = findViewById(R.id.layout_my_stone_rows)
 
-        imageOneView = findViewById(R.id.iv_my_stone_result_1)
-        imageTwoView = findViewById(R.id.iv_my_stone_result_2)
+        longImagesContainer = findViewById(R.id.layout_my_stone_long_images)
+        looseImagesContainer = findViewById(R.id.layout_my_stone_loose_images)
+        longPartitionPreviewView = findViewById(R.id.iv_my_stone_long_partition_preview)
+        loosePartitionPreviewsContainer = findViewById(R.id.layout_my_stone_loose_partition_previews)
         currentStoneType = MyStoneStore.getSelectedType(this)
 
         ViewCompat.setOnApplyWindowInsetsListener(header) { _, insets ->
@@ -160,11 +203,23 @@ class MyStoneActivity : AppCompatActivity() {
         backButton.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
-        imageSectionHeading.setOnClickListener {
-            setImagesExpanded(!isImagesExpanded)
+        longSectionHeading.setOnClickListener {
+            setLongExpanded(!isLongExpanded)
         }
-        imageSectionRecognizeButton.setOnClickListener {
+        longSectionPartitionButton.setOnClickListener {
+            triggerLongPartitionPreview()
+        }
+        longSectionRecognizeButton.setOnClickListener {
             triggerStoneOcrIfNeeded()
+        }
+        looseSectionHeading.setOnClickListener {
+            setLooseExpanded(!isLooseExpanded)
+        }
+        looseSectionRecognizeButton.setOnClickListener {
+            triggerLooseStoneOcrIfNeeded()
+        }
+        looseSectionPartitionButton.setOnClickListener {
+            triggerLoosePartitionPreview()
         }
         rowsSectionHeading.setOnClickListener {
             setRowsExpanded(!isRowsExpanded)
@@ -193,8 +248,12 @@ class MyStoneActivity : AppCompatActivity() {
 
         val record = MyStoneStore.loadRecord(this, currentStoneType, currentArchiveId)
         val imageFiles = record?.let { MyStoneStore.imageFiles(this, currentStoneType, it, currentArchiveId) }.orEmpty()
+        val longImageFiles = record?.let { MyStoneStore.longImageFiles(this, currentStoneType, it, currentArchiveId) }.orEmpty()
+        val looseImageFiles = record?.let { MyStoneStore.looseImageFiles(this, currentStoneType, it, currentArchiveId) }.orEmpty()
         currentRecord = record
         currentImageFiles = imageFiles
+        currentLongImageFiles = longImageFiles
+        currentLooseImageFiles = looseImageFiles
 
         emptyView.isVisible = false
         contentView.isVisible = true
@@ -218,17 +277,28 @@ class MyStoneActivity : AppCompatActivity() {
             )
         }?.toMutableList() ?: mutableListOf()
 
+        if (longPartitionPreviewKey != currentLongPartitionKey()) {
+            clearLongPartitionPreview()
+        }
+        if (loosePartitionPreviewKey != currentLoosePartitionKey()) {
+            clearLoosePartitionPreview()
+        }
+
         renderStats()
         updateSectionSubtitles()
-        renderRecognizeButton()
-        setImagesExpanded(isImagesExpanded)
+        renderLongPartitionButton()
+        renderLongRecognizeButton()
+        renderLooseRecognizeButton()
+        renderLoosePartitionButton()
+        setLongExpanded(isLongExpanded)
+        setLooseExpanded(isLooseExpanded)
         setRowsExpanded(isRowsExpanded)
     }
 
     private fun renderStats() {
-        val stats = StoneOcrParser.aggregate(currentRows)
+        val stats = StoneOcrParser.aggregate(currentRows, currentStoneType)
         val cards = buildStoneDisplayCards(stats)
-        val unresolvedRows = currentRows.count { !StoneOcrParser.isRowResolved(it) }
+        val unresolvedRows = currentRows.count { !StoneOcrParser.isRowResolved(it, currentStoneType) }
         val typeLabel = MyStoneStore.displayName(currentStoneType)
 
         statsSummaryView.text = if (cards.isEmpty()) {
@@ -246,18 +316,31 @@ class MyStoneActivity : AppCompatActivity() {
         renderStatCards(cards)
     }
 
-    private fun setImagesExpanded(expanded: Boolean) {
-        val canExpand = currentImageFiles.isNotEmpty()
-        isImagesExpanded = expanded && canExpand
-        imageSectionToggle.text = if (isImagesExpanded) "收起" else "展开"
-        imageSectionContent.isVisible = isImagesExpanded
+    private fun setLongExpanded(expanded: Boolean) {
+        val canExpand = currentLongImageFiles.isNotEmpty()
+        isLongExpanded = expanded && canExpand
+        longSectionToggle.text = if (isLongExpanded) "收起" else "展开"
+        longSectionContent.isVisible = isLongExpanded
 
-        if (isImagesExpanded) {
-            renderImages()
+        if (isLongExpanded) {
+            renderLongImages()
         } else {
-            Glide.with(this).clear(imageOneView)
-            Glide.with(this).clear(imageTwoView)
-            imageTwoView.isVisible = false
+            longImagesContainer.removeAllViews()
+            renderLongPartitionPreviewView()
+        }
+    }
+
+    private fun setLooseExpanded(expanded: Boolean) {
+        val canExpand = currentLooseImageFiles.isNotEmpty()
+        isLooseExpanded = expanded && canExpand
+        looseSectionToggle.text = if (isLooseExpanded) "收起" else "展开"
+        looseSectionContent.isVisible = isLooseExpanded
+
+        if (isLooseExpanded) {
+            renderLooseImages()
+        } else {
+            looseImagesContainer.removeAllViews()
+            renderLoosePartitionPreviewView()
         }
     }
 
@@ -275,13 +358,18 @@ class MyStoneActivity : AppCompatActivity() {
 
     private fun updateSectionSubtitles() {
         val typeLabel = MyStoneStore.displayName(currentStoneType)
-        imageSectionSubtitle.text = if (currentImageFiles.isEmpty()) {
-            "暂无${typeLabel}结果图"
+        longSectionSubtitle.text = if (currentLongImageFiles.isEmpty()) {
+            "暂无${typeLabel}长图"
         } else {
-            "共 ${currentImageFiles.size} 张${typeLabel}结果图，默认收起"
+            "共 ${currentLongImageFiles.size} 张${typeLabel}长图，默认收起"
+        }
+        looseSectionSubtitle.text = if (currentLooseImageFiles.isEmpty()) {
+            "暂无${typeLabel}散图"
+        } else {
+            "共 ${currentLooseImageFiles.size} 张${typeLabel}散图，默认收起"
         }
 
-        val invalidRowCount = currentRows.count { !StoneOcrParser.isRowResolved(it) }
+        val invalidRowCount = currentRows.count { !StoneOcrParser.isRowResolved(it, currentStoneType) }
         rowsSectionSubtitle.text = if (currentRows.isEmpty()) {
             "暂无${typeLabel}原位置数据"
         } else {
@@ -289,106 +377,139 @@ class MyStoneActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderRecognizeButton() {
-        val isProcessing = ocrProcessingStoneType == currentStoneType
-        val shouldShow = currentImageFiles.isNotEmpty() && !hasImportedOcrResult()
-        imageSectionRecognizeButton.isVisible = shouldShow || isProcessing
-        imageSectionRecognizeButton.isEnabled = !isProcessing
-        imageSectionRecognizeButton.text = if (isProcessing) "识别中..." else "识别"
-        imageSectionRecognizeButton.setBackgroundResource(
+    private fun renderLongRecognizeButton() {
+        val isProcessing = longOcrProcessingStoneType == currentStoneType
+        val shouldShow = currentLongImageFiles.isNotEmpty()
+        longSectionRecognizeButton.isVisible = shouldShow || isProcessing
+        longSectionRecognizeButton.isEnabled = !isProcessing
+        longSectionRecognizeButton.text = if (isProcessing) "识别中..." else "云端识别"
+        longSectionRecognizeButton.setBackgroundResource(
             if (isProcessing) R.drawable.btn_stone_light else R.drawable.btn_dark_gold
         )
-        imageSectionRecognizeButton.setTextColor(
+        longSectionRecognizeButton.setTextColor(
             if (isProcessing) Color.parseColor("#9A6435") else Color.parseColor("#1A1A1A")
         )
     }
 
+    private fun renderLooseRecognizeButton() {
+        val isProcessing = looseOcrProcessingStoneType == currentStoneType
+        val shouldShow = currentLooseImageFiles.isNotEmpty()
+        looseSectionRecognizeButton.isVisible = shouldShow || isProcessing
+        looseSectionRecognizeButton.isEnabled = !isProcessing
+        looseSectionRecognizeButton.text = if (isProcessing) "识别中..." else "识别"
+        looseSectionRecognizeButton.setBackgroundResource(
+            if (isProcessing) R.drawable.btn_stone_light else R.drawable.btn_dark_gold
+        )
+        looseSectionRecognizeButton.setTextColor(
+            if (isProcessing) Color.parseColor("#9A6435") else Color.parseColor("#1A1A1A")
+        )
+    }
+
+    private fun renderLongPartitionButton() {
+        val shouldShow = currentLongImageFiles.isNotEmpty()
+        longSectionPartitionButton.isVisible = shouldShow || isLongPartitionProcessing
+        longSectionPartitionButton.isEnabled = !isLongPartitionProcessing
+        longSectionPartitionButton.text = if (isLongPartitionProcessing) "划分中..." else "划分"
+        longSectionPartitionButton.setBackgroundResource(
+            if (isLongPartitionProcessing) R.drawable.btn_stone_light else R.drawable.btn_stone_soft_selected
+        )
+        longSectionPartitionButton.setTextColor(Color.parseColor("#75322D"))
+    }
+
+    private fun renderLoosePartitionButton() {
+        val shouldShow = currentLooseImageFiles.isNotEmpty()
+        looseSectionPartitionButton.isVisible = shouldShow || isLoosePartitionProcessing
+        looseSectionPartitionButton.isEnabled = !isLoosePartitionProcessing
+        looseSectionPartitionButton.text = if (isLoosePartitionProcessing) "划分中..." else "划分"
+        looseSectionPartitionButton.setBackgroundResource(
+            if (isLoosePartitionProcessing) R.drawable.btn_stone_light else R.drawable.btn_stone_soft_selected
+        )
+        looseSectionPartitionButton.setTextColor(Color.parseColor("#75322D"))
+    }
+
     private fun triggerStoneOcrIfNeeded() {
-        if (ocrProcessingStoneType != null) return
-        if (currentImageFiles.isEmpty()) {
-            Toast.makeText(this, "当前没有可识别的结果图", Toast.LENGTH_SHORT).show()
+        triggerLongStoneOcrIfNeeded()
+    }
+
+    private fun triggerLongStoneOcrIfNeeded() {
+        if (longOcrProcessingStoneType != null || looseOcrProcessingStoneType != null) return
+        if (currentLongImageFiles.isEmpty()) {
+            Toast.makeText(this, "当前没有可识别的长图", Toast.LENGTH_SHORT).show()
             return
         }
-        if (hasImportedOcrResult()) {
-            renderRecognizeButton()
+        if (!hasCompletedLooseLocalOcr()) {
+            Toast.makeText(this, "请先尝试结果散图的本地OCR识别", Toast.LENGTH_SHORT).show()
             return
         }
 
         val requestStoneType = currentStoneType
         val requestArchiveId = currentArchiveId
-        val imageFiles = currentImageFiles.toList()
-        ocrProcessingStoneType = requestStoneType
-        renderRecognizeButton()
+        val imageFiles = currentLongImageFiles.toList()
+        longOcrProcessingStoneType = requestStoneType
+        renderLongRecognizeButton()
+        Toast.makeText(this, "正在通过云端OCR统计${MyStoneStore.displayName(requestStoneType)}长图...", Toast.LENGTH_SHORT).show()
 
         lifecycleScope.launch {
             try {
-                val wordsGroups = mutableListOf<List<String>>()
-                val rawEntryGroups = mutableListOf<List<String>>()
-                val strategyUsed = linkedSetOf<String>()
-
-                for (file in imageFiles) {
-                    val bitmap = withContext(Dispatchers.IO) {
-                        BitmapFactory.decodeFile(file.absolutePath)
-                    }
-                    if (bitmap == null) {
-                        Toast.makeText(this@MyStoneActivity, "读取星石截图失败：${file.name}", Toast.LENGTH_LONG).show()
-                        return@launch
-                    }
-
-                    try {
-                        when (
-                            val result = OcrManager.recognizeStoneImage(
-                                bitmap = bitmap,
-                                deviceId = deviceId,
-                                onRetryMsg = {
-                                    Toast.makeText(this@MyStoneActivity, "OCR 请求繁忙，正在重试...", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        ) {
-                            is OcrManager.StoneOcrResult.Success -> {
-                                wordsGroups += result.words
-                                rawEntryGroups += result.rawEntries
-                                if (result.strategyUsed.isNotEmpty()) {
-                                    strategyUsed += result.strategyUsed
-                                }
-                            }
-
-                            is OcrManager.StoneOcrResult.Error -> {
-                                Toast.makeText(this@MyStoneActivity, result.message, Toast.LENGTH_LONG).show()
-                                return@launch
-                            }
-                        }
-                    } finally {
-                        bitmap.recycle()
-                    }
-                }
-
-                if (rawEntryGroups.isNotEmpty()) {
-                    RunLogger.raw("【OCR返回原文本】")
-                    StoneOcrParser.formatRawJsonByRow(rawEntryGroups).forEach { line ->
-                        RunLogger.i(line)
-                    }
-                }
-                val rows = StoneOcrParser.buildRows(wordsGroups)
-                val lines = StoneOcrParser.format(StoneOcrParser.aggregate(rows))
-                val hasPendingRows = rows.any { !StoneOcrParser.isRowResolved(it) }
-
-                MyStoneStore.saveOcrResult(
+                val result = StoneOcrCoordinator.importStoneImages(
                     context = this@MyStoneActivity,
                     stoneType = requestStoneType,
-                    rows = rows,
-                    statsLines = lines,
-                    ocrStrategy = strategyUsed.joinToString(","),
-                    archiveId = requestArchiveId
+                    archiveId = requestArchiveId,
+                    imageFiles = imageFiles,
+                    mode = StoneOcrMode.CLOUD,
+                    deviceId = deviceId,
                 )
 
-                if (hasPendingRows) {
-                    RunLogger.i("星石 OCR 完成，但仍有待修正行，行数=${rows.size}")
-                    Toast.makeText(this@MyStoneActivity, "OCR 已导入，可在我的星石中修正红色行", Toast.LENGTH_LONG).show()
+                if (result.hasPendingRows) {
+                    Toast.makeText(this@MyStoneActivity, "长图 OCR 已导入，可在我的星石中修正红色行", Toast.LENGTH_LONG).show()
                 } else {
-                    RunLogger.i("星石 OCR 完成：${lines.joinToString(" | ")}")
-                    Toast.makeText(this@MyStoneActivity, "OCR 统计完成", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MyStoneActivity, "长图 OCR 统计完成", Toast.LENGTH_LONG).show()
                 }
+
+                if (currentStoneType == requestStoneType && currentArchiveId == requestArchiveId) {
+                    renderStoneRecord()
+                }
+            } catch (t: Throwable) {
+                Toast.makeText(this@MyStoneActivity, "长图 OCR 统计失败：${t.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                if (longOcrProcessingStoneType == requestStoneType) {
+                    longOcrProcessingStoneType = null
+                }
+                renderLongRecognizeButton()
+            }
+        }
+    }
+
+    private fun triggerLooseStoneOcrIfNeeded() {
+        if (longOcrProcessingStoneType != null || looseOcrProcessingStoneType != null) return
+        if (currentLooseImageFiles.isEmpty()) {
+            Toast.makeText(this, "当前没有可识别的散图", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val requestStoneType = currentStoneType
+        val requestArchiveId = currentArchiveId
+        val imageFiles = currentLooseImageFiles.toList()
+        looseOcrProcessingStoneType = requestStoneType
+        renderLooseRecognizeButton()
+        Toast.makeText(this, "正在通过本地OCR统计${MyStoneStore.displayName(requestStoneType)}...", Toast.LENGTH_SHORT).show()
+
+        lifecycleScope.launch {
+            try {
+                val result = StoneOcrCoordinator.importStoneImages(
+                    context = this@MyStoneActivity,
+                    stoneType = requestStoneType,
+                    archiveId = requestArchiveId,
+                    imageFiles = imageFiles,
+                    mode = StoneOcrMode.LOCAL,
+                    deviceId = deviceId,
+                )
+
+                Toast.makeText(
+                    this@MyStoneActivity,
+                    "统计已完成，如果结果错误很多，请使用结果长图的云端OCR",
+                    Toast.LENGTH_LONG
+                ).show()
 
                 if (currentStoneType == requestStoneType && currentArchiveId == requestArchiveId) {
                     renderStoneRecord()
@@ -396,33 +517,258 @@ class MyStoneActivity : AppCompatActivity() {
             } catch (t: Throwable) {
                 Toast.makeText(this@MyStoneActivity, "星石 OCR 统计失败：${t.message}", Toast.LENGTH_LONG).show()
             } finally {
-                if (ocrProcessingStoneType == requestStoneType) {
-                    ocrProcessingStoneType = null
+                if (looseOcrProcessingStoneType == requestStoneType) {
+                    looseOcrProcessingStoneType = null
                 }
-                renderRecognizeButton()
+                renderLooseRecognizeButton()
             }
         }
     }
 
-    private fun renderImages() {
-        if (currentImageFiles.isEmpty()) return
+    private fun hasCompletedLooseLocalOcr(): Boolean {
+        return (currentRecord?.looseOcrCompletedAt ?: 0L) > 0L
+    }
+
+    private fun renderLongImages() {
+        if (currentLongImageFiles.isEmpty()) return
         val imageVersion = currentRecord?.updatedAt ?: System.currentTimeMillis()
+        renderImageGroup(
+            container = longImagesContainer,
+            files = currentLongImageFiles,
+            keyPrefix = "long",
+            imageVersion = imageVersion,
+        )
+        renderLongPartitionPreviewView()
+    }
 
-        Glide.with(this)
-            .load(currentImageFiles[0])
-            .signature(ObjectKey("stone_${currentArchiveId}_${currentStoneType}_${imageVersion}_1"))
-            .into(imageOneView)
+    private fun renderLooseImages() {
+        if (currentLooseImageFiles.isEmpty()) return
+        val imageVersion = currentRecord?.updatedAt ?: System.currentTimeMillis()
+        renderImageGroup(
+            container = looseImagesContainer,
+            files = currentLooseImageFiles,
+            keyPrefix = "loose",
+            imageVersion = imageVersion,
+        )
+        renderLoosePartitionPreviewView()
+    }
 
-        if (currentImageFiles.size > 1) {
-            imageTwoView.isVisible = true
+    private fun renderImageGroup(
+        container: LinearLayout,
+        files: List<File>,
+        keyPrefix: String,
+        imageVersion: Long,
+    ) {
+        container.removeAllViews()
+        if (files.isEmpty()) return
+
+        files.forEachIndexed { index, file ->
+            val imageView = ImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    if (index > 0) {
+                        topMargin = dp(12)
+                    }
+                }
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                contentDescription = null
+            }
+            container.addView(imageView)
             Glide.with(this)
-                .load(currentImageFiles[1])
-                .signature(ObjectKey("stone_${currentArchiveId}_${currentStoneType}_${imageVersion}_2"))
-                .into(imageTwoView)
-        } else {
-            imageTwoView.isVisible = false
-            Glide.with(this).clear(imageTwoView)
+                .load(file)
+                .signature(ObjectKey("stone_${currentArchiveId}_${currentStoneType}_${imageVersion}_${keyPrefix}_${index}"))
+                .into(imageView)
         }
+    }
+
+    private fun triggerLongPartitionPreview() {
+        if (currentLongImageFiles.isEmpty()) {
+            Toast.makeText(this, "当前没有可划分的长图", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!isLongExpanded) {
+            setLongExpanded(true)
+        }
+        val requestKey = currentLongPartitionKey() ?: return
+        if (isLongPartitionProcessing) return
+        longPartitionPreviewJob?.cancel()
+        isLongPartitionProcessing = true
+        renderLongPartitionButton()
+        longPartitionPreviewView.isVisible = false
+        longPartitionPreviewJob = lifecycleScope.launch {
+            val result = withContext(Dispatchers.Default) {
+                val source = decodePartitionBitmap(currentLongImageFiles.firstOrNull()) ?: return@withContext null
+                try {
+                    val analysis = StonePaddleLocalRecognizer.analyzeForDebug(this@MyStoneActivity, source)
+                    PartitionPreviewResult(
+                        bitmap = StonePaddleLocalRecognizer.drawDebugPreview(source, analysis)
+                    )
+                } catch (t: Throwable) {
+                    PartitionPreviewResult(
+                        bitmap = null,
+                        errorMessage = t.message ?: t::class.java.simpleName,
+                        throwable = t,
+                    )
+                } finally {
+                    source.recycle()
+                }
+            } ?: PartitionPreviewResult(bitmap = null, errorMessage = "结果图解码失败")
+            isLongPartitionProcessing = false
+            renderLongPartitionButton()
+            val preview = result.bitmap
+            if (preview != null && requestKey == currentLongPartitionKey()) {
+                clearLongPartitionPreview()
+                longPartitionPreviewBitmap = preview
+                longPartitionPreviewKey = requestKey
+                renderLongPartitionPreviewView()
+            } else {
+                preview?.recycle()
+                if (longPartitionPreviewBitmap == null) {
+                    longPartitionPreviewView.isVisible = false
+                }
+                if (preview == null) {
+                    val reason = result.errorMessage ?: "未知原因"
+                    result.throwable?.let { throwable ->
+                        RunLogger.e("星石划分图生成失败：$reason", throwable)
+                    } ?: RunLogger.e("星石划分图生成失败：$reason")
+                    Toast.makeText(this@MyStoneActivity, "长图划分失败：$reason", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun triggerLoosePartitionPreview() {
+        if (currentLooseImageFiles.isEmpty()) {
+            Toast.makeText(this, "当前没有可划分的散图", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!isLooseExpanded) {
+            setLooseExpanded(true)
+        }
+        if (isLoosePartitionProcessing) return
+        loosePartitionPreviewJob?.cancel()
+        isLoosePartitionProcessing = true
+        renderLoosePartitionButton()
+        clearLoosePartitionPreview()
+        loosePartitionPreviewJob = lifecycleScope.launch {
+            val previews = withContext(Dispatchers.Default) {
+                currentLooseImageFiles.mapNotNull { file ->
+                    val source = decodePartitionBitmap(file) ?: return@mapNotNull null
+                    try {
+                        val analysis = StonePaddleLocalRecognizer.analyzeForDebug(this@MyStoneActivity, source)
+                        StonePaddleLocalRecognizer.drawDebugPreview(source, analysis)
+                    } finally {
+                        source.recycle()
+                    }
+                }
+            }
+            isLoosePartitionProcessing = false
+            renderLoosePartitionButton()
+            if (previews.isEmpty()) {
+                Toast.makeText(this@MyStoneActivity, "散图划分失败", Toast.LENGTH_SHORT).show()
+            } else {
+                loosePartitionPreviewBitmaps += previews
+                loosePartitionPreviewKey = currentLoosePartitionKey()
+                renderLoosePartitionPreviewView()
+            }
+        }
+    }
+
+    private fun renderLongPartitionPreviewView() {
+        val key = currentLongPartitionKey()
+        val bitmap = longPartitionPreviewBitmap
+        if (isLongExpanded && key != null && key == longPartitionPreviewKey && bitmap != null && !bitmap.isRecycled) {
+            longPartitionPreviewView.isVisible = true
+            longPartitionPreviewView.setImageBitmap(bitmap)
+        } else {
+            longPartitionPreviewView.isVisible = false
+            longPartitionPreviewView.setImageDrawable(null)
+        }
+    }
+
+    private fun renderLoosePartitionPreviewView() {
+        loosePartitionPreviewsContainer.removeAllViews()
+        val shouldShow = isLooseExpanded &&
+            loosePartitionPreviewKey == currentLoosePartitionKey() &&
+            loosePartitionPreviewBitmaps.isNotEmpty()
+        loosePartitionPreviewsContainer.isVisible = shouldShow
+        if (!shouldShow) return
+
+        loosePartitionPreviewBitmaps.forEachIndexed { index, bitmap ->
+            if (bitmap.isRecycled) return@forEachIndexed
+            val imageView = ImageView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    if (index > 0) topMargin = dp(12)
+                }
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageBitmap(bitmap)
+            }
+            loosePartitionPreviewsContainer.addView(imageView)
+        }
+    }
+
+    private fun decodePartitionBitmap(file: File?): Bitmap? {
+        if (file == null) return null
+        val bounds = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        val targetWidth = 1080
+        val sampleSize = max(1, bounds.outWidth / targetWidth)
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = Integer.highestOneBit(sampleSize).coerceAtLeast(1)
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        return BitmapFactory.decodeFile(file.absolutePath, options)
+    }
+
+    private fun currentLongPartitionKey(): String? {
+        val firstImage = currentLongImageFiles.firstOrNull()
+        val imageVersion = currentRecord?.updatedAt ?: 0L
+        return firstImage?.absolutePath?.let { "${currentArchiveId}_${currentStoneType}_${imageVersion}_$it" }
+    }
+
+    private fun currentLoosePartitionKey(): String? {
+        val imageVersion = currentRecord?.updatedAt ?: 0L
+        return if (currentLooseImageFiles.isEmpty()) null else {
+            "${currentArchiveId}_${currentStoneType}_${imageVersion}_${currentLooseImageFiles.joinToString("|") { it.absolutePath }}"
+        }
+    }
+
+    private fun clearLongPartitionPreview() {
+        longPartitionPreviewJob?.cancel()
+        longPartitionPreviewJob = null
+        longPartitionPreviewBitmap?.let { bitmap ->
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        longPartitionPreviewBitmap = null
+        longPartitionPreviewKey = null
+        longPartitionPreviewView.setImageDrawable(null)
+        longPartitionPreviewView.isVisible = false
+    }
+
+    private fun clearLoosePartitionPreview() {
+        loosePartitionPreviewJob?.cancel()
+        loosePartitionPreviewJob = null
+        loosePartitionPreviewBitmaps.forEach { bitmap ->
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        loosePartitionPreviewBitmaps.clear()
+        loosePartitionPreviewKey = null
+        loosePartitionPreviewsContainer.removeAllViews()
+        loosePartitionPreviewsContainer.isVisible = false
     }
 
     private fun renderRows() {
@@ -1020,7 +1366,7 @@ class MyStoneActivity : AppCompatActivity() {
         }
 
         outer.addView(cellsRow)
-        applyRowState(outer, row)
+        applyRowState(outer, label, row)
         return outer
     }
 
@@ -1131,20 +1477,20 @@ class MyStoneActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyRowState(rowView: LinearLayout, row: MyStoneRow) {
-        val resolved = StoneOcrParser.isRowResolved(row)
-        rowView.setBackgroundColor(
-            if (resolved) {
-                Color.parseColor("#26C79C5C")
-            } else {
-                Color.parseColor("#35E8A8A0")
-            }
-        )
+    private fun applyRowState(rowView: LinearLayout, labelView: TextView, row: MyStoneRow) {
+        val resolved = StoneOcrParser.isRowResolved(row, currentStoneType)
+        if (resolved) {
+            rowView.setBackgroundColor(Color.parseColor("#26C79C5C"))
+            labelView.setTextColor(Color.parseColor("#75322D"))
+        } else {
+            rowView.setBackgroundColor(Color.parseColor("#66E8A8A0"))
+            labelView.setTextColor(Color.parseColor("#B84D4D"))
+        }
     }
 
     private fun applyCellState(levelView: TextView, nameView: TextView, cell: MyStoneCell) {
         val levelValid = StoneOcrParser.isValidLevel(cell.level)
-        val nameValid = StoneOcrParser.isCellNameValid(cell)
+        val nameValid = StoneOcrParser.isCellNameValid(cell, currentStoneType)
         levelView.setTextColor(
             if (levelValid || cell.level.isBlank()) Color.parseColor("#8A6B5E") else Color.parseColor("#B84D4D")
         )
@@ -1342,7 +1688,7 @@ class MyStoneActivity : AppCompatActivity() {
             )
         }
         currentRows = normalizedRows.toMutableList()
-        val statsLines = StoneOcrParser.format(StoneOcrParser.aggregate(currentRows))
+        val statsLines = StoneOcrParser.format(StoneOcrParser.aggregate(currentRows, currentStoneType))
         currentRecord = MyStoneStore.updateRows(
             context = this,
             stoneType = currentStoneType,

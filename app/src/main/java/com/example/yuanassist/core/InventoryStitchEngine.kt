@@ -9,16 +9,13 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Display
-import com.example.yuanassist.tableocr.PaddleTextRecognizer
-import com.example.yuanassist.tableocr.PaddleTextResult
 import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.example.yuanassist.utils.StoneLocalOcrSession
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
@@ -93,7 +90,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
     }
 
     private val handler = Handler(Looper.getMainLooper())
-    private var ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     var isRunning = false
         private set
@@ -105,6 +101,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
     private var stitchedBitmap: Bitmap? = null
     private var nextFrameIndex = 1
     private val splitCandidates = mutableListOf<Int>()
+    private val savedLooseBitmaps = mutableListOf<Bitmap>()
 
     private val screenWidth = service.resources.displayMetrics.widthPixels
     private val screenHeight = service.resources.displayMetrics.heightPixels
@@ -118,8 +115,6 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         if (isRunning) return
 
         isRunning = true
-        ocrScope.cancel()
-        ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         this.stoneArchiveId = archiveId
         this.stoneType = MyStoneStore.normalizeType(stoneType)
         this.onStatusUpdate = onStatusUpdate
@@ -139,12 +134,15 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         if (!isRunning) return
 
         isRunning = false
-        ocrScope.cancel()
         releaseState()
         RunLogger.i("物品拼接已停止")
         onStatusUpdate?.invoke("已停止")
         onCompleted?.invoke(false)
     }
+
+    fun getLocalOcrSessionSnapshot(): StoneLocalOcrSession? = null
+
+    fun clearPendingLocalOcrSession() = Unit
 
     private fun resetState() {
         releaseState()
@@ -157,6 +155,12 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         pendingFrame = null
         stitchedBitmap?.recycle()
         stitchedBitmap = null
+        savedLooseBitmaps.forEach { bitmap ->
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        savedLooseBitmaps.clear()
         splitCandidates.clear()
     }
 
@@ -213,7 +217,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                 return
             }
 
-            detectRowsWithPaddle(croppedBitmap, scale, frameIndex)
+            detectRowsWithMlKit(croppedBitmap, scale, frameIndex)
         } catch (e: Exception) {
             e.printStackTrace()
             handleError("处理截图发生异常: ${e.message}")
@@ -246,7 +250,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         return croppedBitmap
     }
 
-    private fun detectRowsWithPaddle(
+    private fun detectRowsWithMlKit(
         croppedBitmap: Bitmap,
         scale: Float,
         frameIndex: Int
@@ -256,18 +260,22 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             return
         }
 
-        onStatusUpdate?.invoke("Paddle OCR 识别文字行 ($frameIndex)...")
+        onStatusUpdate?.invoke("ML Kit 识别文字行 ($frameIndex)...")
 
         val preprocessedImage = preprocessBitmapForMlKit(croppedBitmap)
-        ocrScope.launch {
-            try {
-                val text = PaddleTextRecognizer.recognize(service, preprocessedImage.bitmap)
-                withContext(Dispatchers.Main) {
+        val recognizer = TextRecognition.getClient(
+            ChineseTextRecognizerOptions.Builder().build()
+        )
+        val inputImage = InputImage.fromBitmap(preprocessedImage.bitmap, 0)
+
+        recognizer.process(inputImage)
+            .addOnSuccessListener { text ->
                 try {
                     if (!isRunning) {
+                        recognizer.close()
                         preprocessedImage.bitmap.recycle()
                         croppedBitmap.recycle()
-                        return@withContext
+                        return@addOnSuccessListener
                     }
 
                     val rows = mergeRows(
@@ -301,11 +309,12 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                         )
 
                         preprocessedImage.bitmap.recycle()
+                        recognizer.close()
 
                         nextFrameIndex = frameIndex + 1
                         onStatusUpdate?.invoke("首帧完成，滑动下一张...")
                         performSwipeAndContinue()
-                        return@withContext
+                        return@addOnSuccessListener
                     }
 
                     val matchResult = matchPreviousTemplate(
@@ -337,25 +346,25 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                     )
 
                     preprocessedImage.bitmap.recycle()
+                    recognizer.close()
 
                     nextFrameIndex = frameIndex + 1
                     onStatusUpdate?.invoke("第 $frameIndex 张图处理完成，继续滑动...")
                     performSwipeAndContinue()
                 } catch (e: Exception) {
+                    recognizer.close()
                     preprocessedImage.bitmap.recycle()
                     croppedBitmap.recycle()
                     e.printStackTrace()
                     handleError("处理第 $frameIndex 张图失败: ${e.message}")
                 }
-                }
-            } catch (error: Throwable) {
-                withContext(Dispatchers.Main) {
+            }
+            .addOnFailureListener { error ->
+                recognizer.close()
                 preprocessedImage.bitmap.recycle()
                 croppedBitmap.recycle()
-                handleError("Paddle OCR 识别失败: ${error.message}")
-                }
+                handleError("ML Kit 识别失败: ${error.message}")
             }
-        }
     }
 
     private fun preprocessBitmapForMlKit(sourceBitmap: Bitmap): PreprocessedImage {
@@ -397,11 +406,11 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         }
     }
 
-    private fun extractCandidateRows(result: PaddleTextResult, coordinateScaleBack: Float): List<TextRow> {
-        return result.blocks
+    private fun extractCandidateRows(result: Text, coordinateScaleBack: Float): List<TextRow> {
+        return result.textBlocks
             .flatMap { block -> block.lines }
             .mapNotNull { line ->
-                val boundingBox = line.boundingBox
+                val boundingBox = line.boundingBox ?: return@mapNotNull null
                 val normalizedText = normalizeWhitespace(line.text)
                 val chineseCount = countChineseChars(normalizedText)
                 if (chineseCount <= 0) {
@@ -633,6 +642,7 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         )
 
         try {
+            savedLooseBitmaps += segmentBitmap.copy(Bitmap.Config.ARGB_8888, false)
             val currentStitched = stitchedBitmap
             if (currentStitched == null) {
                 stitchedBitmap = segmentBitmap.copy(Bitmap.Config.ARGB_8888, false)
@@ -717,7 +727,13 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             if (splitY != null) {
                 saveSplitBitmaps(bitmap, splitY)
             } else {
-                MyStoneStore.saveImages(service, stoneType, listOf(bitmap), stoneArchiveId)
+                MyStoneStore.saveImageBundles(
+                    context = service,
+                    stoneType = stoneType,
+                    longBitmaps = listOf(bitmap),
+                    looseBitmaps = savedLooseBitmaps,
+                    archiveId = stoneArchiveId,
+                )
                 RunLogger.i("星石结果已覆盖保存到我的星石")
             }
 
@@ -727,6 +743,12 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             pendingFrame = null
             bitmap.recycle()
             stitchedBitmap = null
+            savedLooseBitmaps.forEach { loose ->
+                if (!loose.isRecycled) {
+                    loose.recycle()
+                }
+            }
+            savedLooseBitmaps.clear()
             splitCandidates.clear()
             onStatusUpdate?.invoke(if (splitY != null) "拼图已拆分为两张并保存" else "拼图完成已保存")
             onCompleted?.invoke(true)
@@ -770,7 +792,13 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         val bottomBitmap = Bitmap.createBitmap(bitmap, 0, splitY, bitmap.width, bitmap.height - splitY)
 
         try {
-            MyStoneStore.saveImages(service, stoneType, listOf(topBitmap, bottomBitmap), stoneArchiveId)
+            MyStoneStore.saveImageBundles(
+                context = service,
+                stoneType = stoneType,
+                longBitmaps = listOf(topBitmap, bottomBitmap),
+                looseBitmaps = savedLooseBitmaps,
+                archiveId = stoneArchiveId,
+            )
             RunLogger.i("星石结果已覆盖保存到我的星石")
         } finally {
             topBitmap.recycle()

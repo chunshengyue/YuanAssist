@@ -1,0 +1,273 @@
+{
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/pi_jing_zhan_ji_jia_ju_ti_li",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": 6,
+      "on_success": 1,
+      "params": {
+        "script_name": "home_page_one_recover.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 996.03845,
+          "y": 1554.0885
+        },
+        "template_name": "心纸入口.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 2,
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 921.2031,
+          "y": 1045.3549
+        },
+        "template_name": "历险.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 3,
+      "name": "一键领取",
+      "on_fail": 6,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 982.1905,
+          "y": 1783.9354
+        },
+        "target_chars": ["一", "键", "领", "取"],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 4,
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 0,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 528.76416,
+          "y": 515.19666
+        },
+        "template_name": "获得奖励.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 5,
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "ref_task_id": 3,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 6,
+      "on_fail": -2,
+      "on_success": 7,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 554.1098,
+          "y": 1808.2357
+        },
+        "template_name": "家具开始.png",
+        "threshold": 0.72
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 7,
+      "on_fail": -2,
+      "on_success": 8,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 1500.0,
+          "w": 250.0,
+          "x": 939.25195,
+          "y": 1088.381
+        },
+        "template_name": "结算.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 3500,
+      "id": 8,
+      "on_fail": -2,
+      "on_success": 9,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "top",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 919.8287,
+          "y": 255.89015
+        },
+        "target_chars": ["跳", "过"],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 9,
+      "on_fail": -2,
+      "on_success": 10,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 528.76416,
+          "y": 519.6391
+        },
+        "template_name": "奖励2.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 10,
+      "on_fail": -2,
+      "on_success": 11,
+      "params": {
+        "align": "center",
+        "ref_task_id": 3,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 11,
+      "on_fail": -2,
+      "on_success": 12,
+      "params": {
+        "align": "center",
+        "ref_task_id": 7,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 12,
+      "on_fail": -2,
+      "on_success": 13,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 839.43854,
+          "y": 1389.3871
+        },
+        "target_chars": ["最", "多"],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 13,
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 575.0998,
+          "y": 1572.2036
+        },
+        "target_chars": ["历", "险"],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

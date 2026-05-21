@@ -1,4 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  assertFeedbackAdminDevice,
+  normalizeAdminFeedbackReply,
+} from "./feedbackAdmin.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -794,6 +798,20 @@ async function listFeedback(deviceId: string) {
   return rows.map((item) => mapFeedback(item, item.user_id === user.id ? user : null));
 }
 
+async function listFeedbackAdmin(deviceId: string) {
+  assertFeedbackAdminDevice(deviceId);
+  await ensureUserByDeviceId(deviceId);
+  const { data, error } = await db
+    .from("issue_feedback")
+    .select("id, objectId, createdAt, updatedAt, reply, deviceId, logContent, status, imageUrls, description, user_id")
+    .order("createdAt", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  const rows = (data as FeedbackRow[]) ?? [];
+  const users = await loadUsersByIds(rows.map((item) => item.user_id));
+  return rows.map((item) => mapFeedback(item, item.user_id ? users.get(item.user_id) : null));
+}
+
 async function createFeedback(body: JsonRecord) {
   const deviceId = requireString(body.deviceId, "deviceId");
   const description = requireString(body.description, "description");
@@ -816,6 +834,27 @@ async function createFeedback(body: JsonRecord) {
     .single<FeedbackRow>();
   if (error) throw error;
   return mapFeedback(data, user);
+}
+
+async function replyFeedbackAdmin(body: JsonRecord) {
+  const deviceId = requireString(body.deviceId, "deviceId");
+  const feedbackObjectId = requireString(body.feedbackObjectId, "feedbackObjectId");
+  const reply = normalizeAdminFeedbackReply(body.reply);
+  assertFeedbackAdminDevice(deviceId);
+  await ensureUserByDeviceId(deviceId);
+
+  const { data, error } = await db
+    .from("issue_feedback")
+    .update({
+      reply,
+      status: 1,
+    })
+    .eq("objectId", feedbackObjectId)
+    .select("id, objectId, createdAt, updatedAt, reply, deviceId, logContent, status, imageUrls, description, user_id")
+    .single<FeedbackRow>();
+  if (error) throw error;
+  const users = await loadUsersByIds(data.user_id ? [data.user_id] : []);
+  return mapFeedback(data, data.user_id ? users.get(data.user_id) : null);
 }
 
 async function getLatestUpdate() {
@@ -926,8 +965,12 @@ async function routeAction(action: string, body: JsonRecord) {
       return await saveStrategy(body);
     case "list-feedback":
       return await listFeedback(requireString(body.deviceId, "deviceId"));
+    case "list-feedback-admin":
+      return await listFeedbackAdmin(requireString(body.deviceId, "deviceId"));
     case "create-feedback":
       return await createFeedback(body);
+    case "reply-feedback-admin":
+      return await replyFeedbackAdmin(body);
     case "get-latest-update":
       return await getLatestUpdate();
     case "get-latest-announcement":

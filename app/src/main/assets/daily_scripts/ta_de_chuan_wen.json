@@ -11,7 +11,7 @@
         "align": "center"
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 2,
@@ -65,7 +65,7 @@
         "ref_task_id": 2
       },
       "on_success": 35,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 5,
@@ -77,7 +77,7 @@
         "align": "center"
       },
       "on_success": 6,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 6,
@@ -108,7 +108,7 @@
         "align": "center"
       },
       "on_success": 8,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 8,
@@ -120,7 +120,7 @@
         "align": "center"
       },
       "on_success": 9,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 9,
@@ -132,7 +132,7 @@
         "align": "center"
       },
       "on_success": 10,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 10,
@@ -144,7 +144,7 @@
         "align": "center"
       },
       "on_success": 11,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 11,
@@ -179,7 +179,7 @@
         }
       },
       "on_success": 1202,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 13,
@@ -189,7 +189,7 @@
         "ref_task_id": 11
       },
       "on_success": 12,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 14,
@@ -239,7 +239,7 @@
         "align": "center"
       },
       "on_success": 161,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 17,
@@ -251,7 +251,7 @@
         "align": "center"
       },
       "on_success": 171,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 18,
@@ -263,7 +263,7 @@
         "align": "center"
       },
       "on_success": 181,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 31,
@@ -271,7 +271,7 @@
       "delay": 1500,
       "params": {},
       "on_success": 4,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 32,
@@ -319,7 +319,7 @@
         "ref_task_id": 2
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 35,
@@ -337,7 +337,7 @@
           "align": "center"
         }
       },
-      "on_success": 36,
+      "on_success": 34,
       "on_fail": 37
     },
     {
@@ -348,7 +348,7 @@
         "ref_task_id": 2
       },
       "on_success": 2,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 37,
@@ -473,7 +473,7 @@
         "align": "center"
       },
       "on_success": 162,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 162,
@@ -485,7 +485,7 @@
         "align": "center"
       },
       "on_success": 163,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 163,
@@ -497,7 +497,7 @@
         "align": "center"
       },
       "on_success": 141,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 171,
@@ -509,7 +509,7 @@
         "align": "center"
       },
       "on_success": 172,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 172,
@@ -521,7 +521,7 @@
         "align": "center"
       },
       "on_success": 173,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 173,
@@ -533,7 +533,7 @@
         "align": "center"
       },
       "on_success": 142,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 181,
@@ -545,7 +545,7 @@
         "align": "center"
       },
       "on_success": 182,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 182,
@@ -557,7 +557,7 @@
         "align": "center"
       },
       "on_success": 143,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1201,
@@ -607,7 +607,7 @@
         "align": "center"
       },
       "on_success": 1402,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1402,
@@ -619,7 +619,7 @@
         "align": "center"
       },
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1411,
@@ -631,7 +631,7 @@
         "align": "center"
       },
       "on_success": 1412,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1412,
@@ -643,7 +643,7 @@
         "align": "center"
       },
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1421,
@@ -655,7 +655,7 @@
         "align": "center"
       },
       "on_success": 1422,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1422,
@@ -667,7 +667,7 @@
         "align": "center"
       },
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1431,
@@ -679,7 +679,7 @@
         "align": "center"
       },
       "on_success": 1432,
-      "on_fail": -1
+      "on_fail": -2
     },
     {
       "id": 1432,
@@ -691,7 +691,7 @@
         "align": "center"
       },
       "on_success": -1,
-      "on_fail": -1
+      "on_fail": -2
     }
   ]
 }

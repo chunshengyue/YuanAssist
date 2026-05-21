@@ -222,16 +222,18 @@ private fun DailyMainline624Screen(
             title = "游戏版本",
             subtitle = "决定 6-24 入口识别素材",
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 SubpageRadioOption(
                     text = "如鸢",
                     selected = gameVariant == Mainline624GameVariant.RU_YUAN,
                     onClick = { gameVariant = Mainline624GameVariant.RU_YUAN },
+                    modifier = Modifier.weight(1f),
                 )
                 SubpageRadioOption(
                     text = "代号鸢",
                     selected = gameVariant == Mainline624GameVariant.CODE_NAME_YUAN,
                     onClick = { gameVariant = Mainline624GameVariant.CODE_NAME_YUAN },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -240,16 +242,18 @@ private fun DailyMainline624Screen(
             title = "运行方式",
             subtitle = "保留原页面两种运行方式",
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 SubpageRadioOption(
                     text = "刷到体力耗尽",
                     selected = stopMode == MODE_RESOURCE,
                     onClick = { stopMode = MODE_RESOURCE },
+                    modifier = Modifier.weight(1f),
                 )
                 SubpageRadioOption(
                     text = "指定运行次数",
                     selected = stopMode == MODE_RUN_COUNT,
                     onClick = { stopMode = MODE_RUN_COUNT },
+                    modifier = Modifier.weight(1f),
                 )
             }
             if (stopMode == MODE_RUN_COUNT) {

@@ -5,8 +5,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,15 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.OutlinedTextField
@@ -35,6 +29,7 @@ import com.example.yuanassist.ui.main.theme.GlassStroke
 import com.example.yuanassist.ui.main.theme.HighlightGold
 import com.example.yuanassist.ui.main.theme.TitleInk
 import com.example.yuanassist.ui.subpage.SubpageFieldGroup
+import com.example.yuanassist.ui.subpage.SubpageRadioOption
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
 import com.example.yuanassist.ui.subpage.SubpageToggleRow
@@ -211,51 +206,20 @@ private fun SpeedRadioRow(
     selectedSpeed: String,
     onSelect: (String) -> Unit,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        SpeedRadioOption(
+        SubpageRadioOption(
             text = "2 倍速",
             selected = selectedSpeed == "2",
             onClick = { onSelect("2") },
+            modifier = Modifier.weight(1f),
         )
-        SpeedRadioOption(
+        SubpageRadioOption(
             text = "3 倍速",
             selected = selectedSpeed != "2",
             onClick = { onSelect("3") },
-        )
-    }
-}
-
-@Composable
-private fun SpeedRadioOption(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            )
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        RadioButton(
-            selected = selected,
-            onClick = onClick,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = HighlightGold,
-                unselectedColor = BodyInk.copy(alpha = 0.72f),
-            ),
-        )
-        Text(
-            text = text,
-            color = TitleInk,
+            modifier = Modifier.weight(1f),
         )
     }
 }

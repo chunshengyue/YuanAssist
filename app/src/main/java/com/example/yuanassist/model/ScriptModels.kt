@@ -7,6 +7,7 @@ enum class InstructionType(val description: String) {
     STAGE_AUTO_NAV("关卡自动导航"),
     ALL_WIPE_CHECK("全灭检测"),
     DEATH_CHECK("阵亡检测"),
+    CRIT_CHECK("暴击检测"),
     ORANGE_STAR_CHECK("橙星检测"),
     PURPLE_STAR_CHECK("紫星检测"),
     TARGET_SWITCH("向右切换目标"),
@@ -80,6 +81,7 @@ data class ScriptInstruction(
             InstructionType.DEATH_CHECK -> "第${normalized.value}人"
             InstructionType.PAUSE,
             InstructionType.ALL_WIPE_CHECK,
+            InstructionType.CRIT_CHECK,
             InstructionType.ORANGE_STAR_CHECK,
             InstructionType.PURPLE_STAR_CHECK -> ""
         }
@@ -129,6 +131,7 @@ fun ScriptInstruction.toDisplaySummary(): String {
         InstructionType.TARGET_SWITCH_RIGHT -> "${normalized.value} 次"
         InstructionType.PAUSE,
         InstructionType.ALL_WIPE_CHECK,
+        InstructionType.CRIT_CHECK,
         InstructionType.ORANGE_STAR_CHECK,
         InstructionType.PURPLE_STAR_CHECK -> null
     }

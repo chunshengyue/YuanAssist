@@ -10,6 +10,7 @@ class YuanAssistApp : Application() {
     override fun onCreate() {
         super.onCreate()
         RunLogger.initialize(this)
+        RunLogger.clear()
         cleanupStaleUpdateApk()
         OcrRouteManager.initialize(this)
         try {

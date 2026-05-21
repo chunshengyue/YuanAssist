@@ -11,7 +11,10 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.CheckBox
+import android.widget.CompoundButton
 import android.widget.LinearLayout
+import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.TextView
 import com.example.yuanassist.R
@@ -153,6 +156,40 @@ internal object StyledDialogUi {
                 setColor(Color.parseColor("#F8F2E5"))
                 setStroke(1, Color.parseColor("#D8C18A"))
             }
+        }
+    }
+
+    fun styleCompactCheckControl(
+        context: Context,
+        button: CompoundButton,
+        label: String,
+        checked: Boolean,
+    ) {
+        button.text = label
+        button.isChecked = checked
+        button.textSize = 15f
+        button.setTextColor(Color.parseColor("#6C4A22"))
+        button.setPadding(0, dpToPx(context, 6f), 0, dpToPx(context, 6f))
+        when (button) {
+            is CheckBox -> {
+                button.buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#C79C5C"))
+            }
+            is RadioButton -> {
+                button.buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#C79C5C"))
+            }
+        }
+    }
+
+    fun createCompactChoiceRow(
+        context: Context,
+        spacingDp: Float = 18f,
+    ): LinearLayout {
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            showDividers = LinearLayout.SHOW_DIVIDER_MIDDLE
+            dividerDrawable = ColorDrawable(Color.TRANSPARENT)
+            dividerPadding = dpToPx(context, spacingDp / 2f)
         }
     }
 

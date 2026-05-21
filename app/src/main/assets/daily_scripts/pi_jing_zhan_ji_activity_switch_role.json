@@ -1,0 +1,29 @@
+{
+  "start_task_id": 1,
+  "asset_template_dir": "daily_script_templates/pi_jing_zhan_ji_activity",
+  "tasks": [
+    {
+      "id": 1,
+      "name": "检测是否最后一位",
+      "action": "OCR",
+      "delay": 700,
+      "params": {
+        "target_text": "甄宓",
+        "roi": { "x": 430.5, "y": 248.25, "w": 200.0, "h": 200.0, "align": "center" },
+        "click": 0,
+        "terminal_note": "披荆斩棘-所有任务已完成"
+      },
+      "on_success": -3,
+      "on_fail": 2
+    },
+    {
+      "id": 2,
+      "name": "切换上一位密探",
+      "action": "CLICK",
+      "delay": 300,
+      "params": { "x": 39.0, "y": 861.0, "align": "center" },
+      "on_success": -1,
+      "on_fail": -1
+    }
+  ]
+}

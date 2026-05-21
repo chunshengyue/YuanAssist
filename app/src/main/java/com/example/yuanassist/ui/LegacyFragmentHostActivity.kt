@@ -12,6 +12,9 @@ class LegacyFragmentHostActivity : AppCompatActivity() {
     enum class Screen {
         DAILY_BIRD_FOOD,
         DAILY_MAINLINE_624,
+        DAILY_STARGAZING,
+        DAILY_AILAO_15_MIN,
+        DAILY_PI_JING_ZHAN_JI,
         DAILY_INVENTORY_STITCH,
         CHARACTER_IMPORT,
     }
@@ -38,6 +41,9 @@ class LegacyFragmentHostActivity : AppCompatActivity() {
         return when (screen) {
             Screen.DAILY_BIRD_FOOD -> DailyBirdFoodFragment()
             Screen.DAILY_MAINLINE_624 -> DailyMainline624Fragment()
+            Screen.DAILY_STARGAZING -> StargazingFragment()
+            Screen.DAILY_AILAO_15_MIN -> Ailao15MinFragment()
+            Screen.DAILY_PI_JING_ZHAN_JI -> PiJingZhanJiFragment()
             Screen.DAILY_INVENTORY_STITCH -> DailyInventoryStitchFragment()
             Screen.CHARACTER_IMPORT -> CharacterImportFragment()
         }
