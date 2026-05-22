@@ -37,6 +37,7 @@ class StargazingRuntimeManager(
         engine.verboseLoggingEnabled = true
         engine.diagnosticLoggingEnabled = config.debugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
+        engine.setRunLogScope("无月卡观星", "脚本节点")
     }
 
     fun start(): Boolean {
@@ -48,7 +49,7 @@ class StargazingRuntimeManager(
         isRunning = true
         onRunningChanged(true)
         RunLogger.clear()
-        RunLogger.i("无月卡观星开始，总次数=${currentConfig.totalCount}")
+        RunLogger.i(module = "无月卡观星", section = "总流程", message = "开始，总次数=${currentConfig.totalCount}")
         return runNextBatch(plan, currentConfig)
     }
 
@@ -69,7 +70,7 @@ class StargazingRuntimeManager(
                 gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
             }
         } catch (t: Throwable) {
-            RunLogger.e("加载无月卡观星脚本失败：$SCRIPT_FILE_NAME", t)
+            RunLogger.e(module = "无月卡观星", section = "总流程", message = "加载脚本失败：$SCRIPT_FILE_NAME", throwable = t)
             null
         }
     }
@@ -81,7 +82,7 @@ class StargazingRuntimeManager(
             hasCompletedFirstBatch = false
             onRunningChanged(false)
             val message = "无月卡观星已完成"
-            RunLogger.i(message)
+            RunLogger.i(module = "无月卡观星", section = "总流程", message = message)
             Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
             return true
         }
@@ -90,7 +91,7 @@ class StargazingRuntimeManager(
         } else {
             INITIAL_BATCH_START_TASK_ID
         }
-        RunLogger.i("无月卡观星执行一批：本批次数=$currentBatchCount 剩余=$remainingCount 起点=$startTaskId")
+        RunLogger.i(module = "无月卡观星", section = "批次", message = "本批$currentBatchCount 次，剩余=$remainingCount")
         engine.startPlan(
             plan = plan.copy(start_task_id = startTaskId),
             onCompleted = { success, errorMsg ->
@@ -100,7 +101,7 @@ class StargazingRuntimeManager(
                     hasCompletedFirstBatch = false
                     onRunningChanged(false)
                     val message = "无月卡观星已停止：$errorMsg"
-                    RunLogger.e(message)
+                    RunLogger.e(module = "无月卡观星", section = "总流程", message = message)
                     Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
                     return@startPlan
                 }
@@ -114,7 +115,8 @@ class StargazingRuntimeManager(
                 put("stargazing_click_y", STARGAZING_CLICK_Y.toString())
                 put("stargazing_click_align", STARGAZING_CLICK_ALIGN)
                 put("stargazing_click_interval", config.clickIntervalMs.toString())
-            }
+            },
+            scriptFileName = SCRIPT_FILE_NAME,
         )
         return true
     }

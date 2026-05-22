@@ -34,6 +34,7 @@ import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.network.FavoriteState
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.ui.UploadTurnItem
+import com.example.yuanassist.utils.DialogUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -298,7 +299,7 @@ class StrategyDetailActivity : AppCompatActivity() {
 
     private fun showFavoriteLoginDialog() {
         val detail = currentDetail ?: return
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle("登录后即可收藏")
             .setMessage("收藏的攻略会出现在“我的收藏”里。")
             .setNegativeButton("暂不", null)
@@ -320,6 +321,7 @@ class StrategyDetailActivity : AppCompatActivity() {
             }
         }
         dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun performOneClickLogin(onSuccess: (MyUser) -> Unit, onError: (String) -> Unit) {

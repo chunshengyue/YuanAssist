@@ -21,6 +21,7 @@ import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
 import com.example.yuanassist.model.ScreenshotStep
+import com.example.yuanassist.model.TaskParams
 import com.example.yuanassist.utils.BirdFoodDebugScreenshotStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StartBattleShared
@@ -61,6 +62,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     var verboseLoggingEnabled = true
     var diagnosticLoggingEnabled = false
     var globalDelayOffsetMs = 0L
+    var runLogModule: String? = null
+    var runLogSection: String? = null
 
     private var currentTaskPlan: DailyTaskPlan? = null
     private var currentTaskId = -1
@@ -77,6 +80,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private var cooldownStartedAtMs: Long? = null
     private var currentTemplateDir: File? = null
     private var currentAssetTemplateDir: String? = null
+    private var currentScriptFileName: String? = null
     private var ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val gson = Gson()
     private var childScriptEngine: AutoTaskEngine? = null
@@ -84,17 +88,42 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private fun verboseInfo(message: String) {
         if (!verboseLoggingEnabled) return
         if (shouldSuppressInfoLog(message)) return
-        RunLogger.i(message)
+        logInfo(message)
     }
 
     private fun diagnosticInfo(message: String) {
         if (!diagnosticLoggingEnabled) return
-        RunLogger.i("[调试诊断] $message")
+        logInfo("[调试诊断] $message")
     }
 
     private fun diagnosticError(message: String) {
         if (!diagnosticLoggingEnabled) return
-        RunLogger.e("[调试诊断] $message")
+        logError("[调试诊断] $message")
+    }
+
+    fun setRunLogScope(module: String?, section: String? = null) {
+        runLogModule = module?.trim()?.takeIf { it.isNotBlank() }
+        runLogSection = section?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    private fun logInfo(message: String) {
+        val module = runLogModule
+        if (module == null) {
+            RunLogger.i(message)
+        } else {
+            RunLogger.i(module = module, section = runLogSection, message = message)
+        }
+    }
+
+    private fun logError(message: String, throwable: Throwable? = null) {
+        val module = runLogModule
+        if (module == null) {
+            if (throwable == null) RunLogger.e(message) else RunLogger.e(message, throwable)
+        } else if (throwable == null) {
+            RunLogger.e(module = module, section = runLogSection, message = message)
+        } else {
+            RunLogger.e(module = module, section = runLogSection, message = message, throwable = throwable)
+        }
     }
 
     fun logDiagnosticSessionStart() {
@@ -180,13 +209,19 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val terminalNote: String? = null,
     )
 
+    private data class TemplateMatchResult(
+        val center: PointF,
+        val score: Double,
+    )
+
     fun startPlan(
         plan: DailyTaskPlan,
         onCompleted: (Boolean, String) -> Unit,
         onCustomAction: ((DailyTask, () -> Unit, () -> Unit) -> Unit)? = null,
         onCompletedDetailed: ((DailyPlanCompletion) -> Unit)? = null,
         initialVariables: Map<String, String> = emptyMap(),
-        templateDir: File? = null
+        templateDir: File? = null,
+        scriptFileName: String? = null
     ) {
         runGeneration += 1
         handler.removeCallbacksAndMessages(null)
@@ -207,6 +242,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         customActionHandler = onCustomAction
         currentTemplateDir = templateDir
         currentAssetTemplateDir = plan.asset_template_dir?.trim()?.takeIf { it.isNotBlank() }
+        currentScriptFileName = scriptFileName?.trim()?.takeIf { it.isNotBlank() }
         logDisplayMetrics("startPlan")
         verboseInfo("引擎已启动")
         executeNextTask()
@@ -235,6 +271,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         customActionHandler = null
         currentTemplateDir = null
         currentAssetTemplateDir = null
+        currentScriptFileName = null
         childScriptEngine?.release()
         childScriptEngine = null
         templateCache.evictAll()
@@ -269,6 +306,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     }
 
     fun finishTask(task: DailyTask, isSuccess: Boolean) {
+        val taskLabel = taskLogLabel(task)
         if (!isSuccess) {
             when (task.on_fail) {
                 -4, -3, -2 -> {
@@ -279,21 +317,21 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             else -> "任务失败"
                         }
                     if (task.on_fail == -4 || task.on_fail == -3) {
-                        RunLogger.i("任务 ${task.id} 结束：$msg")
+                        logInfo("$taskLabel：$msg")
                     } else {
-                        RunLogger.e("任务 ${task.id} 结束：$msg")
+                        logError("$taskLabel：$msg")
                     }
                     completePlan(false, msg, task.on_fail, task, task.params?.terminal_note)
                     return
                 }
                 -1 -> {
-                    verboseInfo("任务 ${task.id} 失败分支=-1，按正常结束处理")
+                    verboseInfo("$taskLabel 失败分支=-1，按正常结束处理")
                     completePlan(true, "已完成", -1, task, task.params?.terminal_note)
                     return
                 }
                 else -> {
                     val nextTaskId = resolveFailTaskId(task)
-                    RunLogger.e("任务 ${task.id} 失败，跳转=${nextTaskId}")
+                    diagnosticError("$taskLabel 失败，跳转=${nextTaskId}")
                     currentTaskId = nextTaskId
                     executeNextTask()
                     return
@@ -303,7 +341,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
         if (task.start_cooldown_on_success && cooldownStartedAtMs == null) {
             cooldownStartedAtMs = System.currentTimeMillis()
-            verboseInfo("任务 ${task.id} 成功，开始记录冷却计时")
+            verboseInfo("$taskLabel 成功，开始记录冷却计时")
         }
 
         val nextTaskId = resolveSuccessTaskId(task)
@@ -316,18 +354,18 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         else -> "任务失败"
                     }
                 if (nextTaskId == -4 || nextTaskId == -3) {
-                    RunLogger.i("任务 ${task.id} 结束：$msg")
+                    logInfo("$taskLabel：$msg")
                 } else {
-                    RunLogger.e("任务 ${task.id} 结束：$msg")
+                    logError("$taskLabel：$msg")
                 }
                 completePlan(false, msg, nextTaskId, task, task.params?.terminal_note)
             }
             -1 -> {
-                verboseInfo("任务 ${task.id} 成功，计划完成")
+                verboseInfo("$taskLabel 成功，计划完成")
                 completePlan(true, "已完成", -1, task)
             }
             else -> {
-                verboseInfo("任务 ${task.id} 成功，下一步=$nextTaskId")
+                verboseInfo("$taskLabel 成功，下一步=$nextTaskId")
                 currentTaskId = nextTaskId
                 executeNextTask()
             }
@@ -345,7 +383,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         service.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription?) = onComplete()
             override fun onCancelled(gestureDescription: GestureDescription?) {
-                RunLogger.e("点击手势被取消")
+                logError("点击手势被取消")
                 onComplete()
             }
         }, null)
@@ -357,14 +395,14 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val task = currentTaskPlan?.tasks?.find { it.id == currentTaskId }
         if (task == null) {
             val msg = "未找到任务:$currentTaskId"
-            RunLogger.e(msg)
+            logError(msg)
             completePlan(false, msg, -1)
             return
         }
 
         val baseDelay = task.delay
         val effectiveDelay = (baseDelay + globalDelayOffsetMs).coerceAtLeast(0L)
-        verboseInfo("准备执行任务 ${task.id} ${task.action}，延迟=${baseDelay}+${globalDelayOffsetMs}=${effectiveDelay}")
+        verboseInfo("准备执行${taskLogLabel(task)} ${task.action}，延迟=${baseDelay}+${globalDelayOffsetMs}=${effectiveDelay}")
         handler.postDelayed({
             if (!isRunning || generation != runGeneration) return@postDelayed
             try {
@@ -383,17 +421,32 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         if (custom != null) {
                             custom(task, { finishTask(task, true) }, { finishTask(task, false) })
                         } else {
-                            RunLogger.e("不支持的动作 ${task.action}")
+                            logError("不支持的动作 ${task.action}")
                             finishTask(task, false)
                         }
                     }
                 }
             } catch (t: Throwable) {
-                RunLogger.e("任务 ${task.id} 执行崩溃 ${task.action}", t)
+                logError("${taskLogLabel(task)} 执行崩溃 ${task.action}", t)
                 finishTask(task, false)
             }
         }, effectiveDelay)
     }
+
+    private fun taskLogLabel(task: DailyTask): String {
+        val name = task.name?.trim()?.takeIf { it.isNotBlank() }
+        return if (name == null) "任务 ${task.id}" else "任务 ${task.id}($name)"
+    }
+
+    private fun taskHumanLabel(taskId: Int, name: String? = null): String {
+        val cleanName = name?.trim()?.takeIf { it.isNotBlank() }
+        return cleanName ?: currentTaskPlan?.tasks?.firstOrNull { it.id == taskId }?.name
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: "任务$taskId"
+    }
+
+    private fun taskHumanLabel(task: DailyTask): String = taskHumanLabel(task.id, task.name)
 
     private fun executeClick(task: DailyTask) {
         val generation = runGeneration
@@ -500,7 +553,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             }
 
             override fun onCancelled(gestureDescription: GestureDescription?) {
-                RunLogger.e("滑动手势被取消")
+                logError("滑动手势被取消")
                 if (generation == runGeneration && isRunning) finishTask(task, false)
             }
         }, null)
@@ -553,6 +606,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             child.verboseLoggingEnabled = verboseLoggingEnabled
             child.diagnosticLoggingEnabled = diagnosticLoggingEnabled
             child.globalDelayOffsetMs = globalDelayOffsetMs
+            child.setRunLogScope(runLogModule, runLogSection)
         }
         childScriptEngine?.startPlan(
             plan = childPlan,
@@ -563,6 +617,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 finishTask(task, success)
             },
             initialVariables = childVariables,
+            scriptFileName = scriptName,
         )
     }
 
@@ -577,10 +632,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val isExplicitStartBattleTarget = targetChars.size == 4 &&
             targetChars.containsAll(listOf('开', '始', '战', '斗'))
         val templateName = p.template_name
-        if (templateName != null && TemplateOverrideStore.hasOverride(service, templateName)) {
+        val templateOverrideName = ocrTemplateOverrideName(task, p)
+        if (templateOverrideName != null && TemplateOverrideStore.hasOverride(service, templateOverrideName)) {
             return executeTemplateSearch(
                 task = task,
-                templateName = templateName,
+                templateName = templateOverrideName,
                 threshold = p.threshold,
                 clickOnSuccess = p.click == 1,
                 logLabel = "OCR替换模板",
@@ -612,8 +668,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             clickOnSuccess = p.click == 1 || useStartBattlePreset || (isExplicitStartBattleTarget && p.click != 0),
         )
         val generation = runGeneration
-        verboseInfo(
-            "任务 ${task.id} OCR，区域=${formatRoi(config.roi)}，" +
+        diagnosticInfo(
+            "任务 ${task.id} OCR，" +
                 if (useStartBattlePreset) {
                     "目标=开始战斗，命中条件=同一行至少${StartBattleShared.OCR_MIN_HIT_COUNT}个字"
                 } else if (targetChars.isNotEmpty()) {
@@ -643,7 +699,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                         if (swBitmap == null) {
-                            RunLogger.e("任务 ${task.id} OCR截图转换失败")
+                            logError("${taskHumanLabel(task)}：OCR截图转换失败")
                             finishTask(task, false)
                             return
                         }
@@ -679,12 +735,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                                     lastMatchX = screenshotX * mapping.screenshotToDisplayX
                                     lastMatchY = screenshotY * mapping.screenshotToDisplayY
                                     matchedPointsByTaskId[task.id] = PointF(lastMatchX, lastMatchY)
-                                    verboseInfo(
-                                        "任务 ${task.id} OCR命中 " +
-                                            "line=${formatOcrLog(hit.lineText)} " +
-                                            "hits=${hit.hitChars.joinToString("")} " +
-                                            "count=${hit.hitCount} " +
-                                            "x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}"
+                                    diagnosticInfo(
+                                        "任务 ${task.id} OCR坐标 x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}"
                                     )
                                     if (config.clickOnSuccess) {
                                         dispatchClick(lastMatchX, lastMatchY) {
@@ -701,7 +753,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                                 }
                             } catch (error: Throwable) {
                                 withContext(Dispatchers.Main) {
-                                RunLogger.e("任务 ${task.id} OCR识别失败: ${error.message}", error)
+                                logError("${taskHumanLabel(task)}：OCR识别失败：${error.message}", error)
                                 if (generation == runGeneration && isRunning) finishTask(task, false)
                                 if (ocrBitmap != null && ocrBitmap !== searchRegion?.bitmap) ocrBitmap?.recycle()
                                 searchRegion?.release()
@@ -710,7 +762,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             }
                         }
                     } catch (t: Throwable) {
-                        RunLogger.e("任务 ${task.id} OCR执行失败", t)
+                        logError("${taskHumanLabel(task)}：OCR执行失败", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
                         if (ocrBitmap != null && ocrBitmap !== searchRegion?.bitmap) ocrBitmap?.recycle()
                         searchRegion?.release()
@@ -722,7 +774,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
                 override fun onFailure(errorCode: Int) {
                     diagnosticError("任务 ${task.id} OCR截图失败 errorCode=$errorCode")
-                    RunLogger.e("任务 ${task.id} OCR截图失败，错误码=$errorCode")
+                    logError("${taskHumanLabel(task)}：OCR截图失败，错误码=$errorCode")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
             }
@@ -735,7 +787,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             ?.filter { it.type.isNotBlank() }
             .orEmpty()
         if (steps.isEmpty()) {
-            RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 未配置 screenshot_steps")
+            logError("${taskHumanLabel(task)}：候选截图组未配置")
             return finishTask(task, false)
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -743,7 +795,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             return finishTask(task, false)
         }
         val generation = runGeneration
-        verboseInfo("任务 ${task.id} SCREENSHOT_GROUP，候选数=${steps.size}，区域=${formatRoi(params.roi)}")
+        verboseInfo("任务 ${task.id} SCREENSHOT_GROUP，候选数=${steps.size}")
         service.takeScreenshot(
             Display.DEFAULT_DISPLAY,
             service.mainExecutor,
@@ -761,7 +813,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                         if (swBitmap == null) {
-                            RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 截图转换失败")
+                            logError("${taskHumanLabel(task)}：候选截图组截图转换失败")
                             finishTask(task, false)
                             return
                         }
@@ -779,7 +831,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             mapping = mapping,
                         )
                     } catch (t: Throwable) {
-                        RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 执行失败", t)
+                        logError("${taskHumanLabel(task)}：候选截图组执行失败", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
                         searchRegion?.release()
                         swBitmap?.recycle()
@@ -790,7 +842,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
                 override fun onFailure(errorCode: Int) {
                     diagnosticError("任务 ${task.id} SCREENSHOT_GROUP 截图失败 errorCode=$errorCode")
-                    RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 截图失败，错误码=$errorCode")
+                    logError("${taskHumanLabel(task)}：候选截图组截图失败，错误码=$errorCode")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
             }
@@ -841,7 +893,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 }
             }
             else -> {
-                RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP 不支持的子类型 ${step.type}")
+                logError("${taskHumanLabel(task)}：候选截图组不支持 ${step.type}")
                 executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
             }
         }
@@ -918,7 +970,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                                 region.offsetX + hit.center.x,
                                 region.offsetY + hit.center.y
                             ),
-                            logMessage = "任务 ${task.id} SCREENSHOT_GROUP OCR命中 line=${formatOcrLog(hit.lineText)} hits=${hit.hitChars.joinToString("")} count=${hit.hitCount}",
+                            logMessage = "${taskHumanLabel(task)}：OCR成功，原文=${formatOcrLog(text.text)}，命中=${formatOcrLog(hit.lineText)}",
                             terminalNote = step.terminal_note,
                         )
                         if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap?.recycle()
@@ -927,7 +979,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     }
                 } catch (error: Throwable) {
                     withContext(Dispatchers.Main) {
-                        RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP OCR识别失败: ${error.message}", error)
+                        logError("${taskHumanLabel(task)}：候选截图组 OCR 识别失败：${error.message}", error)
                         if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap?.recycle()
                         if (region !== sharedRegion) region.release()
                         executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
@@ -935,7 +987,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 }
             }
         } catch (t: Throwable) {
-            RunLogger.e("任务 ${task.id} SCREENSHOT_GROUP OCR步骤执行失败", t)
+            logError("${taskHumanLabel(task)}：候选截图组 OCR 步骤失败", t)
             if (ocrBitmap != null && ocrBitmap !== region.bitmap) ocrBitmap.recycle()
             if (region !== sharedRegion) region.release()
             executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
@@ -974,15 +1026,16 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             if (region.bitmap.width < scaledTemplate.width || region.bitmap.height < scaledTemplate.height) {
                 return null
             }
-            val matchLoc = matchTemplate(region.bitmap, scaledTemplate, step.threshold ?: 0.8f) ?: return null
+            val matchResult = matchTemplate(region.bitmap, scaledTemplate, step.threshold ?: 0.8f)
+                ?: return null
             return ScreenshotMatch(
                 nextTaskId = step.on_success,
                 clickOnSuccess = step.click == 1,
                 centerInScreenshot = PointF(
-                    region.offsetX + matchLoc.x,
-                    region.offsetY + matchLoc.y
+                    region.offsetX + matchResult.center.x,
+                    region.offsetY + matchResult.center.y
                 ),
-                logMessage = "任务 ${task.id} SCREENSHOT_GROUP 模板命中 template=$templateName",
+                logMessage = "${taskHumanLabel(task)}：模板成功，模板=$templateName，分数=${formatScore(matchResult.score)}",
                 terminalNote = step.terminal_note,
             )
         } finally {
@@ -999,17 +1052,19 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         swBitmap: Bitmap,
         mapping: ScreenshotMapping,
     ) {
+        val taskLabel = taskLogLabel(task)
         val realX = match.centerInScreenshot.x * mapping.screenshotToDisplayX
         val realY = match.centerInScreenshot.y * mapping.screenshotToDisplayY
         lastMatchX = realX
         lastMatchY = realY
         matchedPointsByTaskId[task.id] = PointF(realX, realY)
-        verboseInfo("${match.logMessage} x=${realX.toInt()} y=${realY.toInt()}")
+        logInfo(match.logMessage)
+        diagnosticInfo("任务 ${task.id} 命中坐标 x=${realX.toInt()} y=${realY.toInt()}")
         sharedRegion.release()
         swBitmap.recycle()
         if (task.start_cooldown_on_success && cooldownStartedAtMs == null) {
             cooldownStartedAtMs = System.currentTimeMillis()
-            verboseInfo("任务 ${task.id} 成功，开始记录冷却计时")
+            verboseInfo("$taskLabel 成功，开始记录冷却计时")
         }
         fun continueSuccess() {
             if (!isRunning || generation != runGeneration) return
@@ -1022,9 +1077,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             else -> "任务失败"
                         }
                     if (match.nextTaskId == -4 || match.nextTaskId == -3) {
-                        RunLogger.i("任务 ${task.id} 结束：$msg")
+                        logInfo("$taskLabel：$msg")
                     } else {
-                        RunLogger.e("任务 ${task.id} 结束：$msg")
+                        logError("$taskLabel：$msg")
                     }
                     completePlan(false, msg, match.nextTaskId, task, match.terminalNote)
                 }
@@ -1046,7 +1101,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     private fun executeStartBattleTemplateClick(task: DailyTask) {
         if (!TemplateOverrideStore.hasOverride(service, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)) {
-            RunLogger.e("任务 ${task.id} 未找到开始战斗模板，请重新上传截图后一键替换")
+            logError("${taskHumanLabel(task)}：未找到开始战斗模板，请重新上传截图后一键替换")
             return finishTask(task, false)
         }
         executeTemplateSearch(
@@ -1068,7 +1123,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
         val generation = runGeneration
         verboseInfo(
-            "任务 ${task.id} 开始战斗OCR，区域=${formatRoi(startBattleRoi)}，" +
+            "任务 ${task.id} 开始战斗OCR，" +
                 "命中条件=同一行至少${StartBattleShared.OCR_MIN_HIT_COUNT}个字"
         )
 
@@ -1091,7 +1146,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         val hwBitmap = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace)
                         swBitmap = hwBitmap?.copy(Bitmap.Config.ARGB_8888, false)
                         if (swBitmap == null) {
-                            RunLogger.e("任务 ${task.id} 开始战斗OCR截图转换失败")
+                            logError("${taskHumanLabel(task)}：开始战斗 OCR 截图转换失败")
                             finishTask(task, false)
                             return
                         }
@@ -1136,7 +1191,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                                 }
                             } catch (error: Throwable) {
                                 withContext(Dispatchers.Main) {
-                                RunLogger.e("任务 ${task.id} 开始战斗OCR识别失败: ${error.message}", error)
+                                logError("${taskHumanLabel(task)}：开始战斗 OCR 识别失败：${error.message}", error)
                                 if (generation == runGeneration && isRunning) finishTask(task, false)
                                 searchRegion?.release()
                                 swBitmap?.recycle()
@@ -1144,7 +1199,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             }
                         }
                     } catch (t: Throwable) {
-                        RunLogger.e("任务 ${task.id} 开始战斗OCR执行失败", t)
+                        logError("${taskHumanLabel(task)}：开始战斗 OCR 执行失败", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
                         searchRegion?.release()
                         swBitmap?.recycle()
@@ -1155,7 +1210,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
                 override fun onFailure(errorCode: Int) {
                     diagnosticError("任务 ${task.id} 开始战斗OCR截图失败 errorCode=$errorCode")
-                    RunLogger.e("任务 ${task.id} 开始战斗OCR截图失败，错误码=$errorCode")
+                    logError("${taskHumanLabel(task)}：开始战斗 OCR 截图失败，错误码=$errorCode")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
             }
@@ -1183,7 +1238,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         var debugHeight = swBitmap.height
 
         if (roi?.w == 0f && roi.h == 0f) {
-            verboseInfo("任务 $taskId ROI宽高为0，按全屏识别处理")
+            // 宽高为 0 时按全屏识别处理，不写运行日志。
         } else if (roi?.align == "dynamic_avatar_bounds") {
             val topBound = 1254f * gameScale
             val bottomBound = swBitmap.height - (313f * gameScale)
@@ -1231,7 +1286,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             debugTop = safeY
             debugWidth = safeW
             debugHeight = safeH
-            logRoiCenter(taskId, realCenterX, realCenterY, debugLeft, debugTop, debugWidth, debugHeight, mapping)
         }
 
         if (debugRoiEnabled) {
@@ -1275,7 +1329,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             }
             Bitmap.createBitmap(output, width, height, Bitmap.Config.ARGB_8888)
         } catch (t: Throwable) {
-            RunLogger.e("OCR yellow-text preprocess failed", t)
+            logError("OCR 黄字预处理失败", t)
             null
         }
     }
@@ -1305,7 +1359,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             }
             Bitmap.createBitmap(output, width, height, Bitmap.Config.ARGB_8888)
         } catch (t: Throwable) {
-            RunLogger.e("OCR light-text preprocess failed", t)
+            logError("OCR 浅色文字预处理失败", t)
             null
         }
     }
@@ -1413,56 +1467,28 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         startBattlePreset: Boolean,
     ) {
         val rawText = text.text
-        val normalizedText = rawText.filterNot { it.isWhitespace() }
         val targetLabel = when {
             startBattlePreset -> "开始战斗"
             config.targetChars.isNotEmpty() -> config.targetChars.joinToString("")
             targetText.isNotBlank() -> targetText
             else -> "任意中文"
         }
+        val nodeLabel = taskHumanLabel(taskId)
         if (hit == null) {
-            verboseInfo(
-                "任务 $taskId OCR " +
-                    "target=${formatOcrLog(targetLabel)} " +
-                    "raw=${formatOcrLog(rawText)} " +
-                    "normalized=${formatOcrLog(normalizedText)} " +
-                    "line=无 hits=无 count=0"
-            )
+            logInfo("$nodeLabel：OCR失败，目标=${formatOcrLog(targetLabel)}，原文=${formatOcrLog(rawText)}")
             return
         }
-        verboseInfo(
-            "任务 $taskId OCR " +
-                "target=${formatOcrLog(targetLabel)} " +
-                "raw=${formatOcrLog(rawText)} " +
-                "normalized=${formatOcrLog(normalizedText)} " +
-                "line=${formatOcrLog(hit.lineText)} " +
-                "lineNormalized=${formatOcrLog(hit.normalizedLineText)} " +
-                "hits=${hit.hitChars.joinToString("")} " +
-                "count=${hit.hitCount}"
-        )
+        logInfo("$nodeLabel：OCR成功，目标=${formatOcrLog(targetLabel)}，原文=${formatOcrLog(rawText)}，命中=${formatOcrLog(hit.lineText)}")
     }
 
     private fun logStartBattleOcr(taskId: Int, text: PaddleTextResult, hit: StartBattleOcrHit?) {
         val rawText = text.text
-        val normalizedText = rawText.filterNot { it.isWhitespace() }
+        val nodeLabel = taskHumanLabel(taskId)
         if (hit == null) {
-            verboseInfo(
-                "任务 $taskId 开始战斗OCR " +
-                    "raw=${formatOcrLog(rawText)} " +
-                    "normalized=${formatOcrLog(normalizedText)} " +
-                    "line=无 hits=无 count=0"
-            )
+            logInfo("$nodeLabel：OCR失败，目标=\"开始战斗\"，原文=${formatOcrLog(rawText)}")
             return
         }
-        verboseInfo(
-            "任务 $taskId 开始战斗OCR " +
-                "raw=${formatOcrLog(rawText)} " +
-                "normalized=${formatOcrLog(normalizedText)} " +
-                "line=${formatOcrLog(hit.lineText)} " +
-                "lineNormalized=${formatOcrLog(hit.normalizedLineText)} " +
-                "hits=${hit.hitChars.joinToString("")} " +
-                "count=${hit.hitCount}"
-        )
+        logInfo("$nodeLabel：OCR成功，目标=\"开始战斗\"，原文=${formatOcrLog(rawText)}，命中=${formatOcrLog(hit.lineText)}")
     }
 
     private fun formatOcrLog(text: String): String {
@@ -1566,18 +1592,18 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
             }
         } catch (t: Throwable) {
-            RunLogger.e("加载子脚本失败：$scriptName", t)
+            logError("加载子脚本失败：$scriptName", t)
             null
         } ?: return null
         if (plan.tasks.none { it.id == entryTaskId }) {
-            RunLogger.e("子脚本入口无效：$scriptName entry=$entryTaskId")
+            logError("子脚本入口无效：$scriptName entry=$entryTaskId")
             return null
         }
         if (exitTaskId == null) {
             return plan.copy(start_task_id = entryTaskId)
         }
         if (plan.tasks.none { it.id == exitTaskId }) {
-            RunLogger.e("子脚本出口无效：$scriptName exit=$exitTaskId")
+            logError("子脚本出口无效：$scriptName exit=$exitTaskId")
             return null
         }
         return plan.copy(
@@ -1618,11 +1644,19 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val localTemplateFile = currentTemplateDir
             ?.let { File(it, fileName) }
             ?.takeIf { it.exists() }
-        val assetTemplatePath = currentAssetTemplateDir
-            ?.let { dir -> "$dir/$fileName" }
-            ?: fileName
+        val assetTemplatePath = if (fileName.contains('/') || fileName.contains('\\')) {
+            fileName
+        } else {
+            currentAssetTemplateDir
+                ?.let { dir -> "$dir/$fileName" }
+                ?: fileName
+        }
+        val overrideTemplateFile = TemplateOverrideStore.overrideFile(service, fileName)
+            .takeIf { it.exists() }
         val cacheKey = if (localTemplateFile != null) {
             "${localTemplateFile.absolutePath}#${localTemplateFile.lastModified()}"
+        } else if (overrideTemplateFile != null) {
+            "$fileName#override#${overrideTemplateFile.lastModified()}"
         } else {
             TemplateOverrideStore.cacheKey(service, assetTemplatePath)
         }
@@ -1636,6 +1670,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         return try {
             val bitmap = if (localTemplateFile != null) {
                 BitmapFactory.decodeFile(localTemplateFile.absolutePath)
+            } else if (overrideTemplateFile != null) {
+                BitmapFactory.decodeFile(overrideTemplateFile.absolutePath)
             } else {
                 TemplateOverrideStore.loadBitmap(service, service.assets, assetTemplatePath)
             }
@@ -1643,11 +1679,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 templateCache.put(cacheKey, bitmap)
                 verboseInfo("模板已加载 $assetTemplatePath ${bitmap.width}x${bitmap.height}")
             } else {
-                RunLogger.e("模板解码失败 $assetTemplatePath")
+                logError("模板解码失败：$assetTemplatePath")
             }
             bitmap
         } catch (t: Throwable) {
-            RunLogger.e("模板打开失败 $assetTemplatePath", t)
+            logError("模板打开失败：$assetTemplatePath", t)
             null
         }
     }
@@ -1664,6 +1700,19 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         )
     }
 
+    private fun ocrTemplateOverrideName(task: DailyTask, params: TaskParams): String? {
+        params.template_name?.let { templateName ->
+            return if (templateName.contains('/') || templateName.contains('\\')) {
+                templateName
+            } else {
+                currentAssetTemplateDir
+                    ?.let { dir -> "$dir/$templateName" }
+                    ?: templateName
+            }
+        }
+        return TemplateOverrideStore.ocrTemplateFileName(currentScriptFileName, task.id)
+    }
+
     private fun executeTemplateSearch(
         task: DailyTask,
         templateName: String,
@@ -1675,7 +1724,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val p = task.params ?: return finishTask(task, false)
         val generation = runGeneration
         val effectiveRoi = roiOverride ?: p.roi
-        verboseInfo("任务 ${task.id} 匹配${logLabel}=$templateName，区域=${formatRoi(effectiveRoi)}")
+        diagnosticInfo("任务 ${task.id} 匹配${logLabel}=$templateName")
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             diagnosticError("任务 ${task.id} 模板截图不支持，当前 SDK=${Build.VERSION.SDK_INT} template=$templateName")
             return finishTask(task, false)
@@ -1720,14 +1769,15 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             return finishTask(task, false)
                         }
 
-                        val matchLoc = matchTemplate(searchBitmap, scaledTemplate, threshold)
-                        if (matchLoc != null) {
-                            val screenshotMatchX = matchLoc.x + searchRegion.offsetX
-                            val screenshotMatchY = matchLoc.y + searchRegion.offsetY
+                        val matchResult = matchTemplate(searchBitmap, scaledTemplate, threshold)
+                        if (matchResult != null) {
+                            val screenshotMatchX = matchResult.center.x + searchRegion.offsetX
+                            val screenshotMatchY = matchResult.center.y + searchRegion.offsetY
                             lastMatchX = screenshotMatchX * mapping.screenshotToDisplayX
                             lastMatchY = screenshotMatchY * mapping.screenshotToDisplayY
                             matchedPointsByTaskId[task.id] = PointF(lastMatchX, lastMatchY)
-                            verboseInfo("任务 ${task.id} 匹配成功 x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}")
+                            logInfo("${taskHumanLabel(task)}：模板成功，模板=$templateName，分数=${formatScore(matchResult.score)}")
+                            diagnosticInfo("任务 ${task.id} 模板坐标 x=${lastMatchX.toInt()} y=${lastMatchY.toInt()}")
                             if (clickOnSuccess) {
                                 dispatchClick(lastMatchX, lastMatchY) {
                                     if (generation == runGeneration && isRunning) finishTask(task, true)
@@ -1736,13 +1786,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                                 finishTask(task, true)
                             }
                         } else {
-                            if (verboseLoggingEnabled) {
-                                RunLogger.e("任务 ${task.id} 未匹配到 $templateName")
-                            }
+                            logInfo("${taskHumanLabel(task)}：模板失败，模板=$templateName，阈值=$threshold")
                             finishTask(task, false)
                         }
                     } catch (t: Throwable) {
-                        RunLogger.e("任务 ${task.id} 匹配崩溃，模板=$templateName", t)
+                        logError("${taskHumanLabel(task)}：模板匹配崩溃，模板=$templateName", t)
                         if (generation == runGeneration && isRunning) finishTask(task, false)
                     } finally {
                         buffer?.close()
@@ -1754,7 +1802,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
                 override fun onFailure(errorCode: Int) {
                     diagnosticError("任务 ${task.id} 模板截图失败 errorCode=$errorCode template=$templateName")
-                    RunLogger.e("任务 ${task.id} 截图失败，错误码=$errorCode，模板=$templateName")
+                    logError("${taskHumanLabel(task)}：模板截图失败，错误码=$errorCode，模板=$templateName")
                     if (generation == runGeneration && isRunning) finishTask(task, false)
                 }
             }
@@ -1827,25 +1875,10 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     private fun logScreenshotMapping(taskId: Int, mapping: ScreenshotMapping) {
         verboseInfo("任务 $taskId 截图缩放 x=${"%.4f".format(mapping.screenshotToDisplayX)} y=${"%.4f".format(mapping.screenshotToDisplayY)} 实际=${mapping.displayWidth.toInt()}x${mapping.displayHeight.toInt()} 截图=${mapping.screenshotWidth}x${mapping.screenshotHeight}")
-        if (mapping.orientationMismatch) RunLogger.e("任务 $taskId 截图方向不一致")
+        if (mapping.orientationMismatch) logError("任务 $taskId 截图方向不一致")
         if (mapping.nonUniformScale) {
-            RunLogger.e("任务 $taskId 截图缩放不一致 x=${"%.4f".format(mapping.displayToScreenshotX)} y=${"%.4f".format(mapping.displayToScreenshotY)}")
+            logError("任务 $taskId 截图缩放不一致 x=${"%.4f".format(mapping.displayToScreenshotX)} y=${"%.4f".format(mapping.displayToScreenshotY)}")
         }
-    }
-
-    private fun logRoiCenter(
-        taskId: Int,
-        realCenterX: Float,
-        realCenterY: Float,
-        debugLeft: Int,
-        debugTop: Int,
-        debugWidth: Int,
-        debugHeight: Int,
-        mapping: ScreenshotMapping
-    ) {
-        val debugCenterX = (debugLeft + debugWidth / 2f) * mapping.screenshotToDisplayX
-        val debugCenterY = (debugTop + debugHeight / 2f) * mapping.screenshotToDisplayY
-        verboseInfo("任务 $taskId ROI中心=(${realCenterX.toInt()},${realCenterY.toInt()}) 调试中心=(${debugCenterX.toInt()},${debugCenterY.toInt()})")
     }
 
     private fun showDebugRoi(left: Int, top: Int, width: Int, height: Int, holdMs: Long) {
@@ -1878,9 +1911,8 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             try {
                 windowManager.addView(borderView, params)
                 debugRoiView = borderView
-                verboseInfo("显示调试 ROI：left=$left，top=$top，width=$width，height=$height")
             } catch (t: Throwable) {
-                RunLogger.e("显示调试 ROI 失败", t)
+                logError("显示调试范围失败", t)
                 clearDebugRoi()
                 return@post
             }
@@ -1908,11 +1940,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
-    private fun formatRoi(roi: ROI?): String {
-        if (roi == null) return "空"
-        return "x=${roi.x},y=${roi.y},w=${roi.w},h=${roi.h},align=${roi.align}"
-    }
-
     private inline fun <T> Mat.use(block: (Mat) -> T): T {
         try {
             return block(this)
@@ -1921,7 +1948,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         }
     }
 
-    private fun matchTemplate(screenBitmap: Bitmap, templateBitmap: Bitmap, threshold: Float): PointF? {
+    private fun matchTemplate(screenBitmap: Bitmap, templateBitmap: Bitmap, threshold: Float): TemplateMatchResult? {
         val ownsSourceBitmap = screenBitmap.config != Bitmap.Config.ARGB_8888
         val sourceBitmap = if (ownsSourceBitmap) screenBitmap.copy(Bitmap.Config.ARGB_8888, false) else screenBitmap
         try {
@@ -1934,11 +1961,14 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
                         Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
                         val mmLoc = Core.minMaxLoc(resultMat)
-                        verboseInfo("匹配分数=${"%.4f".format(mmLoc.maxVal)} 阈值=$threshold")
+                        diagnosticInfo("匹配分数=${formatScore(mmLoc.maxVal)} 阈值=$threshold")
                         if (mmLoc.maxVal >= threshold) {
-                            PointF(
-                                (mmLoc.maxLoc.x + templateBitmap.width / 2.0).toFloat(),
-                                (mmLoc.maxLoc.y + templateBitmap.height / 2.0).toFloat()
+                            TemplateMatchResult(
+                                center = PointF(
+                                    (mmLoc.maxLoc.x + templateBitmap.width / 2.0).toFloat(),
+                                    (mmLoc.maxLoc.y + templateBitmap.height / 2.0).toFloat()
+                                ),
+                                score = mmLoc.maxVal,
                             )
                         } else {
                             null
@@ -1950,4 +1980,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             if (ownsSourceBitmap) sourceBitmap.recycle()
         }
     }
+
+    private fun formatScore(score: Double): String = "%.4f".format(score)
 }

@@ -1,4 +1,5 @@
 ﻿{
+  "display_name": "突发情况",
   "start_task_id": 1,
   "tasks": [
     {
@@ -130,7 +131,7 @@
         "branch_var": "auto_eat_enabled",
         "branch_routes": {
           "1": 402,
-          "0": -3
+          "0": -1
         },
         "roi": {
           "x": 217,

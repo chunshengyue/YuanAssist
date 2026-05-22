@@ -3,14 +3,19 @@ package com.example.yuanassist.ui.main
 import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
+import com.example.yuanassist.model.ScreenshotStep
+import com.example.yuanassist.utils.TemplateOverrideStore
 
 data class DailyScriptDebugNode(
     val scriptFileName: String,
     val scriptDisplayName: String,
     val taskId: Int,
     val action: String,
+    val assetTemplateDir: String?,
+    val displayName: String?,
     val optionKey: String,
     val templateName: String?,
+    val replacementTemplateName: String?,
     val threshold: Float,
     val delayMs: Long,
     val roi: ROI?,
@@ -39,6 +44,7 @@ data class DailyScriptDebugIndex(
 
     fun displayNameFor(optionKey: String): String {
         val node = nodesFor(optionKey).firstOrNull()
+        node?.displayName?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
         if (node?.templateName != null) {
             return DailyScriptTemplateNames.displayNameFor(scriptFileName, node.templateName) ?: node.templateName
         }
@@ -52,9 +58,11 @@ data class DailyScriptDebugIndex(
             plan: DailyTaskPlan,
         ): DailyScriptDebugIndex {
             val nodesByOption = linkedMapOf<String, MutableList<DailyScriptDebugNode>>()
+            val assetTemplateDir = plan.asset_template_dir?.trim()?.takeIf { it.isNotBlank() }
             plan.tasks.forEach { task ->
-                val node = task.toDebugNode(scriptFileName, scriptDisplayName) ?: return@forEach
-                nodesByOption.getOrPut(node.optionKey) { mutableListOf() }.add(node)
+                task.toDebugNodes(scriptFileName, scriptDisplayName, assetTemplateDir).forEach { node ->
+                    nodesByOption.getOrPut(node.optionKey) { mutableListOf() }.add(node)
+                }
             }
             return DailyScriptDebugIndex(
                 scriptFileName = scriptFileName,
@@ -63,31 +71,121 @@ data class DailyScriptDebugIndex(
             )
         }
 
-        private fun DailyTask.toDebugNode(
+        private fun DailyTask.toDebugNodes(
             scriptFileName: String,
             scriptDisplayName: String,
+            assetTemplateDir: String?,
+        ): List<DailyScriptDebugNode> {
+            val params = params ?: return emptyList()
+            return when (action) {
+                "MATCH_TEMPLATE" -> listOfNotNull(
+                    params.template_name?.let { templateName ->
+                        DailyScriptDebugNode(
+                            scriptFileName = scriptFileName,
+                            scriptDisplayName = scriptDisplayName,
+                            taskId = id,
+                            action = action,
+                            assetTemplateDir = assetTemplateDir,
+                            displayName = name,
+                            optionKey = templateName,
+                            templateName = templateName,
+                            replacementTemplateName = templateName,
+                            threshold = params.threshold,
+                            delayMs = delay,
+                            roi = params.roi,
+                            targetText = params.target_text,
+                            buttonName = params.button_name,
+                            ocrTargetChars = params.target_chars.orEmpty(),
+                            ocrMinHitCount = params.min_hit_count,
+                            ocrPreprocess = params.preprocess,
+                        )
+                    }
+                )
+                "OCR" -> {
+                    val templateName = params.template_name
+                    val replacementTemplateName = templateName
+                        ?: TemplateOverrideStore.ocrTemplateFileName(scriptFileName, id)
+                    listOf(
+                        DailyScriptDebugNode(
+                            scriptFileName = scriptFileName,
+                            scriptDisplayName = scriptDisplayName,
+                            taskId = id,
+                            action = action,
+                            assetTemplateDir = assetTemplateDir,
+                            displayName = name,
+                            optionKey = templateName ?: replacementTemplateName ?: "ocr:$id:ocr",
+                            templateName = templateName,
+                            replacementTemplateName = replacementTemplateName,
+                            threshold = params.threshold,
+                            delayMs = delay,
+                            roi = params.roi,
+                            targetText = params.target_text,
+                            buttonName = params.button_name,
+                            ocrTargetChars = params.target_chars.orEmpty(),
+                            ocrMinHitCount = params.min_hit_count,
+                            ocrPreprocess = params.preprocess,
+                        )
+                    )
+                }
+                "SCREENSHOT_GROUP" -> {
+                    val groupRoi = params.roi
+                    params.screenshot_steps.orEmpty().mapIndexedNotNull { index, step ->
+                        step.toDebugNode(
+                            scriptFileName = scriptFileName,
+                            scriptDisplayName = scriptDisplayName,
+                            task = this,
+                            index = index,
+                            groupRoi = groupRoi,
+                            assetTemplateDir = assetTemplateDir,
+                        )
+                    }
+                }
+                else -> emptyList()
+            }
+        }
+
+        private fun ScreenshotStep.toDebugNode(
+            scriptFileName: String,
+            scriptDisplayName: String,
+            task: DailyTask,
+            index: Int,
+            groupRoi: ROI?,
+            assetTemplateDir: String?,
         ): DailyScriptDebugNode? {
-            val params = params ?: return null
-            val optionKey = when (action) {
-                "MATCH_TEMPLATE" -> params.template_name
-                "OCR" -> params.template_name ?: "ocr:$id:ocr"
-                else -> null
-            } ?: return null
+            val normalizedType = type.trim().uppercase()
+            val isTemplate = normalizedType == "TEMPLATE" || normalizedType == "MATCH_TEMPLATE"
+            val isOcr = normalizedType == "OCR"
+            if (!isTemplate && !isOcr) return null
+            val templateName = template_name
+            val replacementTemplateName = if (isOcr) {
+                templateName ?: TemplateOverrideStore.ocrTemplateFileName(
+                    scriptFileName,
+                    task.id,
+                )?.replace("_ocr.png", "_step_${index + 1}_ocr.png")
+            } else {
+                templateName
+            }
+            val optionKey = templateName
+                ?: replacementTemplateName
+                ?: "screenshot_group:${task.id}:${index + 1}:$normalizedType"
             return DailyScriptDebugNode(
                 scriptFileName = scriptFileName,
                 scriptDisplayName = scriptDisplayName,
-                taskId = id,
-                action = action,
+                taskId = task.id,
+                action = if (isTemplate) "MATCH_TEMPLATE" else "OCR",
+                assetTemplateDir = assetTemplateDir,
+                displayName = name ?: task.name,
                 optionKey = optionKey,
-                templateName = params.template_name,
-                threshold = params.threshold,
-                delayMs = delay,
-                roi = params.roi,
-                targetText = params.target_text,
-                buttonName = params.button_name,
-                ocrTargetChars = params.target_chars.orEmpty(),
-                ocrMinHitCount = params.min_hit_count,
-                ocrPreprocess = params.preprocess,
+                templateName = templateName,
+                replacementTemplateName = replacementTemplateName,
+                threshold = threshold ?: task.params?.threshold ?: 0.8f,
+                delayMs = task.delay,
+                roi = roi ?: groupRoi,
+                targetText = target_text,
+                buttonName = button_name,
+                ocrTargetChars = target_chars.orEmpty(),
+                ocrMinHitCount = min_hit_count,
+                ocrPreprocess = preprocess,
             )
         }
     }
@@ -98,6 +196,7 @@ val DailyScriptDebugNode.isOcrLike: Boolean
 
 val DailyScriptDebugNode.ocrDisplayName: String
     get() {
+        displayName?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
         templateName?.let { return DailyScriptTemplateNames.displayNameFor(scriptFileName, it) ?: it }
         val target = when {
             ocrTargetChars.isNotEmpty() -> ocrTargetChars.joinToString("")

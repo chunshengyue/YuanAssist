@@ -53,6 +53,7 @@ import com.example.yuanassist.ui.main.theme.TitleInk
 import com.example.yuanassist.ui.subpage.StoneStyleButton
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.UserDailyScriptBundle
 import com.example.yuanassist.utils.UserDailyScriptStore
 import com.google.gson.Gson
@@ -548,22 +549,23 @@ class ScriptLibraryActivity : AppCompatActivity() {
 
     private fun confirmDeleteRecordedEntry(entry: LibraryEntry, onDeleted: () -> Unit) {
         val bundle = entry.bundle ?: return
-        AlertDialog.Builder(this)
-            .setTitle("删除脚本")
-            .setMessage("确认删除 ${entry.name} 吗？会同时删除本地 json 和模板图片。")
-            .setPositiveButton("删除") { _, _ ->
-                val deleted = UserDailyScriptStore.deleteBundle(bundle)
-                Toast.makeText(
-                    this,
-                    if (deleted) "已删除 ${entry.name}" else "删除失败",
-                    Toast.LENGTH_SHORT
-                ).show()
-                if (deleted) {
-                    onDeleted()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle("删除脚本")
+                .setMessage("确认删除 ${entry.name} 吗？会同时删除本地 json 和模板图片。")
+                .setPositiveButton("删除") { _, _ ->
+                    val deleted = UserDailyScriptStore.deleteBundle(bundle)
+                    Toast.makeText(
+                        this,
+                        if (deleted) "已删除 ${entry.name}" else "删除失败",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    if (deleted) {
+                        onDeleted()
+                    }
                 }
-            }
-            .setNegativeButton("取消", null)
-            .show()
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun buildActionButton(text: String, accent: Boolean): Button {
@@ -709,7 +711,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
             }
             scrollView.addView(content)
 
-            val builder = AlertDialog.Builder(this)
+            val builder = AlertDialog.Builder(DialogUtils.getThemeContext(this))
                 .setTitle(scriptObj.title ?: entry.name)
                 .setView(scrollView)
                 .setPositiveButton("导出") { _, _ ->
@@ -724,7 +726,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
                 }
             }
 
-            builder.show()
+            DialogUtils.showStyledDialog(builder)
         } catch (e: Exception) {
             Toast.makeText(this, "预览失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -745,14 +747,15 @@ class ScriptLibraryActivity : AppCompatActivity() {
 
     private fun showLegacyScriptExportDialog(scriptName: String, rawContent: String) {
         val options = arrayOf("导出到录制悬浮窗", "导出到跟打悬浮窗")
-        AlertDialog.Builder(this)
-            .setTitle(scriptName)
-            .setItems(options) { _, which ->
-                val targetMode = if (which == 0) "record" else "follow"
-                exportLegacyScriptToCombatWindow(rawContent, targetMode)
-            }
-            .setNegativeButton("取消", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle(scriptName)
+                .setAdapter(DialogUtils.fixedOptionTextAdapter(this, options)) { _, which ->
+                    val targetMode = if (which == 0) "record" else "follow"
+                    exportLegacyScriptToCombatWindow(rawContent, targetMode)
+                }
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun exportLegacyScriptToCombatWindow(rawContent: String, targetMode: String) {

@@ -32,6 +32,7 @@ import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.signature.ObjectKey
 import com.example.yuanassist.R
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.MyStoneCell
 import com.example.yuanassist.utils.MyStoneRecord
 import com.example.yuanassist.utils.MyStoneRow
@@ -632,8 +633,8 @@ class MyStoneActivity : AppCompatActivity() {
                 if (preview == null) {
                     val reason = result.errorMessage ?: "未知原因"
                     result.throwable?.let { throwable ->
-                        RunLogger.e("星石划分图生成失败：$reason", throwable)
-                    } ?: RunLogger.e("星石划分图生成失败：$reason")
+                        RunLogger.e(module = "星石 OCR", section = "划分预览", message = "划分图生成失败：$reason", throwable = throwable)
+                    } ?: RunLogger.e(module = "星石 OCR", section = "划分预览", message = "划分图生成失败：$reason")
                     Toast.makeText(this@MyStoneActivity, "长图划分失败：$reason", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -1002,16 +1003,18 @@ class MyStoneActivity : AppCompatActivity() {
             if (archive.id == currentArchiveId) "当前：${archive.name}" else archive.name
         }.toTypedArray()
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle("切换存档")
-            .setItems(labels) { _, which ->
+            .setAdapter(DialogUtils.fixedOptionTextAdapter(this, labels)) { _, which ->
                 val archive = archives[which]
                 currentArchiveId = archive.id
                 MyStoneStore.setSelectedArchiveId(this, archive.id)
                 renderStoneRecord()
             }
             .setNegativeButton("取消", null)
-            .show()
+            .create()
+        dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun showCreateArchiveDialog() {
@@ -1061,14 +1064,15 @@ class MyStoneActivity : AppCompatActivity() {
             setSingleLine()
             applyYuanInputStyle()
         }
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setView(input)
-            .setPositiveButton(positiveText) { _, _ ->
-                onConfirm(input.text.toString())
-            }
-            .setNegativeButton("取消", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle(title)
+                .setView(input)
+                .setPositiveButton(positiveText) { _, _ ->
+                    onConfirm(input.text.toString())
+                }
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun renderTypeSelection() {
@@ -1666,14 +1670,15 @@ class MyStoneActivity : AppCompatActivity() {
     }
 
     private fun confirmDeleteCell(rowIndex: Int, cellIndex: Int) {
-        AlertDialog.Builder(this)
-            .setTitle("删除星石")
-            .setMessage("确认删除这颗星石吗？")
-            .setPositiveButton("删除") { _, _ ->
-                deleteCell(rowIndex, cellIndex)
-            }
-            .setNegativeButton("取消", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle("删除星石")
+                .setMessage("确认删除这颗星石吗？")
+                .setPositiveButton("删除") { _, _ ->
+                    deleteCell(rowIndex, cellIndex)
+                }
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun persistRows() {

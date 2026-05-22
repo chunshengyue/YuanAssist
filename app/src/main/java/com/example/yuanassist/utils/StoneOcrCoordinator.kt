@@ -70,9 +70,12 @@ object StoneOcrCoordinator {
             throw IllegalStateException("本地 OCR 未识别到可用文本")
         }
 
-        if (!rawLogTitle.isNullOrBlank() && rawLogLines.isNotEmpty()) {
-            RunLogger.raw(rawLogTitle!!)
-            rawLogLines.forEach { line -> RunLogger.i(line) }
+        if (rawLogLines.isNotEmpty()) {
+            RunLogger.i(
+                module = "星石 OCR",
+                section = mode.label,
+                message = "原文：${rawLogLines.joinToString(" / ") { it.trim() }}"
+            )
         }
 
         val rows = StoneOcrParser.buildRows(wordsGroups, stoneType)
@@ -109,8 +112,11 @@ object StoneOcrCoordinator {
         }
 
         if (session.rawLogLines.isNotEmpty()) {
-            RunLogger.raw("【本地OCR返回原文本】")
-            session.rawLogLines.forEach { line -> RunLogger.i(line) }
+            RunLogger.i(
+                module = "星石 OCR",
+                section = "本地OCR",
+                message = "原文：${session.rawLogLines.joinToString(" / ") { it.trim() }}"
+            )
         }
 
         val rows = session.rows.takeIf { it.isNotEmpty() } ?: StoneOcrParser.buildRows(session.wordGroups, stoneType)

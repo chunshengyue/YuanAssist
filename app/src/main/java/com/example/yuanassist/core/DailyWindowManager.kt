@@ -605,7 +605,8 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
                 }
             },
-            templateDir = currentTemplateDir
+            templateDir = currentTemplateDir,
+            scriptFileName = currentScriptName,
         )
     }
 

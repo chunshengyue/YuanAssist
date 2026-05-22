@@ -36,6 +36,7 @@ import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.ui.subpage.SubpageBadge
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.SupabaseTimeFormatter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -83,14 +84,15 @@ class MyPublishedActivity : AppCompatActivity() {
         item: strategy_detail,
         onDeleted: () -> Unit,
     ) {
-        AlertDialog.Builder(this)
-            .setTitle("删除攻略")
-            .setMessage("确认删除《${item.title.ifBlank { "未命名攻略" }}》吗？")
-            .setNegativeButton("取消", null)
-            .setPositiveButton("删除") { _, _ ->
-                deleteStrategy(item, onDeleted)
-            }
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle("删除攻略")
+                .setMessage("确认删除《${item.title.ifBlank { "未命名攻略" }}》吗？")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("删除") { _, _ ->
+                    deleteStrategy(item, onDeleted)
+                },
+        )
     }
 
     private fun deleteStrategy(

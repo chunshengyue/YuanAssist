@@ -255,7 +255,7 @@ class CharacterImportEngine(private val service: AccessibilityService) {
     fun start(onCompleted: (Boolean) -> Unit): Boolean {
         if (isRunning) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            RunLogger.e("当前安卓版本不支持系统截图 API")
+            RunLogger.e(module = "角色导入", section = "总流程", message = "当前安卓版本不支持系统截图 API")
             return false
         }
         this.onCompleted = onCompleted
@@ -264,7 +264,7 @@ class CharacterImportEngine(private val service: AccessibilityService) {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         records.indices.forEach { index -> records[index] = ImportedCharacterRecord(slot = index + 1) }
         RunLogger.clear()
-        RunLogger.i("角色导入开始")
+        RunLogger.i(module = "角色导入", section = "总流程", message = "开始")
         handler.postDelayed({ captureValueSlot(1) }, config.operationIntervalMs)
         return true
     }
@@ -273,7 +273,7 @@ class CharacterImportEngine(private val service: AccessibilityService) {
         if (!isRunning) return
         isRunning = false
         scope.cancel()
-        if (showLog) RunLogger.i("角色导入已停止")
+        if (showLog) RunLogger.i(module = "角色导入", section = "总流程", message = "已停止")
         onCompleted?.invoke(false)
     }
 
@@ -288,7 +288,7 @@ class CharacterImportEngine(private val service: AccessibilityService) {
                 scope.launch {
                     val record = runCatching { readValueAndStars(slot, screenshot) }
                         .getOrElse { error ->
-                            RunLogger.e("${slot}号位练度识别失败：${error.message}", error)
+                            RunLogger.e(module = "角色导入", section = "${slot}号位", message = "练度识别失败：${error.message}", throwable = error)
                             ImportedCharacterRecord(slot = slot)
                         }
                     records[slot - 1] = records[slot - 1].copy(
@@ -315,7 +315,7 @@ class CharacterImportEngine(private val service: AccessibilityService) {
                 scope.launch {
                     val record = runCatching { readNameAndFates(slot, screenshot) }
                         .getOrElse { error ->
-                            RunLogger.e("${slot}号位命盘识别失败：${error.message}", error)
+                            RunLogger.e(module = "角色导入", section = "${slot}号位", message = "命盘识别失败：${error.message}", throwable = error)
                             ImportedCharacterRecord(slot = slot)
                         }
                     records[slot - 1] = records[slot - 1].copy(
@@ -362,7 +362,7 @@ class CharacterImportEngine(private val service: AccessibilityService) {
             val valueText = PaddleTextRecognizer.recognize(service, valueBitmap).text
             val numbers = parseNumbers(valueText)
             val starResult = CharacterStarDetector.detect(starBitmap)
-            RunLogger.i("${slot}号位练度 raw=${formatLog(valueText)} numbers=${numbers.joinToString(",")} stars=${starResult.starCount}")
+            RunLogger.i(module = "角色导入", section = "${slot}号位", message = "练度：原文=${formatLog(valueText)}，生命=${numbers.getOrNull(0).orEmpty()}，攻击=${numbers.getOrNull(1).orEmpty()}，星级=${starResult.starCount}")
             return ImportedCharacterRecord(
                 slot = slot,
                 hp = numbers.getOrNull(0).orEmpty(),
@@ -397,14 +397,8 @@ class CharacterImportEngine(private val service: AccessibilityService) {
             )
         }
         try {
-            RunLogger.i(
-                "${slot}号位命盘取点：$preliminaryName -> ${
-                    selectedFatePoints.joinToString(" / ") { "${it.first.toInt()},${it.second.toInt()}" }
-                }"
-            )
             val rawFates = fateBitmaps.mapIndexed { index, bitmap ->
                 val raw = PaddleTextRecognizer.recognize(service, bitmap).text
-                RunLogger.i("${slot}号位命盘${index + 1} raw=${formatLog(raw)}")
                 raw
             }
             val inference = if (exactAgentName != null) {
@@ -414,19 +408,11 @@ class CharacterImportEngine(private val service: AccessibilityService) {
             }
             val correctedFates = inference?.correctedFates ?: rawFates.map(::correctFateText)
             val fates = correctedFates.map { it?.displayText.orEmpty() }
-            correctedFates.forEachIndexed { index, correction ->
-                RunLogger.i(
-                    "${slot}号位命盘${index + 1} corrected=${formatLog(correction?.displayText.orEmpty())} " +
-                        "score=${correction?.score?.let { "%.2f".format(it) } ?: "无"}"
-                )
-            }
             val finalName = exactAgentName ?: inference?.name ?: nameCorrection?.displayText ?: rawName
             RunLogger.i(
-                "${slot}号位角色名 raw=${formatLog(nameText)} parsed=${formatLog(rawName)} " +
-                    "name=$finalName nameScore=${"%.2f".format(nameCorrection?.score ?: 0f)} " +
-                    "fateScore=${"%.2f".format(inference?.fateScore ?: 0f)} " +
-                    "hits=${inference?.fateHitCount ?: 0} unique=${inference?.uniqueFateHitCount ?: 0} " +
-                    "total=${"%.2f".format(inference?.totalScore ?: 0f)}"
+                module = "角色导入",
+                section = "${slot}号位",
+                message = "命盘：角色=$finalName，角色原文=${formatLog(nameText)}，命盘原文=${rawFates.joinToString(" / ") { formatLog(it) }}，结果=${fates.joinToString("、")}"
             )
             return ImportedCharacterRecord(slot = slot, name = finalName, fates = fates)
         } finally {
@@ -441,17 +427,18 @@ class CharacterImportEngine(private val service: AccessibilityService) {
     private fun finish(success: Boolean, errorMessage: String?) {
         if (!isRunning) return
         isRunning = false
-        errorMessage?.let(RunLogger::e)
+        errorMessage?.let { RunLogger.e(module = "角色导入", section = "总流程", message = it) }
         logSummary()
         onCompleted?.invoke(success)
     }
 
     private fun logSummary() {
-        RunLogger.i("角色导入结果：")
+        RunLogger.i(module = "角色导入", section = "结果", message = "汇总")
         records.forEach { record ->
             RunLogger.i(
-                "${record.slot}号位 | 角色=${record.name} | 生命=${record.hp} | 攻击=${record.attack} | " +
-                    "星级=${record.starCount} | 命盘=${record.fates.filter { it.isNotBlank() }.joinToString("、")}"
+                module = "角色导入",
+                section = "结果",
+                message = "${record.slot}号位：角色=${record.name}，生命=${record.hp}，攻击=${record.attack}，星级=${record.starCount}，命盘=${record.fates.filter { it.isNotBlank() }.joinToString("、")}"
             )
         }
     }
@@ -502,7 +489,6 @@ class CharacterImportEngine(private val service: AccessibilityService) {
         val (screenWidth, screenHeight) = getRealScreenSize()
         val realX = point.xRatio.coerceIn(0f, 1f) * screenWidth
         val realY = point.yRatio.coerceIn(0f, 1f) * screenHeight
-        RunLogger.i("${label}坐标点击：x=${realX.toInt()} y=${realY.toInt()}")
         clickScreenPoint(realX, realY)
     }
 
@@ -520,9 +506,9 @@ class CharacterImportEngine(private val service: AccessibilityService) {
     private fun performSystemBack(): Boolean {
         val success = service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
         if (success) {
-            RunLogger.i("系统返回")
+            // 成功返回是常规步骤，不写入运行日志。
         } else {
-            RunLogger.e("系统返回失败")
+            RunLogger.e(module = "角色导入", section = "总流程", message = "系统返回失败")
         }
         return success
     }

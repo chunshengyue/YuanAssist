@@ -48,6 +48,7 @@ import com.example.yuanassist.ui.subpage.SubpageRadioOption
 import com.example.yuanassist.ui.subpage.SubpageInfoStrip
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.applyYuanInputStyle
 
@@ -188,16 +189,17 @@ class DailyInventoryStitchFragment : Fragment() {
             if (archive.id == selectedArchiveId) "当前：${archive.name}" else archive.name
         }.toTypedArray()
 
-        AlertDialog.Builder(context)
-            .setTitle("切换存档")
-            .setItems(labels) { _, which ->
-                val archive = archives[which]
-                selectedArchiveId = archive.id
-                MyStoneStore.setSelectedArchiveId(context, archive.id)
-                refreshUi?.invoke()
-            }
-            .setNegativeButton("取消", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(context))
+                .setTitle("切换存档")
+                .setAdapter(DialogUtils.fixedOptionTextAdapter(context, labels)) { _, which ->
+                    val archive = archives[which]
+                    selectedArchiveId = archive.id
+                    MyStoneStore.setSelectedArchiveId(context, archive.id)
+                    refreshUi?.invoke()
+                }
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun showCreateArchiveDialog() {
@@ -251,14 +253,15 @@ class DailyInventoryStitchFragment : Fragment() {
             setSingleLine()
             applyYuanInputStyle()
         }
-        AlertDialog.Builder(context)
-            .setTitle(title)
-            .setView(input)
-            .setPositiveButton(positiveText) { _, _ ->
-                onConfirm(input.text.toString())
-            }
-            .setNegativeButton("取消", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(context))
+                .setTitle(title)
+                .setView(input)
+                .setPositiveButton(positiveText) { _, _ ->
+                    onConfirm(input.text.toString())
+                }
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {

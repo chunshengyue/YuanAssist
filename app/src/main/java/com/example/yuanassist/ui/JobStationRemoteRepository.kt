@@ -140,7 +140,7 @@ object JobStationRemoteRepository {
 
     private fun logRequestStart(scene: String, call: Call<*>) {
         Log.i(TAG, "$scene start url=${call.request().url}")
-        RunLogger.i("作业站请求开始: $scene url=${call.request().url}")
+        RunLogger.i(module = "作业站", section = "网络请求", message = "开始：$scene")
     }
 
     private fun logRequestFailure(scene: String, call: Call<*>, throwable: Throwable, startedAtMs: Long) {
@@ -152,8 +152,10 @@ object JobStationRemoteRepository {
             throwable
         )
         RunLogger.e(
-            "作业站请求失败: $scene after=${formatElapsedMs(startedAtMs)} url=$url reason=$reason",
-            throwable
+            module = "作业站",
+            section = "网络请求",
+            message = "失败：$scene，${formatElapsedMs(startedAtMs)}，$reason",
+            throwable = throwable
         )
     }
 
@@ -196,9 +198,7 @@ object JobStationRemoteRepository {
                         TAG,
                         "loadList failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} http=${response.code()} biz=${body?.statusCode}"
                     )
-                    RunLogger.e(
-                        "作业站列表加载失败 http=${response.code()} biz=${body?.statusCode} message=${body?.message ?: "empty"}"
-                    )
+                    RunLogger.e(module = "作业站", section = "列表", message = "加载失败：HTTP ${response.code()}，业务码=${body?.statusCode}")
                     onError(message)
                     return
                 }
@@ -207,9 +207,7 @@ object JobStationRemoteRepository {
                     TAG,
                     "loadList success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} count=${data.size} page=${body.data.page} hasNext=${body.data.hasNext}"
                 )
-                RunLogger.i(
-                    "作业站列表加载成功 count=${data.size} page=${body.data.page} hasNext=${body.data.hasNext}"
-                )
+                RunLogger.i(module = "作业站", section = "列表", message = "加载成功：${data.size}条，第${body.data.page}页")
                 onSuccess(body.data, data.map(JobStationAssetRepository::fromRemoteListItem))
             }
 
@@ -253,9 +251,7 @@ object JobStationRemoteRepository {
                         TAG,
                         "loadDetail failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId http=${response.code()} biz=${body?.statusCode}"
                     )
-                    RunLogger.e(
-                        "作业详情加载失败 id=$copilotId http=${response.code()} biz=${body?.statusCode} message=${body?.message ?: "empty"}"
-                    )
+                    RunLogger.e(module = "作业站", section = "详情页", message = "加载失败：id=$copilotId，HTTP ${response.code()}，业务码=${body?.statusCode}")
                     onError(message)
                     return
                 }
@@ -264,9 +260,7 @@ object JobStationRemoteRepository {
                     TAG,
                     "loadDetail success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId"
                 )
-                RunLogger.i(
-                    "作业详情加载成功 id=$copilotId title=${data.name.orEmpty().ifBlank { "empty" }} uploader=${data.uploader.ifBlank { "empty" }} contentLength=${data.content.length} views=${data.views} likes=${data.like}"
-                )
+                RunLogger.i(module = "作业站", section = "详情页", message = "加载成功：${data.name.orEmpty().ifBlank { "未命名" }}")
                 onSuccess(JobStationAssetRepository.fromRemoteDetailData(data))
             }
 
@@ -309,9 +303,7 @@ object JobStationRemoteRepository {
                         TAG,
                         "loadComments failed after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId http=${response.code()} biz=${body?.statusCode}"
                     )
-                    RunLogger.e(
-                        "神秘代码访问失败 id=$copilotId http=${response.code()} biz=${body?.statusCode} message=${body?.message ?: "empty"}"
-                    )
+                    RunLogger.e(module = "作业站", section = "神秘代码", message = "访问失败：id=$copilotId，HTTP ${response.code()}，业务码=${body?.statusCode}")
                     onError(message)
                     return
                 }
@@ -320,7 +312,7 @@ object JobStationRemoteRepository {
                     TAG,
                     "loadComments success after ${formatElapsedMs(startedAtMs)} url=${call.request().url} id=$copilotId"
                 )
-                RunLogger.i("神秘代码访问成功 id=$copilotId")
+                RunLogger.i(module = "作业站", section = "神秘代码", message = "访问成功：id=$copilotId")
                 onSuccess()
             }
 

@@ -60,6 +60,7 @@ class PiJingZhanJiActivityEngine(
         engine.verboseLoggingEnabled = true
         engine.diagnosticLoggingEnabled = config.activityDebugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
+        engine.setRunLogScope("披荆斩棘", "活动页")
         logFlow("第二模块开始")
         runPlan(ENTER_SCRIPT, required = true) { success, message, completion ->
             if (!isRunning) return@runPlan
@@ -970,7 +971,8 @@ class PiJingZhanJiActivityEngine(
                 if (!isRunning) return@startPlan
                 val success = if (required) completion.success else true
                 onDone(success, completion.message, completion)
-            }
+            },
+            scriptFileName = scriptName,
         )
     }
 
@@ -1305,30 +1307,30 @@ class PiJingZhanJiActivityEngine(
     }
 
     private fun logFlow(message: String) {
-        logInfo("披荆流程", message)
+        logInfo("活动页", message)
     }
 
     private fun logQuiz(message: String) {
-        logInfo("披荆答题", message)
+        logInfo("答题", message)
     }
 
     private fun logMystery(message: String) {
-        logInfo("披荆神秘", message)
+        logInfo("神秘事件", message)
     }
 
     private fun logOcr(message: String) {
-        logInfo("披荆OCR", message)
+        logInfo("OCR", message)
     }
 
     private fun logInfo(category: String, message: String) {
-        RunLogger.i("[$category] $message")
+        RunLogger.i(module = "披荆斩棘", section = category, message = message)
     }
 
     private fun logError(category: String, message: String, throwable: Throwable? = null) {
         if (throwable != null) {
-            RunLogger.e("[$category] $message", throwable)
+            RunLogger.e(module = "披荆斩棘", section = category, message = message, throwable = throwable)
         } else {
-            RunLogger.e("[$category] $message")
+            RunLogger.e(module = "披荆斩棘", section = category, message = message)
         }
     }
 

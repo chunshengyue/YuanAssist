@@ -41,6 +41,7 @@ class PiJingZhanJiRuntimeManager(
         engine.verboseLoggingEnabled = true
         engine.diagnosticLoggingEnabled = config.debugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
+        engine.setRunLogScope("披荆斩棘", "前置任务")
     }
 
     fun start(): Boolean {
@@ -53,7 +54,7 @@ class PiJingZhanJiRuntimeManager(
         isRunning = true
         onRunningChanged(true)
         RunLogger.clear()
-        RunLogger.i("披荆斩棘任务开始，前置任务${runningTasks.size}项")
+        RunLogger.i(module = "披荆斩棘", section = "总流程", message = "开始，前置任务${runningTasks.size}项")
         val started = if (runningTasks.isEmpty()) {
             startActivityModule(currentConfig)
         } else {
@@ -94,7 +95,7 @@ class PiJingZhanJiRuntimeManager(
         } else {
             "披荆斩棘任务已完成"
         }
-        RunLogger.i(message)
+        RunLogger.i(module = "披荆斩棘", section = "总流程", message = message)
         Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
         failedTaskNames.clear()
     }
@@ -106,7 +107,8 @@ class PiJingZhanJiRuntimeManager(
         }
         val plan = loadPlan(taskConfig.type.scriptFileName) ?: return false
         currentTaskIndex = index
-        RunLogger.i("开始执行 ${taskConfig.type.displayName}（${index + 1}/${runningTasks.size}）")
+        engine.setRunLogScope("披荆斩棘", taskConfig.type.displayName)
+        RunLogger.i(module = "披荆斩棘", section = taskConfig.type.displayName, message = "开始（${index + 1}/${runningTasks.size}）")
         engine.startPlan(
             plan = plan,
             onCompleted = { success, errorMsg ->
@@ -117,7 +119,8 @@ class PiJingZhanJiRuntimeManager(
                 }
                 proceedToNextTaskOrFinish(index, config)
             },
-            initialVariables = buildVariables(config, taskConfig)
+            initialVariables = buildVariables(config, taskConfig),
+            scriptFileName = taskConfig.type.scriptFileName,
         )
         return true
     }
@@ -151,7 +154,8 @@ class PiJingZhanJiRuntimeManager(
             return true
         }
         val startTaskId = if (stargazingRemainingCount == (runningTasks[index].stargazingValue ?: 0)) 0 else 5
-        RunLogger.i("开始执行 观星消耗五铢钱（无月卡）本批=$currentBatchCount")
+        engine.setRunLogScope("披荆斩棘", "观星消耗五铢钱")
+        RunLogger.i(module = "披荆斩棘", section = "观星消耗五铢钱", message = "无月卡，本批=$currentBatchCount")
         engine.startPlan(
             plan = plan.copy(start_task_id = startTaskId),
             onCompleted = { success, errorMsg ->
@@ -173,7 +177,8 @@ class PiJingZhanJiRuntimeManager(
                 put("stargazing_click_y", "1318.2489")
                 put("stargazing_click_align", "bottom")
                 put("stargazing_click_interval", "1200")
-            }
+            },
+            scriptFileName = "wu_yue_ka_guan_xing_batch.json",
         )
         return true
     }
@@ -193,7 +198,8 @@ class PiJingZhanJiRuntimeManager(
         } else {
             5
         }
-        RunLogger.i("开始执行 观星消耗五铢钱（有月卡）剩余轮数=$stargazingRemainingCount 起点=$startTaskId")
+        engine.setRunLogScope("披荆斩棘", "观星消耗五铢钱")
+        RunLogger.i(module = "披荆斩棘", section = "观星消耗五铢钱", message = "有月卡，剩余轮数=$stargazingRemainingCount")
         engine.startPlan(
             plan = plan.copy(start_task_id = startTaskId),
             onCompleted = { success, errorMsg ->
@@ -208,7 +214,8 @@ class PiJingZhanJiRuntimeManager(
                 } else {
                     proceedToNextTaskOrFinish(index, config)
                 }
-            }
+            },
+            scriptFileName = "you_yue_ka_guan_xing_batch.json",
         )
         return true
     }
@@ -222,7 +229,7 @@ class PiJingZhanJiRuntimeManager(
         val taskName = taskConfig.type.displayName
         failedTaskNames += taskName
         val reason = errorMsg?.takeIf { it.isNotBlank() } ?: "脚本返回失败"
-        RunLogger.e("前置任务失败，继续执行后续任务：$taskName，原因：$reason")
+        RunLogger.e(module = "披荆斩棘", section = taskName, message = "失败，继续后续任务：$reason")
         Toast.makeText(service, "$taskName 失败，继续执行下一个任务", Toast.LENGTH_SHORT).show()
         proceedToNextTaskOrFinish(index, config)
     }
@@ -251,7 +258,7 @@ class PiJingZhanJiRuntimeManager(
         } else {
             "5秒后自动关闭"
         }
-        RunLogger.i("第一模块结束，未完成任务：$failedSummary")
+        RunLogger.i(module = "披荆斩棘", section = "前置任务", message = "第一模块结束，未完成：$failedSummary")
         showFirstModuleFailurePrompt("前置任务未完成：$failedSummary\n$suffix")
         val continuation = Runnable {
             clearFirstModuleFailurePrompt()
@@ -294,7 +301,7 @@ class PiJingZhanJiRuntimeManager(
                 isRunning = false
                 onRunningChanged(false)
                 val message = "披荆斩棘任务已停止：$errorMsg"
-                RunLogger.e(message)
+                RunLogger.e(module = "披荆斩棘", section = "总流程", message = message)
                 Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
             }
         }
@@ -308,7 +315,7 @@ class PiJingZhanJiRuntimeManager(
                 gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
             }
         } catch (t: Throwable) {
-            RunLogger.e("加载披荆斩棘脚本失败：$fileName", t)
+            RunLogger.e(module = "披荆斩棘", section = "前置任务", message = "加载脚本失败：$fileName", throwable = t)
             null
         }
     }

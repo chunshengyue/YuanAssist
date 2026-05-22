@@ -262,6 +262,7 @@ class DebugWorkbenchCoordinator(
     private data class ReplacementTarget(
         val fileName: String,
         val label: String,
+        val node: DailyScriptDebugNode? = null,
     )
 
     private data class ReplacementSession(
@@ -457,7 +458,10 @@ class DebugWorkbenchCoordinator(
 
     fun restoreCurrentTemplate() {
         dismissReplacementDialog()
-        if (currentTaskEntry()?.isUserScript == true) {
+        val userScriptNode = dailyScriptIndexesByTask[selectedTask]
+            ?.nodesFor(selectedTemplate)
+            ?.firstOrNull { it.replacementTemplateName != null }
+        if (currentTaskEntry()?.isUserScript == true && userScriptNode?.action != "OCR") {
             showToast("录制脚本素材已直接覆盖，暂不支持还原")
             return
         }
@@ -588,6 +592,7 @@ class DebugWorkbenchCoordinator(
             }
         )
         dismissReplacementDialog()
+        pushState()
     }
 
     fun copyLog() {
@@ -638,7 +643,7 @@ class DebugWorkbenchCoordinator(
         val areaRect = buildTopRightRect(screenshot, BATTLE_TURN_OCR_W, BATTLE_TURN_OCR_H)
         if (areaRect == null) {
             previewBitmap = screenshot
-            log("Build ROI failed")
+            log("构建识别范围失败")
             pushState()
             return
         }
@@ -690,9 +695,7 @@ class DebugWorkbenchCoordinator(
                         row.cards.forEach { card ->
                             log(
                                 "row=${row.rowIndex + 1} col=${card.columnIndex + 1} " +
-                                    "level=${card.levelText.ifBlank { "?" }} name=${card.nameText.ifBlank { "?" }} " +
-                                    "levelROI=${card.levelRect.width()}x${card.levelRect.height()} " +
-                                    "nameROI=${card.nameRect.width()}x${card.nameRect.height()}"
+                                    "level=${card.levelText.ifBlank { "?" }} name=${card.nameText.ifBlank { "?" }}"
                             )
                         }
                     }
@@ -727,7 +730,7 @@ class DebugWorkbenchCoordinator(
         )
         if (searchRect == null) {
             previewBitmap = screenshot
-            log("Build ROI failed")
+            log("构建识别范围失败")
             pushState()
             return
         }
@@ -740,7 +743,7 @@ class DebugWorkbenchCoordinator(
         }
         canvas.drawRect(searchRect, searchPaint)
         previewBitmap = screenshot
-        log("ROI=CombatEngine/开始战斗 size=${searchRect.width()}x${searchRect.height()} threshold=${"%.2f".format(START_BATTLE_RED_THRESHOLD)}")
+        log("开始战斗识别范围已标记，阈值=${"%.2f".format(START_BATTLE_RED_THRESHOLD)}")
         pushState()
 
         val bitmap = Bitmap.createBitmap(
@@ -855,7 +858,7 @@ class DebugWorkbenchCoordinator(
         )
         if (valueRect == null || starRect == null) {
             previewBitmap = screenshot
-            log("Build character proficiency ROI failed")
+            log("构建角色练度识别范围失败")
             pushState()
             return
         }
@@ -876,8 +879,7 @@ class DebugWorkbenchCoordinator(
             },
         )
         previewBitmap = screenshot
-        log("ROI values=${valueRect.width()}x${valueRect.height()} center=(${valueRect.centerX()},${valueRect.centerY()})")
-        log("ROI stars=${starRect.width()}x${starRect.height()} center=(${starRect.centerX()},${starRect.centerY()})")
+        log("角色练度识别范围已标记")
         pushState()
 
         val valueBitmap = Bitmap.createBitmap(source, valueRect.left, valueRect.top, valueRect.width(), valueRect.height())
@@ -915,7 +917,7 @@ class DebugWorkbenchCoordinator(
         )
         if (nameRect == null) {
             previewBitmap = screenshot
-            log("Build character name ROI failed")
+            log("构建角色名识别范围失败")
             pushState()
             return
         }
@@ -929,7 +931,7 @@ class DebugWorkbenchCoordinator(
             },
         )
         previewBitmap = screenshot
-        log("ROI name=${nameRect.width()}x${nameRect.height()} center=(${nameRect.centerX()},${nameRect.centerY()})")
+        log("角色名识别范围已标记")
         pushState()
 
         val nameBitmap = Bitmap.createBitmap(source, nameRect.left, nameRect.top, nameRect.width(), nameRect.height())
@@ -963,7 +965,7 @@ class DebugWorkbenchCoordinator(
         )
         if (nameRect == null) {
             previewBitmap = screenshot
-            log("Build character name ROI failed")
+            log("构建角色名识别范围失败")
             pushState()
             return
         }
@@ -975,7 +977,7 @@ class DebugWorkbenchCoordinator(
         }
         canvas.drawRect(nameRect, paint)
         previewBitmap = screenshot
-        log("ROI name=${nameRect.width()}x${nameRect.height()} center=(${nameRect.centerX()},${nameRect.centerY()})")
+        log("角色名识别范围已标记")
         pushState()
 
         val nameBitmap = Bitmap.createBitmap(source, nameRect.left, nameRect.top, nameRect.width(), nameRect.height())
@@ -997,7 +999,7 @@ class DebugWorkbenchCoordinator(
                 if (fateRects.size != fatePoints.size) {
                     previewBitmap = screenshot
                     logCharacterNameResult(nameResult)
-                    log("Build character fate ROI failed")
+                    log("构建命盘识别范围失败")
                     pushState()
                     nameBitmap.recycle()
                     return@recognizeCharacterNameText
@@ -1005,7 +1007,7 @@ class DebugWorkbenchCoordinator(
 
                 fateRects.forEach { (index, rect) ->
                     canvas.drawRect(rect, paint)
-                    log("ROI fate ${index + 1}=${rect.width()}x${rect.height()} center=(${rect.centerX()},${rect.centerY()})")
+                    log("命盘识别范围 ${index + 1} 已标记")
                 }
                 log(
                     "命盘取点角色=${roleName.ifBlank { "未识别" }} " +
@@ -1051,7 +1053,7 @@ class DebugWorkbenchCoordinator(
         val slotRect = buildDeathCheckRect(screenshot, slotIndex)
         if (slotRect == null) {
             previewBitmap = screenshot
-            log("Build slot ROI failed")
+            log("构建槽位识别范围失败")
             pushState()
             return
         }
@@ -1092,7 +1094,7 @@ class DebugWorkbenchCoordinator(
             h = ORANGE_STAR_ROI_SIZE,
         )
         if (roiRect == null) {
-            log("${mode.colorLabel} star ROI invalid")
+            log("${mode.colorLabel}星识别范围无效")
             previewBitmap = screenshot
             pushState()
             return
@@ -1175,11 +1177,10 @@ class DebugWorkbenchCoordinator(
                 reason = "当前脚本 OCR 节点缺少配置: ${taskDisplayName(selectedTask)} / ${templateDisplayName(optionKey)}",
                 toastMessage = "当前脚本 OCR 节点缺少配置",
             )
-        val area = buildDailyScriptSearchAreas(screenshot, optionKey)
-            .firstOrNull { it.label.endsWith("ID ${node.taskId}") }
+        val area = buildSearchAreaForNode(screenshot, node, dailyScriptIndexesByTask[selectedTask]?.scriptDisplayName)
             ?: return stopCurrentRun(
-                reason = "当前脚本 OCR 节点缺少 ROI: ${taskDisplayName(selectedTask)} / ${templateDisplayName(optionKey)}",
-                toastMessage = "当前脚本 OCR 节点缺少 ROI",
+                reason = "当前脚本 OCR 节点缺少识别范围配置: ${taskDisplayName(selectedTask)} / ${templateDisplayName(optionKey)}",
+                toastMessage = "当前脚本 OCR 节点缺少识别范围配置",
             )
         val canvas = Canvas(screenshot)
         canvas.drawRect(
@@ -1284,21 +1285,32 @@ class DebugWorkbenchCoordinator(
         target: ReplacementTarget,
     ): ReplacementSession? {
         val bundle = currentTaskEntry()?.bundle
-        val node = dailyScriptIndexesByTask[selectedTask]
+        val node = target.node ?: dailyScriptIndexesByTask[selectedTask]
             ?.nodesFor(selectedTemplate)
-            ?.firstOrNull { it.action == "MATCH_TEMPLATE" && !it.templateName.isNullOrBlank() }
+            ?.firstOrNull { it.replacementTemplateName != null }
         val area = buildSearchAreaForNode(source, node)
-        if (bundle == null || node?.templateName.isNullOrBlank() || area == null) {
+        val replacementTemplateName = node?.replacementTemplateName?.takeIf { it.isNotBlank() }
+        if (bundle == null || replacementTemplateName == null || area == null) {
             showToast("当前节点不支持替换素材")
             return null
         }
-        val templateFile = File(bundle.templatesDir, node.templateName)
-        if (!templateFile.exists()) {
+        val replacementNode = node ?: return null
+        val templateFile = File(bundle.templatesDir, replacementTemplateName)
+        if (replacementNode.action == "MATCH_TEMPLATE" && !templateFile.exists()) {
             showToast("模板文件不存在")
             return null
         }
         val previewBitmap = Bitmap.createBitmap(source, area.rect.left, area.rect.top, area.rect.width(), area.rect.height())
         val gameScale = min(source.width / BASE_W, source.height / BASE_H)
+        if (replacementNode.action == "OCR") {
+            return buildReplacementSession(
+                target = target,
+                previewBitmap = previewBitmap,
+                sourceRect = area.rect,
+                gameScale = gameScale,
+                saveMode = SaveMode.OVERRIDE,
+            )
+        }
         return buildReplacementSession(
             target = target,
             previewBitmap = previewBitmap,
@@ -1313,7 +1325,8 @@ class DebugWorkbenchCoordinator(
         source: Bitmap,
         target: ReplacementTarget,
     ): ReplacementSession? {
-        val area = when (selectedTemplate) {
+        val nodeArea = buildSearchAreaForNode(source, target.node)
+        val area = nodeArea ?: when (selectedTemplate) {
             START_BATTLE_OCR_OPTION -> buildStartBattleSearchAreas(source).firstOrNull()
             CAVE_DONGKU_OPTION -> buildFixedSearchAreasForTemplate(source, CAVE_DONGKU_TEMPLATE).firstOrNull()
             else -> buildFixedSearchAreasForTemplate(source, selectedTemplate).firstOrNull()
@@ -1526,7 +1539,7 @@ class DebugWorkbenchCoordinator(
             return fixedAreas
         }
         stopCurrentRun(
-            reason = "当前局部识别 ROI 尚未接入新工作台: ${taskDisplayName(selectedTask)} / ${templateDisplayName(templateName)}",
+            reason = "当前局部识别范围尚未接入新工作台: ${taskDisplayName(selectedTask)} / ${templateDisplayName(templateName)}",
             toastMessage = "当前识别项暂未接入新工作台局部识别",
         )
         return null
@@ -1626,8 +1639,10 @@ class DebugWorkbenchCoordinator(
             w = roi.w ?: roi.radius?.let { it * 2 } ?: return null,
             h = roi.h ?: roi.radius?.let { it * 2 } ?: return null,
         )?.let { rect ->
+            val nodeLabel = node.displayName?.trim()?.takeIf { it.isNotBlank() }
+                ?: "ID ${node.taskId}"
             SearchArea(
-                label = "${scriptDisplayName ?: taskDisplayName(selectedTask)}/ID ${node.taskId}",
+                label = "${scriptDisplayName ?: taskDisplayName(selectedTask)}/$nodeLabel",
                 rect = rect,
                 threshold = node.threshold,
             )
@@ -1673,17 +1688,18 @@ class DebugWorkbenchCoordinator(
         }
 
     private fun loadTemplateBitmapForCurrentTask(templateName: String): Bitmap? {
-        val actualTemplateName = dailyScriptIndexesByTask[selectedTask]
+        val node = dailyScriptIndexesByTask[selectedTask]
             ?.nodesFor(templateName)
-            ?.firstOrNull { it.templateName != null }
-            ?.templateName
+            ?.firstOrNull { it.replacementTemplateName != null }
+        val actualTemplateName = node
+            ?.replacementTemplateName
             ?: templateName
         val bundle = currentTaskEntry()?.bundle
         if (bundle != null) {
             val templateFile = File(bundle.templatesDir, actualTemplateName)
             return if (templateFile.exists()) BitmapFactory.decodeFile(templateFile.absolutePath) else null
         }
-        return TemplateOverrideStore.loadBitmap(activity, activity.assets, actualTemplateName)
+        return TemplateOverrideStore.loadBitmap(activity, activity.assets, templateAssetKey(node, actualTemplateName))
     }
 
     private fun dedupeHits(hits: List<TemplateMatchHit>, radius: Double): List<TemplateMatchHit> {
@@ -1779,9 +1795,12 @@ class DebugWorkbenchCoordinator(
         taskEntriesByKey.clear()
         taskEntriesByKey.putAll(builtInEntries)
         loadDailyScriptFiles().forEach { scriptFile ->
+            val index = buildDailyScriptDebugIndex(scriptFile)
             taskEntriesByKey[scriptFile] = TestTaskEntry(
                 key = scriptFile,
-                displayName = TASK_DISPLAY_NAME_MAP[scriptFile] ?: baseNameWithoutExtension(scriptFile),
+                displayName = index?.scriptDisplayName
+                    ?: TASK_DISPLAY_NAME_MAP[scriptFile]
+                    ?: baseNameWithoutExtension(scriptFile),
             )
         }
         UserDailyScriptStore.listBundles(activity).forEach { bundle ->
@@ -1800,7 +1819,7 @@ class DebugWorkbenchCoordinator(
         templateOptionsByTask[TASK_BATTLE_FLOW] = buildBattleFlowTemplateOptions()
         templateOptionsByTask[TASK_BIRD_FOOD_NAV] = buildBirdFoodNavigationTemplateOptions()
         loadDailyScriptFiles().forEach { scriptFile ->
-            val index = buildDailyScriptDebugIndex(scriptFile)
+            val index = dailyScriptIndexesByTask[scriptFile] ?: buildDailyScriptDebugIndex(scriptFile)
             if (index != null) {
                 dailyScriptIndexesByTask[scriptFile] = index
                 templateOptionsByTask[scriptFile] = index.templateNames
@@ -1897,7 +1916,9 @@ class DebugWorkbenchCoordinator(
                 .use { gson.fromJson(it.readUtf8TextWithoutBom(), DailyTaskPlan::class.java) }
             DailyScriptDebugIndex.fromPlan(
                 scriptFileName = scriptFile,
-                scriptDisplayName = TASK_DISPLAY_NAME_MAP[scriptFile] ?: scriptFile,
+                scriptDisplayName = plan.display_name?.trim()?.takeIf { it.isNotBlank() }
+                    ?: TASK_DISPLAY_NAME_MAP[scriptFile]
+                    ?: baseNameWithoutExtension(scriptFile),
                 plan = plan,
             )
         }.getOrElse { error ->
@@ -2068,16 +2089,17 @@ class DebugWorkbenchCoordinator(
 
     private fun replacementTargetsForOption(optionName: String): List<ReplacementTarget> {
         dailyScriptIndexesByTask[selectedTask]?.let { index ->
-            val node = if (currentTaskEntry()?.isUserScript == true) {
-                index.nodesFor(optionName).firstOrNull { it.action == "MATCH_TEMPLATE" }
+            val node = index.nodesFor(optionName).firstOrNull { it.replacementTemplateName != null }
+                ?: return emptyList()
+            val templateName = node.replacementTemplateName ?: return emptyList()
+            val fileName = if (currentTaskEntry()?.isUserScript == true) {
+                templateName
+            } else if (node.action == "OCR" && node.templateName == null) {
+                templateName
             } else {
-                index.nodesFor(optionName).firstOrNull { it.templateName != null }
-            } ?: return emptyList()
-            val templateName = node.templateName ?: return emptyList()
-            if (currentTaskEntry()?.isUserScript == true && node.action != "MATCH_TEMPLATE") {
-                return emptyList()
+                templateAssetKey(node, templateName)
             }
-            return listOf(ReplacementTarget(templateName, templateDisplayName(optionName)))
+            return listOf(ReplacementTarget(fileName, templateDisplayName(optionName), node))
         }
         return when {
             optionName == START_BATTLE_OCR_OPTION -> listOf(
@@ -2105,11 +2127,25 @@ class DebugWorkbenchCoordinator(
     }
 
     private fun hasTemplateOverride(templateName: String): Boolean {
-        if (currentTaskEntry()?.isUserScript == true) return false
+        if (currentTaskEntry()?.isUserScript == true) {
+            val node = dailyScriptIndexesByTask[selectedTask]
+                ?.nodesFor(templateName)
+                ?.firstOrNull { it.replacementTemplateName != null }
+            if (node?.action != "OCR") return false
+        }
         return if (templateName == START_BATTLE_OCR_OPTION) {
             TemplateOverrideStore.hasOverride(activity, TemplateOverrideStore.START_BATTLE_TEMPLATE_FILE_NAME)
         } else {
             replacementTargetsForOption(templateName).any { TemplateOverrideStore.hasOverride(activity, it.fileName) }
+        }
+    }
+
+    private fun templateAssetKey(node: DailyScriptDebugNode?, templateName: String): String {
+        val dir = node?.assetTemplateDir?.trim()?.takeIf { it.isNotBlank() }
+        return if (dir == null || templateName.contains('/') || templateName.contains('\\')) {
+            templateName
+        } else {
+            "$dir/$templateName"
         }
     }
 
@@ -2260,10 +2296,15 @@ class DebugWorkbenchCoordinator(
         heightBase: Float,
     ): Rect? {
         val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+        val gameWidth = BASE_W * gameScale
+        val offsetX = (screenshot.width - gameWidth) / 2f
+        val gameRight = offsetX + gameWidth
         val width = (widthBase * gameScale).toInt().coerceAtLeast(1).coerceAtMost(screenshot.width)
         val height = (heightBase * gameScale).toInt().coerceAtLeast(1).coerceAtMost(screenshot.height)
         if (width <= 0 || height <= 0) return null
-        return Rect(screenshot.width - width, 0, screenshot.width, height)
+        val right = gameRight.toInt().coerceIn(1, screenshot.width)
+        val left = (right - width).coerceAtLeast(0)
+        return Rect(left, 0, right, height)
     }
 
     private fun buildFixedRectFromVisionRegion(

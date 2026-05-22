@@ -84,6 +84,7 @@ import com.example.yuanassist.ui.subpage.SubpageSectionCard
 import com.example.yuanassist.ui.subpage.SubpageToggleRow
 import com.example.yuanassist.ui.subpage.SubpageTextField
 import com.example.yuanassist.utils.ConfigManager
+import com.example.yuanassist.utils.DialogUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -405,9 +406,9 @@ class UploadStrategyActivity : AppCompatActivity() {
         }
 
         val fileNames = files.map { it.name.removeSuffix(".json") }.toTypedArray()
-        PlatformAlertDialog.Builder(this)
+        PlatformAlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle("请选择要导入的脚本")
-            .setItems(fileNames) { _, which ->
+            .setAdapter(DialogUtils.fixedOptionTextAdapter(this, fileNames)) { _, which ->
                 runCatching {
                     val scriptObj = Gson().fromJson(files[which].readText(Charsets.UTF_8), LocalScriptJson::class.java)
                     val items = parseTextToUploadItems(scriptObj.scriptContent)

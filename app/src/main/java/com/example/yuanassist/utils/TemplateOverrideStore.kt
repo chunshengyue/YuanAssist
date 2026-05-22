@@ -28,6 +28,9 @@ object TemplateOverrideStore {
     fun saveOverride(context: Context, fileName: String, bitmap: Bitmap): Boolean {
         return try {
             val file = overrideFile(context, fileName)
+            file.parentFile?.let { parent ->
+                if (!parent.exists()) parent.mkdirs()
+            }
             FileOutputStream(file).use { output ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
                 output.flush()
@@ -63,5 +66,27 @@ object TemplateOverrideStore {
         } else {
             "$fileName#asset"
         }
+    }
+
+    fun ocrTemplateFileName(scriptFileName: String?, taskId: Int): String? {
+        val rawName = scriptFileName
+            ?.substringAfterLast('/')
+            ?.substringAfterLast('\\')
+            ?.removePrefix("user:")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        val baseName = rawName.substringBeforeLast('.', rawName)
+        val safeBaseName = buildString {
+            baseName.forEach { char ->
+                append(
+                    when {
+                        char.isLetterOrDigit() || char == '_' || char == '-' -> char
+                        else -> '_'
+                    }
+                )
+            }
+        }.trim('_').ifBlank { "script" }
+        return "${safeBaseName}_task_${taskId}_ocr.png"
     }
 }

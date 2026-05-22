@@ -49,6 +49,7 @@
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
 - 日常脚本系统
   - `AutoTaskEngine` 按 `DailyTaskPlan` 执行 CLICK、MATCH_TEMPLATE、OCR、SET_VAR、BACK 等动作。
+  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL。
   - 首页日常入口包含“哀牢15min”：入口页是 `Ailao15MinFragment`，导入 `assets/script(1).json` 到日常版悬浮窗；脚本用于每 15 分钟刷一次哀牢幻境难度，底部确定 OCR 会最多等待约 60 秒。
   - 现已支持 `SCREENSHOT_GROUP`：
     - 只用于视觉识别候选组，共用一次截图
@@ -66,14 +67,57 @@
   - `RecordedDailyScriptViewerActivity` 负责查看、分支切换、编辑、导出。
 - 调试工作台
   - `DebugWorkbenchCoordinator` 负责从图片中测试模板/OCR、替换模板、调延时、查看命中范围。
+  - 调试页会自动索引 `assets/daily_scripts` 中的脚本视觉节点，包括 `MATCH_TEMPLATE`、`OCR` 以及 `SCREENSHOT_GROUP` 子步骤。
+  - OCR 节点即使 JSON 未配置 `template_name`，调试页也会生成稳定派生模板名：`<scriptBaseName>_task_<taskId>_ocr.png`，保存位置是 App 私有 `files/template_overrides/`。
+  - 运行时 OCR 节点优先查对应 override 模板；存在则走模板匹配，不存在则回落原 OCR。
+  - 脚本 JSON 可配置脚本级 `display_name` 作为调试页/用户可见名称；节点级 `name` 用于调试选项和运行日志中的任务标识。
 - 角色导入
   - `CharacterImportEngine` 负责截图、OCR、命盘/练度/名称推断。
 - 特定业务运行时
   - `BirdFoodRuntimeManager`、`Mainline624RuntimeManager`、`PiJingZhanJiRuntimeManager`、`StargazingRuntimeManager` 等是按具体功能封装的运行时管理器。
+  - `BirdFoodRuntimeManager` 现在是薄调度层：鸟食流程主体由 `assets/daily_scripts/bird_food_controller.json` 串联 `bird_food_ensure_yuan_bao.json` 和具体鸟食子脚本，manager 只负责配置变量、停止条件、启停和最终提示。
+  - `Mainline624RuntimeManager` 已收敛为薄调度层：主体仍执行 `zhu_xian_6_24.json`，manager 只负责首次入口/后续循环的 start task、次数停止、`game_variant` 变量和开始战斗延时覆盖；不要把它改成普通 `RUN_SCRIPT_SEGMENT` 总控后丢失延时覆盖。
   - `PiJingZhanJiRuntimeManager` 的第一模块任务除了 624、赠礼、行囊、家具、材料、观星外，还支持通过总控 JSON 串联鸢报子流程的“鸢报26次”。
   - `PiJingZhanJiRuntimeManager` 的第一模块前置任务链现在对单项脚本失败更宽容：
     - 单个前置任务返回失败时会记录失败项并继续执行后续已勾选任务
     - 第一模块全部结束后，若存在未完成任务，会先弹出 5 秒提示，再进入活动模块或结束
+
+## Supabase 维护指南
+- 当前 Supabase 项目：
+  - Project URL：`https://ftryfykwzsadgiayquvz.supabase.co`
+  - Project ref：`ftryfykwzsadgiayquvz`
+  - 本地 CLI：`.\node_modules\@supabase\cli-windows-x64\bin\supabase.exe`
+  - 维护脚本说明：`SUPABASE_DATA_MAINTENANCE.md`
+- 处理 Supabase 任务前：
+  - 先查看当前 CLI 能力，不要凭记忆猜命令：`supabase --help`、`supabase db --help`、`supabase db query --help`
+  - 涉及新表、Storage、RLS、Data API 暴露时，先看 Supabase changelog/docs；Supabase 近期有“新表不一定自动暴露到 Data API”的 breaking change。
+  - 优先用 `supabase db query --linked -f <sql-file>` 执行远端 SQL；复杂 SQL 放临时文件，避免 PowerShell 引号转义出错。
+  - 执行后必须查回验证；临时 SQL 文件完成后删除。
+- 新增表流程：
+  - 与用户确认表名、字段、主键、唯一约束、外键、索引、默认值、是否要客户端访问。
+  - 在 `public` schema 新建表时默认执行 `alter table ... enable row level security;`。
+  - 不清楚访问策略时，不要创建开放 policy，也不要随手 `grant` 给 `anon` / `authenticated`。
+  - 如果用户需要 App 直接读写，再明确 Data API 暴露、`GRANT`、RLS policy 三件事；RLS 控制行可见性，`GRANT`/Data API 暴露控制表是否能被 API 访问。
+  - 建表、建索引用 `if not exists`，Storage bucket 用 `insert ... on conflict`，方便重复执行。
+  - 验证至少查：`pg_class.relrowsecurity`、`pg_indexes`、必要的外键/唯一约束。
+- Storage bucket 流程：
+  - 可通过 SQL 写入 `storage.buckets` 创建 bucket，例如 `insert into storage.buckets (id, name, public) values (...)`。
+  - 未明确要求公开时，bucket 默认 `public = false`。
+  - 不要把 service role / secret key 写进客户端或文档正文。
+  - 如果要允许客户端上传或覆盖文件，确认并创建 Storage policy；upsert 需要 INSERT、SELECT、UPDATE 权限配套。
+- 更新版本信息：
+  - 版本更新表是 `public."update"`，常用字段是 `"versionCode"`、`"versionName"`、`"apkUrl"`、`"releaseNotes"`。
+  - 可直接用 CLI SQL 更新，也可用 `tools/update_supabase_update_record.mjs`；该脚本需要环境变量 `SUPABASE_SECRET_KEY`。
+  - `versionCode` 要与 App `app/build.gradle.kts` 里的 `versionCode` 保持一致；客户端实际比较的是 `versionCode`，不是 `versionName`。
+  - 更新后查回 `public."update"` 确认版本号、下载地址、更新说明换行都正确。
+- 更新公告/公告类数据：
+  - 先确认目标表名、主键/唯一键和字段，不要假设“公告”一定是某张表。
+  - 公告类更新优先使用 SQL 的 `insert ... on conflict ... do update` 或明确 `where` 的 `update`，避免误改多行。
+  - 更新后按业务关键字段查回确认，并把返回结果摘要给用户。
+- 当前云端日常脚本相关表/桶：
+  - `public.cloud_daily_scripts` 保存日常脚本 bundle 元数据，已启用 RLS。
+  - `daily-script-bundles` 是私有 Storage bucket，用于保存脚本 zip bundle。
+  - 这套云端脚本只服务“日常录制脚本共享”，战斗脚本仍归 JobStation。
 
 ## 两个主要悬浮窗
 ### 1. 战斗版悬浮窗
@@ -158,7 +202,73 @@
   - 避免直接落回默认蓝色系、纯白卡片、通用 Material3 模板观感
 - 如果做传统 View 页面：
   - 也应尽量向当前主壳的暖色纸感靠拢，避免出现完全不同的工业风/极简风页面
+- 所有弹窗都必须使用项目现有暖色纸感风格，不要直接使用默认黑色、纯白或系统原生观感弹窗：
+  - Compose 弹窗优先复用 `SubpageConfirmDialog`、`SubpageInputDialog` 或参考它们的 `GlassPanel`、Serif 标题、圆角样式
+  - 传统 View / 平台 `AlertDialog` 优先复用 `DialogUtils.getThemeContext` 和 `DialogUtils.styleAlertDialog`
+  - 悬浮窗/无障碍服务里的平台弹窗优先用 `DialogUtils.safeShowOverlayDialog`
+- 传统平台弹窗或下拉选项不要直接使用默认 `setItems` / 系统默认 `ArrayAdapter`：
+  - 优先复用 `DialogUtils.getThemeContext`
+  - 列表弹窗用 `DialogUtils.fixedOptionTextAdapter`
+  - Spinner / AutoComplete 下拉用 `DialogUtils.fixedDropdownTextAdapter`
+  - 这样可以避免部分系统主题下选项文字与背景同色而“能点但看不见”
 - Debug 页面虽然偏工具页，但也已经接入主壳视觉体系；新增调试能力时优先延续该风格，而不是单独做一套工具后台风
+
+## 可复用 UI 组件
+### Compose 主壳组件
+- `ui/main/theme/MainShellTheme.kt`
+  - 主壳与子页面共用主题入口，定义 `TitleInk`、`BodyInk`、`PaperLine`、`WarmRose`、`GlassPanel`、`ConsolePanel` 等暖色纸感色板。
+  - 新 Compose 页面不要自行起一套蓝色/白色 Material 默认主题，优先使用这些颜色常量。
+- `ui/main/components/GufengFeatureCard.kt`
+  - `GufengFeatureCard`：大号古风功能卡/空状态卡，适合首页功能展示、子页空状态或强调入口。
+  - `GufengCardIcon` 当前只有 `Ornament`，使用 `R.drawable.ornament_1`。
+- `ui/main/components/GufengDecorActionButton.kt`
+  - `GufengDecorActionButton`：带头像位、描边、装饰图的胶囊按钮，适合主界面或强视觉入口按钮。
+  - 可通过 `itemRes`、`decorRes`、`showOuterSurface`、`showDecor`、`showPortraitPlate` 和尺寸参数适配不同入口。
+
+### Compose 子页面组件
+- `ui/subpage/SubpageThemeBridge.kt`
+  - `SubpageThemeBridge`：给子页套 `MainShellTheme` 和 `background_stretch_9x21` 背景图；普通子页通常不直接用它，而是通过 `SubpageScaffold` 间接使用。
+- `ui/subpage/SubpageScaffold.kt`
+  - `SubpageScaffold`：子页面统一骨架，包含背景、状态栏内边距、标题区、返回按钮、可选 action 区、滚动开关和最大宽度约束。
+  - `SubpageTopBar`：可单独复用的子页标题栏。
+  - `SubpageShapes`：统一圆角形状，包含 `roundBadge`、`section`。
+- `ui/subpage/SubpageCards.kt`
+  - `SubpageSectionCard`：纸面金边内容卡，适合分组承载表单、说明、列表。
+  - `SubpagePaperPanel`：轻量内层纸面面板，适合卡片内的弱分组。
+  - `SubpageInfoStrip`：左右 label/value 信息条。
+  - `SubpageBadge`：暖色小标签。
+- `ui/subpage/SubpageListItems.kt`
+  - `SubpageActionRow`：可点击设置/入口行，右侧默认显示“进入”。
+  - `SubpageToggleRow`：带方形勾选指示的开关行。
+  - `SubpageChipRow`：横向等宽单选 chip 组。
+- `ui/subpage/SubpageOptionControls.kt`
+  - `SubpageRadioOption` / `SubpageCheckOption`：暖色单选/多选项。
+  - `SubpageCircleIndicator` / `SubpageSquareIndicator`：可独立复用的选中状态指示器。
+- `ui/subpage/SubpageFormFields.kt`
+  - `SubpageFieldGroup`：表单字段分组标题与说明。
+  - `SubpageTextField`：已套暖色描边、纸面底色和 Serif label 的输入框。
+- `ui/subpage/SubpageDialogs.kt`
+  - `SubpageConfirmDialog`：Compose 确认弹窗，使用项目暖色纸感样式，避免默认黑色/纯白弹窗观感。
+  - `SubpageInputDialog`：Compose 输入弹窗，内部复用 `SubpageTextField`。
+- `ui/subpage/SubpageStates.kt`
+  - `SubpageEmptyState`：空状态，内部复用 `GufengFeatureCard`，可附带 `StoneStyleButton` 动作。
+  - `SubpageLoadingState`：暖色加载状态。
+  - `SubpageErrorText`：子页错误文本。
+- `ui/subpage/StoneStyleButton.kt`
+  - `StoneStyleButton`：通用暖色石纹按钮，适合子页主要操作。
+  - `StoneStyleChoiceButton`：单选按钮包装，内部走 `SubpageRadioOption`。
+
+### 业务可复用 UI
+- `ui/AgentSelectionComponents.kt`
+  - `SharedAgentPickerDialog`：复用密探选择弹窗。
+  - `SharedTalentPickerDialog`：复用天赋选择弹窗。
+  - `AgentAvatar`：密探头像显示。
+  - `TalentValueChip`、`buildTalentPreview`、`resolveTalentLabel`、`resolveTalentIdByLabel`、`buildSelectableAgentList`：密探天赋展示、解析和候选列表工具。
+- `utils/DialogUtils.kt`
+  - 传统 View / 平台 `AlertDialog` 必须优先用 `DialogUtils.getThemeContext` 创建主题 context。
+  - 在悬浮窗或无障碍服务中展示平台弹窗时，用 `DialogUtils.safeShowOverlayDialog`，它会设置 overlay window type 并统一样式。
+  - 平台弹窗必须经过 `DialogUtils.styleAlertDialog` 或同等项目样式处理，不要保留系统默认黑色/纯白弹窗。
+  - 列表弹窗用 `fixedOptionTextAdapter`，Spinner / AutoComplete 下拉用 `fixedDropdownTextAdapter`，避免系统主题导致文字不可见。
 
 ## 关键硬约束
 ### 1. 不要混用坐标基准
@@ -252,6 +362,7 @@
   - 通用日常脚本执行引擎，支持模板匹配、OCR、点击、变量与分支跳转。
 - `DebugWorkbenchCoordinator`
   - 通用调试工作台协调器，适合给模板/OCR/延时调优接入口。
+  - 脚本 OCR 节点支持从自身 ROI 裁剪生成 App 私有模板，不修改 assets JSON 或 assets 模板文件。
 - `UserDailyScriptStore`
   - 用户脚本 bundle 的创建、读取、导出、模板文件同步。
 - `TemplateOverrideStore`
@@ -261,8 +372,17 @@
 - `RunLogActivity` / `RunLogger`
   - 运行日志查看与输出。
   - App 冷启动时会清空运行日志；运行中日志会同步写入 `files/run_logger.log`，关闭后再打开会从当前会话重新开始。
+  - 运行日志优先使用结构化模块格式：`RunLogger.i(module = "模块名", section = "小节名", message = "短结果")`；OCR 默认只写节点名、成功/失败、原文/命中，模板匹配默认只写节点名、成功/失败、模板名和分数，过程细节放到诊断日志；运行日志不要输出 ROI/区域坐标，JSON 和调试页已能查看。
 - `SubpageScaffold`
   - 子页面统一骨架，包含标题、返回按钮、间距和装饰风格。
+- `ui/subpage/*`
+  - 子页面 Compose 组件库，包含卡片、列表行、选项、表单、弹窗、空/加载/错误状态和按钮。
+- `GufengFeatureCard` / `GufengDecorActionButton`
+  - 主壳古风功能卡和装饰按钮，适合首页或强视觉入口。
+- `AgentSelectionComponents`
+  - 密探/天赋选择相关的业务 UI 与标签解析工具。
+- `DialogUtils`
+  - 传统 View 弹窗、下拉和悬浮窗 overlay 弹窗的统一主题与安全展示工具。
 
 ## 资产与脚本组织规则
 - 内置脚本主要放在 `app/src/main/assets/daily_scripts`。
@@ -270,6 +390,7 @@
 - 调试页对脚本节点的展示，依赖脚本内容本身和 `DailyScriptDebugIndex` 的映射。
 - 若新增一类日常脚本或模板节点，最好同时考虑：
   - 脚本 JSON 是否能被调试页索引
+  - 脚本级 `display_name` 和节点级 `name` 是否足够让用户定位
   - 模板名是否需要在人类可读层做展示映射
   - 是否需要接入模板替换/恢复
 

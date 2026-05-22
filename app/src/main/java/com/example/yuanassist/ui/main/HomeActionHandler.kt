@@ -25,6 +25,7 @@ import com.example.yuanassist.ui.LegacyFragmentHostActivity
 import com.example.yuanassist.ui.RunLogActivity
 import com.example.yuanassist.ui.ScriptLibraryActivity
 import com.example.yuanassist.ui.SettingsActivity
+import com.example.yuanassist.utils.DialogUtils
 import java.io.File
 
 class HomeActionHandler(
@@ -140,17 +141,18 @@ class HomeActionHandler(
             return
         }
 
-        AlertDialog.Builder(activity)
-            .setTitle("发现新版本 ${updateInfo.versionName}")
-            .setMessage(updateInfo.releaseNotes.ifBlank { "检测到新版本，是否前往下载？" })
-            .setPositiveButton("应用内下载") { _, _ ->
-                downloadUpdateInApp(updateInfo)
-            }
-            .setNeutralButton("浏览器下载") { _, _ ->
-                openUpdateInBrowser(updateInfo.apkUrl)
-            }
-            .setNegativeButton("稍后提醒", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(activity))
+                .setTitle("发现新版本 ${updateInfo.versionName}")
+                .setMessage(updateInfo.releaseNotes.ifBlank { "检测到新版本，是否前往下载？" })
+                .setPositiveButton("应用内下载") { _, _ ->
+                    downloadUpdateInApp(updateInfo)
+                }
+                .setNeutralButton("浏览器下载") { _, _ ->
+                    openUpdateInBrowser(updateInfo.apkUrl)
+                }
+                .setNegativeButton("稍后提醒", null),
+        )
     }
 
     private fun downloadUpdateInApp(updateInfo: update) {
@@ -388,11 +390,12 @@ class HomeActionHandler(
     }
 
     private fun showDailyUnsupportedDialog() {
-        AlertDialog.Builder(activity)
-            .setTitle("系统版本过低")
-            .setMessage("日常自动化功能依赖安卓 11 的原生截图 API，您的设备暂不支持。")
-            .setPositiveButton("知道了", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(activity))
+                .setTitle("系统版本过低")
+                .setMessage("日常自动化功能依赖安卓 11 的原生截图 API，您的设备暂不支持。")
+                .setPositiveButton("知道了", null),
+        )
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {

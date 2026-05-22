@@ -146,13 +146,9 @@ object JobStationAssetRepository {
         val turns = parseTurns(contentRoot?.optJSONObject("actions"))
         val importPayload = buildImportPayload(contentRoot)
 
-        RunLogger.i(
-            "MaaYuan详情解析 id=${copilot.id} contentJson=${contentRoot != null} title=${title.take(40)} summaryLen=${summary.length} tags=${stageTags.size} roster=${roster.size} turns=${turns.size} importable=${importPayload != null}"
-        )
+        RunLogger.i(module = "作业站", section = "详情页", message = "解析 MaaYuan：${title.take(40)}，阵容=${roster.size}，回合=${turns.size}")
         if (contentRoot == null) {
-            RunLogger.e(
-                "MaaYuan详情content解析失败 id=${copilot.id} contentSnippet=${copilot.content.take(240)}"
-            )
+            RunLogger.e(module = "作业站", section = "详情页", message = "MaaYuan 正文解析失败：id=${copilot.id}")
         }
 
         return JobStationDetailData(

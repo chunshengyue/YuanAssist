@@ -277,7 +277,7 @@ fun resolveTalentIdByLabel(agentName: String?, label: String): Int? {
         ?.key
 }
 
-private fun buildSelectableAgentList(includeDaihaoYuan: Boolean): List<String> {
+fun buildSelectableAgentList(includeDaihaoYuan: Boolean): List<String> {
     val result = LinkedHashSet<String>()
     if (includeDaihaoYuan) {
         result.addAll(DAIHAOYUAN_EXTRA_AGENTS)

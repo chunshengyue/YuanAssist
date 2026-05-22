@@ -40,6 +40,7 @@ import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.network.FavoriteState
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.SupabaseTimeFormatter
 import retrofit2.Call
 
@@ -79,9 +80,7 @@ class JobStationActivity : AppCompatActivity() {
         val copilotId = intent.getLongExtra(EXTRA_COPILOT_ID, -1L)
         val strategyId = intent.getStringExtra(EXTRA_STRATEGY_ID).orEmpty()
 
-        RunLogger.i(
-            "打开攻略详情页 manufacturer=${Build.MANUFACTURER} model=${Build.MODEL} sdk=${Build.VERSION.SDK_INT} copilotId=$copilotId strategyId=${strategyId.ifBlank { "empty" }}"
-        )
+        RunLogger.i(module = "作业站", section = "详情页", message = "打开详情：copilotId=$copilotId strategyId=${strategyId.ifBlank { "empty" }}")
 
         renderLoadingState()
         when {
@@ -121,7 +120,6 @@ class JobStationActivity : AppCompatActivity() {
         currentStrategyDetail = null
         favoriteObjectId = null
         favoriteInFlight = false
-        RunLogger.i("攻略详情页进入加载态")
         findViewById<TextView>(R.id.tv_detail_title).text = "加载中..."
         findViewById<TextView>(R.id.tv_detail_summary).apply {
             visibility = View.VISIBLE
@@ -154,7 +152,7 @@ class JobStationActivity : AppCompatActivity() {
         commentsRequestVersion += 1
         currentDetailCall?.cancel()
         val requestVersion = ++detailRequestVersion
-        RunLogger.i("开始加载 MaaYuan 详情 copilotId=$copilotId requestVersion=$requestVersion")
+        RunLogger.i(module = "作业站", section = "详情页", message = "加载 MaaYuan：copilotId=$copilotId")
         currentDetailCall = JobStationRemoteRepository.loadDetail(
             copilotId = copilotId,
             onSuccess = { data ->
@@ -169,7 +167,7 @@ class JobStationActivity : AppCompatActivity() {
             onError = { message ->
                 if (requestVersion != detailRequestVersion || isFinishing || isDestroyed) return@loadDetail
                 currentDetailCall = null
-                RunLogger.e("MaaYuan详情加载失败 copilotId=$copilotId message=$message")
+                RunLogger.e(module = "作业站", section = "详情页", message = "MaaYuan 加载失败：$message")
                 Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 finish()
             }
@@ -211,22 +209,15 @@ class JobStationActivity : AppCompatActivity() {
         detailKey: String,
         data: JobStationAssetRepository.JobStationDetailData
     ) {
-        RunLogger.i(
-            "$source 详情开始渲染 $detailKey title=${data.title.take(40)} summaryLen=${data.summary.length} tags=${data.stageTags.size} roster=${data.roster.size} turns=${data.turns.size} importable=${data.importPayload != null} originalLink=${data.originalLink.isNotBlank()} strategyImage=${data.strategyImageUrl.isNotBlank()} agentImage=${data.agentImageUrl.isNotBlank()}"
-        )
+        RunLogger.i(module = "作业站", section = "详情页", message = "$source 渲染：${data.title.take(40)}，阵容=${data.roster.size}，回合=${data.turns.size}")
         try {
             bindHeaderAndContent(data)
-            RunLogger.i(
-                "$source 详情头部渲染完成 $detailKey summaryVisible=${data.summary.isNotBlank() && !data.summary.contains("这里放帖子正文")}"
-            )
             bindRosterCard(data)
-            RunLogger.i("$source 阵容区渲染完成 $detailKey roster=${data.roster.size}")
             bindTableAndOtherActions(data)
-            RunLogger.i("$source 表格区渲染完成 $detailKey turns=${data.turns.size}")
             bindBottomBar(data)
-            RunLogger.i("$source 底栏渲染完成 $detailKey stats=${data.likeCount}/${data.readCount}")
+            RunLogger.i(module = "作业站", section = "详情页", message = "$source 渲染完成")
         } catch (t: Throwable) {
-            RunLogger.e("$source 详情渲染异常 $detailKey", t)
+            RunLogger.e(module = "作业站", section = "详情页", message = "$source 渲染异常：$detailKey", throwable = t)
             showRenderErrorState(source, detailKey, t)
         }
     }
@@ -452,7 +443,7 @@ class JobStationActivity : AppCompatActivity() {
 
     private fun showFavoriteLoginDialog() {
         val detail = currentStrategyDetail ?: return
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle("登录后即可收藏")
             .setMessage("收藏的攻略会出现在“我的收藏”里。")
             .setNegativeButton("暂不", null)
@@ -474,6 +465,7 @@ class JobStationActivity : AppCompatActivity() {
             }
         }
         dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun performOneClickLogin(onSuccess: (MyUser) -> Unit, onError: (String) -> Unit) {
@@ -774,27 +766,25 @@ class JobStationActivity : AppCompatActivity() {
             setPadding(dpToPx(24f), dpToPx(8f), dpToPx(24f), dpToPx(4f))
         }
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setCustomTitle(titleView)
             .setView(messageView)
             .setNegativeButton("取消", null)
             .setPositiveButton("删除", null)
             .create()
-            .also { dialog ->
-                dialog.setOnShowListener {
-                    dialog.window?.setBackgroundDrawableResource(R.drawable.bg_job_station_card)
-                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
-                        setTextColor(Color.parseColor("#8F7A56"))
-                    }
-                    dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
-                        deleteComment(comment, strategyId, dialog)
-                    }
-                    dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
-                        setTextColor(Color.parseColor("#C25B4A"))
-                    }
-                }
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+                setTextColor(Color.parseColor("#8F7A56"))
             }
-            .show()
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                deleteComment(comment, strategyId, dialog)
+            }
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+                setTextColor(Color.parseColor("#C25B4A"))
+            }
+        }
+        dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun showCommentInputDialog(replyTarget: strategy_comment? = null) {
@@ -816,7 +806,7 @@ class JobStationActivity : AppCompatActivity() {
             filters = arrayOf(InputFilter.LengthFilter(500))
         }
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle(if (replyTarget == null) "发表评论" else "回复 ${resolveUserDisplayName(replyTarget.user)}")
             .setView(editText)
             .setNegativeButton("取消", null)
@@ -841,6 +831,7 @@ class JobStationActivity : AppCompatActivity() {
             }
         }
         dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun ensureLoggedIn(onSuccess: (MyUser) -> Unit, onError: (String) -> Unit) {
@@ -1009,7 +1000,7 @@ class JobStationActivity : AppCompatActivity() {
         statsPrefs.edit().putLong(key, now).apply()
         SupabaseRepository.incrementStrategyView(strategyId) { message ->
             statsPrefs.edit().putLong(key, lastViewedAt).apply()
-            RunLogger.e("Supabase 阅读量自增失败 strategyId=$strategyId message=$message")
+            RunLogger.e(module = "作业站", section = "详情页", message = "阅读量自增失败：$message")
         }
         return true
     }
@@ -1416,7 +1407,7 @@ class JobStationActivity : AppCompatActivity() {
     private fun openExternalLink(url: String, failureMessage: String) {
         val normalizedUrl = normalizeExternalLink(url)
         if (normalizedUrl == null) {
-            RunLogger.e("外链打开失败，链接格式无效 raw=${url.take(200)}")
+            RunLogger.e(module = "作业站", section = "外链", message = "链接格式无效：${url.take(80)}")
             Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
             return
         }
@@ -1426,7 +1417,7 @@ class JobStationActivity : AppCompatActivity() {
         }
         val resolvedActivity = intent.resolveActivity(packageManager)
         if (resolvedActivity == null) {
-            RunLogger.e("外链打开失败，未找到可处理应用 url=$normalizedUrl")
+            RunLogger.e(module = "作业站", section = "外链", message = "未找到可处理应用")
             Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
             return
         }
@@ -1434,7 +1425,7 @@ class JobStationActivity : AppCompatActivity() {
         runCatching {
             startActivity(intent)
         }.onFailure {
-            RunLogger.e("外链打开异常 url=$normalizedUrl", it)
+            RunLogger.e(module = "作业站", section = "外链", message = "打开异常", throwable = it)
             Toast.makeText(this, failureMessage, Toast.LENGTH_SHORT).show()
         }
     }

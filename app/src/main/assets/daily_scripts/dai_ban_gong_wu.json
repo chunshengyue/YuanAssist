@@ -1,4 +1,5 @@
 {
+  "display_name": "待办公务",
   "start_task_id": 1,
   "tasks": [
     {
@@ -162,7 +163,7 @@
         "terminal_note": "当前任务鸟食耗尽",
         "branch_var": "auto_eat_enabled",
         "branch_routes": {
-          "0": -3,
+          "0": -1,
           "1": 4
         },
         "roi": {

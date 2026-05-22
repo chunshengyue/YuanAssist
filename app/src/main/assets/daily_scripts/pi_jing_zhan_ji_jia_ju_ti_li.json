@@ -1,4 +1,5 @@
 {
+  "display_name": "家具体力",
   "start_task_id": 0,
   "asset_template_dir": "daily_script_templates/pi_jing_zhan_ji_jia_ju_ti_li",
   "tasks": [

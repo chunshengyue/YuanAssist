@@ -663,13 +663,16 @@ object SupabaseRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
     ) {
+        val body = zipFile.asRequestBody("application/zip".toMediaTypeOrNull())
         val request = Request.Builder()
             .url(uploadUrl)
-            .post(zipFile.asRequestBody("application/zip".toMediaTypeOrNull()))
+            .put(body)
+            .header("cache-control", "max-age=3600")
+            .header("x-upsert", "false")
             .build()
         client.newCall(request).enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
-                dispatchError(onError, "脚本包上传失败")
+                dispatchError(onError, "脚本包上传失败: ${e.message ?: "网络请求失败"}")
             }
 
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
@@ -677,7 +680,9 @@ object SupabaseRepository {
                     if (it.isSuccessful) {
                         dispatchSuccess(onSuccess, Unit)
                     } else {
-                        dispatchError(onError, "脚本包上传失败: HTTP ${it.code}")
+                        val raw = it.body?.string().orEmpty()
+                        val detail = raw.take(240).ifBlank { "无响应内容" }
+                        dispatchError(onError, "脚本包上传失败: HTTP ${it.code} $detail")
                     }
                 }
             }

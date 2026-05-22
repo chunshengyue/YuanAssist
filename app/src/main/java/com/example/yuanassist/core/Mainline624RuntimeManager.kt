@@ -18,6 +18,7 @@ class Mainline624RuntimeManager(
 
     companion object {
         private const val SCRIPT_FILE_NAME = "zhu_xian_6_24.json"
+        private const val ENTRY_START_TASK_ID = 1
         private const val LOOP_START_TASK_ID = 15
         private const val NEXT_RUN_DELAY_MS = 1500L
     }
@@ -39,6 +40,7 @@ class Mainline624RuntimeManager(
         engine.verboseLoggingEnabled = true
         engine.diagnosticLoggingEnabled = config.debugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
+        engine.setRunLogScope("刷6-24", "脚本节点")
     }
 
     fun start(): Boolean {
@@ -51,8 +53,15 @@ class Mainline624RuntimeManager(
         RunLogger.clear()
         engine.logDiagnosticSessionStart()
         val targetSummary = currentConfig.maxRuns?.let { "目标次数=$it" } ?: "运行至体力耗尽"
-        RunLogger.i("6-24任务运行开始，$targetSummary")
-        executeEntryPhase(generation)
+        RunLogger.i(module = "刷6-24", section = "总流程", message = "开始，$targetSummary")
+        executePlan(
+            generation = generation,
+            startTaskId = ENTRY_START_TASK_ID,
+            section = "进图流程",
+            startMessage = "开始",
+            failurePrefix = "6-24进图失败",
+            applyStartBattleDelay = false
+        )
         return true
     }
 
@@ -67,28 +76,6 @@ class Mainline624RuntimeManager(
         }
     }
 
-    private fun executeEntryPhase(generation: Long) {
-        if (!isRunning || generation != this.generation) return
-        RunLogger.i("开始执行6-24进图流程")
-        val plan = loadEntryPlan()
-        if (plan == null) {
-            stopByFailure("无法加载6-24进图脚本 $SCRIPT_FILE_NAME")
-            return
-        }
-        engine.startPlan(
-            plan = plan,
-            onCompleted = { success, errorMsg ->
-                if (!isRunning || generation != this.generation) return@startPlan
-                if (success) {
-                    handleRunSuccess(generation)
-                } else {
-                    stopByFailure("6-24进图失败：$errorMsg")
-                }
-            },
-            initialVariables = buildScriptVariables()
-        )
-    }
-
     private fun executeNextRun(generation: Long) {
         if (!isRunning || generation != this.generation) return
         val currentConfig = config ?: run {
@@ -101,16 +88,33 @@ class Mainline624RuntimeManager(
             return
         }
 
-        val plan = loadLoopPlan()
+        val currentRound = completedRuns + 1
+        val roundSummary = maxRuns?.let { "第${currentRound}/$it 轮" } ?: "第${currentRound}轮"
+        executePlan(
+            generation = generation,
+            startTaskId = LOOP_START_TASK_ID,
+            section = "战斗轮次",
+            startMessage = "开始 $roundSummary",
+            failurePrefix = "6-24执行失败",
+            applyStartBattleDelay = true
+        )
+    }
+
+    private fun executePlan(
+        generation: Long,
+        startTaskId: Int,
+        section: String,
+        startMessage: String,
+        failurePrefix: String,
+        applyStartBattleDelay: Boolean
+    ) {
+        if (!isRunning || generation != this.generation) return
+        RunLogger.i(module = "刷6-24", section = section, message = startMessage)
+        val plan = loadPlan(startTaskId, applyStartBattleDelay)
         if (plan == null) {
             stopByFailure("无法加载脚本 $SCRIPT_FILE_NAME")
             return
         }
-
-        val currentRound = completedRuns + 1
-        val roundSummary = maxRuns?.let { "第${currentRound}/$it 轮" } ?: "第${currentRound}轮"
-        RunLogger.i("调度任务 6-24")
-        RunLogger.i("开始执行 6-24 $roundSummary")
         engine.startPlan(
             plan = plan,
             onCompleted = { success, errorMsg ->
@@ -118,16 +122,17 @@ class Mainline624RuntimeManager(
                 if (success) {
                     handleRunSuccess(generation)
                 } else {
-                    stopByFailure("6-24执行失败：$errorMsg")
+                    stopByFailure("$failurePrefix：$errorMsg")
                 }
             },
-            initialVariables = buildScriptVariables()
+            initialVariables = buildScriptVariables(),
+            scriptFileName = SCRIPT_FILE_NAME,
         )
     }
 
     private fun handleRunSuccess(generation: Long) {
         completedRuns += 1
-        RunLogger.i("6-24第${completedRuns}轮执行成功")
+        RunLogger.i(module = "刷6-24", section = "战斗轮次", message = "第${completedRuns}轮完成")
         val currentConfig = config
         val maxRuns = currentConfig?.maxRuns
         if (maxRuns != null && completedRuns >= maxRuns) {
@@ -139,35 +144,25 @@ class Mainline624RuntimeManager(
         }, NEXT_RUN_DELAY_MS)
     }
 
-    private fun loadPlan(): DailyTaskPlan? {
-        return try {
+    private fun loadPlan(startTaskId: Int, applyStartBattleDelay: Boolean): DailyTaskPlan? {
+        val plan = try {
             service.assets.open("daily_scripts/$SCRIPT_FILE_NAME").use { input ->
                 gson.fromJson(input.reader(), DailyTaskPlan::class.java)
             }
         } catch (t: Throwable) {
-            RunLogger.e("加载6-24脚本失败：$SCRIPT_FILE_NAME", t)
+            RunLogger.e(module = "刷6-24", section = "总流程", message = "加载脚本失败：$SCRIPT_FILE_NAME", throwable = t)
             null
-        }
-    }
-
-    private fun loadLoopPlan(): DailyTaskPlan? {
-        val plan = loadPlan() ?: return null
-        return applyStartBattleDelayOverrides(
-            TemplateDelayOverrideStore.applyToPlan(
-                service,
-                SCRIPT_FILE_NAME,
-                plan.copy(start_task_id = LOOP_START_TASK_ID)
-            )
-        )
-    }
-
-    private fun loadEntryPlan(): DailyTaskPlan? {
-        val plan = loadPlan() ?: return null
-        return TemplateDelayOverrideStore.applyToPlan(
+        } ?: return null
+        val overridden = TemplateDelayOverrideStore.applyToPlan(
             service,
             SCRIPT_FILE_NAME,
-            plan.copy(start_task_id = 1)
+            plan.copy(start_task_id = startTaskId)
         )
+        return if (applyStartBattleDelay) {
+            applyStartBattleDelayOverrides(overridden)
+        } else {
+            overridden
+        }
     }
 
     private fun buildScriptVariables(): Map<String, String> =
@@ -194,13 +189,13 @@ class Mainline624RuntimeManager(
     }
 
     private fun finishSuccessfully(message: String) {
-        RunLogger.i(message)
+        RunLogger.i(module = "刷6-24", section = "总流程", message = message)
         stop()
         Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
     }
 
     private fun stopByFailure(message: String) {
-        RunLogger.e(message)
+        RunLogger.e(module = "刷6-24", section = "总流程", message = message)
         stop()
         Toast.makeText(service, message, Toast.LENGTH_LONG).show()
     }

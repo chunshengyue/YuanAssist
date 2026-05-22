@@ -89,6 +89,7 @@ paddleocr_v5_mobile_android_integration_guide.md
 
 # Local scratch data
 data/
+backups/
 node_modules/
 package.json
 package-lock.json

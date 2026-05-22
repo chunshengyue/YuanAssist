@@ -9,15 +9,12 @@ import com.example.yuanassist.model.BirdFoodStopCondition
 import com.example.yuanassist.model.BirdFoodTaskType
 import com.example.yuanassist.model.DaiBanGongWuEntry
 import com.example.yuanassist.model.DaiBanGongWuOption
-import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
-import com.example.yuanassist.model.ROI
-import com.example.yuanassist.model.TaskParams
-import com.example.yuanassist.utils.BIRD_FOOD_NAV_TEST_TASK_KEY
 import com.example.yuanassist.utils.DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.google.gson.Gson
+import java.io.InputStreamReader
 
 class BirdFoodRuntimeManager(
     private val service: AccessibilityService,
@@ -25,12 +22,8 @@ class BirdFoodRuntimeManager(
 ) {
 
     companion object {
-        private const val DEFAULT_COOL_DOWN_MS = 5 * 60 * 1000L + 10 * 1000L
-        private const val SHORT_COOL_DOWN_MS = 35 * 1000L
-        private const val RETURN_AFTER_TASK_DELAY_MS = 1000L
-        private const val ENTRY_CHECK_DELAY_MS = 1200L
-        private const val DEBUG_COOLDOWN_LOG_INTERVAL_MS = 30_000L
-        private const val MAX_BACK_STEPS = 4
+        private const val CONTROLLER_SCRIPT = "bird_food_controller.json"
+        private const val RETURN_AFTER_RUN_DELAY_MS = 1000L
     }
 
     private val engine = AutoTaskEngine(service)
@@ -39,18 +32,8 @@ class BirdFoodRuntimeManager(
 
     private var generation = 0L
     private var config: BirdFoodConfig? = null
-    private var nextReadyAtMs: Long? = null
-    private var cooldownAwaitingReadyLog = false
     private var totalCompletedRuns = 0
     private var startTimeMs = 0L
-
-    private fun cooldownMsFor(taskType: BirdFoodTaskType): Long {
-        return when (taskType) {
-            BirdFoodTaskType.TU_FA_QING_KUANG,
-            BirdFoodTaskType.XIAO_DAO_XIAO_XI -> SHORT_COOL_DOWN_MS
-            else -> DEFAULT_COOL_DOWN_MS
-        }
-    }
 
     var isRunning = false
         private set
@@ -62,25 +45,21 @@ class BirdFoodRuntimeManager(
         engine.verboseLoggingEnabled = true
         engine.diagnosticLoggingEnabled = config.debugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
+        engine.setRunLogScope("刷鸟食", config.selectedTask.displayName)
     }
 
     fun start(): Boolean {
-        config ?: return false
+        val currentConfig = config ?: return false
         generation += 1
         handler.removeCallbacksAndMessages(null)
-        nextReadyAtMs = null
-        cooldownAwaitingReadyLog = false
         totalCompletedRuns = 0
         startTimeMs = System.currentTimeMillis()
         isRunning = true
         onRunningChanged(true)
         RunLogger.clear()
         engine.logDiagnosticSessionStart()
-        RunLogger.i("鸟食任务运行开始")
-        scheduleDebugCooldownSnapshot(generation)
-        ensureYuanBaoScreen(0, generation) {
-            scheduleNextTask(generation)
-        }
+        RunLogger.i(module = "刷鸟食", section = "总流程", message = "开始，任务=${currentConfig.selectedTask.displayName}")
+        runNextPlan(generation)
         return true
     }
 
@@ -88,8 +67,6 @@ class BirdFoodRuntimeManager(
         generation += 1
         handler.removeCallbacksAndMessages(null)
         if (engine.isRunning) engine.stop()
-        nextReadyAtMs = null
-        cooldownAwaitingReadyLog = false
         isRunning = false
         onRunningChanged(false)
         if (showToast) {
@@ -97,123 +74,28 @@ class BirdFoodRuntimeManager(
         }
     }
 
-    private fun ensureYuanBaoScreen(backAttempts: Int, generation: Long, onReady: () -> Unit) {
-        if (!isRunning || generation != this.generation) return
-        RunLogger.i("检查鸢报界面，第${backAttempts + 1}轮")
-
-        detectTemplate(
-            templateName = "tfqk.png",
-            x = 170f,
-            y = 1054f,
-            align = "center",
-            click = false,
-            generation = generation,
-            onDetected = {
-                RunLogger.i("已确认当前处于鸢报界面")
-                onReady()
-            },
-            onMissed = {
-                RunLogger.i("未识别到突发情况按钮，尝试识别鸢报按钮")
-                detectTemplate(
-                    templateName = "yuanbao.png",
-                    x = 441f,
-                    y = 920f,
-                    align = "center",
-                    click = true,
-                    generation = generation,
-                    onDetected = {
-                        RunLogger.i("识别到鸢报按钮，点击进入鸢报界面")
-                        handler.postDelayed({
-                            ensureYuanBaoScreen(0, generation, onReady)
-                        }, ENTRY_CHECK_DELAY_MS)
-                    },
-                    onMissed = {
-                        if (backAttempts >= MAX_BACK_STEPS) {
-                            stopByFailure("无法返回鸢报界面")
-                            return@detectTemplate
-                        }
-                        RunLogger.i("未识别到鸢报按钮，执行返回，第${backAttempts + 1}次")
-                        service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                        handler.postDelayed({
-                            ensureYuanBaoScreen(backAttempts + 1, generation, onReady)
-                        }, ENTRY_CHECK_DELAY_MS)
-                    }
-                )
-            }
-        )
-    }
-
-    private fun scheduleNextTask(generation: Long) {
+    private fun runNextPlan(generation: Long) {
         if (!isRunning || generation != this.generation) return
         if (shouldStopBeforeNextTask()) return
-
-        val taskType = config?.selectedTask ?: return
-
-        val now = System.currentTimeMillis()
-        emitCooldownReadyLogs(now, taskType)
-        val readyAt = nextReadyAtMs ?: 0L
-        if (now >= readyAt) {
-            RunLogger.i("执行任务 ${taskType.displayName}")
-            executeTask(taskType, generation)
-            return
-        }
-
-        val delay = (readyAt - now).coerceAtLeast(300L)
-        RunLogger.i("当前无可立即执行任务，等待 ${delay}ms 后重试调度")
-        handler.postDelayed({
-            scheduleNextTask(generation)
-        }, delay)
-    }
-
-    private fun executeTask(taskType: BirdFoodTaskType, generation: Long) {
-        if (!isRunning || generation != this.generation) return
-        val now = System.currentTimeMillis()
-        val readyAt = nextReadyAtMs ?: 0L
-        if (now < readyAt) {
-            val delay = (readyAt - now).coerceAtLeast(300L)
-            RunLogger.i("${taskType.displayName} 仍在冷却中，${delay}ms 后再尝试调度")
-            handler.postDelayed({
-                scheduleNextTask(generation)
-            }, delay)
-            return
-        }
-        val plan = loadPlan(taskType.scriptFileName)
+        val currentConfig = config ?: return
+        val taskType = currentConfig.selectedTask
+        val plan = loadPlan(CONTROLLER_SCRIPT)?.withBirdFoodTaskScript(taskType.scriptFileName)
         if (plan == null) {
-            stopByFailure("无法加载脚本 ${taskType.scriptFileName}")
+            stopByFailure("无法加载脚本 $CONTROLLER_SCRIPT")
             return
         }
-
-        var terminalHandled = false
-        var planCompletion: DailyPlanCompletion? = null
+        RunLogger.i(module = "刷鸟食", section = taskType.displayName, message = "开始")
         engine.startPlan(
             plan = plan,
             onCompleted = { success, errorMsg ->
                 if (!isRunning || generation != this.generation) return@startPlan
-                if (success) {
-                    handleTaskSuccess(taskType, generation, planCompletion?.cooldownStartedAtMs)
-                } else if (!terminalHandled) {
-                    stopByFailure("${taskType.name} 执行失败：$errorMsg")
-                }
-            },
-            onCompletedDetailed = { result ->
-                if (!isRunning || generation != this.generation) return@startPlan
-                planCompletion = result
-                when (result.terminalCode) {
-                    -4 -> {
-                        terminalHandled = true
-                        handleTaskCoolingDown(taskType, result.terminalNote, generation, result.cooldownStartedAtMs)
-                    }
-                    -3 -> {
-                        terminalHandled = true
-                        handleTaskExhausted(taskType, result.terminalNote, generation)
-                    }
-                    -2 -> {
-                        terminalHandled = true
-                        stopByFailure(result.terminalNote ?: "${taskType.name} 执行失败")
-                    }
+                when {
+                    success -> handleTaskSuccess(taskType, generation)
+                    else -> stopByFailure("${taskType.displayName} 执行失败：$errorMsg")
                 }
             },
             initialVariables = buildScriptVariables(),
+            scriptFileName = CONTROLLER_SCRIPT,
         )
     }
 
@@ -228,119 +110,26 @@ class BirdFoodRuntimeManager(
         )
     }
 
-    private fun handleTaskSuccess(
-        taskType: BirdFoodTaskType,
-        generation: Long,
-        cooldownStartedAtMs: Long? = null
-    ) {
+    private fun DailyTaskPlan.withBirdFoodTaskScript(scriptFileName: String): DailyTaskPlan {
+        return copy(
+            tasks = tasks.map { task ->
+                val params = task.params
+                if (params?.script_name == "BIRD_FOOD_TASK_SCRIPT") {
+                    task.copy(params = params.copy(script_name = scriptFileName))
+                } else {
+                    task
+                }
+            }
+        )
+    }
+
+    private fun handleTaskSuccess(taskType: BirdFoodTaskType, generation: Long) {
         totalCompletedRuns += 1
-        if (taskType.hasCooldown) {
-            val cooldownMs = cooldownMsFor(taskType)
-            val cooldownBase = cooldownStartedAtMs ?: System.currentTimeMillis()
-            nextReadyAtMs = cooldownBase + cooldownMs
-            cooldownAwaitingReadyLog = true
-            RunLogger.i("【冷却开始】${taskType.displayName}，预计 ${cooldownMs / 1000} 秒后重试")
-        } else {
-            nextReadyAtMs = null
-            cooldownAwaitingReadyLog = false
-        }
-        RunLogger.i("${taskType.name} 执行成功")
+        RunLogger.i(module = "刷鸟食", section = taskType.displayName, message = "完成，第${totalCompletedRuns}次")
         handler.postDelayed({
             if (!isRunning || generation != this.generation) return@postDelayed
-            RunLogger.i("任务结束后执行返回，准备回到鸢报界面")
-            service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-            handler.postDelayed({
-                ensureYuanBaoScreen(0, generation) {
-                    scheduleNextTask(generation)
-                }
-            }, ENTRY_CHECK_DELAY_MS)
-        }, RETURN_AFTER_TASK_DELAY_MS)
-    }
-
-    private fun handleTaskExhausted(
-        taskType: BirdFoodTaskType,
-        terminalNote: String?,
-        generation: Long
-    ) {
-        nextReadyAtMs = null
-        cooldownAwaitingReadyLog = false
-        val message = terminalNote ?: "${taskType.name} 已耗尽"
-        handler.postDelayed({
-            ensureYuanBaoScreen(0, generation) {
-                finishSuccessfully(message)
-            }
-        }, ENTRY_CHECK_DELAY_MS)
-    }
-
-    private fun handleTaskCoolingDown(
-        taskType: BirdFoodTaskType,
-        terminalNote: String?,
-        generation: Long,
-        cooldownStartedAtMs: Long? = null
-    ) {
-        if (!taskType.hasCooldown) {
-            handler.postDelayed({
-                ensureYuanBaoScreen(0, generation) {
-                    scheduleNextTask(generation)
-                }
-            }, ENTRY_CHECK_DELAY_MS)
-            return
-        }
-        val cooldownMs = cooldownMsFor(taskType)
-        val cooldownBase = cooldownStartedAtMs ?: System.currentTimeMillis()
-        nextReadyAtMs = cooldownBase + cooldownMs
-        cooldownAwaitingReadyLog = true
-        val message = terminalNote ?: "${taskType.displayName} 倒计时中，${formatDuration(cooldownMs)}后重试"
-        RunLogger.i("【冷却开始】${taskType.displayName}，预计 ${cooldownMs / 1000} 秒后重试")
-        Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
-        handler.postDelayed({
-            RunLogger.i("任务冷却处理中，返回鸢报界面等待下次执行")
-            ensureYuanBaoScreen(0, generation) {
-                scheduleNextTask(generation)
-            }
-        }, ENTRY_CHECK_DELAY_MS)
-    }
-
-    private fun scheduleDebugCooldownSnapshot(generation: Long) {
-        if (config?.debugModeEnabled != true) return
-        handler.postDelayed({
-            if (!isRunning || generation != this.generation) return@postDelayed
-            logCooldownSnapshot()
-            scheduleDebugCooldownSnapshot(generation)
-        }, DEBUG_COOLDOWN_LOG_INTERVAL_MS)
-    }
-
-    private fun logCooldownSnapshot() {
-        val currentConfig = config ?: return
-        val selectedTask = currentConfig.selectedTask
-        val now = System.currentTimeMillis()
-        val readyAt = nextReadyAtMs ?: return
-        val hasPendingState = now < readyAt
-        if (!hasPendingState) return
-        emitCooldownReadyLogs(now, selectedTask)
-        val snapshot = "${selectedTask.displayName}:${describeTaskState(now)}"
-        RunLogger.i("【冷却状态】$snapshot")
-    }
-
-    private fun emitCooldownReadyLogs(now: Long, taskType: BirdFoodTaskType) {
-        val readyAt = nextReadyAtMs ?: return
-        if (cooldownAwaitingReadyLog && now >= readyAt) {
-            RunLogger.i("【冷却结束】${taskType.displayName}，已恢复可执行")
-            cooldownAwaitingReadyLog = false
-        }
-    }
-
-    private fun describeTaskState(now: Long): String {
-        val readyAt = nextReadyAtMs ?: return "就绪"
-        if (now >= readyAt) return "就绪"
-        return "冷却中(${formatDuration(readyAt - now)})"
-    }
-
-    private fun formatDuration(durationMs: Long): String {
-        val totalSeconds = (durationMs.coerceAtLeast(0L) + 999L) / 1000L
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return "%02d:%02d".format(minutes, seconds)
+            runNextPlan(generation)
+        }, RETURN_AFTER_RUN_DELAY_MS)
     }
 
     private fun shouldStopBeforeNextTask(): Boolean {
@@ -370,65 +159,21 @@ class BirdFoodRuntimeManager(
     }
 
     private fun finishSuccessfully(message: String) {
-        RunLogger.i(message)
+        RunLogger.i(module = "刷鸟食", section = "总流程", message = message)
         stop()
         Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
     }
 
     private fun stopByFailure(message: String) {
-        RunLogger.e(message)
+        RunLogger.e(module = "刷鸟食", section = "总流程", message = message)
         stop()
         Toast.makeText(service, message, Toast.LENGTH_LONG).show()
-    }
-
-    private fun detectTemplate(
-        templateName: String,
-        x: Float,
-        y: Float,
-        align: String,
-        click: Boolean,
-        generation: Long,
-        onDetected: () -> Unit,
-        onMissed: () -> Unit
-    ) {
-        val plan = DailyTaskPlan(
-            start_task_id = 1,
-            tasks = listOf(
-                DailyTask(
-                    id = 1,
-                    action = "MATCH_TEMPLATE",
-                    delay = 500,
-                    params = TaskParams(
-                        template_name = templateName,
-                        threshold = 0.85f,
-                        click = if (click) 1 else 0,
-                        roi = ROI(x = x, y = y, w = 200f, h = 300f, align = align)
-                    ),
-                    on_success = -1,
-                    on_fail = -2
-                )
-            )
-        )
-
-        engine.startPlan(
-            plan = TemplateDelayOverrideStore.applyToPlan(service, BIRD_FOOD_NAV_TEST_TASK_KEY, plan),
-            onCompleted = { success, _ ->
-                if (!isRunning || generation != this.generation) return@startPlan
-                if (success) {
-                    RunLogger.i("界面检测成功：$templateName")
-                    onDetected()
-                } else {
-                    RunLogger.i("界面检测失败：$templateName")
-                    onMissed()
-                }
-            }
-        )
     }
 
     private fun loadPlan(fileName: String): DailyTaskPlan? {
         return try {
             service.assets.open("daily_scripts/$fileName").use { input ->
-                val plan = gson.fromJson(input.reader(), DailyTaskPlan::class.java)
+                val plan = gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
                 TemplateDelayOverrideStore.applyToPlan(
                     service,
                     fileName,
@@ -436,7 +181,7 @@ class BirdFoodRuntimeManager(
                 )
             }
         } catch (t: Throwable) {
-            RunLogger.e("加载鸟食脚本失败：$fileName", t)
+            RunLogger.e(module = "刷鸟食", section = "总流程", message = "加载脚本失败：$fileName", throwable = t)
             null
         }
     }

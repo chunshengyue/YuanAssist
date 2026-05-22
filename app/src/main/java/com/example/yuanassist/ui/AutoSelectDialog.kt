@@ -3,7 +3,6 @@ package com.example.yuanassist.ui.dialogs
 import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -59,12 +58,7 @@ object AutoSelectDialog {
                     0
                 )
                 setSingleLine()
-                val adapter = ArrayAdapter(
-                    themeContext,
-                    android.R.layout.simple_dropdown_item_1line,
-                    allAgentsLibrary
-                )
-                setAdapter(adapter)
+                setAdapter(DialogUtils.fixedDropdownTextAdapter(themeContext, allAgentsLibrary))
                 threshold = 1
                 dropDownHeight = (200 * context.resources.displayMetrics.density).toInt()
             }

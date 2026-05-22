@@ -50,6 +50,7 @@ import com.example.yuanassist.ui.main.MainTab
 import com.example.yuanassist.ui.main.MineProfileState
 import com.example.yuanassist.ui.main.MineTabActions
 import com.example.yuanassist.utils.ConfigManager
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.isFeedbackAdminDevice
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -142,6 +143,9 @@ class MainActivity : AppCompatActivity() {
                     onOpenFaq = homeActionHandler::openFaq,
                     onOpenFeedback = homeActionHandler::openFeedbackCenter,
                     onOpenScriptLibrary = homeActionHandler::openScriptLibrary,
+                    onOpenCloudDailyScript = {
+                        startActivity(Intent(this, CloudDailyScriptListActivity::class.java))
+                    },
                     onCheckUpdate = homeActionHandler::checkUpdate,
                 ),
                 jobActions = JobTabActions(
@@ -250,11 +254,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAnnouncementDialog(title: String, content: String) {
         if (isFinishing || isDestroyed) return
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(content)
-            .setPositiveButton("知道了", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle(title)
+                .setMessage(content)
+                .setPositiveButton("知道了", null),
+        )
     }
 
     private fun refreshHomeOverlayState() {
@@ -386,7 +391,7 @@ class MainActivity : AppCompatActivity() {
             setTextColor(Color.parseColor("#75322D"))
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setCustomTitle(dialogTitle)
             .setView(
                 LinearLayout(this).apply {
@@ -404,7 +409,7 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("取消", null)
             .create()
         dialog.show()
-        dialog.window?.setBackgroundDrawableResource(R.drawable.bg_stone_section_card)
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun showEditAvatarDialog() {
@@ -571,7 +576,7 @@ class MainActivity : AppCompatActivity() {
             setTextColor(Color.parseColor("#75322D"))
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setCustomTitle(dialogTitle)
             .setView(dialogView)
             .setPositiveButton("保存") { _, _ ->
@@ -605,7 +610,7 @@ class MainActivity : AppCompatActivity() {
         }
         filterBox.isChecked = defaultChecked
         dialog.show()
-        dialog.window?.setBackgroundDrawableResource(R.drawable.bg_stone_section_card)
+        DialogUtils.styleAlertDialog(dialog)
         val screenWidth = resources.displayMetrics.widthPixels
         dialog.window?.setLayout((screenWidth * 0.86f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
     }

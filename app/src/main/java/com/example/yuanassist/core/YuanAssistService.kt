@@ -1635,11 +1635,13 @@ class YuanAssistService : AccessibilityService() {
     }
 
     private fun showExportDialog() {
-        ServiceDialogs.showExportImageSettingsDialog(this) { headers ->
+        ServiceDialogs.showExportImageSettingsDialog(this) { settings ->
             com.example.yuanassist.utils.ImageExportUtils.generateAndSaveImage(
                 this,
                 currentDisplayData,
-                headers
+                settings.headers,
+                settings.gameTitle,
+                settings.subtitle
             )
         }
     }

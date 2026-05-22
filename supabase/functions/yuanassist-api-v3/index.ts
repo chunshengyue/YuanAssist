@@ -239,7 +239,7 @@ async function getCommentByObjectId(objectId: string): Promise<CommentRow | null
   return data;
 }
 
-async function loadUsersByIds(userIds: string[]): Promise<Map<string, UserRow>> {
+async function loadUsersByIds(userIds: Array<string | null | undefined>): Promise<Map<string, UserRow>> {
   const ids = uniqueNonEmpty(userIds);
   if (ids.length === 0) return new Map();
   const { data, error } = await db
@@ -250,7 +250,7 @@ async function loadUsersByIds(userIds: string[]): Promise<Map<string, UserRow>> 
   return new Map((data as UserRow[]).map((item) => [item.id, item]));
 }
 
-async function loadStrategiesByIds(strategyIds: string[]): Promise<Map<string, StrategyRow>> {
+async function loadStrategiesByIds(strategyIds: Array<string | null | undefined>): Promise<Map<string, StrategyRow>> {
   const ids = uniqueNonEmpty(strategyIds);
   if (ids.length === 0) return new Map();
   const { data, error } = await db
@@ -261,7 +261,7 @@ async function loadStrategiesByIds(strategyIds: string[]): Promise<Map<string, S
   return new Map((data as StrategyRow[]).map((item) => [item.id, item]));
 }
 
-async function loadCommentsByIds(commentIds: string[]): Promise<Map<string, CommentRow>> {
+async function loadCommentsByIds(commentIds: Array<string | null | undefined>): Promise<Map<string, CommentRow>> {
   const ids = uniqueNonEmpty(commentIds);
   if (ids.length === 0) return new Map();
   const { data, error } = await db

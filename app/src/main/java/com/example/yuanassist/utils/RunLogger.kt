@@ -31,6 +31,10 @@ object RunLogger {
         append("I", message, null)
     }
 
+    fun i(module: String, section: String? = null, message: String) {
+        append("I", scopedMessage(module, section, message), null)
+    }
+
     fun raw(message: String) {
         appendRaw(message)
     }
@@ -41,6 +45,14 @@ object RunLogger {
 
     fun e(message: String, throwable: Throwable) {
         append("E", message, throwable)
+    }
+
+    fun e(module: String, section: String? = null, message: String) {
+        append("E", scopedMessage(module, section, message), null)
+    }
+
+    fun e(module: String, section: String? = null, message: String, throwable: Throwable) {
+        append("E", scopedMessage(module, section, message), throwable)
     }
 
     @Synchronized
@@ -92,6 +104,17 @@ object RunLogger {
 
     private fun shouldSuppress(message: String): Boolean {
         return false
+    }
+
+    private fun scopedMessage(module: String, section: String?, message: String): String {
+        val cleanModule = module.trim().ifBlank { "其他日志" }
+        val cleanSection = section?.trim()?.takeIf { it.isNotBlank() }
+        val prefix = if (cleanSection == null) {
+            "[$cleanModule]"
+        } else {
+            "[$cleanModule / $cleanSection]"
+        }
+        return "$prefix ${message.trim()}"
     }
 
     @Synchronized

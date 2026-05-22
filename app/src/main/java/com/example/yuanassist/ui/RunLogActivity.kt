@@ -33,12 +33,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
-import androidx.appcompat.app.AlertDialog
 import com.example.yuanassist.model.BirdFoodTaskType
 import com.example.yuanassist.ui.subpage.SubpageEmptyState
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
-import com.example.yuanassist.utils.ExceptionLogStore
 import com.example.yuanassist.utils.RunLogger
 
 private data class RunLogSection(
@@ -51,6 +49,7 @@ private data class RunLogSection(
 )
 
 private val RUN_LOG_LINE_REGEX = Regex("""^\[([^\]]+)] \[[^\]]+] (.*)$""")
+private val SCOPED_MESSAGE_REGEX = Regex("""^\[([^]/\]]+?)(?:\s*/\s*([^\]]+))?]\s*(.*)$""")
 
 class RunLogActivity : AppCompatActivity() {
 
@@ -93,32 +92,12 @@ class RunLogActivity : AppCompatActivity() {
         setContent {
             RunLogScreen(
                 loadSections = {
-                    buildPersistedSections() + buildRuntimeSections()
+                    buildRuntimeSections()
                 },
                 onCopySection = { section ->
                     copyText(section.content, "该段日志已复制")
                 },
-                onDeleteSection = { section, onDeleted ->
-                    confirmDeleteSection(section, onDeleted)
-                },
                 onBack = ::finish,
-            )
-        }
-    }
-
-    private fun buildPersistedSections(): List<RunLogSection> {
-        return ExceptionLogStore.loadEntries(this).map { entry ->
-            RunLogSection(
-                title = if (entry.title == "异常处理") "无障碍权限相关" else entry.title,
-                subtitle = entry.subtitle
-                    .replace("系统权限与服务异常", "无障碍权限相关")
-                    .replace("异常处理", "无障碍权限相关"),
-                content = entry.content.replace(
-                    "【异常处理】",
-                    "【无障碍权限相关】",
-                ),
-                entryId = entry.id,
-                canDelete = true,
             )
         }
     }
@@ -137,19 +116,23 @@ class RunLogActivity : AppCompatActivity() {
         if (lines.isEmpty()) return emptyList()
 
         val sections = mutableListOf<RunLogSection>()
-        val looseLines = mutableListOf<String>()
+        val scopedLines = linkedMapOf<String, MutableList<String>>()
         val roundsByTask = mutableMapOf<String, Int>()
         var currentSection: MutableSection? = null
 
         fun flushLooseLines() {
-            if (looseLines.isEmpty()) return
-            sections += RunLogSection(
-                title = "其他日志",
-                subtitle = "未归到特定任务",
-                content = looseLines.joinToString("\n"),
-                expanded = false,
-            )
-            looseLines.clear()
+            scopedLines.forEach { (key, value) ->
+                val keyParts = key.split('\u0001')
+                val title = keyParts.firstOrNull().orEmpty().ifBlank { "其他日志" }
+                val subtitle = keyParts.getOrNull(1) ?: defaultSubtitleForModule(title)
+                sections += RunLogSection(
+                    title = title,
+                    subtitle = subtitle,
+                    content = value.joinToString("\n"),
+                    expanded = false,
+                )
+            }
+            scopedLines.clear()
         }
 
         fun flushCurrentSection() {
@@ -159,6 +142,13 @@ class RunLogActivity : AppCompatActivity() {
 
         lines.forEach { line ->
             val message = extractMessage(line)
+            val scoped = parseScopedMessage(message)
+            if (scoped != null) {
+                flushCurrentSection()
+                val key = scoped.title + "\u0001" + scoped.subtitle
+                scopedLines.getOrPut(key) { mutableListOf() } += line
+                return@forEach
+            }
             val startedTask = extractStartedTask(message)
 
             if (startedTask != null) {
@@ -179,7 +169,10 @@ class RunLogActivity : AppCompatActivity() {
             }
 
             if (currentSection == null) {
-                looseLines += line
+                val module = inferModule(message)
+                val section = inferSection(module, message)
+                val key = module + "\u0001" + section
+                scopedLines.getOrPut(key) { mutableListOf() } += line
                 return@forEach
             }
 
@@ -205,6 +198,85 @@ class RunLogActivity : AppCompatActivity() {
             return if (taskName.isBlank()) null else normalizeTaskName(taskName)
         }
         return null
+    }
+
+    private data class ParsedScopedMessage(
+        val title: String,
+        val subtitle: String,
+    )
+
+    private fun parseScopedMessage(message: String): ParsedScopedMessage? {
+        val match = SCOPED_MESSAGE_REGEX.find(message) ?: return null
+        val module = normalizeModuleName(match.groupValues[1])
+        val section = match.groupValues.getOrNull(2)
+            ?.takeIf { it.isNotBlank() }
+            ?.trim()
+            ?: defaultSubtitleForModule(module)
+        return ParsedScopedMessage(title = module, subtitle = section)
+    }
+
+    private fun inferModule(message: String): String {
+        return when {
+            message.contains("鸟食") || message.contains("鸢报界面") ||
+                message.contains("突发情况") || message.contains("小道消息") ||
+                message.contains("他的传闻") || message.contains("待办公务") -> "刷鸟食"
+            message.contains("6-24") || message.contains("624") -> "刷6-24"
+            message.contains("披荆") || message.contains("前置任务") -> "披荆斩棘"
+            message.contains("无月卡观星") -> "无月卡观星"
+            message.contains("作业站") || message.contains("MaaYuan") ||
+                message.contains("攻略详情") || message.contains("神秘代码") -> "作业站"
+            message.contains("云端脚本发布") -> "云端脚本发布"
+            message.contains("角色导入") || message.contains("号位") ||
+                message.contains("命盘") || message.contains("练度") -> "角色导入"
+            message.contains("星石") || message.contains("本地OCR返回原文本") -> "星石 OCR"
+            else -> "其他日志"
+        }
+    }
+
+    private fun inferSection(module: String, message: String): String {
+        return when (module) {
+            "刷鸟食" -> when {
+                message.contains("突发情况") -> "突发情况"
+                message.contains("小道消息") -> "小道消息"
+                message.contains("他的传闻") -> "他的传闻"
+                message.contains("待办公务") -> "待办公务"
+                message.contains("冷却") -> "冷却"
+                else -> "导航与调度"
+            }
+            "刷6-24" -> when {
+                message.contains("进图") -> "进图流程"
+                message.contains("第") && message.contains("轮") -> "战斗轮次"
+                else -> "总流程"
+            }
+            "披荆斩棘" -> when {
+                message.contains("答题") -> "答题"
+                message.contains("神秘") -> "神秘事件"
+                message.contains("第二模块") || message.contains("活动页") || message.contains("任务页") -> "活动页"
+                message.contains("前置") || message.contains("第一模块") -> "前置任务"
+                else -> "总流程"
+            }
+            "无月卡观星" -> if (message.contains("批")) "批次" else "总流程"
+            "角色导入" -> Regex("""(\d+)号位""").find(message)?.groupValues?.getOrNull(1)?.let { "${it}号位" } ?: "总览"
+            "星石 OCR" -> if (message.contains("原文本")) "原文" else "解析结果"
+            else -> defaultSubtitleForModule(module)
+        }
+    }
+
+    private fun normalizeModuleName(value: String): String {
+        val text = value.trim()
+        return when (text) {
+            "6-24", "刷624", "主线624" -> "刷6-24"
+            "鸟食" -> "刷鸟食"
+            "观星" -> "无月卡观星"
+            else -> text.ifBlank { "其他日志" }
+        }
+    }
+
+    private fun defaultSubtitleForModule(module: String): String {
+        return when (module) {
+            "其他日志" -> "未归到特定任务"
+            else -> "总流程"
+        }
     }
 
     private fun normalizeTaskName(taskName: String): String {
@@ -246,33 +318,12 @@ class RunLogActivity : AppCompatActivity() {
         Toast.makeText(this, toastText, Toast.LENGTH_SHORT).show()
     }
 
-    private fun confirmDeleteSection(
-        section: RunLogSection,
-        onDeleted: () -> Unit,
-    ) {
-        val entryId = section.entryId ?: return
-        AlertDialog.Builder(this)
-            .setTitle("删除无障碍权限日志")
-            .setMessage("这条“无障碍权限相关”日志删除后不会自动恢复，是否继续？")
-            .setPositiveButton("删除") { _, _ ->
-                val deleted = ExceptionLogStore.deleteEntry(this, entryId)
-                if (deleted) {
-                    Toast.makeText(this, "已删除无障碍权限日志", Toast.LENGTH_SHORT).show()
-                    onDeleted()
-                } else {
-                    Toast.makeText(this, "删除失败", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("取消", null)
-            .show()
-    }
 }
 
 @Composable
 private fun RunLogScreen(
     loadSections: () -> List<RunLogSection>,
     onCopySection: (RunLogSection) -> Unit,
-    onDeleteSection: (RunLogSection, () -> Unit) -> Unit,
     onBack: () -> Unit,
 ) {
     var sections by remember { mutableStateOf<List<RunLogSection>>(emptyList()) }
@@ -282,7 +333,7 @@ private fun RunLogScreen(
     fun reload() {
         loading = true
         sections = loadSections().map { section ->
-            section.copy(expanded = expandedTitles.contains(section.title))
+            section.copy(expanded = expandedTitles.contains(sectionKey(section)))
         }
         loading = false
     }
@@ -301,7 +352,7 @@ private fun RunLogScreen(
             loading -> {
                 SubpageSectionCard(
                     title = "日志整理中",
-                    subtitle = "正在汇总运行记录与权限异常记录",
+                    subtitle = "正在汇总运行记录",
                 ) {
                     Text("请稍候…")
                 }
@@ -310,7 +361,7 @@ private fun RunLogScreen(
             sections.isEmpty() -> {
                 SubpageEmptyState(
                     title = "暂无运行日志",
-                    subtitle = "当前没有可展示的运行记录和无障碍权限异常记录。",
+                    subtitle = "当前没有可展示的运行记录。",
                 )
             }
 
@@ -323,13 +374,14 @@ private fun RunLogScreen(
                             RunLogEntry(
                                 section = section,
                                 onToggle = {
-                                    expandedTitles = if (expandedTitles.contains(section.title)) {
-                                        expandedTitles - section.title
+                                    val key = sectionKey(section)
+                                    expandedTitles = if (expandedTitles.contains(key)) {
+                                        expandedTitles - key
                                     } else {
-                                        expandedTitles + section.title
+                                        expandedTitles + key
                                     }
                                     sections = sections.map {
-                                        if (it.title == section.title && it.subtitle == section.subtitle) {
+                                        if (sectionKey(it) == key) {
                                             it.copy(expanded = !it.expanded)
                                         } else {
                                             it
@@ -337,12 +389,7 @@ private fun RunLogScreen(
                                     }
                                 },
                                 onCopy = { onCopySection(section) },
-                                onDelete = {
-                                    onDeleteSection(section) {
-                                        expandedTitles = expandedTitles - section.title
-                                        reload()
-                                    }
-                                },
+                                onDelete = {},
                             )
                         }
                     }
@@ -351,6 +398,8 @@ private fun RunLogScreen(
         }
     }
 }
+
+private fun sectionKey(section: RunLogSection): String = "${section.title}\u0001${section.subtitle}"
 
 @Composable
 private fun RunLogEntry(
@@ -460,10 +509,10 @@ private fun colorForRunLogLine(line: String): Color {
     val message = RUN_LOG_LINE_REGEX.matchEntire(line)?.groupValues?.getOrNull(2) ?: line
     return when {
         line.contains("[E]") -> Color(0xFFB84D4D)
-        message.startsWith("[披荆神秘]") -> Color(0xFFC57A2D)
-        message.startsWith("[披荆答题]") -> Color(0xFF3F6EA8)
-        message.startsWith("[披荆OCR]") -> Color(0xFF2D8C88)
-        message.startsWith("[披荆流程]") -> Color(0xFF8A5A3C)
+        message.startsWith("[披荆斩棘 / 神秘事件]") || message.startsWith("[披荆神秘]") -> Color(0xFFC57A2D)
+        message.startsWith("[披荆斩棘 / 答题]") || message.startsWith("[披荆答题]") -> Color(0xFF3F6EA8)
+        message.contains("OCR") -> Color(0xFF2D8C88)
+        message.startsWith("[披荆斩棘") || message.startsWith("[披荆流程]") -> Color(0xFF8A5A3C)
         message.startsWith("[调试诊断]") -> Color(0xFF7D7D7D)
         line.startsWith("【") -> Color(0xFF9A6435)
         else -> Color(0xFF8A6B5E)

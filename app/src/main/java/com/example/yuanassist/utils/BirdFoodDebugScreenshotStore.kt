@@ -43,7 +43,7 @@ object BirdFoodDebugScreenshotStore {
                 Canvas(copy).drawBitmap(bitmap, 0f, 0f, null)
             }
         } catch (t: Throwable) {
-            RunLogger.e("鸟食调试截图复制失败", t)
+            RunLogger.e(module = "刷鸟食", section = "调试截图", message = "复制失败", throwable = t)
             null
         }
     }
@@ -61,7 +61,7 @@ object BirdFoodDebugScreenshotStore {
 
         val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
         if (uri == null) {
-            RunLogger.e("鸟食调试截图写入失败：无法创建 $fileName")
+            RunLogger.e(module = "刷鸟食", section = "调试截图", message = "写入失败：无法创建 $fileName")
             return
         }
 
@@ -78,7 +78,7 @@ object BirdFoodDebugScreenshotStore {
             resolver.update(uri, readyValues, null, null)
         } catch (t: Throwable) {
             resolver.delete(uri, null, null)
-            RunLogger.e("鸟食调试截图保存失败：$fileName", t)
+            RunLogger.e(module = "刷鸟食", section = "调试截图", message = "保存失败：$fileName", throwable = t)
         }
     }
 

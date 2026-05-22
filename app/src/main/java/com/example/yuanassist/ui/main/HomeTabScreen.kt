@@ -79,6 +79,7 @@ fun HomeTabScreen(
                 HomeEntryButton("常见问题", R.drawable.item_xunyu, R.drawable.decor_xian, onClick = actions.onOpenFaq),
                 HomeEntryButton("问题反馈", R.drawable.item_xunyou, R.drawable.decor_butterfly, onClick = actions.onOpenFeedback),
                 HomeEntryButton("脚本库", R.drawable.item_zhangzhao, R.drawable.decor_que, onClick = actions.onOpenScriptLibrary),
+                HomeEntryButton("云端脚本", R.drawable.item_zhanghe, R.drawable.decor_yuan, onClick = actions.onOpenCloudDailyScript),
                 HomeEntryButton("检查更新", R.drawable.item_chendeng, R.drawable.decor_que, onClick = actions.onCheckUpdate),
             ),
         )

@@ -102,6 +102,18 @@
             android:screenOrientation="portrait"
             android:exported="false" />
         <activity
+            android:name=".ui.CloudDailyScriptListActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity
+            android:name=".ui.CloudDailyScriptActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity
+            android:name=".ui.UploadCloudDailyScriptActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity
             android:name=".ui.ImagePickerActivity"
             android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"            android:excludeFromRecents="true"
             android:exported="false" />

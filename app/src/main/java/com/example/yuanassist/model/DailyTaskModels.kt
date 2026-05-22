@@ -3,7 +3,8 @@ package com.example.yuanassist.model
 data class DailyTaskPlan(
     val start_task_id: Int,
     val tasks: List<DailyTask>,
-    val asset_template_dir: String? = null
+    val asset_template_dir: String? = null,
+    val display_name: String? = null
 )
 
 data class DailyTask(
@@ -68,6 +69,7 @@ data class TaskParams(
 )
 
 data class ScreenshotStep(
+    val name: String? = null,
     val type: String,
     val target_chars: List<String>? = null,
     val target_text: String? = null,

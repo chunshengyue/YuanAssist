@@ -10,7 +10,6 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -27,6 +26,7 @@ import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.ROI
 import com.example.yuanassist.model.TaskParams
+import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.applyYuanInputStyle
 import com.example.yuanassist.utils.UserDailyScriptBundle
 import com.example.yuanassist.utils.UserDailyScriptStore
@@ -87,15 +87,16 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
             super.onBackPressed()
             return
         }
-        AlertDialog.Builder(this)
-            .setTitle("放弃修改")
-            .setMessage("还有未保存的更改，确认直接返回吗？")
-            .setPositiveButton("返回") { _, _ ->
-                dirty = false
-                finish()
-            }
-            .setNegativeButton("取消", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle("放弃修改")
+                .setMessage("还有未保存的更改，确认直接返回吗？")
+                .setPositiveButton("返回") { _, _ ->
+                    dirty = false
+                    finish()
+                }
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun loadPlanFromIntent(): Boolean {
@@ -710,47 +711,50 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
             text = message
         }
         val scrollView = ScrollView(this).apply { addView(content) }
-        AlertDialog.Builder(this)
-            .setTitle("#${task.id} ${DailyPlanGraphBuilder.displayName(task)}")
-            .setView(scrollView)
-            .setPositiveButton("关闭", null)
-            .show()
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle("#${task.id} ${DailyPlanGraphBuilder.displayName(task)}")
+                .setView(scrollView)
+                .setPositiveButton("关闭", null),
+        )
     }
 
     private fun confirmDeleteTask(task: DailyTask) {
         val refs = DailyPlanGraphBuilder.buildIncomingOnSuccessOrFailRefs(workingTasks, task.id)
         if (refs.isNotEmpty()) {
-            AlertDialog.Builder(this)
-                .setTitle("无法删除")
-                .setMessage(
-                    buildString {
-                        appendLine("该节点仍被 on_success / on_fail 引用，请先修改：")
-                        appendLine()
-                        refs.forEach { appendLine(it.label) }
-                    }.trim()
-                )
-                .setPositiveButton("知道了", null)
-                .show()
+            DialogUtils.showStyledDialog(
+                AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                    .setTitle("无法删除")
+                    .setMessage(
+                        buildString {
+                            appendLine("该节点仍被 on_success / on_fail 引用，请先修改：")
+                            appendLine()
+                            refs.forEach { appendLine(it.label) }
+                        }.trim()
+                    )
+                    .setPositiveButton("知道了", null),
+            )
             return
         }
-        AlertDialog.Builder(this)
-            .setTitle("删除节点")
-            .setMessage("确认删除 #${task.id} 吗？")
-            .setPositiveButton("删除") { _, _ ->
-                workingTasks.removeAll { it.id == task.id }
-                if (startTaskId == task.id) {
-                    startTaskId = workingTasks.minOfOrNull { it.id } ?: 1
+        DialogUtils.showStyledDialog(
+            AlertDialog.Builder(DialogUtils.getThemeContext(this))
+                .setTitle("删除节点")
+                .setMessage("确认删除 #${task.id} 吗？")
+                .setPositiveButton("删除") { _, _ ->
+                    workingTasks.removeAll { it.id == task.id }
+                    if (startTaskId == task.id) {
+                        startTaskId = workingTasks.minOfOrNull { it.id } ?: 1
+                    }
+                    markDirty()
+                    renderPlan()
                 }
-                markDirty()
-                renderPlan()
-            }
-            .setNegativeButton("取消", null)
-            .show()
+                .setNegativeButton("取消", null),
+        )
     }
 
     private fun showEditStartTaskDialog() {
         val input = buildNumberEdit(startTaskId.toString())
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle("修改起始任务")
             .setView(buildField("start_task_id", input))
             .setPositiveButton("保存", null)
@@ -770,6 +774,7 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
             }
         }
         dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun showEditTaskDialog(existingTask: DailyTask?) {
@@ -903,7 +908,7 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
         actionSpinner.onItemSelectedListener = SimpleItemSelectedListener(::updateSections)
         updateSections()
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(DialogUtils.getThemeContext(this))
             .setTitle(if (isNew) "新增节点" else "编辑节点 #${sourceTask.id}")
             .setView(root)
             .setPositiveButton("保存", null)
@@ -967,6 +972,7 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
             }
         }
         dialog.show()
+        DialogUtils.styleAlertDialog(dialog)
     }
 
     private fun buildTaskFromEditor(
@@ -1292,11 +1298,7 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
 
     private fun buildSpinner(options: List<String>, selected: String): Spinner {
         return Spinner(this).apply {
-            adapter = ArrayAdapter(
-                this@RecordedDailyScriptViewerActivity,
-                android.R.layout.simple_spinner_dropdown_item,
-                options
-            )
+            adapter = DialogUtils.fixedDropdownTextAdapter(this@RecordedDailyScriptViewerActivity, options)
             setSelection(options.indexOf(selected).takeIf { it >= 0 } ?: 0)
         }
     }

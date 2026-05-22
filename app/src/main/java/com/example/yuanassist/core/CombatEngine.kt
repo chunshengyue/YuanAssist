@@ -3435,13 +3435,17 @@ class CombatEngine(
         roiHeight: Float
     ): VisionSearchRegion? {
         val screenshotGameScale = minOf(screenshot.width / VISION_BASE_W, screenshot.height / VISION_BASE_H)
+        val gameWidth = VISION_BASE_W * screenshotGameScale
+        val offsetX = (screenshot.width - gameWidth) / 2f
+        val gameRight = offsetX + gameWidth
         val width = (roiWidth * screenshotGameScale).toInt().coerceAtLeast(1).coerceAtMost(screenshot.width)
         val height = (roiHeight * screenshotGameScale).toInt().coerceAtLeast(1).coerceAtMost(screenshot.height)
-        val left = (screenshot.width - width).coerceAtLeast(0)
+        val right = gameRight.toInt().coerceIn(1, screenshot.width)
+        val left = (right - width).coerceAtLeast(0)
         val top = 0
         if (width <= 0 || height <= 0) return null
         return VisionSearchRegion(
-            bitmap = Bitmap.createBitmap(screenshot, left, top, width, height),
+            bitmap = Bitmap.createBitmap(screenshot, left, top, right - left, height),
             left = left,
             top = top
         )
