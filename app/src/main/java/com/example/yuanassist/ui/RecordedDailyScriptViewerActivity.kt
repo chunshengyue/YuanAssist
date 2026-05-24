@@ -809,11 +809,11 @@ class RecordedDailyScriptViewerActivity : AppCompatActivity() {
         val actionSpinner = buildSpinner(supportedActions, sourceTask.action)
 
         form.addView(buildField("id", idEdit))
-        form.addView(buildField("name", nameEdit))
+        form.addView(buildField("节点名称（可不填）", nameEdit))
         form.addView(buildField("action", actionSpinner))
-        form.addView(buildField("delay", delayEdit))
-        form.addView(buildField("on_success", successEdit))
-        form.addView(buildField("on_fail", failEdit))
+        form.addView(buildField("该动作前延迟", delayEdit))
+        form.addView(buildField("成功后跳转", successEdit))
+        form.addView(buildField("失败后跳转（-1/-2=退出）", failEdit))
         form.addView(cooldownCheck)
 
         val clickSection = buildEditorSection().also { form.addView(it.container) }
