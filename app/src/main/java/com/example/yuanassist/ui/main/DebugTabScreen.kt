@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -557,17 +558,20 @@ private fun DebugReplacementCanvas(
         val previewBitmap = state.previewBitmap
         val imageAspect = previewBitmap.width.toFloat() / previewBitmap.height.toFloat().coerceAtLeast(1f)
         val containerAspect = constraints.maxWidth.toFloat() / constraints.maxHeight.toFloat().coerceAtLeast(1f)
-        val imageModifier = if (imageAspect > containerAspect) {
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .onSizeChanged { imageSize = it }
+        val imageWidth = if (imageAspect > containerAspect) {
+            maxWidth
         } else {
-            Modifier
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(12.dp))
-                .onSizeChanged { imageSize = it }
+            maxHeight * imageAspect
         }
+        val imageHeight = if (imageAspect > containerAspect) {
+            maxWidth / imageAspect
+        } else {
+            maxHeight
+        }
+        val imageModifier = Modifier
+            .size(width = imageWidth, height = imageHeight)
+            .clip(RoundedCornerShape(12.dp))
+            .onSizeChanged { imageSize = it }
         val latestConfirm by rememberUpdatedState(onConfirm)
         var selectionLeft by remember(state.sessionId) { mutableStateOf(state.initialLeftPx.toFloat()) }
         var selectionTop by remember(state.sessionId) { mutableStateOf(state.initialTopPx.toFloat()) }

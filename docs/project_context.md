@@ -49,7 +49,7 @@
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
 - 日常脚本系统
   - `AutoTaskEngine` 按 `DailyTaskPlan` 执行 CLICK、MATCH_TEMPLATE、OCR、SET_VAR、BACK 等动作。
-  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL。
+  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
   - 首页日常入口包含“哀牢15min”：入口页是 `Ailao15MinFragment`，导入 `assets/script(1).json` 到日常版悬浮窗；脚本用于每 15 分钟刷一次哀牢幻境难度，底部确定 OCR 会最多等待约 60 秒。
   - 现已支持 `SCREENSHOT_GROUP`：
     - 只用于视觉识别候选组，共用一次截图
@@ -64,6 +64,8 @@
   - 项目已移除旧的 `treatFailMinusOneAsSuccess` 分叉语义；不要再依赖额外布尔参数改变 `-1` 的含义。
 - 脚本录制与编辑
   - `DailyScriptRecorderManager` 负责录制。
+  - 录制器支持滑动节点：第一次点屏幕作为起点，节点弹窗里的「获取结束坐标」用于再次点屏幕采集终点，保存为 `SWIPE` 的 `startX/startY/endX/endY/duration/align`。
+  - 录制点若落在居中游戏区域外，会自动推荐 `top` 或 `bottom` 位置类型；滑动节点切换位置类型时会用原始屏幕点重算起点和已采集终点。
   - `RecordedDailyScriptViewerActivity` 负责查看、分支切换、编辑、导出。
 - 调试工作台
   - `DebugWorkbenchCoordinator` 负责从图片中测试模板/OCR、替换模板、调延时、查看命中范围。

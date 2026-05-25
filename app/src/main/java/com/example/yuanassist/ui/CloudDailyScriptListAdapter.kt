@@ -1,9 +1,15 @@
 package com.example.yuanassist.ui
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import coil.Coil
+import coil.request.ImageRequest
 import androidx.recyclerview.widget.RecyclerView
 import com.example.yuanassist.R
 import com.example.yuanassist.model.cloud_daily_script
@@ -36,9 +42,10 @@ class CloudDailyScriptListAdapter(
     ) : RecyclerView.ViewHolder(itemView) {
         private val titleView: TextView = itemView.findViewById(R.id.tv_cloud_item_title)
         private val descriptionView: TextView = itemView.findViewById(R.id.tv_cloud_item_description)
+        private val authorAvatarView: ImageView = itemView.findViewById(R.id.iv_cloud_item_author_avatar)
         private val authorView: TextView = itemView.findViewById(R.id.tv_cloud_item_author)
         private val metaView: TextView = itemView.findViewById(R.id.tv_cloud_item_meta)
-        private val tagsView: TextView = itemView.findViewById(R.id.tv_cloud_item_tags)
+        private val tagsContainer: LinearLayout = itemView.findViewById(R.id.layout_cloud_item_tags)
 
         fun bind(item: cloud_daily_script) {
             titleView.text = item.title.ifBlank { "未命名脚本" }
@@ -47,8 +54,67 @@ class CloudDailyScriptListAdapter(
                 ?: item.author?.username?.takeIf { it.isNotBlank() }
                 ?: "匿名用户"
             metaView.text = "${item.taskCount}步 · ${item.downloadCount}次下载"
-            tagsView.text = item.tags.trim().ifBlank { "日常脚本" }
+            bindAvatar(item.author?.avatarUrl.orEmpty())
+            bindTags(parseTags(item.tags).ifEmpty { listOf("日常脚本") })
             itemView.setOnClickListener { onClick(item) }
         }
+
+        private fun bindAvatar(avatarUrl: String) {
+            if (avatarUrl.isBlank()) {
+                authorAvatarView.setImageResource(R.drawable.cover)
+                return
+            }
+            Coil.imageLoader(itemView.context).enqueue(
+                ImageRequest.Builder(itemView.context)
+                    .data(avatarUrl)
+                    .placeholder(R.drawable.cover)
+                    .error(R.drawable.cover)
+                    .target(authorAvatarView)
+                    .build(),
+            )
+        }
+
+        private fun bindTags(tags: List<String>) {
+            tagsContainer.removeAllViews()
+            tags.forEach { tag ->
+                tagsContainer.addView(createTagView(tag))
+            }
+        }
+
+        private fun createTagView(tag: String): TextView {
+            val (backgroundColor, strokeColor, textColor) = when {
+                tag.contains("如鸢") -> Triple("#F8E0B8", "#C88A2C", "#8F5A11")
+                tag.contains("代号鸢") -> Triple("#E2E7DA", "#9AA98B", "#5D6B51")
+                tag.contains("MaaYuanShare", ignoreCase = true) -> Triple("#E8F3FF", "#5B8FD6", "#215A9A")
+                else -> Triple("#F8F2E5", "#D8C18A", "#7B5B17")
+            }
+            return TextView(itemView.context).apply {
+                text = tag
+                textSize = 11f
+                setTextColor(Color.parseColor(textColor))
+                setPadding(7.dp(), 2.dp(), 7.dp(), 2.dp())
+                maxLines = 1
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = 10.dp().toFloat()
+                    setColor(Color.parseColor(backgroundColor))
+                    setStroke(1.dp(), Color.parseColor(strokeColor))
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    marginEnd = 5.dp()
+                }
+            }
+        }
+
+        private fun parseTags(raw: String): List<String> {
+            return raw.split(Regex("[,，\\s]+"))
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+        }
+
+        private fun Int.dp(): Int = (this * itemView.resources.displayMetrics.density).toInt()
     }
 }

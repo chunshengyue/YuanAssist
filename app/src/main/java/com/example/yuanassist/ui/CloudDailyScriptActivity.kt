@@ -13,12 +13,9 @@ import androidx.core.view.WindowInsetsCompat
 import coil.Coil
 import coil.request.ImageRequest
 import com.example.yuanassist.R
-import com.example.yuanassist.core.DailyPlanSelection
-import com.example.yuanassist.core.DailyScriptLibraryBridge
 import com.example.yuanassist.model.cloud_daily_script
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.utils.DailyScriptBundleZipStore
-import com.example.yuanassist.utils.UserDailyScriptBundle
 import com.example.yuanassist.utils.UserDailyScriptStore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -38,8 +35,7 @@ class CloudDailyScriptActivity : AppCompatActivity() {
         setContentView(R.layout.activity_cloud_daily_script)
         applyStatusBarInsets()
         findViewById<ImageView>(R.id.btn_cloud_detail_back).setOnClickListener { finish() }
-        findViewById<Button>(R.id.btn_cloud_save_local).setOnClickListener { downloadAndSave(importAfterSave = false) }
-        findViewById<Button>(R.id.btn_cloud_import_daily_window).setOnClickListener { downloadAndSave(importAfterSave = true) }
+        findViewById<Button>(R.id.btn_cloud_save_local).setOnClickListener { downloadAndSave() }
         loadDetail()
     }
 
@@ -67,9 +63,9 @@ class CloudDailyScriptActivity : AppCompatActivity() {
         val author = item.author?.nickname?.takeIf { it.isNotBlank() }
             ?: item.author?.username?.takeIf { it.isNotBlank() }
             ?: "匿名用户"
+        findViewById<TextView>(R.id.tv_cloud_detail_author).text = "作者：$author"
         findViewById<TextView>(R.id.tv_cloud_detail_meta).text =
-            "$author · ${item.taskCount}步 · ${item.downloadCount}次下载"
-        findViewById<TextView>(R.id.tv_cloud_detail_tags).text = item.tags.ifBlank { "日常脚本" }
+            "${item.taskCount}步 · ${item.downloadCount}次下载"
         findViewById<TextView>(R.id.tv_cloud_detail_description).text = item.description.ifBlank { "暂无说明" }
         bindGuideImages(parseGuideImages(item.guideImages))
     }
@@ -106,7 +102,7 @@ class CloudDailyScriptActivity : AppCompatActivity() {
         }
     }
 
-    private fun downloadAndSave(importAfterSave: Boolean) {
+    private fun downloadAndSave() {
         val item = detail ?: return
         if (downloading) return
         val scriptId = item.objectId.orEmpty()
@@ -119,7 +115,7 @@ class CloudDailyScriptActivity : AppCompatActivity() {
                 SupabaseRepository.downloadDailyScriptBundle(
                     downloadUrl = ticket.downloadUrl,
                     targetFile = zip,
-                    onSuccess = { file -> saveDownloadedBundle(item, file, importAfterSave) },
+                    onSuccess = { file -> saveDownloadedBundle(item, file) },
                     onError = { message ->
                         downloading = false
                         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
@@ -133,31 +129,16 @@ class CloudDailyScriptActivity : AppCompatActivity() {
         )
     }
 
-    private fun saveDownloadedBundle(item: cloud_daily_script, zipFile: File, importAfterSave: Boolean) {
+    private fun saveDownloadedBundle(item: cloud_daily_script, zipFile: File) {
         runCatching {
             val bundle = UserDailyScriptStore.createBundle(this, item.title)
             DailyScriptBundleZipStore.unpackToBundle(zipFile, bundle, gson)
             SupabaseRepository.incrementDailyScriptDownload(item.objectId.orEmpty())
-            if (importAfterSave) {
-                importBundle(bundle)
-            } else {
-                Toast.makeText(this, "已保存到本地脚本库", Toast.LENGTH_LONG).show()
-            }
+            Toast.makeText(this, "已保存到本地脚本库", Toast.LENGTH_LONG).show()
         }.onFailure { error ->
             Toast.makeText(this, "脚本导入失败：${error.message}", Toast.LENGTH_LONG).show()
         }
         downloading = false
-    }
-
-    private fun importBundle(bundle: UserDailyScriptBundle) {
-        DailyScriptLibraryBridge.onDailyPlanSelected?.invoke(
-            DailyPlanSelection(
-                fileName = bundle.scriptId,
-                jsonContent = bundle.scriptFile.readText(Charsets.UTF_8),
-                templateDirPath = bundle.templatesDir.absolutePath,
-            ),
-        )
-        Toast.makeText(this, "已导入日常悬浮窗", Toast.LENGTH_LONG).show()
     }
 
     private fun parseGuideImages(raw: String): List<String> {

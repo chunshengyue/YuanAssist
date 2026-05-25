@@ -73,6 +73,7 @@ class DailyScriptRecorderManager(
 
     private enum class RecorderAction(val value: String, val label: String) {
         CLICK("CLICK", "点击"),
+        SWIPE("SWIPE", "滑动"),
         MATCH_TEMPLATE("MATCH_TEMPLATE", "模板匹配"),
         OCR("OCR", "OCR"),
         SET_VAR("SET_VAR", "设置分支"),
@@ -127,6 +128,11 @@ class DailyScriptRecorderManager(
         var clickOnSuccess: Boolean = true,
         var clickPositionMode: ClickPositionMode = ClickPositionMode.CURRENT_COORDINATE,
         var clickRefTaskId: Int? = null,
+        var swipeEndX: Float? = null,
+        var swipeEndY: Float? = null,
+        var swipeEndScreenX: Float? = null,
+        var swipeEndScreenY: Float? = null,
+        var swipeDuration: Long = 300L,
         var branchVarName: String = "",
         var branchVarValue: String = "",
         var successBranchEnabled: Boolean = false,
@@ -458,6 +464,7 @@ class DailyScriptRecorderManager(
                         draft.ocrText = text
                         draft.ocrMinHitCount = minHit
                     }
+                    RecorderAction.SWIPE -> Unit
                     RecorderAction.SET_VAR -> Unit
                     RecorderAction.CLICK -> Unit
                     RecorderAction.BACK -> Unit
@@ -471,12 +478,31 @@ class DailyScriptRecorderManager(
     @SuppressLint("ClickableViewAccessibility")
     private fun beginPickPoint() {
         if (pointPickerView != null || frameAdjustView != null) return
+        showPointPicker("点击屏幕记录节点位置") { rawX, rawY ->
+            handlePickedPoint(rawX, rawY)
+        }
+    }
+
+    private fun beginPickSwipeEnd(draft: NodeDraft) {
+        if (pointPickerView != null || frameAdjustView != null) return
+        showPointPicker("点击屏幕获取结束坐标") { rawX, rawY ->
+            val basePoint = screenToBasePoint(rawX, rawY, draft.positionType)
+            draft.swipeEndX = basePoint.x
+            draft.swipeEndY = basePoint.y
+            draft.swipeEndScreenX = rawX
+            draft.swipeEndScreenY = rawY
+            showNodeEditor(draft)
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun showPointPicker(message: String, onPicked: (Float, Float) -> Unit) {
         val overlay = FrameLayout(service).apply {
             setBackgroundColor(Color.parseColor("#55000000"))
         }
         overlay.addView(
             TextView(service).apply {
-                text = "点击屏幕记录节点位置"
+                text = message
                 setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
                 setPadding(dp(20), dp(14), dp(20), dp(14))
@@ -492,7 +518,7 @@ class DailyScriptRecorderManager(
             when (event.action) {
                 MotionEvent.ACTION_UP -> {
                     removePointPicker()
-                    handlePickedPoint(event.rawX, event.rawY)
+                    onPicked(event.rawX, event.rawY)
                     true
                 }
                 else -> true
@@ -516,12 +542,14 @@ class DailyScriptRecorderManager(
     }
 
     private fun handlePickedPoint(rawX: Float, rawY: Float) {
-        val basePoint = screenToBasePoint(rawX, rawY, PositionType.CENTER)
+        val positionType = recommendPositionTypeForScreenY(rawY)
+        val basePoint = screenToBasePoint(rawX, rawY, positionType)
         showNodeEditor(
             NodeDraft(
                 id = recordedNodes.size + 1,
                 designX = basePoint.x,
                 designY = basePoint.y,
+                positionType = positionType,
                 templateRect = BaseRect(basePoint.x, basePoint.y, DEFAULT_TEMPLATE_SIZE, DEFAULT_TEMPLATE_SIZE),
                 pickedScreenX = rawX,
                 pickedScreenY = rawY
@@ -599,6 +627,22 @@ class DailyScriptRecorderManager(
         }
         form.addView(setVarSection)
 
+        val swipeStartXEdit = buildDarkDecimalEdit(themeContext, draft.designX.toString())
+        val swipeStartYEdit = buildDarkDecimalEdit(themeContext, draft.designY.toString())
+        val swipeEndXEdit = buildDarkDecimalEdit(themeContext, draft.swipeEndX?.toString().orEmpty())
+        val swipeEndYEdit = buildDarkDecimalEdit(themeContext, draft.swipeEndY?.toString().orEmpty())
+        val swipeDurationEdit = buildDarkNumberEdit(themeContext, draft.swipeDuration.toString())
+        val swipeSection = LinearLayout(themeContext).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            addView(buildDarkField(themeContext, "开始x坐标", swipeStartXEdit))
+            addView(buildDarkField(themeContext, "开始y坐标", swipeStartYEdit))
+            addView(buildDarkField(themeContext, "结束x坐标", swipeEndXEdit))
+            addView(buildDarkField(themeContext, "结束y坐标", swipeEndYEdit))
+            addView(buildDarkField(themeContext, "滑动时间", swipeDurationEdit))
+        }
+        form.addView(swipeSection)
+
         val successBranchSection = buildDarkBranchConfigSection(
             context = themeContext,
             title = "成功分支",
@@ -661,10 +705,22 @@ class DailyScriptRecorderManager(
             clickReferenceSpinner.setSelection(selectedRefIndex)
         }
 
+        fun refreshSwipeCoordinateEdits(refreshStart: Boolean, refreshEnd: Boolean) {
+            if (refreshStart) {
+                swipeStartXEdit.setText(draft.designX.toString())
+                swipeStartYEdit.setText(draft.designY.toString())
+            }
+            if (refreshEnd) {
+                swipeEndXEdit.setText(draft.swipeEndX?.toString().orEmpty())
+                swipeEndYEdit.setText(draft.swipeEndY?.toString().orEmpty())
+            }
+        }
+
         val updateActionConfigVisibility = {
             val selectedAction = actions[actionSpinner.selectedItemPosition]
             val isClick = selectedAction == RecorderAction.CLICK
             val isSetVar = selectedAction == RecorderAction.SET_VAR
+            val isSwipe = selectedAction == RecorderAction.SWIPE
             val useReference = isClick &&
                 clickPositionModes[clickPositionSpinner.selectedItemPosition] ==
                 ClickPositionMode.PREVIOUS_RECOGNIZED_TARGET
@@ -675,13 +731,7 @@ class DailyScriptRecorderManager(
             clickReferenceTip.visibility =
                 if (useReference && clickReferenceCandidates.isEmpty()) View.VISIBLE else View.GONE
             setVarSection.visibility = if (isSetVar) View.VISIBLE else View.GONE
-        }
-        actionSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                updateActionConfigVisibility()
-            }
-
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+            swipeSection.visibility = if (isSwipe) View.VISIBLE else View.GONE
         }
         clickPositionSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -696,6 +746,7 @@ class DailyScriptRecorderManager(
             AlertDialog.Builder(themeContext)
                 .setView(root)
                 .setPositiveButton("下一步", null)
+                .setNeutralButton("获取结束坐标", null)
                 .setNegativeButton("取消", null)
         )
         dialog.window?.let { window ->
@@ -706,14 +757,14 @@ class DailyScriptRecorderManager(
         }
         styleDarkDialogButton(dialog.getButton(AlertDialog.BUTTON_POSITIVE), true)
         styleDarkDialogButton(dialog.getButton(AlertDialog.BUTTON_NEGATIVE), false)
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        fun syncCommonDraftFields(): Boolean {
             val selectedAction = actions[actionSpinner.selectedItemPosition]
             val parsedDelay = delayEdit.text.toString().toLongOrNull()
             val parsedSuccess = successEdit.text.toString().toIntOrNull()
             val parsedFail = failEdit.text.toString().toIntOrNull()
             if (parsedDelay == null || parsedSuccess == null || parsedFail == null) {
                 Toast.makeText(service, "请先填写合法的 delay / success / fail", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+                return false
             }
 
             draft.action = selectedAction
@@ -730,7 +781,40 @@ class DailyScriptRecorderManager(
             draft.failBranchEnabled = failBranchSection.enabledCheck.isChecked
             draft.failBranchVar = failBranchSection.varNameEdit.text.toString().trim()
             draft.failBranchRouteText = formatBranchRoutes(collectBranchRoutes(failBranchSection))
-            syncDraftPositionWithSelectedType(draft)
+            if (selectedAction != RecorderAction.SWIPE) {
+                syncDraftPositionWithSelectedType(draft)
+                syncDraftSwipeEndWithSelectedType(draft)
+            }
+            return true
+        }
+
+        val endPointButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+        styleDarkDialogButton(endPointButton, false)
+        endPointButton?.setOnClickListener {
+            if (!syncCommonDraftFields()) return@setOnClickListener
+            val selectedAction = actions[actionSpinner.selectedItemPosition]
+            if (selectedAction != RecorderAction.SWIPE) return@setOnClickListener
+            val startX = swipeStartXEdit.text.toString().trim().toFloatOrNull()
+            val startY = swipeStartYEdit.text.toString().trim().toFloatOrNull()
+            val duration = swipeDurationEdit.text.toString().trim().toLongOrNull()
+            if (startX == null || startY == null || duration == null || duration <= 0L) {
+                Toast.makeText(service, "请先填写合法的开始坐标和滑动时间", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            draft.designX = startX
+            draft.designY = startY
+            draft.swipeDuration = duration
+            dialog.dismiss()
+            beginPickSwipeEnd(draft)
+        }
+        val refreshEndPointButtonVisibility = {
+            endPointButton?.visibility =
+                if (actions[actionSpinner.selectedItemPosition] == RecorderAction.SWIPE) View.VISIBLE else View.GONE
+        }
+        refreshEndPointButtonVisibility()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (!syncCommonDraftFields()) return@setOnClickListener
+            val selectedAction = actions[actionSpinner.selectedItemPosition]
 
             when (selectedAction) {
                 RecorderAction.CLICK -> {
@@ -747,6 +831,28 @@ class DailyScriptRecorderManager(
                     } else {
                         null
                     }
+                    dialog.dismiss()
+                    appendNode(draft)
+                }
+                RecorderAction.SWIPE -> {
+                    val startX = swipeStartXEdit.text.toString().trim().toFloatOrNull()
+                    val startY = swipeStartYEdit.text.toString().trim().toFloatOrNull()
+                    val endX = swipeEndXEdit.text.toString().trim().toFloatOrNull()
+                    val endY = swipeEndYEdit.text.toString().trim().toFloatOrNull()
+                    val duration = swipeDurationEdit.text.toString().trim().toLongOrNull()
+                    if (startX == null || startY == null || endX == null || endY == null) {
+                        Toast.makeText(service, "请填写完整的滑动坐标", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+                    if (duration == null || duration <= 0L) {
+                        Toast.makeText(service, "请填写合法的滑动时间", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+                    draft.designX = startX
+                    draft.designY = startY
+                    draft.swipeEndX = endX
+                    draft.swipeEndY = endY
+                    draft.swipeDuration = duration
                     dialog.dismiss()
                     appendNode(draft)
                 }
@@ -807,6 +913,24 @@ class DailyScriptRecorderManager(
                     showFrameAdjustOverlay(draft, null)
                 }
             }
+        }
+        actionSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                updateActionConfigVisibility()
+                refreshEndPointButtonVisibility()
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
+        positionTypeSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                draft.positionType = positionTypes[position]
+                val refreshedStart = syncDraftPositionWithSelectedType(draft)
+                val refreshedEnd = syncDraftSwipeEndWithSelectedType(draft)
+                refreshSwipeCoordinateEdits(refreshedStart, refreshedEnd)
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
         }
     }
 
@@ -888,6 +1012,18 @@ class DailyScriptRecorderManager(
                             fail_branch_routes = failBranchRoutes
                         )
                     }
+                    RecorderAction.SWIPE -> TaskParams(
+                        startX = node.designX,
+                        startY = node.designY,
+                        endX = node.swipeEndX,
+                        endY = node.swipeEndY,
+                        duration = node.swipeDuration,
+                        align = node.positionType.value,
+                        branch_var = successBranchVar,
+                        branch_routes = successBranchRoutes,
+                        fail_branch_var = failBranchVar,
+                        fail_branch_routes = failBranchRoutes
+                    )
                     RecorderAction.MATCH_TEMPLATE -> TaskParams(
                         template_name = normalizedTemplateFileName(node.templateName),
                         threshold = node.threshold,
@@ -961,11 +1097,14 @@ class DailyScriptRecorderManager(
         return when (node.action) {
             RecorderAction.MATCH_TEMPLATE -> "#${node.id} 模板匹配 ${normalizedTemplateFileName(node.templateName)}"
             RecorderAction.OCR -> "#${node.id} OCR ${node.ocrText.ifBlank { "(未填写文字)" }}"
+            RecorderAction.SWIPE -> "#${node.id} 滑动 (${formatCoord(node.designX)},${formatCoord(node.designY)}) -> (${formatCoord(node.swipeEndX)},${formatCoord(node.swipeEndY)})"
             RecorderAction.SET_VAR -> "#${node.id} 分支 ${node.branchVarName.ifBlank { "(变量名空)" }}=${node.branchVarValue.ifBlank { "(空)" }}"
             RecorderAction.CLICK -> "#${node.id} 点击"
             RecorderAction.BACK -> "#${node.id} 返回"
         }
     }
+
+    private fun formatCoord(value: Float?): String = value?.roundToInt()?.toString() ?: "?"
 
     private fun showFrameAdjustOverlay(draft: NodeDraft, screenshot: Bitmap?) {
         removeFrameAdjustView()
@@ -1239,6 +1378,14 @@ class DailyScriptRecorderManager(
     private fun buildDarkNumberEdit(context: Context, value: String): EditText {
         return EditText(context).apply {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
+            setText(value)
+            styleEditorInput(this)
+        }
+    }
+
+    private fun buildDarkDecimalEdit(context: Context, value: String): EditText {
+        return EditText(context).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
             setText(value)
             styleEditorInput(this)
         }
@@ -1532,13 +1679,23 @@ class DailyScriptRecorderManager(
         }, 120L)
     }
 
-    private fun syncDraftPositionWithSelectedType(draft: NodeDraft) {
-        val screenX = draft.pickedScreenX ?: return
-        val screenY = draft.pickedScreenY ?: return
+    private fun syncDraftPositionWithSelectedType(draft: NodeDraft): Boolean {
+        val screenX = draft.pickedScreenX ?: return false
+        val screenY = draft.pickedScreenY ?: return false
         val basePoint = screenToBasePoint(screenX, screenY, draft.positionType)
         draft.designX = basePoint.x
         draft.designY = basePoint.y
         draft.templateRect = BaseRect(basePoint.x, basePoint.y, draft.templateRect.width, draft.templateRect.height)
+        return true
+    }
+
+    private fun syncDraftSwipeEndWithSelectedType(draft: NodeDraft): Boolean {
+        val screenX = draft.swipeEndScreenX ?: return false
+        val screenY = draft.swipeEndScreenY ?: return false
+        val basePoint = screenToBasePoint(screenX, screenY, draft.positionType)
+        draft.swipeEndX = basePoint.x
+        draft.swipeEndY = basePoint.y
+        return true
     }
 
     private fun getRealScreenSize(): Pair<Float, Float> {
@@ -1567,6 +1724,18 @@ class DailyScriptRecorderManager(
                 PositionType.BOTTOM -> (BASE_H - ((screenHeight - screenY) / scale))
             }.coerceIn(0f, BASE_H)
         )
+    }
+
+    private fun recommendPositionTypeForScreenY(screenY: Float): PositionType {
+        val (screenWidth, screenHeight) = getRealScreenSize()
+        val scale = min(screenWidth / BASE_W, screenHeight / BASE_H)
+        val offsetY = (screenHeight - BASE_H * scale) / 2f
+        val centerBaseY = (screenY - offsetY) / scale
+        return when {
+            centerBaseY < 0f -> PositionType.TOP
+            centerBaseY > BASE_H -> PositionType.BOTTOM
+            else -> PositionType.CENTER
+        }
     }
 
     private fun baseToScreenRect(rect: BaseRect, positionType: PositionType): ScreenRect {

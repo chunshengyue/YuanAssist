@@ -49,7 +49,7 @@ object ImageExportUtils {
         val sidePadding = 42f
         val topPadding = 230f
         val bottomPadding = 56f
-        val headerHeight = 118
+        val headerHeight = 176
         val baseRowHeight = 120
         val padding = 18
 
@@ -64,12 +64,12 @@ object ImageExportUtils {
             color = Color.parseColor("#C79A61")
             strokeWidth = 2f
         }
-        val paintHeaderBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#AA7447") }
+        val paintHeaderBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F2D8A8") }
         val paintRowBgOdd = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFF7E8") }
         val paintRowBgEven = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#F8EBD6") }
         val paintHeaderTxt = Paint().apply {
-            color = Color.parseColor("#FFF5DA")
-            textSize = 34f
+            color = Color.parseColor("#6B4E1C")
+            textSize = 40f
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             isAntiAlias = true
@@ -355,12 +355,22 @@ object ImageExportUtils {
         val avatar = loadAgentAvatar(context, text)
         if (avatar == null) {
             if (text.isNotBlank()) {
-                drawFittedCenteredText(canvas, text, rect, paint, maxSize = 34f, minSize = 20f)
+                drawFittedCenteredText(canvas, text, rect, paint, maxSize = 42f, minSize = 24f)
             }
             return
         }
 
-        val avatarRect = RectF(rect.centerX() - 24f, rect.top + 13f, rect.centerX() + 24f, rect.top + 61f)
+        val avatarSize = 88f
+        val avatarNameGap = 6f
+        val nameAreaHeight = 44f
+        val contentHeight = avatarSize + avatarNameGap + nameAreaHeight
+        val avatarTop = rect.top + (rect.height() - contentHeight) / 2f
+        val avatarRect = RectF(
+            rect.centerX() - avatarSize / 2f,
+            avatarTop,
+            rect.centerX() + avatarSize / 2f,
+            avatarTop + avatarSize
+        )
         val path = Path().apply { addOval(avatarRect, Path.Direction.CW) }
         canvas.save()
         canvas.clipPath(path)
@@ -371,10 +381,10 @@ object ImageExportUtils {
         drawFittedCenteredText(
             canvas,
             text,
-            RectF(rect.left + 8f, rect.top + 66f, rect.right - 8f, rect.bottom - 10f),
+            RectF(rect.left + 8f, avatarRect.bottom + avatarNameGap, rect.right - 8f, avatarRect.bottom + avatarNameGap + nameAreaHeight),
             paint,
-            maxSize = 25f,
-            minSize = 15f,
+            maxSize = 32f,
+            minSize = 20f,
         )
     }
 

@@ -2,7 +2,16 @@
 package com.example.yuanassist.ui.dialogs
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.GradientDrawable
 import android.text.InputType
 import android.text.Editable
 import android.text.TextWatcher
@@ -226,7 +235,7 @@ object ServiceDialogs {
                         includeDaihaoYuanByDefault = gameGroup.checkedRadioButtonId == rbDaihao.id,
                         onSelect = { agentName ->
                             selectedAgents[index] = agentName
-                            (row as TextView).text = exportAgentRowText(index, agentName)
+                            bindExportAgentRow(themeContext, row, index, agentName)
                         },
                     )
                 }
@@ -275,27 +284,56 @@ object ServiceDialogs {
         }
     }
 
-    private fun createExportAgentRow(context: Context, index: Int, agentName: String): TextView {
-        return TextView(context).apply {
-            text = exportAgentRowText(index, agentName)
-            textSize = 14f
+    private fun createExportAgentRow(context: Context, index: Int, agentName: String): LinearLayout {
+        return LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setTextColor(Color.parseColor("#6B4E1C"))
             setBackgroundResource(com.example.yuanassist.R.drawable.bg_job_station_icon_button)
             setPadding(
-                StyledDialogUi.dpToPx(context, 14f),
-                StyledDialogUi.dpToPx(context, 11f),
-                StyledDialogUi.dpToPx(context, 14f),
-                StyledDialogUi.dpToPx(context, 11f),
+                StyledDialogUi.dpToPx(context, 12f),
+                StyledDialogUi.dpToPx(context, 8f),
+                StyledDialogUi.dpToPx(context, 12f),
+                StyledDialogUi.dpToPx(context, 8f),
             )
+            minimumHeight = StyledDialogUi.dpToPx(context, 56f)
             isClickable = true
             isFocusable = true
+            bindExportAgentRow(context, this, index, agentName)
         }
     }
 
-    private fun exportAgentRowText(index: Int, agentName: String): String {
-        return "${index + 1}号位：${agentName.ifBlank { "未选择" }}"
+    private fun bindExportAgentRow(context: Context, row: LinearLayout, index: Int, agentName: String) {
+        row.removeAllViews()
+        row.addView(
+            createAgentAvatarView(context, agentName, 40f),
+            LinearLayout.LayoutParams(
+                StyledDialogUi.dpToPx(context, 40f),
+                StyledDialogUi.dpToPx(context, 40f)
+            )
+        )
+        row.addView(
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(
+                    TextView(context).apply {
+                        text = "${index + 1}号位"
+                        textSize = 12f
+                        setTextColor(Color.parseColor("#8C7A61"))
+                    }
+                )
+                addView(
+                    TextView(context).apply {
+                        text = agentName.ifBlank { "未选择密探" }
+                        textSize = 14f
+                        setTypeface(typeface, android.graphics.Typeface.BOLD)
+                        setTextColor(Color.parseColor("#6B4E1C"))
+                    }
+                )
+            },
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = StyledDialogUi.dpToPx(context, 10f)
+            }
+        )
     }
 
     private fun showExportAgentPickerDialog(
@@ -349,8 +387,8 @@ object ServiceDialogs {
             isFillViewport = false
             overScrollMode = ScrollView.OVER_SCROLL_NEVER
         }
-        val optionsContainer = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
+        val optionsContainer = GridLayout(context).apply {
+            columnCount = 4
         }
         scrollView.addView(
             optionsContainer,
@@ -380,29 +418,52 @@ object ServiceDialogs {
             optionsContainer.removeAllViews()
             agents.forEachIndexed { index, agentName ->
                 optionsContainer.addView(
-                    TextView(context).apply {
-                        text = agentName
-                        textSize = 14f
-                        gravity = Gravity.CENTER_VERTICAL
-                        setTypeface(typeface, if (agentName == currentAgent) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
-                        setTextColor(Color.parseColor(if (agentName == currentAgent) "#6B4E1C" else "#8C6C33"))
+                    LinearLayout(context).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER
                         background = StyledDialogUi.createSelectableBackground(agentName == currentAgent)
                         setPadding(
-                            StyledDialogUi.dpToPx(context, 14f),
-                            StyledDialogUi.dpToPx(context, 11f),
-                            StyledDialogUi.dpToPx(context, 14f),
-                            StyledDialogUi.dpToPx(context, 11f),
+                            StyledDialogUi.dpToPx(context, 6f),
+                            StyledDialogUi.dpToPx(context, 8f),
+                            StyledDialogUi.dpToPx(context, 6f),
+                            StyledDialogUi.dpToPx(context, 8f),
+                        )
+                        addView(
+                            createAgentAvatarView(context, agentName, 42f),
+                            LinearLayout.LayoutParams(
+                                StyledDialogUi.dpToPx(context, 42f),
+                                StyledDialogUi.dpToPx(context, 42f)
+                            )
+                        )
+                        addView(
+                            TextView(context).apply {
+                                text = agentName
+                                textSize = 12f
+                                gravity = Gravity.CENTER
+                                maxLines = 1
+                                setTypeface(typeface, if (agentName == currentAgent) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                                setTextColor(Color.parseColor(if (agentName == currentAgent) "#6B4E1C" else "#8C6C33"))
+                            },
+                            LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT
+                            ).apply {
+                                topMargin = StyledDialogUi.dpToPx(context, 5f)
+                            }
                         )
                         setOnClickListener {
                             onSelect(agentName)
                             dialog.dismiss()
                         }
                     },
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        if (index > 0) topMargin = StyledDialogUi.dpToPx(context, 8f)
+                    GridLayout.LayoutParams().apply {
+                        width = 0
+                        height = GridLayout.LayoutParams.WRAP_CONTENT
+                        columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                        if (index >= 4) topMargin = StyledDialogUi.dpToPx(context, 8f)
+                        val sideMargin = StyledDialogUi.dpToPx(context, 4f)
+                        leftMargin = sideMargin
+                        rightMargin = sideMargin
                     }
                 )
             }
@@ -422,6 +483,65 @@ object ServiceDialogs {
         }
         btnCancel.setOnClickListener { dialog.dismiss() }
         refreshOptions()
+    }
+
+    private fun createAgentAvatarView(context: Context, agentName: String, sizeDp: Float): TextView {
+        val sizePx = StyledDialogUi.dpToPx(context, sizeDp)
+        val avatarBitmap = loadAgentAvatarBitmap(context, agentName)?.let { source ->
+            createCircularBitmap(source, sizePx).also {
+                if (it !== source && !source.isRecycled) source.recycle()
+            }
+        }
+        return TextView(context).apply {
+            gravity = Gravity.CENTER
+            textSize = 15f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(Color.parseColor("#8C6C33"))
+            background = avatarBitmap?.let { BitmapDrawable(context.resources, it) } ?: createAvatarFallbackBackground()
+            text = if (avatarBitmap == null) agentName.take(1).ifBlank { "?" } else ""
+        }
+    }
+
+    private fun loadAgentAvatarBitmap(context: Context, agentName: String): Bitmap? {
+        if (agentName.isBlank()) return null
+        return runCatching {
+            context.assets.open("$agentName.png").use { BitmapFactory.decodeStream(it) }
+        }.getOrNull()
+    }
+
+    private fun createCircularBitmap(source: Bitmap, sizePx: Int): Bitmap {
+        val output = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        val dst = RectF(0f, 0f, sizePx.toFloat(), sizePx.toFloat())
+        val cropSize = minOf(source.width, source.height)
+        val src = Rect(
+            (source.width - cropSize) / 2,
+            (source.height - cropSize) / 2,
+            (source.width + cropSize) / 2,
+            (source.height + cropSize) / 2
+        )
+        val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        canvas.save()
+        canvas.clipPath(Path().apply { addOval(dst, Path.Direction.CW) })
+        canvas.drawBitmap(source, src, dst, bitmapPaint)
+        canvas.restore()
+        canvas.drawOval(
+            RectF(1f, 1f, sizePx - 1f, sizePx - 1f),
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#D8C18A")
+                style = Paint.Style.STROKE
+                strokeWidth = 2f
+            }
+        )
+        return output
+    }
+
+    private fun createAvatarFallbackBackground(): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.parseColor("#FFF8E8"))
+            setStroke(2, Color.parseColor("#D8C18A"))
+        }
     }
 
     fun showSaveToLibraryDialog(context: Context, defaultName: String, onSave: (String) -> Unit) {

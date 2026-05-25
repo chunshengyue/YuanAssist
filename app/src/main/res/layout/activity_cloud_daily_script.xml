@@ -87,22 +87,13 @@
                     tools:text="日常一键收菜脚本" />
 
                 <TextView
-                    android:id="@+id/tv_cloud_detail_meta"
+                    android:id="@+id/tv_cloud_detail_author"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:textColor="#8C7A61"
                     android:textSize="12sp"
-                    tools:text="匿名用户 · 2步 · 5次下载" />
-
-                <TextView
-                    android:id="@+id/tv_cloud_detail_tags"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:textColor="#A8813C"
-                    android:textSize="13sp"
-                    tools:text="鸟食 日常 一键" />
+                    tools:text="作者：匿名用户" />
 
                 <View
                     android:layout_width="match_parent"
@@ -119,6 +110,15 @@
                     android:textColor="#524634"
                     android:textSize="14sp"
                     tools:text="脚本说明内容..." />
+
+                <TextView
+                    android:id="@+id/tv_cloud_detail_meta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:textColor="#A89B84"
+                    android:textSize="12sp"
+                    tools:text="2步 · 5次下载" />
             </LinearLayout>
 
             <TextView
@@ -150,6 +150,7 @@
         android:background="#F7F3EA"
         android:elevation="8dp"
         android:orientation="horizontal"
+        android:gravity="end"
         android:paddingStart="16dp"
         android:paddingTop="12dp"
         android:paddingEnd="16dp"
@@ -160,23 +161,10 @@
 
         <Button
             android:id="@+id/btn_cloud_save_local"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
+            android:layout_width="132dp"
+            android:layout_height="42dp"
             android:background="@drawable/bg_job_station_icon_button"
             android:text="保存本地"
-            android:textColor="#6B4E1C"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btn_cloud_import_daily_window"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_job_station_chip"
-            android:text="导入悬浮窗"
             android:textColor="#6B4E1C"
             android:textStyle="bold" />
     </LinearLayout>

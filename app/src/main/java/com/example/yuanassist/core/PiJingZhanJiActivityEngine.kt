@@ -202,9 +202,11 @@ class PiJingZhanJiActivityEngine(
             onSuccess = { screenshot ->
                 scope.launch {
                     val marker = recognizeCrop(screenshot, QUIZ_MARKER_SPEC)
-                    if (!marker.contains("正确") && !marker.contains("確")) {
+                    val normalizedMarker = marker.replace(Regex("\\s+"), "")
+                    if (!normalizedMarker.contains("正确") && !normalizedMarker.contains("確")) {
                         screenshot.recycle()
                         withContext(Dispatchers.Main) {
+                            logQuiz("未进入答题流程 marker=${formatLogText(marker)}")
                             if (isRunning) onDone(false)
                         }
                         return@launch
@@ -294,6 +296,7 @@ class PiJingZhanJiActivityEngine(
                     screenshot.recycle()
                     withContext(Dispatchers.Main) {
                         if (!isRunning) return@withContext
+                        logMysteryMisses(depth, scan)
                         when {
                             scan.exitHitChars.size >= MYSTERY_EXIT_MIN_HIT_COUNT -> {
                                 logMystery(
@@ -332,6 +335,7 @@ class PiJingZhanJiActivityEngine(
                             scan.cardPoint != null -> {
                                 logMystery(
                                     "轮询 depth=$depth card template=card.png " +
+                                        "score=${formatScore(scan.cardScore)} " +
                                         "action=点击卡牌 ${formatPoint(scan.cardPoint)}"
                                 )
                                 clickScreenPoint(scan.cardPoint) {
@@ -345,18 +349,20 @@ class PiJingZhanJiActivityEngine(
                                 logMystery(
                                     "轮询 depth=$depth terminal raw=${formatLogText(scan.terminalHit.lineText)} " +
                                         "hits=${formatHitChars(scan.terminalHit.hitChars)} " +
+                                        "battleRaw=${formatLogText(scan.battleRawText)} " +
                                         "action=点击终点 ${formatPoint(scan.terminalHit.point)}"
                                 )
                                 clickScreenPoint(scan.terminalHit.point) {
                                     handler.postDelayed(
-                                        { recheckMysteryAfterTerminal(depth, onDone) },
-                                        MYSTERY_TERMINAL_RETURN_DELAY_MS + config.lowSpecDelayMs
+                                        { pollMysteryLoop(depth + 1, onDone) },
+                                        MYSTERY_REWARD_REENTRY_DELAY_MS + config.lowSpecDelayMs
                                     )
                                 }
                             }
                             else -> {
                                 logMystery(
-                                    "轮询 depth=$depth fallback raw=${scan.scanSummary} action=点击剧情/移动"
+                                    "轮询 depth=$depth fallback raw=${scan.scanSummary} " +
+                                        "cardScore=${formatScore(scan.cardScore)} action=点击剧情/移动"
                                 )
                                 clickBase(1018.5f, 1864.5f) {
                                     handler.postDelayed(
@@ -376,38 +382,31 @@ class PiJingZhanJiActivityEngine(
         )
     }
 
-    private fun recheckMysteryAfterTerminal(depth: Int, onDone: (Boolean) -> Unit) {
-        if (!isRunning) return
-        captureScreenshot(
-            onSuccess = { screenshot ->
-                scope.launch {
-                    val scan = scanMysteryTargets(screenshot)
-                    screenshot.recycle()
-                    withContext(Dispatchers.Main) {
-                        if (!isRunning) return@withContext
-                        val stillInMystery = scan.battleHit != null ||
-                            scan.rewardHit != null ||
-                            scan.cardPoint != null ||
-                            scan.terminalHit != null
-                        if (stillInMystery) {
-                            logMystery(
-                                "终点复检 depth=$depth raw=${scan.scanSummary} action=仍在神秘事件，继续轮询"
-                            )
-                            pollMysteryLoop(depth + 1, onDone)
-                        } else {
-                            logMystery(
-                                "终点复检 depth=$depth raw=${scan.scanSummary} action=已退出神秘事件，继续任务页"
-                            )
-                            onDone(true)
-                        }
-                    }
-                }
-            },
-            onFailure = {
-                logError("披荆OCR", "神秘事件终点复检截图失败 errorCode=$it")
-                onDone(true)
-            }
-        )
+    private fun logMysteryMisses(depth: Int, scan: MysteryScanResult) {
+        if (scan.exitHitChars.size < MYSTERY_EXIT_MIN_HIT_COUNT) {
+            logMystery(
+                "轮询 depth=$depth miss exit raw=${scan.scanSummary} " +
+                    "hits=${formatHitChars(scan.exitHitChars)}"
+            )
+        }
+        if (scan.battleHit == null) {
+            logMystery("轮询 depth=$depth miss battle raw=${formatLogText(scan.battleRawText)}")
+        }
+        if (scan.rewardHit == null) {
+            logMystery(
+                "轮询 depth=$depth miss reward raw=${formatLogText(scan.rewardRawText)} " +
+                    "hits=${formatHitChars(scan.rewardHitChars)}"
+            )
+        }
+        if (scan.cardPoint == null) {
+            logMystery("轮询 depth=$depth miss card score=${formatScore(scan.cardScore)}")
+        }
+        if (scan.terminalHit == null) {
+            logMystery(
+                "轮询 depth=$depth miss terminal raw=${formatLogText(scan.terminalRawText)} " +
+                    "hits=${formatHitChars(scan.terminalHitChars)}"
+            )
+        }
     }
 
     private fun checkMysteryBattleManual(depth: Int, onDone: (Boolean) -> Unit) {
@@ -574,21 +573,33 @@ class PiJingZhanJiActivityEngine(
     private fun scanMysteryTargets(screenshot: Bitmap): MysteryScanResult {
         val result = PaddleTextRecognizer.recognize(service, screenshot)
         val exitHitChars = findOcrHitCharsInFullText(result.text, MYSTERY_EXIT_TARGET_CHARS)
+        val battleScan = recognizeMysteryBattleButton(screenshot)
+        val rewardTargets = listOf('小', '铜', '銅', '匣')
+        val terminalTargets = listOf('终', '點', '点')
+        val rewardHit = findOcrHitByChars(
+            screenshot = screenshot,
+            result = result,
+            targetChars = rewardTargets,
+            minHitCount = 1
+        )
+        val terminalHit = findOcrHitByChars(
+            screenshot = screenshot,
+            result = result,
+            targetChars = terminalTargets,
+            minHitCount = 1
+        )
+        val cardScan = recognizeMysteryCard(screenshot)
         return MysteryScanResult(
-            battleHit = recognizeMysteryBattleButton(screenshot),
-            rewardHit = findOcrHitByChars(
-                screenshot = screenshot,
-                result = result,
-                targetChars = listOf('小', '铜', '銅', '匣'),
-                minHitCount = 1
-            ),
-            cardPoint = recognizeMysteryCard(screenshot),
-            terminalHit = findOcrHitByChars(
-                screenshot = screenshot,
-                result = result,
-                targetChars = listOf('终', '點', '点'),
-                minHitCount = 1
-            ),
+            battleHit = battleScan.first,
+            battleRawText = battleScan.second,
+            rewardHit = rewardHit,
+            rewardRawText = rewardHit?.lineText ?: result.text.trim(),
+            rewardHitChars = rewardHit?.hitChars ?: findOcrHitCharsInFullText(result.text, rewardTargets),
+            cardPoint = cardScan.point,
+            cardScore = cardScan.score,
+            terminalHit = terminalHit,
+            terminalRawText = terminalHit?.lineText ?: result.text.trim(),
+            terminalHitChars = terminalHit?.hitChars ?: findOcrHitCharsInFullText(result.text, terminalTargets),
             exitHitChars = exitHitChars,
             scanSummary = formatLogText(result.text, 80)
         )
@@ -1134,10 +1145,11 @@ class PiJingZhanJiActivityEngine(
         return x to y
     }
 
-    private fun recognizeMysteryBattleButton(screenshot: Bitmap): TextOcrHit? {
+    private fun recognizeMysteryBattleButton(screenshot: Bitmap): Pair<TextOcrHit?, String> {
         val crop = cropBySpec(screenshot, MYSTERY_BATTLE_BUTTON_SPEC)
         return try {
             val result = PaddleTextRecognizer.recognize(service, crop)
+            val rawText = result.text.trim()
             val targets = listOf("开始战斗", "開始戰鬥", "战斗", "戰鬥", "开始", "開始")
             val matched = result.blocks
                 .mapNotNull { block ->
@@ -1145,7 +1157,7 @@ class PiJingZhanJiActivityEngine(
                     block to target
                 }
                 .maxByOrNull { (block, _) -> block.boundingBox.width() * block.boundingBox.height() }
-                ?: return null
+                ?: return null to rawText
             val rect = matched.first.boundingBox
             val (centerX, centerY) = screenshotCoordinate(
                 screenshot,
@@ -1169,17 +1181,17 @@ class PiJingZhanJiActivityEngine(
                 point = point,
                 text = matched.first.text,
                 matchedTarget = matched.second
-            )
+            ) to rawText
         } finally {
             crop.recycle()
         }
     }
 
-    private fun recognizeMysteryCard(screenshot: Bitmap): Pair<Float, Float>? {
+    private fun recognizeMysteryCard(screenshot: Bitmap): TemplateMatchScanResult {
         val crop = cropBySpec(screenshot, MYSTERY_CARD_SPEC)
         val template = loadTemplate("card.png") ?: run {
             crop.recycle()
-            return null
+            return TemplateMatchScanResult(point = null, score = null)
         }
         val scale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
         val scaledWidth = (template.width * scale).toInt().coerceAtLeast(1)
@@ -1188,7 +1200,11 @@ class PiJingZhanJiActivityEngine(
             if (scaledWidth == template.width && scaledHeight == template.height) template
             else Bitmap.createScaledBitmap(template, scaledWidth, scaledHeight, true)
         return try {
-            val matchLoc = matchTemplate(crop, scaledTemplate, MYSTERY_CARD_THRESHOLD) ?: return null
+            val match = matchTemplate(crop, scaledTemplate)
+                ?: return TemplateMatchScanResult(point = null, score = null)
+            if (match.score < MYSTERY_CARD_THRESHOLD) {
+                return TemplateMatchScanResult(point = null, score = match.score)
+            }
             val (centerX, centerY) = screenshotCoordinate(
                 screenshot,
                 MYSTERY_CARD_SPEC.x,
@@ -1198,12 +1214,12 @@ class PiJingZhanJiActivityEngine(
             val left = centerX - MYSTERY_CARD_SPEC.w * scale / 2f
             val top = centerY - MYSTERY_CARD_SPEC.h * scale / 2f
             val rect = Rect(
-                (left + matchLoc.x - scaledTemplate.width / 2f).toInt(),
-                (top + matchLoc.y - scaledTemplate.height / 2f).toInt(),
-                (left + matchLoc.x + scaledTemplate.width / 2f).toInt(),
-                (top + matchLoc.y + scaledTemplate.height / 2f).toInt()
+                (left + match.point.x - scaledTemplate.width / 2f).toInt(),
+                (top + match.point.y - scaledTemplate.height / 2f).toInt(),
+                (left + match.point.x + scaledTemplate.width / 2f).toInt(),
+                (top + match.point.y + scaledTemplate.height / 2f).toInt()
             )
-            screenshotRectCenterToScreen(screenshot, rect)
+            TemplateMatchScanResult(point = screenshotRectCenterToScreen(screenshot, rect), score = match.score)
         } finally {
             if (scaledTemplate !== template) scaledTemplate.recycle()
             crop.recycle()
@@ -1221,7 +1237,7 @@ class PiJingZhanJiActivityEngine(
         }
     }
 
-    private fun matchTemplate(screenBitmap: Bitmap, templateBitmap: Bitmap, threshold: Float): PointF? {
+    private fun matchTemplate(screenBitmap: Bitmap, templateBitmap: Bitmap): TemplateMatchResult? {
         val ownsSourceBitmap = screenBitmap.config != Bitmap.Config.ARGB_8888
         val sourceBitmap = if (ownsSourceBitmap) screenBitmap.copy(Bitmap.Config.ARGB_8888, false) else screenBitmap
         return try {
@@ -1235,14 +1251,13 @@ class PiJingZhanJiActivityEngine(
                 Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
                 Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
                 val mmLoc = Core.minMaxLoc(resultMat)
-                if (mmLoc.maxVal >= threshold) {
-                    PointF(
+                TemplateMatchResult(
+                    point = PointF(
                         (mmLoc.maxLoc.x + templateBitmap.width / 2.0).toFloat(),
                         (mmLoc.maxLoc.y + templateBitmap.height / 2.0).toFloat()
-                    )
-                } else {
-                    null
-                }
+                    ),
+                    score = mmLoc.maxVal
+                )
             } finally {
                 srcMat.release()
                 tmplMat.release()
@@ -1346,6 +1361,9 @@ class PiJingZhanJiActivityEngine(
     private fun formatPoint(point: Pair<Float, Float>): String =
         "x=${point.first.toInt()} y=${point.second.toInt()}"
 
+    private fun formatScore(score: Double?): String =
+        score?.let { String.format(java.util.Locale.US, "%.3f", it) } ?: "(无)"
+
     private data class CaptureSpec(
         val x: Float,
         val y: Float,
@@ -1380,6 +1398,16 @@ class PiJingZhanJiActivityEngine(
         val matchedTarget: String
     )
 
+    private data class TemplateMatchResult(
+        val point: PointF,
+        val score: Double
+    )
+
+    private data class TemplateMatchScanResult(
+        val point: Pair<Float, Float>?,
+        val score: Double?
+    )
+
     private data class CharSpecOcrResult(
         val rawText: String,
         val hitChars: List<Char>,
@@ -1388,9 +1416,15 @@ class PiJingZhanJiActivityEngine(
 
     private data class MysteryScanResult(
         val battleHit: TextOcrHit?,
+        val battleRawText: String,
         val rewardHit: CharOcrHit?,
+        val rewardRawText: String,
+        val rewardHitChars: List<Char>,
         val cardPoint: Pair<Float, Float>?,
+        val cardScore: Double?,
         val terminalHit: CharOcrHit?,
+        val terminalRawText: String,
+        val terminalHitChars: List<Char>,
         val exitHitChars: List<Char>,
         val scanSummary: String
     )

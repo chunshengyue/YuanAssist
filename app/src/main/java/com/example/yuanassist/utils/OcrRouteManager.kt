@@ -15,7 +15,7 @@ object OcrRouteManager {
     private const val NANJING_URL =
         "https://1404626659-0xl5hg6b23.ap-nanjing.tencentscf.com/release/ocr"
     private const val HONGKONG_URL =
-        "https://1404626659-lzynk1yzaz.ap-hongkong.tencentscf.com/release/ocr"
+        "https://ocr.yuanassist.space/release/ocr"
 
     @Volatile
     private var routeValue: Int = ROUTE_NANJING
