@@ -49,14 +49,16 @@
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
 - 日常脚本系统
   - `AutoTaskEngine` 按 `DailyTaskPlan` 执行 CLICK、MATCH_TEMPLATE、OCR、SET_VAR、BACK 等动作。
-  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
+  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL。管理员设备发布的云端脚本由后端返回 `isAdminPublished`，列表显示“管理员发布”标签；首页「云端脚本」入口红点与消息未读数共用 `get-home-badges` 请求，并按本地已读记录判断，进入列表页后清除。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
   - 首页日常入口包含“哀牢15min”：入口页是 `Ailao15MinFragment`，导入 `assets/script(1).json` 到日常版悬浮窗；脚本用于每 15 分钟刷一次哀牢幻境难度，底部确定 OCR 会最多等待约 60 秒。
+  - “哀牢15min”运行时会在日常悬浮窗下方挂一个专属小状态栏，主体实现是 `AilaoStatusBarManager`，布局是 `layout_ailao_status_bar.xml`；开始后显示“运行中”，进入 15 分钟等待节点时显示倒计时。该状态栏不改 `layout_daily_window.xml`，由 `DailyWindowManager` 负责薄接入、跟随拖动和关闭清理。
   - 现已支持 `SCREENSHOT_GROUP`：
     - 只用于视觉识别候选组，共用一次截图
     - 组内子项当前支持 `ocr`、`template` / `match_template`
     - 组配置入口在 `TaskParams.screenshot_steps`
     - 组级 `roi` 默认共享，子项可单独覆盖 `roi`
-    - 子项命中后使用自己的 `on_success` 跳转；全部未命中仍走任务级 `on_fail`
+    - 子项命中后默认使用自己的 `on_success` 跳转；如果子项 `on_success` 与任务级 `on_success` 相同，则会复用任务级 `branch_var` / `branch_routes` 分支
+    - 全部未命中仍走任务级 `on_fail`
   - 当前脚本退出语义统一为：
     - `on_success = -1` 表示正常完成
     - `on_fail = -1` 也按正常结束处理
@@ -78,7 +80,9 @@
 - 特定业务运行时
   - `BirdFoodRuntimeManager`、`Mainline624RuntimeManager`、`PiJingZhanJiRuntimeManager`、`StargazingRuntimeManager` 等是按具体功能封装的运行时管理器。
   - `BirdFoodRuntimeManager` 现在是薄调度层：鸟食流程主体由 `assets/daily_scripts/bird_food_controller.json` 串联 `bird_food_ensure_yuan_bao.json` 和具体鸟食子脚本，manager 只负责配置变量、停止条件、启停和最终提示。
-  - `Mainline624RuntimeManager` 已收敛为薄调度层：主体仍执行 `zhu_xian_6_24.json`，manager 只负责首次入口/后续循环的 start task、次数停止、`game_variant` 变量和开始战斗延时覆盖；不要把它改成普通 `RUN_SCRIPT_SEGMENT` 总控后丢失延时覆盖。
+  - 刷鸟食的小道消息子脚本使用 `bird_food_xiao_dao_xiao_xi.json`；原 `xiao_dao_xiao_xi.json` 保留给披荆斩棘鸢报流程使用，二者不要混用。
+  - `Mainline624RuntimeManager` 已收敛为薄调度层：主体仍执行 `zhu_xian_6_24.json`，manager 只负责次数停止、`game_variant` 变量和开始战斗延时覆盖；首次入口和后续循环都从脚本头部定位组开始，不再维护单独循环入口。
+  - `zhu_xian_6_24.json` 开头用 `SCREENSHOT_GROUP` 判断当前界面：可直接识别 6-24 战斗页、6-24 入口、第六章入口、首页故事入口；多次未命中会先返回重试，再调用 `home_page_one_recover.json` 回到首页后从故事入口流程继续。
   - `PiJingZhanJiRuntimeManager` 的第一模块任务除了 624、赠礼、行囊、家具、材料、观星外，还支持通过总控 JSON 串联鸢报子流程的“鸢报26次”。
   - `PiJingZhanJiRuntimeManager` 的第一模块前置任务链现在对单项脚本失败更宽容：
     - 单个前置任务返回失败时会记录失败项并继续执行后续已勾选任务
@@ -142,6 +146,7 @@
 - 战斗版悬浮窗还承载这些辅助功能：
   - 自动选人开关与角色配置
   - 战斗锚点/定位相关调节入口
+  - “键位修正”入口会显示 A、↑、↓、圈 四个动作标记，分别落在 1-4 号位中间；拖动标记只保存对应动作的 y（距离底部距离），x 仍由列位算法计算
   - 小窗最小化与恢复
   - 设置入口
   - 表格式回合/指令查看与编辑

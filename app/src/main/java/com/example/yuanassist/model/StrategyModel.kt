@@ -80,6 +80,7 @@ class cloud_daily_script : SupabaseRecord() {
     var downloadCount: Int = 0
     var status: String = "published"
     var author: MyUser? = null
+    var isAdminPublished: Boolean = false
 }
 
 /**

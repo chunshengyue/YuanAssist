@@ -14,9 +14,11 @@ import android.view.WindowManager
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.PiJingZhanJiConfig
 import com.example.yuanassist.model.PiJingZhanJiGameVariant
+import com.example.yuanassist.tableocr.PaddleTextLine
 import com.example.yuanassist.tableocr.PaddleTextRecognizer
 import com.example.yuanassist.tableocr.PaddleTextResult
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.StartBattleShared
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
@@ -1150,13 +1152,20 @@ class PiJingZhanJiActivityEngine(
         return try {
             val result = PaddleTextRecognizer.recognize(service, crop)
             val rawText = result.text.trim()
-            val targets = listOf("开始战斗", "開始戰鬥", "战斗", "戰鬥", "开始", "開始")
             val matched = result.blocks
-                .mapNotNull { block ->
-                    val target = targets.firstOrNull { candidate -> block.text.contains(candidate) } ?: return@mapNotNull null
-                    block to target
+                .flatMap { it.lines }
+                .mapNotNull { line ->
+                    val normalizedLineText = line.text.filterNot { it.isWhitespace() }
+                    val hitChars = MYSTERY_BATTLE_TARGET_CHARS.filter { normalizedLineText.contains(it) }
+                    if (hitChars.size < MYSTERY_BATTLE_MIN_HIT_COUNT) return@mapNotNull null
+                    line to hitChars
                 }
-                .maxByOrNull { (block, _) -> block.boundingBox.width() * block.boundingBox.height() }
+                .maxWithOrNull(
+                    compareBy<Pair<PaddleTextLine, List<Char>>>(
+                        { it.second.size },
+                        { (line, _) -> line.boundingBox.width() * line.boundingBox.height() }
+                    )
+                )
                 ?: return null to rawText
             val rect = matched.first.boundingBox
             val (centerX, centerY) = screenshotCoordinate(
@@ -1180,7 +1189,7 @@ class PiJingZhanJiActivityEngine(
             TextOcrHit(
                 point = point,
                 text = matched.first.text,
-                matchedTarget = matched.second
+                matchedTarget = matched.second.joinToString("")
             ) to rawText
         } finally {
             crop.recycle()
@@ -1506,7 +1515,15 @@ class PiJingZhanJiActivityEngine(
         )
         private val MYSTERY_CARD_SPEC = CaptureSpec(542.25f, 1136.25f, 1075.5f, 1000f)
         private val MYSTERY_MANUAL_BUTTON_SPEC = CaptureSpec(1021f, 976f, 200f, 200f)
-        private val MYSTERY_BATTLE_BUTTON_SPEC = CaptureSpec(552f, 1765f, 200f, 200f, "bottom")
+        private val MYSTERY_BATTLE_BUTTON_SPEC = CaptureSpec(
+            StartBattleShared.CENTER_X,
+            StartBattleShared.CENTER_Y,
+            StartBattleShared.ROI_WIDTH,
+            StartBattleShared.ROI_HEIGHT,
+            StartBattleShared.ALIGN
+        )
+        private val MYSTERY_BATTLE_TARGET_CHARS = listOf('升', '开', '始', '战', '斗', '戰', '鬥')
+        private const val MYSTERY_BATTLE_MIN_HIT_COUNT = 3
         private val MYSTERY_MANUAL_TARGET_CHARS = listOf('手', '动')
         private val MYSTERY_CONFIRM_TARGET_CHARS = listOf('确', '定')
         private val MYSTERY_EXIT_TARGET_CHARS = listOf('今', '日', '已', '从', '处', '获', '取', '考', '绩', '本', '剩', '余', '免', '费', '刷', '新')

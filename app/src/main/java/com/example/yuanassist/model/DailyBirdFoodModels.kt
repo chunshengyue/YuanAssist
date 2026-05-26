@@ -12,7 +12,7 @@ enum class BirdFoodTaskType(
     val hasCooldown: Boolean
 ) {
     TU_FA_QING_KUANG("tu_fa_qing_kuang.json", "突发情况", false),
-    XIAO_DAO_XIAO_XI("xiao_dao_xiao_xi.json", "小道消息", true),
+    XIAO_DAO_XIAO_XI("bird_food_xiao_dao_xiao_xi.json", "小道消息", true),
     TA_DE_CHUAN_WEN("ta_de_chuan_wen.json", "他的传闻", false),
     DAI_BAN_GONG_WU("dai_ban_gong_wu.json", "待办公务", false)
 }

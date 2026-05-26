@@ -56,7 +56,12 @@ fun MineTabScreen(
     val mineEntries = listOf(
         MineEntryItem("我的发布", R.drawable.item_achan, actions.onOpenPublished),
         MineEntryItem("我的星石", R.drawable.item_zhangliao, actions.onOpenStone),
-        MineEntryItem("我的消息", R.drawable.item_xiahoudun, actions.onOpenMessage),
+        MineEntryItem(
+            title = "我的消息",
+            iconRes = R.drawable.item_xiahoudun,
+            onClick = actions.onOpenMessage,
+            badgeCount = state.unreadMessageCount,
+        ),
         MineEntryItem("我的收藏", R.drawable.item_xiahouyuan, actions.onOpenFavorite),
         MineEntryItem("排除密探", R.drawable.item_zhangjiao, actions.onOpenExcludedAgents),
     ) + if (state.isFeedbackAdmin) {
@@ -93,6 +98,7 @@ private data class MineEntryItem(
     val title: String,
     @DrawableRes val iconRes: Int,
     val onClick: () -> Unit,
+    val badgeCount: Int = 0,
 )
 
 private const val ProfileCardAspectRatio = 1441f / 689f
@@ -326,6 +332,7 @@ private fun MineEntryRail(
                 title = entry.title,
                 iconRes = entry.iconRes,
                 onClick = entry.onClick,
+                badgeCount = entry.badgeCount,
                 modifier = Modifier.width(68.dp),
             )
         }
@@ -337,6 +344,7 @@ private fun MineEntryButton(
     title: String,
     @DrawableRes iconRes: Int,
     onClick: () -> Unit,
+    badgeCount: Int,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -358,14 +366,22 @@ private fun MineEntryButton(
                 .size(34.dp)
                 .clip(RoundedCornerShape(12.dp)),
         )
-        Text(
-            text = title,
-            color = TitleInk,
-            fontSize = 9.sp,
-            lineHeight = 11.sp,
-            textAlign = TextAlign.Center,
-            fontFamily = FontFamily.Serif,
-            fontWeight = FontWeight.SemiBold,
-        )
+        Box {
+            Text(
+                text = title,
+                color = TitleInk,
+                fontSize = 9.sp,
+                lineHeight = 11.sp,
+                textAlign = TextAlign.Center,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.SemiBold,
+            )
+            UnreadBadge(
+                count = badgeCount,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 12.dp, y = (-6).dp),
+            )
+        }
     }
 }

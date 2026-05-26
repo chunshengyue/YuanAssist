@@ -73,6 +73,11 @@ data class CloudDailyScriptPublishPayload(
     val taskCount: Int,
 )
 
+data class HomeBadges(
+    val unreadMessageCount: Int = 0,
+    val adminCloudScriptIds: List<String> = emptyList(),
+)
+
 object SupabaseRepository {
     private const val PREFS_SESSION = "supabase_session"
     private const val KEY_CURRENT_USER = "current_user_json"
@@ -326,6 +331,25 @@ object SupabaseRepository {
             action = "list-messages",
             payload = mapOf("deviceId" to currentDeviceId(context)),
             type = object : TypeToken<List<strategy_message>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun getHomeBadges(
+        context: Context,
+        onSuccess: (HomeBadges) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val currentUser = getCurrentUser(context)
+        if (currentUser == null) {
+            dispatchSuccess(onSuccess, HomeBadges())
+            return
+        }
+        request<HomeBadges>(
+            action = "get-home-badges",
+            payload = mapOf("deviceId" to currentDeviceId(context)),
+            type = HomeBadges::class.java,
             onSuccess = onSuccess,
             onError = onError,
         )

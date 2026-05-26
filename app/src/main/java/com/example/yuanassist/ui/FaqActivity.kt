@@ -57,7 +57,7 @@ class FaqActivity : AppCompatActivity() {
         ),
         FaqItem(
             question = "吕布的↑不能释放？",
-            answer = "可能是↑的起始位置离圈太近了，悬浮窗上有个圈键修正，可以改↑的其实位置，改的离圈远一点。",
+            answer = "可能是↑的起始位置离圈太近了，悬浮窗上有个键位修正，可以改↑的其实位置，改的离圈远一点。",
         ),
         FaqItem(
             question = "跟打的时候，总会漏掉第一个操作？",

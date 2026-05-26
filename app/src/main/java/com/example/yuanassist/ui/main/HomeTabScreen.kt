@@ -1,6 +1,7 @@
 package com.example.yuanassist.ui.main
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -10,13 +11,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yuanassist.R
@@ -67,7 +72,13 @@ fun HomeTabScreen(
                 HomeEntryButton("哀牢15min", R.drawable.item_caiyan, R.drawable.decor_que, onClick = actions.onOpenAilao15Min),
                 HomeEntryButton("脚本录制", R.drawable.item_zhouyu, R.drawable.decor_xian, onClick = actions.onOpenScriptRecorder),
                 HomeEntryButton("脚本库", R.drawable.item_zhangzhao, R.drawable.decor_que, onClick = actions.onOpenScriptLibrary),
-                HomeEntryButton("云端脚本", R.drawable.item_zhanghe, R.drawable.decor_yuan, onClick = actions.onOpenCloudDailyScript),
+                HomeEntryButton(
+                    "云端脚本",
+                    R.drawable.item_zhanghe,
+                    R.drawable.decor_yuan,
+                    showUnreadDot = overlayState.hasUnreadAdminCloudScript,
+                    onClick = actions.onOpenCloudDailyScript,
+                ),
             ),
         )
         ModeSection(
@@ -92,6 +103,7 @@ private data class HomeEntryButton(
     @DrawableRes val iconRes: Int,
     @DrawableRes val decorRes: Int,
     val weight: Float = 1f,
+    val showUnreadDot: Boolean = false,
     val onClick: () -> Unit,
 )
 
@@ -126,6 +138,15 @@ private fun ModeSection(
                             itemRes = action.iconRes,
                             decorRes = action.decorRes,
                         )
+                        if (action.showUnreadDot) {
+                            Spacer(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-16).dp, y = 12.dp)
+                                    .size(9.dp)
+                                    .background(Color(0xFFD93A2F), CircleShape),
+                            )
+                        }
                     }
                 }
                 if (rowActions.size == 1) {

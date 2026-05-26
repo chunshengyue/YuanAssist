@@ -51,6 +51,20 @@
             "template_name": "关卡.png",
             "threshold": 0.77,
             "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 3000.0,
+              "w": 2000.0,
+              "x": 289.11328,
+              "y": 1149.4404
+            },
+            "template_name": "哀牢关卡20.png",
+            "threshold": 0.77,
+            "type": "template"
           }
         ]
       },
@@ -112,30 +126,72 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 3000,
       "id": 3,
       "on_fail": -2,
       "on_success": 4,
       "params": {
         "align": "center",
+        "screenshot_steps": [
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 3000.0,
+              "w": 2000.0,
+              "x": 289.11328,
+              "y": 1149.4404
+            },
+            "template_name": "关卡.png",
+            "threshold": 0.77,
+            "type": "template"
+          },
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 3000.0,
+              "w": 2000.0,
+              "x": 289.11328,
+              "y": 1149.4404
+            },
+            "template_name": "哀牢关卡20.png",
+            "threshold": 0.77,
+            "type": "template"
+          }
+        ]
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 4,
+      "on_fail": 101,
+      "on_success": 5,
+      "params": {
+        "align": "center",
         "click": 1,
         "roi": {
           "align": "center",
-          "h": 3000.0,
-          "w": 2000.0,
-          "x": 289.11328,
-          "y": 1149.4404
+          "h": 250.0,
+          "w": 250.0,
+          "x": 551.3672,
+          "y": 1589.3076
         },
-        "template_name": "关卡.png",
+        "template_name": "哀牢进入战斗.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
     },
     {
       "action": "OCR",
-      "delay": 2500,
-      "id": 4,
+      "delay": 1000,
+      "id": 101,
+      "name": "进入战斗OCR兜底",
       "on_fail": -2,
       "on_success": 5,
       "params": {

@@ -69,6 +69,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private var currentTaskId = -1
     private var onPlanCompleted: ((Boolean, String) -> Unit)? = null
     private var onPlanCompletedDetailed: ((DailyPlanCompletion) -> Unit)? = null
+    private var onTaskScheduled: ((DailyTask, Long) -> Unit)? = null
     private var customActionHandler: ((DailyTask, () -> Unit, () -> Unit) -> Unit)? = null
     private val handler = Handler(Looper.getMainLooper())
     private val windowManager =
@@ -219,6 +220,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         onCompleted: (Boolean, String) -> Unit,
         onCustomAction: ((DailyTask, () -> Unit, () -> Unit) -> Unit)? = null,
         onCompletedDetailed: ((DailyPlanCompletion) -> Unit)? = null,
+        onTaskScheduled: ((DailyTask, Long) -> Unit)? = null,
         initialVariables: Map<String, String> = emptyMap(),
         templateDir: File? = null,
         scriptFileName: String? = null
@@ -239,6 +241,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         cooldownStartedAtMs = null
         this.onPlanCompleted = onCompleted
         this.onPlanCompletedDetailed = onCompletedDetailed
+        this.onTaskScheduled = onTaskScheduled
         customActionHandler = onCustomAction
         currentTemplateDir = templateDir
         currentAssetTemplateDir = plan.asset_template_dir?.trim()?.takeIf { it.isNotBlank() }
@@ -290,6 +293,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val completionCooldownStartedAtMs = cooldownStartedAtMs
         onPlanCompletedDetailed = null
         onPlanCompleted = null
+        onTaskScheduled = null
         customActionHandler = null
         cooldownStartedAtMs = null
         detailedCallback?.invoke(
@@ -403,6 +407,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val baseDelay = task.delay
         val effectiveDelay = (baseDelay + globalDelayOffsetMs).coerceAtLeast(0L)
         verboseInfo("准备执行${taskLogLabel(task)} ${task.action}，延迟=${baseDelay}+${globalDelayOffsetMs}=${effectiveDelay}")
+        onTaskScheduled?.invoke(task, effectiveDelay)
         handler.postDelayed({
             if (!isRunning || generation != runGeneration) return@postDelayed
             try {
@@ -616,6 +621,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 childScriptEngine = null
                 finishTask(task, success)
             },
+            onTaskScheduled = onTaskScheduled,
             initialVariables = childVariables,
             scriptFileName = scriptName,
         )
@@ -964,7 +970,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             return@withContext
                         }
                         val match = ScreenshotMatch(
-                            nextTaskId = step.on_success,
+                            nextTaskId = resolveScreenshotGroupSuccessTaskId(task, step),
                             clickOnSuccess = step.click == 1,
                             centerInScreenshot = PointF(
                                 region.offsetX + hit.center.x,
@@ -1029,7 +1035,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             val matchResult = matchTemplate(region.bitmap, scaledTemplate, step.threshold ?: 0.8f)
                 ?: return null
             return ScreenshotMatch(
-                nextTaskId = step.on_success,
+                nextTaskId = resolveScreenshotGroupSuccessTaskId(task, step),
                 clickOnSuccess = step.click == 1,
                 centerInScreenshot = PointF(
                     region.offsetX + matchResult.center.x,
@@ -1524,6 +1530,11 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val routes = p.branch_routes ?: return task.on_success
         val value = variables[varName] ?: return task.on_success
         return routes[value] ?: task.on_success
+    }
+
+    private fun resolveScreenshotGroupSuccessTaskId(task: DailyTask, step: ScreenshotStep): Int {
+        if (step.on_success != task.on_success) return step.on_success
+        return resolveSuccessTaskId(task)
     }
 
     private fun resolveFailTaskId(task: DailyTask): Int {

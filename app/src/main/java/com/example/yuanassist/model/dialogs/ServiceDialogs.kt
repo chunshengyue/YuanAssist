@@ -99,11 +99,11 @@ object ServiceDialogs {
         }
     }
 
-    fun showInsertTurnDialog(context: Context, onInsert: (Int) -> Unit) {
+    fun showInsertTurnDialog(context: Context, onInsert: (Int, Int?) -> Unit) {
         val themeContext = DialogUtils.getThemeContext(context)
         val rootLayout = StyledDialogUi.createDialogCard(themeContext)
         rootLayout.addView(StyledDialogUi.createDialogTitle(themeContext, "新增回合"))
-        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "输入要在哪个回合后插入空回合"))
+        rootLayout.addView(StyledDialogUi.createDialogSubtitle(themeContext, "输入要在哪个回合后新增，可选择复制已有操作"))
         rootLayout.addView(StyledDialogUi.createFieldLabel(themeContext, "目标回合"))
         val etTurn = StyledDialogUi.createStyledInput(themeContext, "在第几回合后新增？(例如: 12)").apply {
             hint = "在第几回合后新增？(例如: 12)"
@@ -111,6 +111,13 @@ object ServiceDialogs {
             protectInputLongPress()
         }
         rootLayout.addView(etTurn)
+        rootLayout.addView(StyledDialogUi.createFieldLabel(themeContext, "（可选）复制第几回合的操作"))
+        val etCopyTurn = StyledDialogUi.createStyledInput(themeContext, "留空则新增空回合").apply {
+            hint = "留空则新增空回合"
+            inputType = InputType.TYPE_CLASS_NUMBER
+            protectInputLongPress()
+        }
+        rootLayout.addView(etCopyTurn)
 
         val buttonRow = StyledDialogUi.createActionRow(themeContext)
         val btnCancel = StyledDialogUi.createActionButton(themeContext, "取消", false)
@@ -124,7 +131,8 @@ object ServiceDialogs {
         btnConfirm.setOnClickListener {
             val turnStr = etTurn.text.toString()
             if (turnStr.isNotEmpty()) {
-                onInsert(turnStr.toInt())
+                val copyTurn = etCopyTurn.text.toString().takeIf { it.isNotEmpty() }?.toInt()
+                onInsert(turnStr.toInt(), copyTurn)
                 dialog.dismiss()
             } else {
                 Toast.makeText(context, "请输入回合数", Toast.LENGTH_SHORT).show()

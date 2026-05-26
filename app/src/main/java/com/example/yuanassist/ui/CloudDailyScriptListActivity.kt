@@ -19,6 +19,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.yuanassist.R
 import com.example.yuanassist.model.cloud_daily_script
 import com.example.yuanassist.network.SupabaseRepository
+import com.example.yuanassist.utils.CloudDailyScriptReadStore
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class CloudDailyScriptListActivity : AppCompatActivity() {
@@ -92,6 +93,7 @@ class CloudDailyScriptListActivity : AppCompatActivity() {
             onSuccess = { loaded ->
                 items = loaded
                 listAdapter.submitList(loaded)
+                CloudDailyScriptReadStore.markAdminScriptsRead(this, loaded)
                 emptyView.visibility = if (loaded.isEmpty()) View.VISIBLE else View.GONE
                 swipeRefreshLayout.isRefreshing = false
             },

@@ -138,6 +138,12 @@ class YuanAssistService : AccessibilityService() {
     private var combatRightSwitchButtonRestoreRunnable: Runnable? = null
     private var combatCircleSlotIndex = 0
     private var pendingCombatAnchorType: String? = null
+    private data class CombatAnchorAdjustSpec(
+        val type: String,
+        val slotIndex: Int,
+        val color: String,
+        val yFromBottom: () -> Float
+    )
     private val systemWindowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
 
     private val deviceId: String by lazy {
@@ -1453,30 +1459,22 @@ class YuanAssistService : AccessibilityService() {
     }
 
     private fun showCombatAnchorPickerDialog() {
-        val options = arrayOf("A", "↑", "↓", "圈")
-        StyledDialogUi.showOptionDialog(
-            context = DialogUtils.getThemeContext(this),
-            title = "选择要修正的动作",
-            options = options.toList()
-        ) { which ->
-            startCombatAnchorPicker(options[which])
-        }
+        startCombatAnchorPicker()
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun startCombatAnchorPicker(anchorType: String) {
+    private fun startCombatAnchorPicker() {
         stopCombatAnchorPicker()
-        pendingCombatAnchorType = anchorType
 
         val overlay = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#66000000"))
         }
         val hintView = TextView(this).apply {
-            text = "点击屏幕，设置 $anchorType 距离底部距离"
+            text = "拖动动作标记修正坐标，只保存上下位置\n点击空白处关闭"
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-            setPadding(40, 40, 40, 40)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+            setPadding(dp(16), dp(10), dp(16), dp(10))
             setBackgroundColor(Color.parseColor("#99000000"))
         }
         overlay.addView(
@@ -1484,18 +1482,27 @@ class YuanAssistService : AccessibilityService() {
             FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER
-            )
-        )
-        overlay.setOnTouchListener { _, event ->
-            when (event.action) {
-                MotionEvent.ACTION_UP -> {
-                    saveCombatAnchor(anchorType, event.rawY)
-                    stopCombatAnchorPicker()
-                    true
-                }
-                else -> true
+                Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            ).apply {
+                topMargin = dp(28)
             }
+        )
+
+        combatAnchorAdjustSpecs().forEach { spec ->
+            overlay.addView(
+                createCombatAnchorAdjustMarker(spec),
+                createCombatAnchorAdjustMarkerParams(spec)
+            )
+        }
+
+        overlay.setOnClickListener {
+            stopCombatAnchorPicker()
+        }
+        overlay.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                v.performClick()
+            }
+            true
         }
 
         val params = WindowManager.LayoutParams(
@@ -1503,6 +1510,7 @@ class YuanAssistService : AccessibilityService() {
             WindowManager.LayoutParams.MATCH_PARENT,
             overlayWindowType(),
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -1511,7 +1519,86 @@ class YuanAssistService : AccessibilityService() {
 
         combatAnchorPickerView = overlay
         systemWindowManager.addView(overlay, params)
-        Toast.makeText(this, "$anchorType 取点模式已开启", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "键位修正已开启，拖动标记保存", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun combatAnchorAdjustSpecs(): List<CombatAnchorAdjustSpec> = listOf(
+        CombatAnchorAdjustSpec("A", 0, "#C0392B") { appConfig.attackYFromBottom },
+        CombatAnchorAdjustSpec("↑", 1, "#2E7D32") { appConfig.upYFromBottom },
+        CombatAnchorAdjustSpec("↓", 2, "#1565C0") { appConfig.downYFromBottom },
+        CombatAnchorAdjustSpec("圈", 3, "#D68A93") { appConfig.circleYFromBottom }
+    )
+
+    private fun createCombatAnchorAdjustMarkerParams(spec: CombatAnchorAdjustSpec): FrameLayout.LayoutParams {
+        val sizePx = dp(42)
+        val point = coordinateManager.getActionCoordinates(spec.slotIndex, spec.yFromBottom())
+        return FrameLayout.LayoutParams(sizePx, sizePx).apply {
+            leftMargin = (point.x - sizePx / 2f).roundToInt()
+            topMargin = (point.y - sizePx / 2f).roundToInt()
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun createCombatAnchorAdjustMarker(spec: CombatAnchorAdjustSpec): TextView {
+        val sizePx = dp(42)
+        return TextView(this).apply {
+            text = spec.type
+            gravity = Gravity.CENTER
+            setTextColor(Color.parseColor(spec.color))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#FFF8F2"))
+                setStroke(dp(2), Color.parseColor(spec.color))
+            }
+            elevation = 12f * resources.displayMetrics.density
+            setOnTouchListener(object : View.OnTouchListener {
+                private val touchSlop = 8f * resources.displayMetrics.density
+                private var initialTop = 0
+                private var initialTouchY = 0f
+                private var moved = false
+
+                override fun onTouch(v: View, event: MotionEvent): Boolean {
+                    val params = v.layoutParams as? FrameLayout.LayoutParams ?: return false
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            pendingCombatAnchorType = spec.type
+                            initialTop = params.topMargin
+                            initialTouchY = event.rawY
+                            moved = false
+                            return true
+                        }
+
+                        MotionEvent.ACTION_MOVE -> {
+                            val dy = event.rawY - initialTouchY
+                            if (kotlin.math.abs(dy) > touchSlop) {
+                                moved = true
+                            }
+                            val maxTop = (coordinateManager.screenHeight - sizePx).coerceAtLeast(0)
+                            params.topMargin = (initialTop + dy.toInt()).coerceIn(0, maxTop)
+                            v.layoutParams = params
+                            return true
+                        }
+
+                        MotionEvent.ACTION_UP -> {
+                            val centerY = getViewCenterOnScreen(v, null).second
+                            saveCombatAnchor(spec.type, centerY)
+                            if (!moved) {
+                                Toast.makeText(
+                                    this@YuanAssistService,
+                                    "上下拖动 ${spec.type} 标记即可修正",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            pendingCombatAnchorType = null
+                            return true
+                        }
+                    }
+                    return false
+                }
+            })
+        }
     }
 
     private fun stopCombatAnchorPicker() {
@@ -1567,12 +1654,12 @@ class YuanAssistService : AccessibilityService() {
         }
     }
     private fun showInsertTurnDialog() {
-        ServiceDialogs.showInsertTurnDialog(this) { targetTurn ->
-            insertTurnAfter(targetTurn)
+        ServiceDialogs.showInsertTurnDialog(this) { targetTurn, copyTurn ->
+            insertTurnAfter(targetTurn, copyTurn)
         }
     }
 
-    private fun insertTurnAfter(targetTurnNumber: Int) {
+    private fun insertTurnAfter(targetTurnNumber: Int, copyTurnNumber: Int? = null) {
         if (combatEngine.followData.isEmpty()) {
             Toast.makeText(this, "列表为空", Toast.LENGTH_SHORT).show()
             return
@@ -1580,16 +1667,33 @@ class YuanAssistService : AccessibilityService() {
 
         val index = combatEngine.followData.indexOfFirst { it.turnNumber == targetTurnNumber }
         if (index != -1) {
+            val copyActions = copyTurnNumber?.let { number ->
+                val sourceTurn = combatEngine.followData.firstOrNull { it.turnNumber == number }
+                if (sourceTurn == null) {
+                    Toast.makeText(this, "未找到要复制的回合 T$number", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                sourceTurn.characterActions.copyOf()
+            }
+
             for (i in index + 1 until combatEngine.followData.size) {
                 combatEngine.followData[i].turnNumber += 1
             }
 
             combatEngine.instructionList.forEach { if (it.turn > targetTurnNumber) it.turn += 1 }
-            val newTurn = TurnData(targetTurnNumber + 1)
+            val newTurn = TurnData(
+                turnNumber = targetTurnNumber + 1,
+                characterActions = copyActions ?: Array(5) { "" }
+            )
             combatEngine.followData.add(index + 1, newTurn)
 
             tableAdapter?.notifyDataSetChanged()
-            Toast.makeText(this, "已在 T$targetTurnNumber 后插入空回合", Toast.LENGTH_SHORT).show()
+            val toastText = if (copyTurnNumber == null) {
+                "已在 T$targetTurnNumber 后插入空回合"
+            } else {
+                "已在 T$targetTurnNumber 后插入并复制 T$copyTurnNumber 操作"
+            }
+            Toast.makeText(this, toastText, Toast.LENGTH_SHORT).show()
 
             val rv = uiManager.controlView?.findViewById<RecyclerView>(R.id.rv_log_table)
             rv?.scrollToPosition(index + 1)

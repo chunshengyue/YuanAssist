@@ -3,6 +3,7 @@ package com.example.yuanassist.ui.main
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -19,12 +20,14 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.geometry.Size as UiSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -115,7 +118,11 @@ fun MainShellScreen(
                     BottomNavItem("首页", R.drawable.decor_flower1),
                     BottomNavItem("作业", R.drawable.decor_flower2),
                     BottomNavItem("调试", R.drawable.decor_flower3),
-                    BottomNavItem("我的", R.drawable.decor_flower4),
+                    BottomNavItem(
+                        title = "我的",
+                        iconRes = R.drawable.decor_flower4,
+                        badgeCount = mineProfileState.unreadMessageCount,
+                    ),
                 ),
                 selectedTab = selectedTab,
                 onSelected = onSelectTab,
@@ -211,6 +218,7 @@ internal fun SectionPageTitle(
 private data class BottomNavItem(
     val title: String,
     @DrawableRes val iconRes: Int,
+    val badgeCount: Int = 0,
 )
 
 @Composable
@@ -327,14 +335,22 @@ private fun BottomNavButton(
                             .offset(y = 2.dp),
                         contentScale = ContentScale.Fit,
                     )
-                    Text(
-                        text = item.title,
-                        color = TitleInk,
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.sp,
-                    )
+                    Box {
+                        Text(
+                            text = item.title,
+                            color = TitleInk,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Serif,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.sp,
+                        )
+                        UnreadBadge(
+                            count = item.badgeCount,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = 12.dp, y = (-5).dp),
+                        )
+                    }
                 }
             }
         } else {
@@ -351,15 +367,50 @@ private fun BottomNavButton(
                     modifier = Modifier.size(22.dp),
                     contentScale = ContentScale.Fit,
                 )
-                Text(
-                    text = item.title,
-                    color = BodyInk,
-                    fontSize = 13.sp,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.sp,
-                )
+                Box {
+                    Text(
+                        text = item.title,
+                        color = BodyInk,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.sp,
+                    )
+                    UnreadBadge(
+                        count = item.badgeCount,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 12.dp, y = (-5).dp),
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+internal fun UnreadBadge(
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
+    if (count <= 0) return
+
+    val label = if (count > 99) "99+" else count.toString()
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(Color(0xFFE3372F))
+            .border(0.7.dp, Color.White.copy(alpha = 0.88f), RoundedCornerShape(999.dp))
+            .padding(horizontal = if (count > 9) 4.dp else 3.dp, vertical = 1.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 8.sp,
+            lineHeight = 9.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.sp,
+        )
     }
 }

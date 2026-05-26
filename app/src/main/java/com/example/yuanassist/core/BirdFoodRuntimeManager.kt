@@ -10,6 +10,7 @@ import com.example.yuanassist.model.BirdFoodTaskType
 import com.example.yuanassist.model.DaiBanGongWuEntry
 import com.example.yuanassist.model.DaiBanGongWuOption
 import com.example.yuanassist.model.DailyTaskPlan
+import com.example.yuanassist.model.TaskParams
 import com.example.yuanassist.utils.DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.TemplateDelayOverrideStore
@@ -24,6 +25,8 @@ class BirdFoodRuntimeManager(
     companion object {
         private const val CONTROLLER_SCRIPT = "bird_food_controller.json"
         private const val RETURN_AFTER_RUN_DELAY_MS = 1000L
+        private const val WU_ZHU_QIAN_SELECTION_ROI_X = 838f
+        private const val WU_ZHU_QIAN_SELECTION_ROI_Y = 1150f
     }
 
     private val engine = AutoTaskEngine(service)
@@ -191,16 +194,8 @@ class BirdFoodRuntimeManager(
         val updatedTasks = plan.tasks.map { task ->
             when {
                 fileName == BirdFoodTaskType.DAI_BAN_GONG_WU.scriptFileName &&
-                    currentConfig.daiBanGongWuOption == DaiBanGongWuOption.WU_ZHU_QIAN &&
-                    task.params?.template_name == "xuanze.png" -> {
-                    task.copy(
-                        params = task.params.copy(
-                            roi = task.params.roi?.copy(
-                                x = 838f,
-                                y = 1150f
-                            )
-                        )
-                    )
+                    currentConfig.daiBanGongWuOption == DaiBanGongWuOption.WU_ZHU_QIAN -> {
+                    task.copy(params = applyWuZhuQianSelectionRoi(task.params))
                 }
 
                 else -> task
@@ -213,6 +208,26 @@ class BirdFoodRuntimeManager(
         return applyDaiBanGongWuSkipEntries(
             customizedPlan,
             currentConfig.skippedDaiBanGongWuEntries
+        )
+    }
+
+    private fun applyWuZhuQianSelectionRoi(params: TaskParams?): TaskParams? {
+        if (params == null) return null
+        val updatedSteps = params.screenshot_steps?.map { step ->
+            if (step.template_name == "xuanze.png") {
+                step.copy(
+                    roi = step.roi?.copy(
+                        x = WU_ZHU_QIAN_SELECTION_ROI_X,
+                        y = WU_ZHU_QIAN_SELECTION_ROI_Y
+                    )
+                )
+            } else {
+                step
+            }
+        }
+
+        return params.copy(
+            screenshot_steps = updatedSteps
         )
     }
 

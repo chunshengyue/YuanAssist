@@ -19,7 +19,6 @@ class Mainline624RuntimeManager(
     companion object {
         private const val SCRIPT_FILE_NAME = "zhu_xian_6_24.json"
         private const val ENTRY_START_TASK_ID = 1
-        private const val LOOP_START_TASK_ID = 15
         private const val NEXT_RUN_DELAY_MS = 1500L
     }
 
@@ -92,7 +91,7 @@ class Mainline624RuntimeManager(
         val roundSummary = maxRuns?.let { "第${currentRound}/$it 轮" } ?: "第${currentRound}轮"
         executePlan(
             generation = generation,
-            startTaskId = LOOP_START_TASK_ID,
+            startTaskId = ENTRY_START_TASK_ID,
             section = "战斗轮次",
             startMessage = "开始 $roundSummary",
             failurePrefix = "6-24执行失败",

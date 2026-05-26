@@ -49,6 +49,7 @@ import com.example.yuanassist.ui.main.MainShellScreen
 import com.example.yuanassist.ui.main.MainTab
 import com.example.yuanassist.ui.main.MineProfileState
 import com.example.yuanassist.ui.main.MineTabActions
+import com.example.yuanassist.utils.CloudDailyScriptReadStore
 import com.example.yuanassist.utils.ConfigManager
 import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.isFeedbackAdminDevice
@@ -97,6 +98,8 @@ class MainActivity : AppCompatActivity() {
     private var homeOverlayState by mutableStateOf(HomeOverlayState())
     private var mineProfileState by mutableStateOf(MineProfileState())
     private var debugWorkbenchState by mutableStateOf(DebugWorkbenchState())
+    private var homeBadgesRequestVersion = 0
+    private var latestAdminCloudScriptIds: List<String> = emptyList()
     private var tempAvatarUri: Uri? = null
     private var currentAvatarPreview: ImageView? = null
 
@@ -144,6 +147,8 @@ class MainActivity : AppCompatActivity() {
                     onOpenFeedback = homeActionHandler::openFeedbackCenter,
                     onOpenScriptLibrary = homeActionHandler::openScriptLibrary,
                     onOpenCloudDailyScript = {
+                        CloudDailyScriptReadStore.markAdminScriptIdsRead(this, latestAdminCloudScriptIds)
+                        homeOverlayState = homeOverlayState.copy(hasUnreadAdminCloudScript = false)
                         startActivity(Intent(this, CloudDailyScriptListActivity::class.java))
                     },
                     onCheckUpdate = homeActionHandler::checkUpdate,
@@ -225,6 +230,7 @@ class MainActivity : AppCompatActivity() {
     private fun refreshShellState() {
         refreshHomeOverlayState()
         refreshMineProfileState()
+        refreshHomeBadges()
         if (::debugWorkbenchCoordinator.isInitialized) {
             debugWorkbenchCoordinator.refreshFromExternalChanges()
         }
@@ -265,6 +271,40 @@ class MainActivity : AppCompatActivity() {
     private fun refreshHomeOverlayState() {
         homeOverlayState = HomeOverlayState(
             combatWindowOpen = homeActionHandler.isCombatWindowOpen(),
+            hasUnreadAdminCloudScript = homeOverlayState.hasUnreadAdminCloudScript,
+        )
+    }
+
+    private fun refreshHomeBadges() {
+        val currentUser = SupabaseRepository.getCurrentUser(this)
+        if (currentUser == null) {
+            homeBadgesRequestVersion++
+            latestAdminCloudScriptIds = emptyList()
+            homeOverlayState = homeOverlayState.copy(hasUnreadAdminCloudScript = false)
+            mineProfileState = mineProfileState.copy(unreadMessageCount = 0)
+            return
+        }
+
+        val requestVersion = ++homeBadgesRequestVersion
+        SupabaseRepository.getHomeBadges(
+            context = this,
+            onSuccess = { scripts ->
+                runOnUiThread {
+                    if (requestVersion != homeBadgesRequestVersion) return@runOnUiThread
+                    if (SupabaseRepository.getCurrentUser(this) == null) return@runOnUiThread
+                    latestAdminCloudScriptIds = scripts.adminCloudScriptIds
+                    homeOverlayState = homeOverlayState.copy(
+                        hasUnreadAdminCloudScript = CloudDailyScriptReadStore.hasUnreadAdminScriptIds(
+                            this,
+                            scripts.adminCloudScriptIds,
+                        ),
+                    )
+                    mineProfileState = mineProfileState.copy(
+                        unreadMessageCount = scripts.unreadMessageCount,
+                    )
+                }
+            },
+            onError = {},
         )
     }
 
@@ -279,6 +319,7 @@ class MainActivity : AppCompatActivity() {
                 detail = "点击下方按钮绑定当前设备",
                 avatarFallback = "我",
                 avatarUrl = null,
+                unreadMessageCount = 0,
             )
             return
         }
@@ -296,6 +337,7 @@ class MainActivity : AppCompatActivity() {
             detail = detail,
             avatarFallback = nickname.firstOrNull()?.toString() ?: "我",
             avatarUrl = avatarUrl,
+            unreadMessageCount = mineProfileState.unreadMessageCount,
         )
     }
 
@@ -307,7 +349,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(this, "账号已同步", Toast.LENGTH_SHORT).show()
                     saveToLocalCache(user)
-                    refreshMineProfileState()
+                    refreshShellState()
                 }
             },
             onError = { message ->
@@ -332,7 +374,7 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(this, "同步成功", Toast.LENGTH_SHORT).show()
                     saveToLocalCache(user)
-                    refreshMineProfileState()
+                    refreshShellState()
                 }
             },
             onError = { message ->

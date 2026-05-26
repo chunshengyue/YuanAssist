@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   assertFeedbackAdminDevice,
+  isFeedbackAdminDeviceId,
   normalizeAdminFeedbackReply,
 } from "./feedbackAdmin.ts";
 
@@ -441,6 +442,7 @@ function mapCloudDailyScript(row: CloudDailyScriptRow, author: UserRow | null | 
     createdAt: normalizeTimestamp(row.created_at),
     updatedAt: normalizeTimestamp(row.updated_at),
     author: mapUser(author),
+    isAdminPublished: isFeedbackAdminDeviceId(author?.device_id ?? author?.username ?? ""),
   };
 }
 
@@ -692,6 +694,41 @@ async function listMessages(deviceId: string) {
   strategyAuthors.forEach((value, key) => users.set(key, value));
   const comments = await loadCommentsByIds(rows.map((item) => item.comment_id));
   return rows.map((item) => mapMessage(item, users, strategies, comments));
+}
+
+async function getHomeBadges(deviceId: string) {
+  const user = await ensureUserByDeviceId(deviceId);
+  const { count: unreadMessageCount, error: messageError } = await db
+    .from("strategy_message")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", user.id)
+    .eq("isRead", false);
+  if (messageError) throw messageError;
+
+  const { data: adminUsers, error: adminUserError } = await db
+    .from("User")
+    .select("id")
+    .or("device_id.eq.815e9c7c33fa662e,username.eq.815e9c7c33fa662e");
+  if (adminUserError) throw adminUserError;
+  const adminUserIds = uniqueNonEmpty(((adminUsers as Array<{ id: string | null }>) ?? []).map((item) => item.id));
+
+  let adminCloudScriptIds: string[] = [];
+  if (adminUserIds.length > 0) {
+    const { data: scripts, error: scriptError } = await db
+      .from("cloud_daily_scripts")
+      .select("object_id")
+      .eq("status", "published")
+      .in("author_id", adminUserIds)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (scriptError) throw scriptError;
+    adminCloudScriptIds = uniqueNonEmpty(((scripts as Array<{ object_id: string | null }>) ?? []).map((item) => item.object_id));
+  }
+
+  return {
+    unreadMessageCount: unreadMessageCount ?? 0,
+    adminCloudScriptIds,
+  };
 }
 
 async function markMessagesRead(deviceId: string, messageObjectIds: string[]) {
@@ -1110,6 +1147,8 @@ async function routeAction(action: string, body: JsonRecord) {
       );
     case "list-messages":
       return await listMessages(requireString(body.deviceId, "deviceId"));
+    case "get-home-badges":
+      return await getHomeBadges(requireString(body.deviceId, "deviceId"));
     case "mark-messages-read":
       return await markMessagesRead(
         requireString(body.deviceId, "deviceId"),

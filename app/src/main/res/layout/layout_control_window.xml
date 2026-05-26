@@ -269,7 +269,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
 
-            android:text="圈键修正"
+            android:text="键位修正"
             android:textColor="@color/palace_blue"
             android:textSize="12sp"
             android:textStyle="bold"

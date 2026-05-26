@@ -11,6 +11,7 @@ enum class MainTab {
 
 data class HomeOverlayState(
     val combatWindowOpen: Boolean = false,
+    val hasUnreadAdminCloudScript: Boolean = false,
 ) {
     val combatButtonLabel: String
         get() = if (combatWindowOpen) "关闭悬浮窗" else "启动悬浮窗"
@@ -23,6 +24,7 @@ data class MineProfileState(
     val detail: String = "点击资料卡进入资料中心",
     val avatarFallback: String = "我",
     val avatarUrl: String? = null,
+    val unreadMessageCount: Int = 0,
 )
 
 data class DebugSelectionOption(
