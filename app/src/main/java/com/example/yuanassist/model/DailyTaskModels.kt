@@ -4,7 +4,8 @@ data class DailyTaskPlan(
     val start_task_id: Int,
     val tasks: List<DailyTask>,
     val asset_template_dir: String? = null,
-    val display_name: String? = null
+    val display_name: String? = null,
+    val override_asset_script: String? = null
 )
 
 data class DailyTask(

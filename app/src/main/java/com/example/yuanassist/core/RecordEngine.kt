@@ -53,6 +53,7 @@ class RecordEngine(
             endX = clickX,
             endY = clickY,
             recordDelay = appConfig.recordDelay,
+            durationMs = appConfig.recordClickDurationMs,
             onActionDone = onActionDone
         )
         return true
@@ -147,15 +148,28 @@ class RecordEngine(
                         actionType = actionType,
                         startX = touchStartX,
                         startY = touchStartY,
-                        endX = endX,
-                        endY = endY,
-                        recordDelay = appConfig.recordDelay
+                        endX = if (actionType == "swipe_up" || actionType == "swipe_down") {
+                            touchStartX
+                        } else {
+                            endX
+                        },
+                        endY = when (actionType) {
+                            "swipe_up" -> touchStartY - (appConfig.recordSwipeDistance * coordinateManager.gameScale)
+                            "swipe_down" -> touchStartY + (appConfig.recordSwipeDistance * coordinateManager.gameScale)
+                            else -> endY
+                        },
+                        recordDelay = appConfig.recordDelay,
+                        durationMs = if (actionType == "click") {
+                            appConfig.recordClickDurationMs
+                        } else {
+                            appConfig.recordSwipeDurationMs
+                        }
                     )
                 } else {
                     // 區域外點擊 (無 UI 任務)
                     gestureDispatcher.performActionPenetrate(
                         touchStartX, touchStartY, true, 0f, 0f,
-                        appConfig.recordDelay, null
+                        appConfig.recordDelay, appConfig.recordClickDurationMs, null
                     )
                 }
             }
@@ -255,6 +269,7 @@ class RecordEngine(
         endX: Float,
         endY: Float,
         recordDelay: Long,
+        durationMs: Long,
         onActionDone: (() -> Unit)? = null
     ) {
         val uiTask = buildRecordUiTask(charIndex, actionSymbol, onActionDone)
@@ -265,6 +280,7 @@ class RecordEngine(
             endX,
             endY,
             recordDelay,
+            durationMs,
             uiTask
         )
     }

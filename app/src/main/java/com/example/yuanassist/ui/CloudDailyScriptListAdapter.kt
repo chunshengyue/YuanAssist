@@ -56,7 +56,13 @@ class CloudDailyScriptListAdapter(
             metaView.text = "${item.taskCount}步 · ${item.downloadCount}次下载"
             bindAvatar(item.author?.avatarUrl.orEmpty())
             val tags = parseTags(item.tags).ifEmpty { listOf("日常脚本") }
-            bindTags(if (item.isAdminPublished) listOf("管理员发布") + tags else tags)
+            bindTags(
+                buildList {
+                    if (item.overrideAssetScript.isNotBlank()) add("官方修正")
+                    if (item.isAdminPublished) add("管理员发布")
+                    addAll(tags)
+                }
+            )
             itemView.setOnClickListener { onClick(item) }
         }
 
@@ -84,7 +90,8 @@ class CloudDailyScriptListAdapter(
 
         private fun createTagView(tag: String): TextView {
             val (backgroundColor, strokeColor, textColor) = when {
-                tag == "管理员发布" -> Triple("#F7D9D4", "#D46F63", "#8E3028")
+                tag == "官方修正" -> Triple("#F7D9D4", "#D46F63", "#8E3028")
+                tag == "管理员发布" -> Triple("#F8E0B8", "#C88A2C", "#8F5A11")
                 tag.contains("如鸢") -> Triple("#F8E0B8", "#C88A2C", "#8F5A11")
                 tag.contains("代号鸢") -> Triple("#E2E7DA", "#9AA98B", "#5D6B51")
                 tag.contains("MaaYuanShare", ignoreCase = true) -> Triple("#E8F3FF", "#5B8FD6", "#215A9A")

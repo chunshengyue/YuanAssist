@@ -33,6 +33,7 @@ type StrategyRow = {
   instructions: string | null;
   favoriteCount: number | null;
   ruyuan: number | null;
+  tags: string | null;
   agents: string | null;
   agentImageUrl: string | null;
   content: string | null;
@@ -108,8 +109,36 @@ type CloudDailyScriptRow = {
   task_count: number | null;
   download_count: number | null;
   status: string | null;
+  override_asset_script: string | null;
   created_at: string | null;
   updated_at: string | null;
+};
+
+type CloudDailyScriptCommentRow = {
+  id: string;
+  objectId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  content: string | null;
+  replyToUserName: string | null;
+  user_id: string | null;
+  script_id: string | null;
+  reply_to_comment_id: string | null;
+  reply_to_user_id: string | null;
+};
+
+type CloudDailyScriptMessageRow = {
+  id: string;
+  objectId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  isRead: boolean | null;
+  type: number | null;
+  contentSnapshot: string | null;
+  recipient_id: string | null;
+  sender_id: string | null;
+  script_id: string | null;
+  comment_id: string | null;
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -121,7 +150,11 @@ const db = createClient(supabaseUrl, serviceRoleKey, {
 
 const DAILY_SCRIPT_BUCKET = "daily-script-bundles";
 const DAILY_SCRIPT_SELECT =
-  "id, object_id, author_id, title, description, tags, guide_images, bundle_path, bundle_size, task_count, download_count, status, created_at, updated_at";
+  "id, object_id, author_id, title, description, tags, guide_images, bundle_path, bundle_size, task_count, download_count, status, override_asset_script, created_at, updated_at";
+const DAILY_SCRIPT_COMMENT_SELECT =
+  "id, objectId, createdAt, updatedAt, content, replyToUserName, user_id, script_id, reply_to_comment_id, reply_to_user_id";
+const DAILY_SCRIPT_MESSAGE_SELECT =
+  "id, objectId, createdAt, updatedAt, isRead, type, contentSnapshot, recipient_id, sender_id, script_id, comment_id";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -221,7 +254,7 @@ async function getUserByObjectId(objectId: string): Promise<UserRow | null> {
 async function getStrategyByObjectId(objectId: string): Promise<StrategyRow | null> {
   const { data, error } = await db
     .from("strategy_detail")
-    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
+    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, tags, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
     .eq("objectId", objectId)
     .limit(1)
     .maybeSingle<StrategyRow>();
@@ -236,6 +269,17 @@ async function getCommentByObjectId(objectId: string): Promise<CommentRow | null
     .eq("objectId", objectId)
     .limit(1)
     .maybeSingle<CommentRow>();
+  if (error) throw error;
+  return data;
+}
+
+async function getDailyScriptCommentByObjectId(objectId: string): Promise<CloudDailyScriptCommentRow | null> {
+  const { data, error } = await db
+    .from("cloud_daily_script_comment")
+    .select(DAILY_SCRIPT_COMMENT_SELECT)
+    .eq("objectId", objectId)
+    .limit(1)
+    .maybeSingle<CloudDailyScriptCommentRow>();
   if (error) throw error;
   return data;
 }
@@ -256,7 +300,7 @@ async function loadStrategiesByIds(strategyIds: Array<string | null | undefined>
   if (ids.length === 0) return new Map();
   const { data, error } = await db
     .from("strategy_detail")
-    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
+    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, tags, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
     .in("id", ids);
   if (error) throw error;
   return new Map((data as StrategyRow[]).map((item) => [item.id, item]));
@@ -271,6 +315,30 @@ async function loadCommentsByIds(commentIds: Array<string | null | undefined>): 
     .in("id", ids);
   if (error) throw error;
   return new Map((data as CommentRow[]).map((item) => [item.id, item]));
+}
+
+async function loadDailyScriptsByIds(scriptIds: Array<string | null | undefined>): Promise<Map<string, CloudDailyScriptRow>> {
+  const ids = uniqueNonEmpty(scriptIds);
+  if (ids.length === 0) return new Map();
+  const { data, error } = await db
+    .from("cloud_daily_scripts")
+    .select(DAILY_SCRIPT_SELECT)
+    .in("id", ids);
+  if (error) throw error;
+  return new Map((data as CloudDailyScriptRow[]).map((item) => [item.id, item]));
+}
+
+async function loadDailyScriptCommentsByIds(
+  commentIds: Array<string | null | undefined>,
+): Promise<Map<string, CloudDailyScriptCommentRow>> {
+  const ids = uniqueNonEmpty(commentIds);
+  if (ids.length === 0) return new Map();
+  const { data, error } = await db
+    .from("cloud_daily_script_comment")
+    .select(DAILY_SCRIPT_COMMENT_SELECT)
+    .in("id", ids);
+  if (error) throw error;
+  return new Map((data as CloudDailyScriptCommentRow[]).map((item) => [item.id, item]));
 }
 
 function mapUser(row: UserRow | null | undefined) {
@@ -303,7 +371,8 @@ function mapStrategy(row: StrategyRow, author: UserRow | null | undefined) {
     agentImageUrl: row.agentImageUrl ?? "",
     agentTextDesc: row.agentTextDesc ?? "",
     visible: row.visible ?? 0,
-    ruyuan: row.ruyuan ?? 0,
+    ruyuan: row.ruyuan,
+    tags: row.tags ?? "",
     viewCount: row.viewCount ?? 0,
     favoriteCount: row.favoriteCount ?? 0,
     createdAt: normalizeTimestamp(row.createdAt),
@@ -365,6 +434,65 @@ function mapMessage(
     sender: row.sender_id ? mapUser(users.get(row.sender_id)) : null,
     strategy: strategy ? mapStrategy(strategy, strategy.author_id ? users.get(strategy.author_id) : null) : null,
     comment: row.comment_id ? mapCommentShallow(comments.get(row.comment_id), users) : null,
+  };
+}
+
+function mapDailyScriptComment(
+  row: CloudDailyScriptCommentRow,
+  users: Map<string, UserRow>,
+  scripts: Map<string, CloudDailyScriptRow>,
+  comments: Map<string, CloudDailyScriptCommentRow>,
+) {
+  const script = row.script_id ? scripts.get(row.script_id) : null;
+  return {
+    objectId: row.objectId,
+    createdAt: normalizeTimestamp(row.createdAt),
+    updatedAt: normalizeTimestamp(row.updatedAt),
+    content: row.content ?? "",
+    replyToUserName: row.replyToUserName ?? "",
+    user: row.user_id ? mapUser(users.get(row.user_id)) : null,
+    script: script ? mapCloudDailyScript(script, script.author_id ? users.get(script.author_id) : null) : null,
+    replyToComment: row.reply_to_comment_id ? mapDailyScriptCommentShallow(comments.get(row.reply_to_comment_id), users) : null,
+    replyToUser: row.reply_to_user_id ? mapUser(users.get(row.reply_to_user_id)) : null,
+  };
+}
+
+function mapDailyScriptCommentShallow(
+  row: CloudDailyScriptCommentRow | undefined,
+  users: Map<string, UserRow>,
+) {
+  if (!row) return null;
+  return {
+    objectId: row.objectId,
+    createdAt: normalizeTimestamp(row.createdAt),
+    updatedAt: normalizeTimestamp(row.updatedAt),
+    content: row.content ?? "",
+    replyToUserName: row.replyToUserName ?? "",
+    user: row.user_id ? mapUser(users.get(row.user_id)) : null,
+    script: null,
+    replyToComment: null,
+    replyToUser: row.reply_to_user_id ? mapUser(users.get(row.reply_to_user_id)) : null,
+  };
+}
+
+function mapDailyScriptMessage(
+  row: CloudDailyScriptMessageRow,
+  users: Map<string, UserRow>,
+  scripts: Map<string, CloudDailyScriptRow>,
+  comments: Map<string, CloudDailyScriptCommentRow>,
+) {
+  const script = row.script_id ? scripts.get(row.script_id) : null;
+  return {
+    objectId: row.objectId,
+    createdAt: normalizeTimestamp(row.createdAt),
+    updatedAt: normalizeTimestamp(row.updatedAt),
+    type: row.type ?? 0,
+    contentSnapshot: row.contentSnapshot ?? "",
+    isRead: Boolean(row.isRead),
+    recipient: row.recipient_id ? mapUser(users.get(row.recipient_id)) : null,
+    sender: row.sender_id ? mapUser(users.get(row.sender_id)) : null,
+    script: script ? mapCloudDailyScript(script, script.author_id ? users.get(script.author_id) : null) : null,
+    comment: row.comment_id ? mapDailyScriptCommentShallow(comments.get(row.comment_id), users) : null,
   };
 }
 
@@ -439,6 +567,7 @@ function mapCloudDailyScript(row: CloudDailyScriptRow, author: UserRow | null | 
     taskCount: row.task_count ?? 0,
     downloadCount: row.download_count ?? 0,
     status: row.status ?? "published",
+    overrideAssetScript: row.override_asset_script ?? "",
     createdAt: normalizeTimestamp(row.created_at),
     updatedAt: normalizeTimestamp(row.updated_at),
     author: mapUser(author),
@@ -461,7 +590,7 @@ async function listPublicStrategies(sortMode: string, limit: number) {
   const orderColumn = sortMode === "hot" ? "viewCount" : "createdAt";
   const { data, error } = await db
     .from("strategy_detail")
-    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
+    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, tags, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
     .eq("visible", 1)
     .order(orderColumn, { ascending: false })
     .limit(limit);
@@ -614,9 +743,12 @@ async function createComment(body: JsonRecord) {
   }
 
   const replyToUserName = String(body.replyToUserName ?? "").trim();
+  const nowIso = new Date().toISOString();
   const insertPayload = {
     id: crypto.randomUUID(),
     objectId: randomObjectId(),
+    createdAt: nowIso,
+    updatedAt: nowIso,
     strategy_id: strategy.id,
     user_id: user.id,
     content,
@@ -637,6 +769,8 @@ async function createComment(body: JsonRecord) {
     const { error: messageError } = await db.from("strategy_message").insert({
       id: crypto.randomUUID(),
       objectId: randomObjectId(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
       recipient_id: recipientId,
       sender_id: user.id,
       strategy_id: strategy.id,
@@ -678,6 +812,119 @@ async function deleteCommentByDevice(deviceId: string, commentObjectId: string) 
   return { deleted: true };
 }
 
+async function listDailyScriptComments(scriptObjectId: string) {
+  const script = await getCloudDailyScriptByObjectId(scriptObjectId);
+  if (!script || script.status !== "published") throw new Error("未找到该云端脚本");
+  const { data, error } = await db
+    .from("cloud_daily_script_comment")
+    .select(DAILY_SCRIPT_COMMENT_SELECT)
+    .eq("script_id", script.id)
+    .order("createdAt", { ascending: true });
+  if (error) throw error;
+  const rows = (data as CloudDailyScriptCommentRow[]) ?? [];
+  const users = await loadUsersByIds(rows.flatMap((item) => [item.user_id, item.reply_to_user_id]));
+  if (script.author_id) {
+    const author = (await loadUsersByIds([script.author_id])).get(script.author_id);
+    if (author) users.set(author.id, author);
+  }
+  const scripts = new Map([[script.id, script]]);
+  const comments = new Map(rows.map((item) => [item.id, item]));
+  return rows.map((item) => mapDailyScriptComment(item, users, scripts, comments));
+}
+
+async function createDailyScriptComment(body: JsonRecord) {
+  const deviceId = requireString(body.deviceId, "deviceId");
+  const scriptObjectId = requireString(body.scriptId, "scriptId");
+  const content = requireString(body.content, "content");
+  const user = await ensureUserByDeviceId(deviceId);
+  const script = await getCloudDailyScriptByObjectId(scriptObjectId);
+  if (!script || script.status !== "published") throw new Error("未找到该云端脚本");
+
+  let replyComment: CloudDailyScriptCommentRow | null = null;
+  let replyUser: UserRow | null = null;
+  const replyToCommentObjectId = String(body.replyToCommentId ?? "").trim();
+  if (replyToCommentObjectId) {
+    replyComment = await getDailyScriptCommentByObjectId(replyToCommentObjectId);
+    if (!replyComment || replyComment.script_id !== script.id) throw new Error("回复目标评论不存在");
+  }
+
+  const replyToUserObjectId = String(body.replyToUserId ?? "").trim();
+  if (replyToUserObjectId) {
+    replyUser = await getUserByObjectId(replyToUserObjectId);
+  } else if (replyComment?.user_id) {
+    replyUser = (await loadUsersByIds([replyComment.user_id])).get(replyComment.user_id) ?? null;
+  }
+
+  const replyToUserName = String(body.replyToUserName ?? "").trim();
+  const nowIso = new Date().toISOString();
+  const insertPayload = {
+    id: crypto.randomUUID(),
+    objectId: randomObjectId(),
+    createdAt: nowIso,
+    updatedAt: nowIso,
+    script_id: script.id,
+    user_id: user.id,
+    content,
+    reply_to_comment_id: replyComment?.id ?? null,
+    reply_to_user_id: replyUser?.id ?? null,
+    replyToUserName: replyToUserName || replyUser?.nickname || replyUser?.username || "",
+  };
+
+  const { data: inserted, error: insertError } = await db
+    .from("cloud_daily_script_comment")
+    .insert(insertPayload)
+    .select(DAILY_SCRIPT_COMMENT_SELECT)
+    .single<CloudDailyScriptCommentRow>();
+  if (insertError) throw insertError;
+
+  const recipientId = replyComment?.user_id ?? script.author_id;
+  if (recipientId && recipientId !== user.id) {
+    const { error: messageError } = await db.from("cloud_daily_script_message").insert({
+      id: crypto.randomUUID(),
+      objectId: randomObjectId(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      recipient_id: recipientId,
+      sender_id: user.id,
+      script_id: script.id,
+      comment_id: inserted.id,
+      type: replyComment ? 2 : 1,
+      contentSnapshot: content,
+      isRead: false,
+    });
+    if (messageError) {
+      console.error("daily script comment message insert failed", messageError);
+    }
+  }
+
+  const users = await loadUsersByIds([inserted.user_id, inserted.reply_to_user_id, script.author_id]);
+  const comments = new Map<string, CloudDailyScriptCommentRow>();
+  if (replyComment) comments.set(replyComment.id, replyComment);
+  comments.set(inserted.id, inserted);
+  const scripts = new Map([[script.id, script]]);
+  return mapDailyScriptComment(inserted, users, scripts, comments);
+}
+
+async function deleteDailyScriptCommentByDevice(deviceId: string, commentObjectId: string) {
+  const user = await ensureUserByDeviceId(deviceId);
+  const comment = await getDailyScriptCommentByObjectId(commentObjectId);
+  if (!comment) throw new Error("评论不存在");
+  if (comment.user_id !== user.id) throw new Error("只能删除自己的评论");
+
+  const { error: messageDeleteError } = await db
+    .from("cloud_daily_script_message")
+    .delete()
+    .eq("comment_id", comment.id);
+  if (messageDeleteError) throw messageDeleteError;
+
+  const { error } = await db
+    .from("cloud_daily_script_comment")
+    .delete()
+    .eq("id", comment.id);
+  if (error) throw error;
+  return { deleted: true };
+}
+
 async function listMessages(deviceId: string) {
   const user = await ensureUserByDeviceId(deviceId);
   const { data, error } = await db
@@ -696,6 +943,24 @@ async function listMessages(deviceId: string) {
   return rows.map((item) => mapMessage(item, users, strategies, comments));
 }
 
+async function listDailyScriptMessages(deviceId: string) {
+  const user = await ensureUserByDeviceId(deviceId);
+  const { data, error } = await db
+    .from("cloud_daily_script_message")
+    .select(DAILY_SCRIPT_MESSAGE_SELECT)
+    .eq("recipient_id", user.id)
+    .order("createdAt", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  const rows = (data as CloudDailyScriptMessageRow[]) ?? [];
+  const users = await loadUsersByIds(rows.flatMap((item) => [item.sender_id, item.recipient_id]));
+  const scripts = await loadDailyScriptsByIds(rows.map((item) => item.script_id));
+  const scriptAuthors = await loadUsersByIds(Array.from(scripts.values()).map((item) => item.author_id));
+  scriptAuthors.forEach((value, key) => users.set(key, value));
+  const comments = await loadDailyScriptCommentsByIds(rows.map((item) => item.comment_id));
+  return rows.map((item) => mapDailyScriptMessage(item, users, scripts, comments));
+}
+
 async function getHomeBadges(deviceId: string) {
   const user = await ensureUserByDeviceId(deviceId);
   const { count: unreadMessageCount, error: messageError } = await db
@@ -704,6 +969,12 @@ async function getHomeBadges(deviceId: string) {
     .eq("recipient_id", user.id)
     .eq("isRead", false);
   if (messageError) throw messageError;
+  const { count: unreadDailyScriptMessageCount, error: dailyScriptMessageError } = await db
+    .from("cloud_daily_script_message")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", user.id)
+    .eq("isRead", false);
+  if (dailyScriptMessageError) throw dailyScriptMessageError;
 
   const { data: adminUsers, error: adminUserError } = await db
     .from("User")
@@ -726,7 +997,7 @@ async function getHomeBadges(deviceId: string) {
   }
 
   return {
-    unreadMessageCount: unreadMessageCount ?? 0,
+    unreadMessageCount: (unreadMessageCount ?? 0) + (unreadDailyScriptMessageCount ?? 0),
     adminCloudScriptIds,
   };
 }
@@ -737,6 +1008,19 @@ async function markMessagesRead(deviceId: string, messageObjectIds: string[]) {
   if (ids.length === 0) return { updated: 0 };
   const { error } = await db
     .from("strategy_message")
+    .update({ isRead: true })
+    .eq("recipient_id", user.id)
+    .in("objectId", ids);
+  if (error) throw error;
+  return { updated: ids.length };
+}
+
+async function markDailyScriptMessagesRead(deviceId: string, messageObjectIds: string[]) {
+  const user = await ensureUserByDeviceId(deviceId);
+  const ids = uniqueNonEmpty(messageObjectIds);
+  if (ids.length === 0) return { updated: 0 };
+  const { error } = await db
+    .from("cloud_daily_script_message")
     .update({ isRead: true })
     .eq("recipient_id", user.id)
     .in("objectId", ids);
@@ -766,13 +1050,26 @@ async function listMyPublished(deviceId: string) {
   const user = await ensureUserByDeviceId(deviceId);
   const { data, error } = await db
     .from("strategy_detail")
-    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
+    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, tags, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
     .eq("author_id", user.id)
     .order("updatedAt", { ascending: false })
     .limit(100);
   if (error) throw error;
   const rows = (data as StrategyRow[]) ?? [];
   return rows.map((item) => mapStrategy(item, user));
+}
+
+async function listMyDailyScripts(deviceId: string) {
+  const user = await ensureUserByDeviceId(deviceId);
+  const { data, error } = await db
+    .from("cloud_daily_scripts")
+    .select(DAILY_SCRIPT_SELECT)
+    .eq("author_id", user.id)
+    .order("updated_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  const rows = (data as CloudDailyScriptRow[]) ?? [];
+  return rows.map((item) => mapCloudDailyScript(item, user));
 }
 
 async function deleteStrategyByDevice(deviceId: string, strategyObjectId: string) {
@@ -843,6 +1140,7 @@ async function saveStrategy(body: JsonRecord) {
     agentImageUrl: String(body.agentImageUrl ?? ""),
     agentTextDesc: String(body.agentTextDesc ?? ""),
     ruyuan: body.ruyuan == null ? null : Number(body.ruyuan),
+    tags: String(body.tags ?? ""),
   };
 
   if (!payload.title) {
@@ -860,7 +1158,7 @@ async function saveStrategy(body: JsonRecord) {
         updatedAt: nowIso,
       })
       .eq("id", existing.id)
-      .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
+      .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, tags, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
       .single<StrategyRow>();
     if (error) throw error;
     return mapStrategy(data, user);
@@ -880,7 +1178,7 @@ async function saveStrategy(body: JsonRecord) {
   const { data, error } = await db
     .from("strategy_detail")
     .insert(insertPayload)
-    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
+    .select("id, objectId, agentType, scriptContent, title, updatedAt, createdAt, visible, viewCount, agentTextDesc, agentText, instructions, favoriteCount, ruyuan, tags, agents, agentImageUrl, content, coverUrl, config, agentSelection, originalPostUrl, strategyImage, author_id")
     .single<StrategyRow>();
   if (error) throw error;
   return mapStrategy(data, user);
@@ -1145,8 +1443,19 @@ async function routeAction(action: string, body: JsonRecord) {
         requireString(body.deviceId, "deviceId"),
         requireString(body.commentId, "commentId"),
       );
+    case "list-daily-script-comments":
+      return await listDailyScriptComments(requireString(body.scriptId, "scriptId"));
+    case "create-daily-script-comment":
+      return await createDailyScriptComment(body);
+    case "delete-daily-script-comment":
+      return await deleteDailyScriptCommentByDevice(
+        requireString(body.deviceId, "deviceId"),
+        requireString(body.commentId, "commentId"),
+      );
     case "list-messages":
       return await listMessages(requireString(body.deviceId, "deviceId"));
+    case "list-daily-script-messages":
+      return await listDailyScriptMessages(requireString(body.deviceId, "deviceId"));
     case "get-home-badges":
       return await getHomeBadges(requireString(body.deviceId, "deviceId"));
     case "mark-messages-read":
@@ -1154,10 +1463,17 @@ async function routeAction(action: string, body: JsonRecord) {
         requireString(body.deviceId, "deviceId"),
         Array.isArray(body.messageIds) ? body.messageIds.map((item) => String(item)) : [],
       );
+    case "mark-daily-script-messages-read":
+      return await markDailyScriptMessagesRead(
+        requireString(body.deviceId, "deviceId"),
+        Array.isArray(body.messageIds) ? body.messageIds.map((item) => String(item)) : [],
+      );
     case "list-my-favorites":
       return await listMyFavorites(requireString(body.deviceId, "deviceId"));
     case "list-my-published":
       return await listMyPublished(requireString(body.deviceId, "deviceId"));
+    case "list-my-daily-scripts":
+      return await listMyDailyScripts(requireString(body.deviceId, "deviceId"));
     case "delete-strategy":
       return await deleteStrategyByDevice(
         requireString(body.deviceId, "deviceId"),
@@ -1219,3 +1535,4 @@ Deno.serve(async (req: Request) => {
     return fail(message, 400);
   }
 });
+

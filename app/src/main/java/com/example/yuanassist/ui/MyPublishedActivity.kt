@@ -31,7 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.yuanassist.model.cloud_daily_script
 import com.example.yuanassist.model.strategy_detail
+import com.example.yuanassist.network.MyPublishedItems
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.ui.subpage.SubpageBadge
 import com.example.yuanassist.ui.subpage.SubpageScaffold
@@ -40,6 +42,21 @@ import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.SupabaseTimeFormatter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+
+private sealed class PublishedEntry {
+    abstract val key: String
+    abstract val updatedAt: String?
+
+    data class Strategy(val item: strategy_detail) : PublishedEntry() {
+        override val key: String = "strategy:${item.objectId.orEmpty()}"
+        override val updatedAt: String? = item.updatedAt ?: item.createdAt
+    }
+
+    data class CloudDailyScript(val item: cloud_daily_script) : PublishedEntry() {
+        override val key: String = "cloud:${item.objectId.orEmpty()}"
+        override val updatedAt: String? = item.updatedAt ?: item.createdAt
+    }
+}
 
 class MyPublishedActivity : AppCompatActivity() {
 
@@ -53,6 +70,11 @@ class MyPublishedActivity : AppCompatActivity() {
                     intent.putExtra(JobStationActivity.EXTRA_STRATEGY_ID, item.objectId)
                     startActivity(intent)
                 },
+                onOpenCloudScript = { item ->
+                    startActivity(Intent(this, CloudDailyScriptActivity::class.java).apply {
+                        putExtra(CloudDailyScriptActivity.EXTRA_SCRIPT_ID, item.objectId.orEmpty())
+                    })
+                },
                 onEditStrategy = { item ->
                     val intent = Intent(this, UploadStrategyActivity::class.java).apply {
                         putExtra(UploadStrategyActivity.EXTRA_IS_EDIT_MODE, true)
@@ -63,17 +85,42 @@ class MyPublishedActivity : AppCompatActivity() {
                 onDeleteStrategy = { item, onDeleted ->
                     showDeleteDialog(item, onDeleted)
                 },
-                loadStrategies = { onLoaded, onError, onRequireLogin ->
+                loadPublished = { onLoaded, onError, onRequireLogin ->
                     val currentUser = SupabaseRepository.getCurrentUser(this)
                     if (currentUser == null) {
                         onRequireLogin()
                         return@MyPublishedScreen
                     }
 
+                    var strategies: List<strategy_detail>? = null
+                    var cloudScripts: List<cloud_daily_script>? = null
+                    var failed = false
+                    fun maybeDone() {
+                        if (!failed && strategies != null && cloudScripts != null) {
+                            onLoaded(MyPublishedItems(strategies.orEmpty(), cloudScripts.orEmpty()))
+                        }
+                    }
                     SupabaseRepository.listMyPublished(
                         context = this,
-                        onSuccess = onLoaded,
-                        onError = onError,
+                        onSuccess = {
+                            strategies = it
+                            maybeDone()
+                        },
+                        onError = {
+                            failed = true
+                            onError(it)
+                        },
+                    )
+                    SupabaseRepository.listMyCloudDailyScripts(
+                        context = this,
+                        onSuccess = {
+                            cloudScripts = it
+                            maybeDone()
+                        },
+                        onError = {
+                            failed = true
+                            onError(it)
+                        },
                     )
                 },
             )
@@ -124,24 +171,28 @@ class MyPublishedActivity : AppCompatActivity() {
 private fun MyPublishedScreen(
     onBack: () -> Unit,
     onOpenStrategy: (strategy_detail) -> Unit,
+    onOpenCloudScript: (cloud_daily_script) -> Unit,
     onEditStrategy: (strategy_detail) -> Unit,
     onDeleteStrategy: (strategy_detail, () -> Unit) -> Unit,
-    loadStrategies: (
-        (List<strategy_detail>) -> Unit,
+    loadPublished: (
+        (MyPublishedItems) -> Unit,
         (String) -> Unit,
         () -> Unit,
     ) -> Unit,
 ) {
     var loading by rememberSaveable { mutableStateOf(true) }
     var errorText by rememberSaveable { mutableStateOf<String?>(null) }
-    var items by remember { mutableStateOf<List<strategy_detail>>(emptyList()) }
+    var items by remember { mutableStateOf<List<PublishedEntry>>(emptyList()) }
 
     fun reload() {
         loading = true
         errorText = null
-        loadStrategies(
-            {
-                items = it
+        loadPublished(
+            { result ->
+                items = buildList {
+                    addAll(result.strategies.map { PublishedEntry.Strategy(it) })
+                    addAll(result.cloudDailyScripts.map { PublishedEntry.CloudDailyScript(it) })
+                }.sortedByDescending { SupabaseTimeFormatter.parseTimestamp(it.updatedAt) }
                 loading = false
             },
             {
@@ -201,19 +252,82 @@ private fun MyPublishedScreen(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(items, key = { it.objectId.orEmpty() + it.title }) { item ->
-                        PublishedStrategyCard(
-                            item = item,
-                            onOpen = { onOpenStrategy(item) },
-                            onEdit = { onEditStrategy(item) },
-                            onDelete = {
-                                onDeleteStrategy(item) {
-                                    reload()
-                                }
-                            },
-                        )
+                    items(items, key = { it.key }) { entry ->
+                        when (entry) {
+                            is PublishedEntry.Strategy -> PublishedStrategyCard(
+                                item = entry.item,
+                                onOpen = { onOpenStrategy(entry.item) },
+                                onEdit = { onEditStrategy(entry.item) },
+                                onDelete = {
+                                    onDeleteStrategy(entry.item) {
+                                        reload()
+                                    }
+                                },
+                            )
+
+                            is PublishedEntry.CloudDailyScript -> PublishedCloudScriptCard(
+                                item = entry.item,
+                                onOpen = { onOpenCloudScript(entry.item) },
+                            )
+                        }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PublishedCloudScriptCard(
+    item: cloud_daily_script,
+    onOpen: () -> Unit,
+) {
+    SubpageSectionCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onOpen,
+                ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = item.title.ifBlank { "未命名脚本" },
+                color = com.example.yuanassist.ui.main.theme.TitleInk,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif,
+            )
+            Text(
+                text = "最近更新：${SupabaseTimeFormatter.formatToBeijing(item.updatedAt ?: item.createdAt, "暂无")}",
+                color = com.example.yuanassist.ui.main.theme.QuietInk,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Serif,
+            )
+            Text(
+                text = item.description.ifBlank { "暂无说明" },
+                color = com.example.yuanassist.ui.main.theme.BodyInk,
+                fontSize = 13.sp,
+                fontFamily = FontFamily.Serif,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SubpageBadge("云端脚本")
+                    SubpageBadge("${item.taskCount}步")
+                }
+                Text(
+                    text = "查看",
+                    color = com.example.yuanassist.ui.main.theme.HighlightGold,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = FontFamily.Serif,
+                )
             }
         }
     }

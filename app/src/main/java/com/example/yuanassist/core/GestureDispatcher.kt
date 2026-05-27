@@ -14,19 +14,21 @@ class GestureDispatcher(
     private val uiManager: FloatingUIManager,
     private val handler: Handler = Handler(Looper.getMainLooper())
 ) {
-    companion object {
-        private const val CLICK_DURATION_MS = 50L
-        private const val SWIPE_DURATION_MS = 150L
-    }
-
     private var isSimulating = false
 
     /** 手势回调超时时间（毫秒），超时后强制恢复窗口状态 */
     private val gestureTimeoutMs = 3000L
 
     // 路线 A：直接执行（跟打模式）
-    fun performActionDirect(x1: Float, y1: Float, x2: Float, y2: Float, isClick: Boolean) {
-        val duration = if (isClick) CLICK_DURATION_MS else SWIPE_DURATION_MS
+    fun performActionDirect(
+        x1: Float,
+        y1: Float,
+        x2: Float,
+        y2: Float,
+        isClick: Boolean,
+        durationMs: Long = if (isClick) 50L else 150L
+    ) {
+        val duration = durationMs.coerceAtLeast(1L)
         val path = Path().apply {
             moveTo(x1, y1)
             lineTo(x2, y2)
@@ -43,6 +45,7 @@ class GestureDispatcher(
         isClick: Boolean,
         endX: Float = 0f, endY: Float = 0f,
         recordDelay: Long,
+        durationMs: Long = if (isClick) 50L else 150L,
         onActionDone: (() -> Unit)? = null
     ) {
         if (isSimulating) return
@@ -81,7 +84,7 @@ class GestureDispatcher(
                 moveTo(x, y)
                 if (isClick) lineTo(x, y) else lineTo(endX, endY)
             }
-            val duration = if (isClick) CLICK_DURATION_MS else SWIPE_DURATION_MS
+            val duration = durationMs.coerceAtLeast(1L)
 
             val gesture = GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0, duration))

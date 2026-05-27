@@ -1,0 +1,721 @@
+{
+  "display_name": "哀牢0体力刷家具",
+  "start_task_id": 0,
+  "tasks": [
+    {
+      "action": "SCREENSHOT_GROUP",
+      "delay": 3000,
+      "id": 0,
+      "on_fail": 100,
+      "on_success": -1,
+      "params": {
+        "screenshot_steps": [
+          {
+            "click": 0,
+            "on_success": 1,
+            "roi": {
+              "align": "top",
+              "h": 600,
+              "w": 200,
+              "x": 985.3633,
+              "y": 600.83105
+            },
+            "template_name": "哀牢.png",
+            "threshold": 0.77,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 2,
+            "roi": {
+              "align": "center",
+              "h": 250,
+              "w": 250,
+              "x": 833.14453,
+              "y": 1760.1162
+            },
+            "template_name": "进入哀牢.png",
+            "threshold": 0.77,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "4家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "8家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "13家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "19家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "23家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 0,
+            "on_success": 3,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "28家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          }
+        ]
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 100,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_name": "home_page_one_recover.json"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "top",
+          "h": 600,
+          "w": 200,
+          "x": 985.3633,
+          "y": 600.83105
+        },
+        "template_name": "哀牢.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 4000,
+      "id": 2,
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250,
+          "w": 250,
+          "x": 833.14453,
+          "y": 1760.1162
+        },
+        "template_name": "进入哀牢.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SCREENSHOT_GROUP",
+      "delay": 3000,
+      "id": 3,
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "screenshot_steps": [
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "4家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "8家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "13家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "19家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "23家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          },
+          {
+            "click": 1,
+            "on_success": 4,
+            "roi": {
+              "align": "center",
+              "h": 1920,
+              "w": 1080,
+              "x": 540,
+              "y": 960
+            },
+            "template_name": "28家具.png",
+            "threshold": 0.85,
+            "type": "template"
+          }
+        ]
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 4,
+      "on_fail": 101,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250,
+          "w": 250,
+          "x": 551.3672,
+          "y": 1589.3076
+        },
+        "template_name": "哀牢进入战斗.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 1000,
+      "id": 101,
+      "name": "进入战斗OCR兜底",
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "center",
+          "h": 250,
+          "w": 250,
+          "x": 551.3672,
+          "y": 1589.3076
+        },
+        "target_chars": [
+          "进",
+          "入",
+          "战",
+          "斗"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 3000,
+      "id": 5,
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 779.8252,
+          "y": 1716.7539
+        },
+        "target_chars": [
+          "开",
+          "始",
+          "战",
+          "斗"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 6,
+      "name": "确定",
+      "on_fail": 7,
+      "on_success": 7,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "center",
+          "h": 250,
+          "w": 250,
+          "x": 774.3418,
+          "y": 1059.6309
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 7,
+      "on_fail": 8,
+      "on_success": 8,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "center",
+          "h": 250,
+          "w": 250,
+          "x": 1021.5029,
+          "y": 1021.75684
+        },
+        "target_chars": [
+          "手",
+          "动"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 8,
+      "name": "底部确定 1/12",
+      "on_fail": 9,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 9,
+      "name": "底部确定 2/12",
+      "on_fail": 10,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 10,
+      "name": "底部确定 3/12",
+      "on_fail": 11,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 11,
+      "name": "底部确定 4/12",
+      "on_fail": 12,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 12,
+      "name": "底部确定 5/12",
+      "on_fail": 13,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 13,
+      "name": "底部确定 6/12",
+      "on_fail": 14,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 14,
+      "name": "底部确定 7/12",
+      "on_fail": 15,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 15,
+      "name": "底部确定 8/12",
+      "on_fail": 16,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 16,
+      "name": "底部确定 9/12",
+      "on_fail": 17,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 17,
+      "name": "底部确定 10/12",
+      "on_fail": 18,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 18,
+      "name": "底部确定 11/12",
+      "on_fail": 19,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 5000,
+      "id": 19,
+      "name": "底部确定 12/12",
+      "on_fail": -2,
+      "on_success": 0,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250,
+          "w": 250,
+          "x": 534.39844,
+          "y": 1692.2393
+        },
+        "target_chars": [
+          "确",
+          "定"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

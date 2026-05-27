@@ -112,7 +112,7 @@ class RunLogActivity : AppCompatActivity() {
         val lines = rawLogs.lineSequence()
             .map { it.trimEnd() }
             .filter { it.isNotBlank() }
-            .toList()
+            .let(::mergeWrappedLogLines)
         if (lines.isEmpty()) return emptyList()
 
         val sections = mutableListOf<RunLogSection>()
@@ -198,6 +198,19 @@ class RunLogActivity : AppCompatActivity() {
             return if (taskName.isBlank()) null else normalizeTaskName(taskName)
         }
         return null
+    }
+
+    private fun mergeWrappedLogLines(lines: Sequence<String>): List<String> {
+        val merged = mutableListOf<String>()
+        lines.forEach { line ->
+            if (LOG_LINE_REGEX.matchEntire(line) != null || merged.isEmpty()) {
+                merged += line
+            } else {
+                val previous = merged.removeAt(merged.lastIndex)
+                merged += "$previous\\n${line.trimStart()}"
+            }
+        }
+        return merged
     }
 
     private data class ParsedScopedMessage(

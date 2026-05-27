@@ -17,6 +17,7 @@ import com.example.yuanassist.model.PiJingZhanJiGameVariant
 import com.example.yuanassist.tableocr.PaddleTextLine
 import com.example.yuanassist.tableocr.PaddleTextRecognizer
 import com.example.yuanassist.tableocr.PaddleTextResult
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StartBattleShared
 import com.google.gson.Gson
@@ -1024,9 +1025,7 @@ class PiJingZhanJiActivityEngine(
 
     private fun loadPlan(fileName: String): DailyTaskPlan? {
         return try {
-            service.assets.open("daily_scripts/$fileName").use { input ->
-                gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
-            }
+            CloudScriptOverrideStore.loadAssetPlanWithOverride(service, fileName, gson)
         } catch (t: Throwable) {
             logError("披荆流程", "加载活动脚本失败 file=$fileName", t)
             null

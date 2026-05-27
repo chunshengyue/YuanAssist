@@ -6,6 +6,7 @@ import android.os.Looper
 import android.widget.Toast
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.Mainline624Config
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.MAINLINE_624_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.TemplateDelayOverrideStore
@@ -145,9 +146,7 @@ class Mainline624RuntimeManager(
 
     private fun loadPlan(startTaskId: Int, applyStartBattleDelay: Boolean): DailyTaskPlan? {
         val plan = try {
-            service.assets.open("daily_scripts/$SCRIPT_FILE_NAME").use { input ->
-                gson.fromJson(input.reader(), DailyTaskPlan::class.java)
-            }
+            CloudScriptOverrideStore.loadAssetPlanWithOverride(service, SCRIPT_FILE_NAME, gson)
         } catch (t: Throwable) {
             RunLogger.e(module = "刷6-24", section = "总流程", message = "加载脚本失败：$SCRIPT_FILE_NAME", throwable = t)
             null

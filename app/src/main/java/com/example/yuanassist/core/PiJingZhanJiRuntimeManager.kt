@@ -10,10 +10,10 @@ import com.example.yuanassist.model.PiJingZhanJiConfig
 import com.example.yuanassist.model.PiJingZhanJiStargazingMode
 import com.example.yuanassist.model.PiJingZhanJiTaskConfig
 import com.example.yuanassist.model.PiJingZhanJiTaskType
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.RunLogger
 import com.google.gson.Gson
-import java.io.InputStreamReader
 
 class PiJingZhanJiRuntimeManager(
     private val service: AccessibilityService,
@@ -311,9 +311,7 @@ class PiJingZhanJiRuntimeManager(
 
     private fun loadPlan(fileName: String): DailyTaskPlan? {
         return try {
-            service.assets.open("daily_scripts/$fileName").use { input ->
-                gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
-            }
+            CloudScriptOverrideStore.loadAssetPlanWithOverride(service, fileName, gson)
         } catch (t: Throwable) {
             RunLogger.e(module = "披荆斩棘", section = "前置任务", message = "加载脚本失败：$fileName", throwable = t)
             null

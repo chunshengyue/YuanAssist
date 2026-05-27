@@ -239,6 +239,34 @@ class YuanAssistService : AccessibilityService() {
     fun isCombatWindowVisible(): Boolean =
         uiManager.controlView != null || uiManager.minimizedView != null || uiManager.inputView != null
 
+    private fun importRecordedDailyPlan(
+        fileName: String?,
+        jsonContent: String?,
+        templateDirPath: String?
+    ) {
+        removeInputWindow()
+        uiManager.removeControlWindow()
+        uiManager.removeMinimizedWindow()
+        if (dailyWindowManager == null) {
+            dailyWindowManager = DailyWindowManager(this)
+        }
+        if (fileName.isNullOrBlank() || jsonContent.isNullOrBlank()) {
+            Toast.makeText(this, "录制脚本导入参数缺失", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val result = dailyWindowManager?.submitTaskPlanJson(fileName, jsonContent, templateDirPath)
+        if (result?.isFailure == true) {
+            Toast.makeText(
+                this,
+                "录制脚本导入失败：${result.exceptionOrNull()?.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            dailyWindowManager?.showWindow()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
             val action = intent?.action
@@ -388,30 +416,10 @@ class YuanAssistService : AccessibilityService() {
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
             }
             "ACTION_IMPORT_RECORDED_DAILY_PLAN" -> {
-                removeInputWindow()
-                uiManager.removeControlWindow()
-                uiManager.removeMinimizedWindow()
-                if (dailyWindowManager == null) {
-                    dailyWindowManager = DailyWindowManager(this)
-                }
                 val fileName = intent?.getStringExtra("EXTRA_DAILY_PLAN_FILE_NAME")
                 val jsonContent = intent?.getStringExtra("EXTRA_DAILY_PLAN_JSON")
                 val templateDirPath = intent?.getStringExtra("EXTRA_DAILY_PLAN_TEMPLATE_DIR")
-                if (fileName.isNullOrBlank() || jsonContent.isNullOrBlank()) {
-                    Toast.makeText(this, "录制脚本导入参数缺失", Toast.LENGTH_SHORT).show()
-                } else {
-                    val result = dailyWindowManager?.submitTaskPlanJson(fileName, jsonContent, templateDirPath)
-                    if (result?.isFailure == true) {
-                        Toast.makeText(
-                            this,
-                            "录制脚本导入失败：${result.exceptionOrNull()?.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        dailyWindowManager?.showWindow()
-                        updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
-                    }
-                }
+                importRecordedDailyPlan(fileName, jsonContent, templateDirPath)
             }
             "ACTION_START_COMBAT_WINDOW" -> {
                 dailyWindowManager?.hideWindow()
@@ -680,6 +688,17 @@ class YuanAssistService : AccessibilityService() {
                 dailyWindowManager?.startScriptRecorderMode()
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 appendAccessibilityTrace("脚本录制器悬浮窗准备完成：${buildWindowVisibilitySummary()}")
+            } else if (pendingAction == "ACTION_IMPORT_RECORDED_DAILY_PLAN") {
+                val fileName = prefs.getString("pending_daily_plan_file_name", null)
+                val jsonContent = prefs.getString("pending_daily_plan_json", null)
+                val templateDirPath = prefs.getString("pending_daily_plan_template_dir", null)
+                prefs.edit()
+                    .remove("pending_daily_plan_file_name")
+                    .remove("pending_daily_plan_json")
+                    .remove("pending_daily_plan_template_dir")
+                    .apply()
+                importRecordedDailyPlan(fileName, jsonContent, templateDirPath)
+                appendAccessibilityTrace("日常脚本导入悬浮窗准备完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction != null) {
                 appendAccessibilityTrace("准备显示战斗悬浮窗")
                 showControlWindow()
@@ -2125,7 +2144,8 @@ class YuanAssistService : AccessibilityService() {
             true,
             centerPoint.first,
             centerPoint.second,
-            appConfig.recordDelay
+            appConfig.recordDelay,
+            appConfig.recordClickDurationMs
         ) {
             val recorded = recordEngine.recordTargetSwitchInstruction(type)
             handler.post {

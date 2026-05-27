@@ -8,6 +8,8 @@ import com.example.yuanassist.model.MyUser
 import com.example.yuanassist.model.OcrConfig
 import com.example.yuanassist.model.announcement
 import com.example.yuanassist.model.cloud_daily_script
+import com.example.yuanassist.model.cloud_daily_script_comment
+import com.example.yuanassist.model.cloud_daily_script_message
 import com.example.yuanassist.model.issue_feedback
 import com.example.yuanassist.model.strategy_comment
 import com.example.yuanassist.model.strategy_detail
@@ -48,6 +50,7 @@ data class StrategySavePayload(
     val agentImageUrl: String,
     val agentTextDesc: String,
     val ruyuan: Int? = null,
+    val tags: String = "",
 )
 
 data class DailyScriptUploadTicket(
@@ -76,6 +79,16 @@ data class CloudDailyScriptPublishPayload(
 data class HomeBadges(
     val unreadMessageCount: Int = 0,
     val adminCloudScriptIds: List<String> = emptyList(),
+)
+
+data class MyPublishedItems(
+    val strategies: List<strategy_detail> = emptyList(),
+    val cloudDailyScripts: List<cloud_daily_script> = emptyList(),
+)
+
+data class MyMessageItems(
+    val strategyMessages: List<strategy_message> = emptyList(),
+    val cloudDailyScriptMessages: List<cloud_daily_script_message> = emptyList(),
 )
 
 object SupabaseRepository {
@@ -336,6 +349,119 @@ object SupabaseRepository {
         )
     }
 
+    fun listCloudDailyScriptComments(
+        scriptId: String,
+        onSuccess: (List<cloud_daily_script_comment>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<cloud_daily_script_comment>>(
+            action = "list-daily-script-comments",
+            payload = mapOf("scriptId" to scriptId),
+            type = object : TypeToken<List<cloud_daily_script_comment>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun createCloudDailyScriptComment(
+        context: Context,
+        scriptId: String,
+        content: String,
+        replyTarget: cloud_daily_script_comment?,
+        onSuccess: (cloud_daily_script_comment) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        ensureUser(
+            context = context,
+            onSuccess = {
+                request<cloud_daily_script_comment>(
+                    action = "create-daily-script-comment",
+                    payload = buildMap {
+                        put("deviceId", currentDeviceId(context))
+                        put("scriptId", scriptId)
+                        put("content", content)
+                        if (!replyTarget?.objectId.isNullOrBlank()) {
+                            put("replyToCommentId", replyTarget?.objectId)
+                        }
+                        if (!replyTarget?.user?.objectId.isNullOrBlank()) {
+                            put("replyToUserId", replyTarget?.user?.objectId)
+                        }
+                        if (!replyTarget?.replyToUserName.isNullOrBlank()) {
+                            put("replyToUserName", replyTarget?.replyToUserName)
+                        } else if (!replyTarget?.user?.nickname.isNullOrBlank()) {
+                            put("replyToUserName", replyTarget?.user?.nickname)
+                        } else if (!replyTarget?.user?.username.isNullOrBlank()) {
+                            put("replyToUserName", replyTarget?.user?.username)
+                        }
+                    },
+                    type = cloud_daily_script_comment::class.java,
+                    onSuccess = onSuccess,
+                    onError = onError,
+                )
+            },
+            onError = onError,
+        )
+    }
+
+    fun deleteCloudDailyScriptComment(
+        context: Context,
+        commentId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<JsonObject>(
+            action = "delete-daily-script-comment",
+            payload = mapOf(
+                "deviceId" to currentDeviceId(context),
+                "commentId" to commentId,
+            ),
+            type = JsonObject::class.java,
+            onSuccess = { onSuccess() },
+            onError = onError,
+        )
+    }
+
+    fun listCloudDailyScriptMessages(
+        context: Context,
+        onSuccess: (List<cloud_daily_script_message>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val currentUser = getCurrentUser(context)
+        if (currentUser == null) {
+            dispatchSuccess(onSuccess, emptyList())
+            return
+        }
+        request<List<cloud_daily_script_message>>(
+            action = "list-daily-script-messages",
+            payload = mapOf("deviceId" to currentDeviceId(context)),
+            type = object : TypeToken<List<cloud_daily_script_message>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun markCloudDailyScriptMessagesRead(
+        context: Context,
+        messageIds: List<String>,
+        onComplete: () -> Unit = {},
+        onError: ((String) -> Unit)? = null,
+    ) {
+        if (messageIds.isEmpty()) {
+            dispatchSuccess(onComplete, Unit)
+            return
+        }
+        request<JsonObject>(
+            action = "mark-daily-script-messages-read",
+            payload = mapOf(
+                "deviceId" to currentDeviceId(context),
+                "messageIds" to messageIds,
+            ),
+            type = JsonObject::class.java,
+            onSuccess = { onComplete() },
+            onError = { message -> onError?.invoke(message) },
+        )
+    }
+
     fun getHomeBadges(
         context: Context,
         onSuccess: (HomeBadges) -> Unit,
@@ -405,6 +531,20 @@ object SupabaseRepository {
         )
     }
 
+    fun listMyCloudDailyScripts(
+        context: Context,
+        onSuccess: (List<cloud_daily_script>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<cloud_daily_script>>(
+            action = "list-my-daily-scripts",
+            payload = mapOf("deviceId" to currentDeviceId(context)),
+            type = object : TypeToken<List<cloud_daily_script>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
     fun deleteStrategy(
         context: Context,
         strategyId: String,
@@ -455,6 +595,7 @@ object SupabaseRepository {
                         if (payload.ruyuan != null) {
                             put("ruyuan", payload.ruyuan)
                         }
+                        put("tags", payload.tags)
                     },
                     type = strategy_detail::class.java,
                     onSuccess = onSuccess,

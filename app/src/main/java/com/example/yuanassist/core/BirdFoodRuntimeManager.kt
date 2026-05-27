@@ -11,11 +11,11 @@ import com.example.yuanassist.model.DaiBanGongWuEntry
 import com.example.yuanassist.model.DaiBanGongWuOption
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.TaskParams
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.google.gson.Gson
-import java.io.InputStreamReader
 
 class BirdFoodRuntimeManager(
     private val service: AccessibilityService,
@@ -175,14 +175,12 @@ class BirdFoodRuntimeManager(
 
     private fun loadPlan(fileName: String): DailyTaskPlan? {
         return try {
-            service.assets.open("daily_scripts/$fileName").use { input ->
-                val plan = gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
-                TemplateDelayOverrideStore.applyToPlan(
-                    service,
-                    fileName,
-                    applyStartBattleDelayOverrides(fileName, customizePlan(fileName, plan))
-                )
-            }
+            val plan = CloudScriptOverrideStore.loadAssetPlanWithOverride(service, fileName, gson)
+            TemplateDelayOverrideStore.applyToPlan(
+                service,
+                fileName,
+                applyStartBattleDelayOverrides(fileName, customizePlan(fileName, plan))
+            )
         } catch (t: Throwable) {
             RunLogger.e(module = "刷鸟食", section = "总流程", message = "加载脚本失败：$fileName", throwable = t)
             null

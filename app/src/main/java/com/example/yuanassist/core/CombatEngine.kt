@@ -643,7 +643,14 @@ class CombatEngine(
                     basePointA.y,
                     GameConstants.RND_RADIUS_CLICK * coordinateManager.gameScale
                 )
-                gestureDispatcher.performActionDirect(p.x, p.y, p.x, p.y, true)
+                gestureDispatcher.performActionDirect(
+                    p.x,
+                    p.y,
+                    p.x,
+                    p.y,
+                    true,
+                    appConfig.followClickDurationMs
+                )
             }
 
             '圈' -> {
@@ -668,10 +675,17 @@ class CombatEngine(
                     GameConstants.RND_OFFSET_SWIPE_X * coordinateManager.gameScale
                 )
                 val ey = addRandomOffset(
-                    baseStartUp.y - (GameConstants.SWIPE_DISTANCE * coordinateManager.gameScale),
+                    baseStartUp.y - (appConfig.followSwipeDistance * coordinateManager.gameScale),
                     GameConstants.RND_OFFSET_SWIPE_Y * coordinateManager.gameScale
                 )
-                gestureDispatcher.performActionDirect(sx, sy, ex, ey, false)
+                gestureDispatcher.performActionDirect(
+                    sx,
+                    sy,
+                    ex,
+                    ey,
+                    false,
+                    appConfig.followSwipeDurationMs
+                )
             }
 
             '↓' -> {
@@ -689,10 +703,17 @@ class CombatEngine(
                     GameConstants.RND_OFFSET_SWIPE_X * coordinateManager.gameScale
                 )
                 val ey = addRandomOffset(
-                    baseStart.y + GameConstants.SWIPE_DISTANCE * coordinateManager.gameScale,
+                    baseStart.y + (appConfig.followSwipeDistance * coordinateManager.gameScale),
                     GameConstants.RND_OFFSET_SWIPE_Y * coordinateManager.gameScale
                 )
-                gestureDispatcher.performActionDirect(sx, sy, ex, ey, false)
+                gestureDispatcher.performActionDirect(
+                    sx,
+                    sy,
+                    ex,
+                    ey,
+                    false,
+                    appConfig.followSwipeDurationMs
+                )
             }
         }
 

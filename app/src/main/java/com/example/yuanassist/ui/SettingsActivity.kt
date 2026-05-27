@@ -60,6 +60,12 @@ class SettingsActivity : AppCompatActivity() {
                     upYFromBottom = currentConfig.upYFromBottom.toString(),
                     downYFromBottom = currentConfig.downYFromBottom.toString(),
                     circleYFromBottom = currentConfig.circleYFromBottom.toString(),
+                    recordClickDurationMs = currentConfig.recordClickDurationMs.toString(),
+                    recordSwipeDurationMs = currentConfig.recordSwipeDurationMs.toString(),
+                    recordSwipeDistance = currentConfig.recordSwipeDistance.toString(),
+                    followClickDurationMs = currentConfig.followClickDurationMs.toString(),
+                    followSwipeDurationMs = currentConfig.followSwipeDurationMs.toString(),
+                    followSwipeDistance = currentConfig.followSwipeDistance.toString(),
                 ),
                 onBack = ::finish,
                 onSave = { state ->
@@ -78,7 +84,26 @@ class SettingsActivity : AppCompatActivity() {
                             upYFromBottom = state.upYFromBottom.toFloat(),
                             downYFromBottom = state.downYFromBottom.toFloat(),
                             circleYFromBottom = state.circleYFromBottom.toFloat(),
+                            recordClickDurationMs = state.recordClickDurationMs.toLong(),
+                            recordSwipeDurationMs = state.recordSwipeDurationMs.toLong(),
+                            recordSwipeDistance = state.recordSwipeDistance.toFloat(),
+                            followClickDurationMs = state.followClickDurationMs.toLong(),
+                            followSwipeDurationMs = state.followSwipeDurationMs.toLong(),
+                            followSwipeDistance = state.followSwipeDistance.toFloat(),
                         )
+                        require(newConfig.intervalAttack > 0)
+                        require(newConfig.intervalSkill > 0)
+                        require(newConfig.waitTurn > 0)
+                        require(newConfig.startTurn > 0)
+                        require(newConfig.swipeThreshold > 0)
+                        require(newConfig.inputHeightRatio in 10..100)
+                        require(newConfig.recordDelay >= 0)
+                        require(newConfig.recordClickDurationMs > 0)
+                        require(newConfig.recordSwipeDurationMs > 0)
+                        require(newConfig.recordSwipeDistance > 0f)
+                        require(newConfig.followClickDurationMs > 0)
+                        require(newConfig.followSwipeDurationMs > 0)
+                        require(newConfig.followSwipeDistance > 0f)
                         ConfigManager.saveSettings(this@SettingsActivity, newConfig)
                         startService(Intent(this@SettingsActivity, YuanAssistService::class.java).apply {
                             action = "ACTION_RELOAD_CONFIG"
@@ -108,6 +133,12 @@ private data class SettingsFormState(
     val upYFromBottom: String,
     val downYFromBottom: String,
     val circleYFromBottom: String,
+    val recordClickDurationMs: String,
+    val recordSwipeDurationMs: String,
+    val recordSwipeDistance: String,
+    val followClickDurationMs: String,
+    val followSwipeDurationMs: String,
+    val followSwipeDistance: String,
 )
 
 @Composable
@@ -129,6 +160,12 @@ private fun SettingsScreen(
     var upYFromBottom by rememberSaveable { mutableStateOf(initialState.upYFromBottom) }
     var downYFromBottom by rememberSaveable { mutableStateOf(initialState.downYFromBottom) }
     var circleYFromBottom by rememberSaveable { mutableStateOf(initialState.circleYFromBottom) }
+    var recordClickDurationMs by rememberSaveable { mutableStateOf(initialState.recordClickDurationMs) }
+    var recordSwipeDurationMs by rememberSaveable { mutableStateOf(initialState.recordSwipeDurationMs) }
+    var recordSwipeDistance by rememberSaveable { mutableStateOf(initialState.recordSwipeDistance) }
+    var followClickDurationMs by rememberSaveable { mutableStateOf(initialState.followClickDurationMs) }
+    var followSwipeDurationMs by rememberSaveable { mutableStateOf(initialState.followSwipeDurationMs) }
+    var followSwipeDistance by rememberSaveable { mutableStateOf(initialState.followSwipeDistance) }
 
     val state = SettingsFormState(
         attackInterval = attackInterval,
@@ -144,6 +181,12 @@ private fun SettingsScreen(
         upYFromBottom = upYFromBottom,
         downYFromBottom = downYFromBottom,
         circleYFromBottom = circleYFromBottom,
+        recordClickDurationMs = recordClickDurationMs,
+        recordSwipeDurationMs = recordSwipeDurationMs,
+        recordSwipeDistance = recordSwipeDistance,
+        followClickDurationMs = followClickDurationMs,
+        followSwipeDurationMs = followSwipeDurationMs,
+        followSwipeDistance = followSwipeDistance,
     )
 
     SubpageScaffold(
@@ -193,6 +236,28 @@ private fun SettingsScreen(
             SettingsDecimalField("↑ 距离底部距离", upYFromBottom) { upYFromBottom = it }
             SettingsDecimalField("↓ 距离底部距离", downYFromBottom) { downYFromBottom = it }
             SettingsDecimalField("圈 距离底部距离", circleYFromBottom) { circleYFromBottom = it }
+        }
+
+        SubpageSectionCard(
+            title = "高级参数",
+            subtitle = "分别控制录制模拟和跟打执行的动作手势",
+        ) {
+            SubpageFieldGroup(
+                title = "录制模式",
+                subtitle = "用于录制时穿透模拟动作",
+            ) {
+                SettingsNumberField("点击持续时间(ms)", recordClickDurationMs) { recordClickDurationMs = it }
+                SettingsNumberField("滑动持续时间(ms)", recordSwipeDurationMs) { recordSwipeDurationMs = it }
+                SettingsDecimalField("滑动距离", recordSwipeDistance) { recordSwipeDistance = it }
+            }
+            SubpageFieldGroup(
+                title = "跟打模式",
+                subtitle = "用于跟打时执行 A / ↑ / ↓",
+            ) {
+                SettingsNumberField("点击持续时间(ms)", followClickDurationMs) { followClickDurationMs = it }
+                SettingsNumberField("滑动持续时间(ms)", followSwipeDurationMs) { followSwipeDurationMs = it }
+                SettingsDecimalField("滑动距离", followSwipeDistance) { followSwipeDistance = it }
+            }
         }
 
         SaveSettingsButton(

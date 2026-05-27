@@ -1,16 +1,15 @@
 package com.example.yuanassist.ui
 
 import android.app.AlertDialog as PlatformAlertDialog
-import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableStringBuilder
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,17 +27,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,9 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,10 +52,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.yuanassist.core.LocalScriptJson
 import com.example.yuanassist.core.YuanAssistService
-import com.example.yuanassist.model.AgentRepository
 import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.MyUser
+import com.example.yuanassist.model.STRATEGY_GAME_DAIHAOYUAN
+import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
 import com.example.yuanassist.model.StrategyPreviewData
+import com.example.yuanassist.model.TurnData
 import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.network.StrategySavePayload
@@ -85,24 +79,12 @@ import com.example.yuanassist.ui.subpage.SubpageToggleRow
 import com.example.yuanassist.ui.subpage.SubpageTextField
 import com.example.yuanassist.utils.ConfigManager
 import com.example.yuanassist.utils.DialogUtils
+import com.example.yuanassist.utils.ImageExportUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
-
-private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
-private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
-private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
-    "吕布", "刘璋", "夏侯渊", "酆公珠", "酆公玖", "法正", "庞德",
-    "SP陈登", "SP史子渺", "曹丕", "程普", "钟繇", "蒯良", "陈群",
-    "卢植", "简雍", "郭女王", "周忠", "陈纪", "陈应",
-)
-
-private val DAIHAOYUAN_HIDDEN_ALIASES = DAIHAOYUAN_EXTRA_AGENTS.toSet() + setOf(
-    "庞曦",
-    "SP史子眇",
-)
 
 data class UploadTurnItem(
     val turnNum: Int,
@@ -130,6 +112,8 @@ private data class AgentSlotState(
 
 private data class UploadStrategyUiState(
     val title: String = "",
+    val gameType: Int = STRATEGY_GAME_RUYUAN,
+    val tagsText: String = "",
     val originalUrl: String = "",
     val content: String = "",
     val importMode: UploadImportMode = UploadImportMode.CURRENT,
@@ -251,6 +235,8 @@ class UploadStrategyActivity : AppCompatActivity() {
         }
         uiState = uiState.copy(
             title = detail.title,
+            gameType = detail.ruyuan ?: STRATEGY_GAME_RUYUAN,
+            tagsText = detail.tags,
             originalUrl = detail.originalPostUrl,
             content = detail.content,
             agentTextDesc = detail.agentTextDesc,
@@ -599,7 +585,18 @@ class UploadStrategyActivity : AppCompatActivity() {
         )
         val agentFile = if (aType == 1) uiState.agentImageUri?.let { uriToCacheFile(it, "agent") } else null
         val strategyFile = uiState.strategyImageUri?.let { uriToCacheFile(it, "strategy") }
-        val filesToUpload = listOfNotNull(agentFile, strategyFile)
+        val needsGeneratedCover = shouldGenerateTableCover(aType, builtAgents)
+        val generatedCoverFile = if (needsGeneratedCover) {
+            createGeneratedTableCoverFile(title)
+        } else {
+            null
+        }
+        if (needsGeneratedCover && generatedCoverFile == null) {
+            uiState = uiState.copy(publishing = false)
+            Toast.makeText(this, "表格封面生成失败，请上传攻略原图后重试", Toast.LENGTH_LONG).show()
+            return
+        }
+        val filesToUpload = listOfNotNull(agentFile, strategyFile, generatedCoverFile)
 
         if (filesToUpload.isEmpty()) {
             executeFinalPublish(
@@ -614,6 +611,7 @@ class UploadStrategyActivity : AppCompatActivity() {
                 content = uiState.content.trim(),
                 instructions = uiState.instructionsJson ?: "",
                 originalUrl = originalUrl,
+                generatedCoverUrl = "",
             )
             return
         }
@@ -637,6 +635,7 @@ class UploadStrategyActivity : AppCompatActivity() {
                                 ""
                             }
                             val finalStrategyUrl = strategyFile?.let { uploadedUrls[it] } ?: uiState.existingStrategyImageUrl
+                            val finalGeneratedCoverUrl = generatedCoverFile?.let { uploadedUrls[it] }.orEmpty()
                             executeFinalPublish(
                                 title = title,
                                 author = author,
@@ -649,6 +648,7 @@ class UploadStrategyActivity : AppCompatActivity() {
                                 content = uiState.content.trim(),
                                 instructions = uiState.instructionsJson ?: "",
                                 originalUrl = originalUrl,
+                                generatedCoverUrl = finalGeneratedCoverUrl,
                             )
                             filesToUpload.forEach { it.delete() }
                         }
@@ -680,11 +680,13 @@ class UploadStrategyActivity : AppCompatActivity() {
         content: String,
         instructions: String,
         originalUrl: String,
+        generatedCoverUrl: String,
     ) {
         val editId = editingStrategyId
         val coverUrl = when {
             strategyUrl.isNotEmpty() -> strategyUrl
             agentUrl.isNotEmpty() -> agentUrl
+            generatedCoverUrl.isNotEmpty() -> generatedCoverUrl
             else -> ""
         }
         val agentNames = builtAgents.map { raw ->
@@ -705,6 +707,8 @@ class UploadStrategyActivity : AppCompatActivity() {
             agentSelection = Gson().toJson(builtAgents),
             agentImageUrl = agentUrl,
             agentTextDesc = uiState.agentTextDesc.trim(),
+            ruyuan = uiState.gameType,
+            tags = normalizeTagText(uiState.tagsText),
         )
 
         Toast.makeText(this, "正在保存攻略数据...", Toast.LENGTH_SHORT).show()
@@ -733,6 +737,60 @@ class UploadStrategyActivity : AppCompatActivity() {
             val talentsStr = slot.talents.mapNotNull { it }.joinToString("、")
             if (talentsStr.isNotEmpty()) "$starPrefix$name-$talentsStr" else "$starPrefix$name"
         }
+    }
+
+    private fun shouldGenerateTableCover(aType: Int, builtAgents: List<String>): Boolean {
+        return aType == UploadAgentMode.SELECT.type &&
+            builtAgents.isNotEmpty() &&
+            uiState.strategyImageUri == null &&
+            uiState.existingStrategyImageUrl.isBlank() &&
+            uiState.tableItems.isNotEmpty()
+    }
+
+    private fun createGeneratedTableCoverFile(title: String): File? {
+        val headers = uiState.agentSlots.map { it.name.orEmpty() }.toTypedArray()
+        val turns = uiState.tableItems.map { item ->
+            TurnData(
+                turnNumber = item.turnNum,
+                characterActions = Array<CharSequence>(5) { index ->
+                    SpannableStringBuilder(item.actions.getOrNull(index).orEmpty())
+                },
+                remark = item.remark,
+            )
+        }
+        val gameTitle = if (uiState.gameType == STRATEGY_GAME_DAIHAOYUAN) "代号鸢" else "如鸢"
+        val bitmap = ImageExportUtils.generateImageBitmap(
+            context = this,
+            displayData = turns,
+            headers = headers,
+            gameTitle = gameTitle,
+            exportSubtitle = title,
+        ) ?: return null
+        return saveBitmapToCacheFile(bitmap, "strategy_table_cover").also {
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
+    }
+
+    private fun saveBitmapToCacheFile(bitmap: Bitmap, prefix: String): File? {
+        return try {
+            val file = File(cacheDir, "${prefix}_${System.currentTimeMillis()}.png")
+            file.outputStream().use { output ->
+                if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)) {
+                    return null
+                }
+            }
+            file
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun normalizeTagText(raw: String): String {
+        return raw.split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(" ")
     }
 
     private fun uploadImageToImageBed(file: File, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
@@ -881,10 +939,29 @@ private fun BasicInfoSection(
     onStateChange: (UploadStrategyUiState) -> Unit,
 ) {
     SubpageSectionCard(title = "基础信息", subtitle = "标题会展示在攻略列表里") {
+        SubpageFieldGroup(title = "游戏版本", subtitle = "用于攻略筛选与标签展示") {
+            SegmentedButtons(
+                labels = listOf("如鸢", "代号鸢"),
+                selectedIndex = if (state.gameType == STRATEGY_GAME_DAIHAOYUAN) 1 else 0,
+                onSelect = { index ->
+                    onStateChange(
+                        state.copy(
+                            gameType = if (index == 1) STRATEGY_GAME_DAIHAOYUAN else STRATEGY_GAME_RUYUAN,
+                        ),
+                    )
+                },
+            )
+        }
         SubpageTextField(
             value = state.title,
             onValueChange = { onStateChange(state.copy(title = it)) },
             label = "攻略标题",
+            modifier = Modifier.fillMaxWidth(),
+        )
+        SubpageTextField(
+            value = state.tagsText,
+            onValueChange = { onStateChange(state.copy(tagsText = it)) },
+            label = "自定义标签（空格分隔）",
             modifier = Modifier.fillMaxWidth(),
         )
         SubpageTextField(

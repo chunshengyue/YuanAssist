@@ -137,6 +137,31 @@ object SettingsDialog {
         val etDownY = createFloatRow("↓ 距离底部距离:", currentConfig.downYFromBottom.toString())
         val etCircleY = createFloatRow("圈 距离底部距离:", currentConfig.circleYFromBottom.toString())
 
+        scrollContent.addView(TextView(themeContext).apply {
+            text = "高级参数"
+            textSize = 14f
+            setTextColor(Color.parseColor("#6C5B43"))
+            setPadding(0, 20, 0, 10)
+        })
+        scrollContent.addView(TextView(themeContext).apply {
+            text = "录制模式"
+            textSize = 13f
+            setTextColor(Color.parseColor("#8C7A61"))
+            setPadding(0, 8, 0, 6)
+        })
+        val etRecordClickDuration = createIntRow("点击持续时间(ms):", currentConfig.recordClickDurationMs.toString())
+        val etRecordSwipeDuration = createIntRow("滑动持续时间(ms):", currentConfig.recordSwipeDurationMs.toString())
+        val etRecordSwipeDistance = createFloatRow("滑动距离:", currentConfig.recordSwipeDistance.toString())
+        scrollContent.addView(TextView(themeContext).apply {
+            text = "跟打模式"
+            textSize = 13f
+            setTextColor(Color.parseColor("#8C7A61"))
+            setPadding(0, 16, 0, 6)
+        })
+        val etFollowClickDuration = createIntRow("点击持续时间(ms):", currentConfig.followClickDurationMs.toString())
+        val etFollowSwipeDuration = createIntRow("滑动持续时间(ms):", currentConfig.followSwipeDurationMs.toString())
+        val etFollowSwipeDistance = createFloatRow("滑动距离:", currentConfig.followSwipeDistance.toString())
+
         scrollView.addView(scrollContent)
         rootLayout.addView(
             scrollView,
@@ -173,8 +198,27 @@ object SettingsDialog {
                 val upY = etUpY.text.toString().toFloat()
                 val downY = etDownY.text.toString().toFloat()
                 val circleY = etCircleY.text.toString().toFloat()
+                val recordClickDuration = etRecordClickDuration.text.toString().toLong()
+                val recordSwipeDuration = etRecordSwipeDuration.text.toString().toLong()
+                val recordSwipeDistance = etRecordSwipeDistance.text.toString().toFloat()
+                val followClickDuration = etFollowClickDuration.text.toString().toLong()
+                val followSwipeDuration = etFollowSwipeDuration.text.toString().toLong()
+                val followSwipeDistance = etFollowSwipeDistance.text.toString().toFloat()
 
-                if (attack > 0 && skill > 0 && wait > 0 && start > 0 && threshold > 0 && height in 10..100) {
+                if (
+                    attack > 0 &&
+                    skill > 0 &&
+                    wait > 0 &&
+                    start > 0 &&
+                    threshold > 0 &&
+                    height in 10..100 &&
+                    recordClickDuration > 0 &&
+                    recordSwipeDuration > 0 &&
+                    recordSwipeDistance > 0f &&
+                    followClickDuration > 0 &&
+                    followSwipeDuration > 0 &&
+                    followSwipeDistance > 0f
+                ) {
                     val newConfig = currentConfig.copy(
                         intervalAttack = attack,
                         intervalSkill = skill,
@@ -188,7 +232,13 @@ object SettingsDialog {
                         attackYFromBottom = attackY,
                         upYFromBottom = upY,
                         downYFromBottom = downY,
-                        circleYFromBottom = circleY
+                        circleYFromBottom = circleY,
+                        recordClickDurationMs = recordClickDuration,
+                        recordSwipeDurationMs = recordSwipeDuration,
+                        recordSwipeDistance = recordSwipeDistance,
+                        followClickDurationMs = followClickDuration,
+                        followSwipeDurationMs = followSwipeDuration,
+                        followSwipeDistance = followSwipeDistance
                     )
                     ConfigManager.saveSettings(context, newConfig)
                     onConfigSaved()

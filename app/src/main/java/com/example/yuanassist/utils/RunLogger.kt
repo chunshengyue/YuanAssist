@@ -70,9 +70,9 @@ object RunLogger {
     private fun append(level: String, message: String, throwable: Throwable?) {
         if (shouldSuppress(message)) return
         val time = timeFormat.format(Date())
-        val lines = mutableListOf("[$time] [$level] $message")
+        val lines = mutableListOf("[$time] [$level] ${sanitizeInline(message)}")
         if (throwable != null) {
-            val throwableMessage = throwable.message ?: "\uFF08\u65E0\u6D88\u606F\uFF09"
+            val throwableMessage = sanitizeInline(throwable.message ?: "\uFF08\u65E0\u6D88\u606F\uFF09")
             lines += "${throwable.javaClass.simpleName}: $throwableMessage"
             lines += Log.getStackTraceString(throwable).trimEnd()
         }
@@ -94,11 +94,12 @@ object RunLogger {
     @Synchronized
     private fun appendRaw(message: String) {
         if (shouldSuppress(message)) return
-        logs.add(message)
+        val cleanMessage = sanitizeInline(message)
+        logs.add(cleanMessage)
         while (logs.size > MAX_IN_MEMORY) {
             logs.removeAt(0)
         }
-        Log.i(TAG, message)
+        Log.i(TAG, cleanMessage)
         persistAll()
     }
 
@@ -116,6 +117,12 @@ object RunLogger {
         }
         return "$prefix ${message.trim()}"
     }
+
+    private fun sanitizeInline(message: String): String =
+        message
+            .replace("\r\n", "\\n")
+            .replace("\r", "\\n")
+            .replace("\n", "\\n")
 
     @Synchronized
     private fun persistAll() {

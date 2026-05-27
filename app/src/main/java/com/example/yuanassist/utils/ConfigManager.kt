@@ -21,7 +21,13 @@ data class AppConfig(
     val downOffsetX: Float = 0f,
     val downYFromBottom: Float = 514f,
     val circleOffsetX: Float = 0f,
-    val circleYFromBottom: Float = 317.3f
+    val circleYFromBottom: Float = 317.3f,
+    val recordClickDurationMs: Long = ConfigManager.DEF_CLICK_DURATION,
+    val recordSwipeDurationMs: Long = ConfigManager.DEF_SWIPE_DURATION,
+    val recordSwipeDistance: Float = ConfigManager.DEF_SWIPE_DISTANCE,
+    val followClickDurationMs: Long = ConfigManager.DEF_CLICK_DURATION,
+    val followSwipeDurationMs: Long = ConfigManager.DEF_SWIPE_DURATION,
+    val followSwipeDistance: Float = ConfigManager.DEF_SWIPE_DISTANCE
 )
 
 object ConfigManager {
@@ -39,6 +45,9 @@ object ConfigManager {
     const val DEF_INPUT_HEIGHT = 31
     const val DEF_RECORD_DELAY = 60L
     const val DEF_GAME_SPEED = 3
+    const val DEF_CLICK_DURATION = 50L
+    const val DEF_SWIPE_DURATION = 150L
+    const val DEF_SWIPE_DISTANCE = 300f
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
     }
@@ -63,7 +72,13 @@ object ConfigManager {
             downOffsetX = p.getFloat("down_offset_x", 0f),
             downYFromBottom = p.getFloat("down_y_from_bottom", 514f),
             circleOffsetX = p.getFloat("circle_offset_x", 0f),
-            circleYFromBottom = p.getFloat("circle_y_from_bottom", 317.3f)
+            circleYFromBottom = p.getFloat("circle_y_from_bottom", 317.3f),
+            recordClickDurationMs = p.getLong("record_click_duration_ms", DEF_CLICK_DURATION),
+            recordSwipeDurationMs = p.getLong("record_swipe_duration_ms", DEF_SWIPE_DURATION),
+            recordSwipeDistance = p.getFloat("record_swipe_distance", DEF_SWIPE_DISTANCE),
+            followClickDurationMs = p.getLong("follow_click_duration_ms", DEF_CLICK_DURATION),
+            followSwipeDurationMs = p.getLong("follow_swipe_duration_ms", DEF_SWIPE_DURATION),
+            followSwipeDistance = p.getFloat("follow_swipe_distance", DEF_SWIPE_DISTANCE)
         )
     }
 
@@ -87,6 +102,12 @@ object ConfigManager {
             putFloat("down_y_from_bottom", config.downYFromBottom)
             putFloat("circle_offset_x", config.circleOffsetX)
             putFloat("circle_y_from_bottom", config.circleYFromBottom)
+            putLong("record_click_duration_ms", config.recordClickDurationMs)
+            putLong("record_swipe_duration_ms", config.recordSwipeDurationMs)
+            putFloat("record_swipe_distance", config.recordSwipeDistance)
+            putLong("follow_click_duration_ms", config.followClickDurationMs)
+            putLong("follow_swipe_duration_ms", config.followSwipeDurationMs)
+            putFloat("follow_swipe_distance", config.followSwipeDistance)
             apply()
         }
     }

@@ -49,8 +49,8 @@
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
 - 日常脚本系统
   - `AutoTaskEngine` 按 `DailyTaskPlan` 执行 CLICK、MATCH_TEMPLATE、OCR、SET_VAR、BACK 等动作。
-  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL。管理员设备发布的云端脚本由后端返回 `isAdminPublished`，列表显示“管理员发布”标签；首页「云端脚本」入口红点与消息未读数共用 `get-home-badges` 请求，并按本地已读记录判断，进入列表页后清除。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
-  - 首页日常入口包含“哀牢15min”：入口页是 `Ailao15MinFragment`，导入 `assets/script(1).json` 到日常版悬浮窗；脚本用于每 15 分钟刷一次哀牢幻境难度，底部确定 OCR 会最多等待约 60 秒。
+  - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL，并有独立于攻略评论的云端脚本评论区。管理员设备发布的云端脚本由后端返回 `isAdminPublished`，列表显示“管理员发布”标签；首页「云端脚本」入口红点与消息未读数共用 `get-home-badges` 请求，并按本地已读记录判断，进入列表页后清除。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
+  - 首页日常入口包含“去去指哀牢”：入口页是 `Ailao15MinFragment`，可导入 `assets/daily_scripts/哀牢15min.json`（哀牢1体力循环）或 `assets/daily_scripts/哀牢0体力刷家具.json`（哀牢0体力刷家具）到日常版悬浮窗；1体力循环每 15 分钟刷一次哀牢幻境难度，0体力刷家具会用 assets 根目录的 6 个家具素材替代关卡识别并直接循环。该入口导入前会把待导入脚本写入 `app_prefs`，用户跳转开启无障碍后由 `YuanAssistService.onServiceConnected` 自动恢复导入并显示日常悬浮窗。
   - “哀牢15min”运行时会在日常悬浮窗下方挂一个专属小状态栏，主体实现是 `AilaoStatusBarManager`，布局是 `layout_ailao_status_bar.xml`；开始后显示“运行中”，进入 15 分钟等待节点时显示倒计时。该状态栏不改 `layout_daily_window.xml`，由 `DailyWindowManager` 负责薄接入、跟随拖动和关闭清理。
   - 现已支持 `SCREENSHOT_GROUP`：
     - 只用于视觉识别候选组，共用一次截图
@@ -69,6 +69,9 @@
   - 录制器支持滑动节点：第一次点屏幕作为起点，节点弹窗里的「获取结束坐标」用于再次点屏幕采集终点，保存为 `SWIPE` 的 `startX/startY/endX/endY/duration/align`。
   - 录制点若落在居中游戏区域外，会自动推荐 `top` 或 `bottom` 位置类型；滑动节点切换位置类型时会用原始屏幕点重算起点和已采集终点。
   - `RecordedDailyScriptViewerActivity` 负责查看、分支切换、编辑、导出。
+- 作业站/攻略发布
+  - `UploadStrategyActivity` 负责发布和编辑本站攻略，基础信息包含游戏版本（`ruyuan`：1=如鸢、0=代号鸢）和空格分隔的自定义标签 `tags`；`JobStationAssetRepository` 展示标签时会合并游戏标签、自定义标签和标题推断标签。
+  - 发布攻略在“选择密探”模式下若没有上传攻略原图，会复用 `ImageExportUtils` 的录制模式导出图生成表格封面，上传图床后只写入 `coverUrl`，不写入 `strategyImage`。
 - 调试工作台
   - `DebugWorkbenchCoordinator` 负责从图片中测试模板/OCR、替换模板、调延时、查看命中范围。
   - 调试页会自动索引 `assets/daily_scripts` 中的脚本视觉节点，包括 `MATCH_TEMPLATE`、`OCR` 以及 `SCREENSHOT_GROUP` 子步骤。
@@ -122,8 +125,12 @@
   - 更新后按业务关键字段查回确认，并把返回结果摘要给用户。
 - 当前云端日常脚本相关表/桶：
   - `public.cloud_daily_scripts` 保存日常脚本 bundle 元数据，已启用 RLS。
+  - `public.cloud_daily_script_comment` 保存云端脚本评论，`public.cloud_daily_script_message` 保存云端脚本评论/回复消息，二者独立于攻略的 `strategy_comment` / `strategy_message`。
   - `daily-script-bundles` 是私有 Storage bucket，用于保存脚本 zip bundle。
   - 这套云端脚本只服务“日常录制脚本共享”，战斗脚本仍归 JobStation。
+  - 官方覆盖脚本使用 `public.cloud_daily_scripts.override_asset_script text null` 标记目标内置脚本；字段为空表示普通云端录制脚本，非空表示该 bundle 是官方覆盖脚本，字段值必须是 `assets/daily_scripts` 下的内置脚本文件名，例如 `zhu_xian_6_24.json`。
+  - 官方覆盖脚本由维护者本地改好 JSON 后，通过 Supabase CLI/SQL 直接新增或更新 `cloud_daily_scripts` 行并上传 zip 到 `daily-script-bundles`；不要走 App 内“脚本库上传”入口。客户端发布的普通脚本不得写入 `override_asset_script`，也不提供覆盖能力。
+  - 官方覆盖脚本 zip 可以只包含 `script.json`，不包含模板素材；运行时模板仍复用脚本内 `asset_template_dir` 指向的内置素材。客户端保存时应与普通用户脚本分流，保存到专门的覆盖脚本目录，运行特定内置任务时优先读取本地覆盖 JSON；用户删除覆盖脚本后自然回退到原 `assets/daily_scripts` 内置脚本。
 
 ## 两个主要悬浮窗
 ### 1. 战斗版悬浮窗
@@ -143,7 +150,7 @@
     - 基于录制结果或导入脚本执行战斗动作
     - 支持开始、暂停、继续、停止
     - 会显示当前执行状态
-- 战斗版悬浮窗还承载这些辅助功能：
+  - 战斗版悬浮窗还承载这些辅助功能：
   - 自动选人开关与角色配置
   - 战斗锚点/定位相关调节入口
   - “键位修正”入口会显示 A、↑、↓、圈 四个动作标记，分别落在 1-4 号位中间；拖动标记只保存对应动作的 y（距离底部距离），x 仍由列位算法计算
@@ -151,6 +158,7 @@
   - 设置入口
   - 表格式回合/指令查看与编辑
   - 录制模式下的额外悬浮按钮，例如“圈”和目标切换按钮，用于快速记录特殊战斗指令
+  - 战斗设置页的“高级参数”将录制模拟和跟打执行拆成两套手势参数：点击持续时间、滑动持续时间、滑动距离；A/↑/↓/圈 的距离底部仍沿用原有“战斗动作距离底部”配置。
 - 简单理解：
   - 战斗版悬浮窗 = 战斗录制器 + 跟打执行器 + 战斗脚本辅助工具面板
 
@@ -380,6 +388,7 @@
   - 运行日志查看与输出。
   - App 冷启动时会清空运行日志；运行中日志会同步写入 `files/run_logger.log`，关闭后再打开会从当前会话重新开始。
   - 运行日志优先使用结构化模块格式：`RunLogger.i(module = "模块名", section = "小节名", message = "短结果")`；OCR 默认只写节点名、成功/失败、原文/命中，模板匹配默认只写节点名、成功/失败、模板名和分数，过程细节放到诊断日志；运行日志不要输出 ROI/区域坐标，JSON 和调试页已能查看。
+  - 写入运行日志的单条消息应保持单行；OCR 原文等多行内容统一把 `\r\n` / `\r` / `\n` 显示为 `\n`，避免展示页分段时把原文截到其他日志。
 - `SubpageScaffold`
   - 子页面统一骨架，包含标题、返回按钮、间距和装饰风格。
 - `ui/subpage/*`

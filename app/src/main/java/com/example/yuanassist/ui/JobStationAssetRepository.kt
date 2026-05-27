@@ -1330,12 +1330,21 @@ object JobStationAssetRepository {
                 .takeIf { it.isNotBlank() }
                 ?.let(::add)
 
+            parseCustomTags(detail.tags).forEach(::add)
+
             listOf("地宫", "洞窟", "白鹄", "泰山府").forEach { tag ->
                 if (title.contains(tag)) {
                     add(tag)
                 }
             }
         }.distinct()
+    }
+
+    private fun parseCustomTags(raw: String?): List<String> {
+        return raw.orEmpty()
+            .split(Regex("\\s+"))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
     }
 
     private fun resolveGameTagFromRuyuan(ruyuan: Int?): String {

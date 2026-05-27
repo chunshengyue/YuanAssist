@@ -23,6 +23,7 @@ import com.example.yuanassist.model.ROI
 import com.example.yuanassist.model.ScreenshotStep
 import com.example.yuanassist.model.TaskParams
 import com.example.yuanassist.utils.BirdFoodDebugScreenshotStore
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StartBattleShared
 import com.example.yuanassist.utils.TemplateOverrideStore
@@ -43,7 +44,6 @@ import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
 import java.io.File
-import java.io.InputStreamReader
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -1254,7 +1254,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 .coerceAtLeast(1)
             searchBitmap = Bitmap.createBitmap(swBitmap, 0, safeY, swBitmap.width, safeH)
             roiOffsetY = safeY.toFloat()
-            ownsBitmap = true
+            ownsBitmap = searchBitmap !== swBitmap
             debugTop = safeY
             debugHeight = safeH
         } else if (roi?.align == "dynamic_filter_bounds") {
@@ -1269,7 +1269,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             searchBitmap = Bitmap.createBitmap(swBitmap, safeX, safeY, safeW, safeH)
             roiOffsetX = safeX.toFloat()
             roiOffsetY = safeY.toFloat()
-            ownsBitmap = true
+            ownsBitmap = searchBitmap !== swBitmap
             debugLeft = safeX
             debugTop = safeY
             debugWidth = safeW
@@ -1287,7 +1287,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             searchBitmap = Bitmap.createBitmap(swBitmap, safeX, safeY, safeW, safeH)
             roiOffsetX = safeX.toFloat()
             roiOffsetY = safeY.toFloat()
-            ownsBitmap = true
+            ownsBitmap = searchBitmap !== swBitmap
             debugLeft = safeX
             debugTop = safeY
             debugWidth = safeW
@@ -1499,7 +1499,10 @@ class AutoTaskEngine(private val service: AccessibilityService) {
 
     private fun formatOcrLog(text: String): String {
         if (text.isEmpty()) return "\"\""
-        return "\"" + text.replace("\n", "\\n") + "\""
+        return "\"" + text
+            .replace("\r\n", "\\n")
+            .replace("\r", "\\n")
+            .replace("\n", "\\n") + "\""
     }
 
     private fun extractOcrText(component: Any): String = when (component) {
@@ -1599,9 +1602,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         exitTaskId: Int?
     ): DailyTaskPlan? {
         val plan = try {
-            service.assets.open("daily_scripts/$scriptName").use { input ->
-                gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
-            }
+            CloudScriptOverrideStore.loadAssetPlanWithOverride(service, scriptName, gson)
         } catch (t: Throwable) {
             logError("加载子脚本失败：$scriptName", t)
             null

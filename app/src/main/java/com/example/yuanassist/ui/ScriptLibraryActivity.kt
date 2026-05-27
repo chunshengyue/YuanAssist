@@ -53,6 +53,8 @@ import com.example.yuanassist.ui.main.theme.TitleInk
 import com.example.yuanassist.ui.subpage.StoneStyleButton
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.utils.CloudScriptOverrideBundle
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.UserDailyScriptBundle
 import com.example.yuanassist.utils.UserDailyScriptStore
@@ -94,6 +96,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
         val assetPath: String? = null,
         val templateDirPath: String? = null,
         val bundle: UserDailyScriptBundle? = null,
+        val overrideBundle: CloudScriptOverrideBundle? = null,
         val taskCount: Int? = null,
         val updatedAt: Long = 0L
     )
@@ -124,6 +127,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
             return loadRecordedViewerEntries()
         }
         val dailyEntries = buildList {
+            addAll(loadCloudOverrideEntries())
             addAll(loadDailyUserEntries())
             addAll(loadDailyAssetEntries())
         }
@@ -202,8 +206,24 @@ class ScriptLibraryActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadCloudOverrideEntries(): List<LibraryEntry> {
+        return CloudScriptOverrideStore.listOverrides(this).map { bundle ->
+            LibraryEntry(
+                name = bundle.targetScriptName,
+                displayName = "[官方修正] ${bundle.title}",
+                type = EntryType.DAILY_PLAN,
+                source = EntrySource.FILE_SYSTEM,
+                file = bundle.scriptFile,
+                overrideBundle = bundle,
+                taskCount = runCatching { CloudScriptOverrideStore.loadPlan(bundle, gson).tasks.size }.getOrNull(),
+                updatedAt = bundle.updatedAt
+            )
+        }
+    }
+
     private fun loadRecordedViewerEntries(): List<LibraryEntry> {
         return buildList {
+            addAll(loadCloudOverrideEntries())
             addAll(loadDailyUserEntries())
             addAll(loadDailyAssetEntries())
         }
@@ -315,7 +335,11 @@ class ScriptLibraryActivity : AppCompatActivity() {
                         )
                     }
                     Text(
-                        text = if (entry.type == EntryType.DAILY_PLAN) "日常" else "跟打",
+                        text = when {
+                            entry.overrideBundle != null -> "修正"
+                            entry.type == EntryType.DAILY_PLAN -> "日常"
+                            else -> "跟打"
+                        },
                         color = HighlightGold,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -364,6 +388,9 @@ class ScriptLibraryActivity : AppCompatActivity() {
         }
         val taskText = entry.taskCount?.let { "任务数：$it" } ?: "任务数：解析失败"
         val timeText = if (isReadOnly) "更新时间：内置资源" else "更新时间：${formatTime(entry.updatedAt)}"
+        if (entry.overrideBundle != null) {
+            return "$taskText    覆盖：${entry.overrideBundle.targetScriptName}    $timeText"
+        }
         return "$taskText    $timeText"
     }
 
@@ -478,7 +505,7 @@ class ScriptLibraryActivity : AppCompatActivity() {
     }
 
     private fun buildRecordedScriptCard(entry: LibraryEntry): View {
-        val isReadOnly = entry.bundle == null
+        val isReadOnly = entry.bundle == null && entry.overrideBundle == null
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.bg_dark_glass)
@@ -497,6 +524,8 @@ class ScriptLibraryActivity : AppCompatActivity() {
             addView(TextView(this@ScriptLibraryActivity).apply {
                 text = if (isReadOnly) {
                     "来源：应用内置只读    任务数：${entry.taskCount ?: "解析失败"}"
+                } else if (entry.overrideBundle != null) {
+                    "来源：官方修正    覆盖：${entry.overrideBundle.targetScriptName}    任务数：${entry.taskCount ?: "解析失败"}"
                 } else {
                     "来源：录制脚本    任务数：${entry.taskCount ?: "解析失败"}"
                 }
@@ -548,13 +577,26 @@ class ScriptLibraryActivity : AppCompatActivity() {
     }
 
     private fun confirmDeleteRecordedEntry(entry: LibraryEntry, onDeleted: () -> Unit) {
-        val bundle = entry.bundle ?: return
+        val bundle = entry.bundle
+        val overrideBundle = entry.overrideBundle
+        if (bundle == null && overrideBundle == null) return
+        val isOverride = overrideBundle != null
         DialogUtils.showStyledDialog(
             AlertDialog.Builder(DialogUtils.getThemeContext(this))
                 .setTitle("删除脚本")
-                .setMessage("确认删除 ${entry.name} 吗？会同时删除本地 json 和模板图片。")
+                .setMessage(
+                    if (isOverride) {
+                        "确认删除 ${entry.name} 的官方修正脚本吗？删除后会回到应用内置脚本。"
+                    } else {
+                        "确认删除 ${entry.name} 吗？会同时删除本地 json 和模板图片。"
+                    }
+                )
                 .setPositiveButton("删除") { _, _ ->
-                    val deleted = UserDailyScriptStore.deleteBundle(bundle)
+                    val deleted = if (overrideBundle != null) {
+                        CloudScriptOverrideStore.deleteOverride(overrideBundle)
+                    } else {
+                        UserDailyScriptStore.deleteBundle(bundle!!)
+                    }
                     Toast.makeText(
                         this,
                         if (deleted) "已删除 ${entry.name}" else "删除失败",

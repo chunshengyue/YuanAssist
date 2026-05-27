@@ -331,6 +331,7 @@ class DebugWorkbenchCoordinator(
     private data class TemplateScanSummary(
         val hits: List<TemplateMatchHit>,
         val bestCandidate: TemplateMatchHit?,
+        val areas: List<SearchArea> = emptyList(),
     )
 
     private data class TemplateMatchHit(
@@ -1154,12 +1155,18 @@ class DebugWorkbenchCoordinator(
             CAVE_DONGKU_OPTION -> runCaveDongkuTemplateFallbackTest(screenshot)
             else -> runTemplateSummaryTest(screenshot, templateName, isLocalScopeEnabled)
         } ?: return
+        val areaPaint = Paint().apply {
+            color = Color.argb(220, 229, 192, 123)
+            style = Paint.Style.STROKE
+            strokeWidth = 4f
+        }
         val hitPaint = Paint().apply {
             color = Color.RED
             style = Paint.Style.STROKE
             strokeWidth = 6f
         }
         val canvas = Canvas(screenshot)
+        summary.areas.forEach { area -> canvas.drawRect(area.rect, areaPaint) }
         summary.hits.forEach { hit -> canvas.drawRect(hit.rect, hitPaint) }
         previewBitmap = screenshot
         pushState()
@@ -1424,14 +1431,6 @@ class DebugWorkbenchCoordinator(
     ): TemplateScanSummary? {
         val areas = buildTemplateSearchAreas(screenshot, templateName, useLocalScope) ?: return null
         if (areas.isEmpty()) return TemplateScanSummary(emptyList(), null)
-        Canvas(screenshot).apply {
-            val areaPaint = Paint().apply {
-                color = Color.argb(220, 229, 192, 123)
-                style = Paint.Style.STROKE
-                strokeWidth = 4f
-            }
-            areas.forEach { drawRect(it.rect, areaPaint) }
-        }
         val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
         val scaledWidth = (templateBitmap.width * gameScale).toInt().coerceAtLeast(1)
         val scaledHeight = (templateBitmap.height * gameScale).toInt().coerceAtLeast(1)
@@ -1445,7 +1444,7 @@ class DebugWorkbenchCoordinator(
             val scans = areas.map { findMatchesInArea(screenshot, it, scaledTemplate, it.threshold) }
             val hits = dedupeHits(scans.flatMap { it.hits }, scaledTemplate.width / 2.0)
             val bestCandidate = scans.mapNotNull { it.bestCandidate }.maxByOrNull { it.score }
-            TemplateScanSummary(hits, bestCandidate)
+            TemplateScanSummary(hits, bestCandidate, areas)
         } finally {
             if (scaledTemplate !== templateBitmap) {
                 scaledTemplate.recycle()

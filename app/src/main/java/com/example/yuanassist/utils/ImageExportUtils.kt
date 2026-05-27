@@ -35,9 +35,24 @@ object ImageExportUtils {
         gameTitle: String = "如鸢",
         exportSubtitle: String = "",
     ) {
-        if (displayData.isEmpty()) {
+        val bitmap = generateImageBitmap(context, displayData, headers, gameTitle, exportSubtitle)
+        if (bitmap == null) {
             Toast.makeText(context, "无数据", Toast.LENGTH_SHORT).show()
             return
+        }
+
+        saveBitmapToGallery(context, bitmap)
+    }
+
+    fun generateImageBitmap(
+        context: Context,
+        displayData: List<TurnData>,
+        headers: Array<String>,
+        gameTitle: String = "如鸢",
+        exportSubtitle: String = "",
+    ): Bitmap? {
+        if (displayData.isEmpty()) {
+            return null
         }
 
         // 1. 检查是否有任何一行包含备注
@@ -274,7 +289,7 @@ object ImageExportUtils {
             }
         )
 
-        saveBitmapToGallery(context, bitmap)
+        return bitmap
     }
 
     private fun createStyledBitmap(context: Context, width: Int, desiredHeight: Int): Bitmap {

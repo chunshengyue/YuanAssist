@@ -8,6 +8,8 @@ const val STRATEGY_GAME_DAIHAOYUAN = 0
 const val STRATEGY_GAME_RUYUAN = 1
 const val STRATEGY_MESSAGE_TYPE_STRATEGY_COMMENT = 1
 const val STRATEGY_MESSAGE_TYPE_COMMENT_REPLY = 2
+const val CLOUD_DAILY_SCRIPT_MESSAGE_TYPE_SCRIPT_COMMENT = 1
+const val CLOUD_DAILY_SCRIPT_MESSAGE_TYPE_COMMENT_REPLY = 2
 
 open class SupabaseRecord {
     var objectId: String? = null
@@ -38,6 +40,7 @@ class strategy_detail : SupabaseRecord() {
     var agentTextDesc: String = ""
     var visible: Int? = null         // 由 Bmob 后端控制：1=公开，0=仅我的发布可见
     var ruyuan: Int? = null          // 由 Bmob 后端控制：1=如鸢，0=代号鸢
+    var tags: String = ""            // 自定义标签，空格分隔
 
     var viewCount: Int? = 0
     var favoriteCount: Int? = 0
@@ -81,6 +84,26 @@ class cloud_daily_script : SupabaseRecord() {
     var status: String = "published"
     var author: MyUser? = null
     var isAdminPublished: Boolean = false
+    var overrideAssetScript: String = ""
+}
+
+class cloud_daily_script_comment : SupabaseRecord() {
+    var script: cloud_daily_script? = null
+    var user: MyUser? = null
+    var content: String = ""
+    var replyToComment: cloud_daily_script_comment? = null
+    var replyToUser: MyUser? = null
+    var replyToUserName: String = ""
+}
+
+class cloud_daily_script_message : SupabaseRecord() {
+    var recipient: MyUser? = null
+    var sender: MyUser? = null
+    var script: cloud_daily_script? = null
+    var comment: cloud_daily_script_comment? = null
+    var type: Int = 0
+    var contentSnapshot: String = ""
+    var isRead: Boolean = false
 }
 
 /**

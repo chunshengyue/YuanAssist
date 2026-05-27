@@ -4,9 +4,9 @@ import android.accessibilityservice.AccessibilityService
 import android.widget.Toast
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.StargazingConfig
+import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.RunLogger
 import com.google.gson.Gson
-import java.io.InputStreamReader
 
 class StargazingRuntimeManager(
     private val service: AccessibilityService,
@@ -19,7 +19,7 @@ class StargazingRuntimeManager(
         private const val STARGAZING_CLICK_Y = 1318.2489f
         private const val STARGAZING_CLICK_ALIGN = "bottom"
         private const val INITIAL_BATCH_START_TASK_ID = 0
-        private const val FOLLOW_UP_BATCH_START_TASK_ID = 5
+        private const val FOLLOW_UP_BATCH_START_TASK_ID = 3
     }
 
     private val engine = AutoTaskEngine(service)
@@ -66,9 +66,7 @@ class StargazingRuntimeManager(
 
     private fun loadPlan(): DailyTaskPlan? {
         return try {
-            service.assets.open("daily_scripts/$SCRIPT_FILE_NAME").use { input ->
-                gson.fromJson(InputStreamReader(input, Charsets.UTF_8), DailyTaskPlan::class.java)
-            }
+            CloudScriptOverrideStore.loadAssetPlanWithOverride(service, SCRIPT_FILE_NAME, gson)
         } catch (t: Throwable) {
             RunLogger.e(module = "无月卡观星", section = "总流程", message = "加载脚本失败：$SCRIPT_FILE_NAME", throwable = t)
             null
