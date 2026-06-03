@@ -1,0 +1,10 @@
+{
+  "objectId": "8e5e8df2ed",
+  "title": "洞窟",
+  "scriptContent": "1回合\t3↓\t4↑\t1↑\t2↑\t5A\n2回合\t2↑\t3A6A\t4A\t5A\t1↑\n3回合\t2A\t3A\t5↓\t1A\t4A\n4回合\t2A\t3A6A\t1↑\t5↑\t4A\n5回合\t4↑\t5↑\t3A\t2A\t1↑\n6回合\t3A\t4A5A\t2A\t6A\t1A\n7回合\t4A\t5↓\t1↑\t2A\t3A\n8回合\t2A\t3↑\t4A\t5A\t1↑\n9回合\t2↑\t3A\t4A\t1↑\t5A",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-31 16:51:27.098+00",
+  "updatedAt": "2026-05-31 16:51:27.098+00",
+  "source": "supabase.strategy_detail"
+}

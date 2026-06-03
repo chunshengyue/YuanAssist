@@ -1,0 +1,10 @@
+{
+  "objectId": "97b7f1af74",
+  "title": "如鸢六月洞窟许曼1-20自动",
+  "scriptContent": "1回合\t1↑7↓\t4↓\t3A\t5↑6A\t2↑\n2回合\t4↓\t3A\t2↓\t1A\t5A\n3回合\t4A\t3A\t2A\t1A\t5A\n4回合\t2A\t3A\t1A\t\t\n5回合\t1↑9↓\t3↑5A\t4↑8↑\t2↑6A\t7A",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-06-01 09:15:45.183+00",
+  "updatedAt": "2026-06-01 09:15:45.183+00",
+  "source": "supabase.strategy_detail"
+}

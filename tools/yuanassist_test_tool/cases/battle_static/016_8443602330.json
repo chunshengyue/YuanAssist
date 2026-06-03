@@ -1,0 +1,10 @@
+{
+  "objectId": "8443602330",
+  "title": "遗迹2 一星庞",
+  "scriptContent": "1回合\t1A\t3A\t5A\t2A\t4↓\n2回合\t1个\t3A\t5A\t2A\t4A\n3回合\t1个\t3A\t4A\t2个\t5A\n4回合\t5↓6A\t1A9A\t3个10个\t4↓7A\t2↑8个\n5回合\t1A\t3↓\t4A\t2A\t5A\n6回合\t1个\t3↓\t4A\t2个\t5A\n7回合\t1A\t2A\t3A\t无\t4A\n8回合\t1个\t2A\t4个\t无\t3个",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-30 13:55:24.097+00",
+  "updatedAt": "2026-05-30 13:55:24.097+00",
+  "source": "supabase.strategy_detail"
+}

@@ -1629,7 +1629,24 @@ class DebugWorkbenchCoordinator(
         scriptDisplayName: String? = null,
     ): SearchArea? {
         node ?: return null
-        val roi = node.roi ?: return null
+        val nodeLabel = node.displayName?.trim()?.takeIf { it.isNotBlank() }
+            ?: "ID ${node.taskId}"
+        val label = "${scriptDisplayName ?: taskDisplayName(selectedTask)}/$nodeLabel"
+        val roi = node.roi
+        val hasFixedGeometry = roi?.let {
+            (it.x != null || it.centerX != null) &&
+                (it.y != null || it.centerY != null) &&
+                (it.w != null || it.radius != null) &&
+                (it.h != null || it.radius != null)
+        } == true
+        val isDynamicGeometry = roi?.align == "dynamic_avatar_bounds" || roi?.align == "dynamic_filter_bounds"
+        if (roi == null || (roi.w == 0f && roi.h == 0f) || (!isDynamicGeometry && !hasFixedGeometry)) {
+            return SearchArea(
+                label = label,
+                rect = Rect(0, 0, screenshot.width, screenshot.height),
+                threshold = node.threshold,
+            )
+        }
         return buildFixedRectFromVisionRegion(
             screenshot = screenshot,
             x = roi.x ?: roi.centerX ?: return null,
@@ -1638,10 +1655,8 @@ class DebugWorkbenchCoordinator(
             w = roi.w ?: roi.radius?.let { it * 2 } ?: return null,
             h = roi.h ?: roi.radius?.let { it * 2 } ?: return null,
         )?.let { rect ->
-            val nodeLabel = node.displayName?.trim()?.takeIf { it.isNotBlank() }
-                ?: "ID ${node.taskId}"
             SearchArea(
-                label = "${scriptDisplayName ?: taskDisplayName(selectedTask)}/$nodeLabel",
+                label = label,
                 rect = rect,
                 threshold = node.threshold,
             )

@@ -1,0 +1,10 @@
+{
+  "objectId": "f05e2eda34",
+  "title": "葛洪",
+  "scriptContent": "1回合\t5A\t4A\t3A\t2A\t1A\n2回合\t5↑6A\t4A\t3A\t2A\t1A\n3回合\t5↑6A\t4A\t3↓\t2A\t1A\n4回合\t5↑6A\t4A\t1↑\t2A\t3A\n5回合\t5↑6↑\t4↑\t1↓\t2↑\t3↑",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-06-01 02:46:46.324+00",
+  "updatedAt": "2026-06-01 02:46:46.324+00",
+  "source": "supabase.strategy_detail"
+}

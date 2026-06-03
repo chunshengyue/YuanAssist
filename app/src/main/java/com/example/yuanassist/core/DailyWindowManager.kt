@@ -38,7 +38,6 @@ import com.example.yuanassist.model.BirdFoodConfig
 import com.example.yuanassist.model.CharacterImportConfig
 import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.model.Mainline624Config
-import com.example.yuanassist.model.PiJingZhanJiConfig
 import com.example.yuanassist.model.StargazingConfig
 import com.example.yuanassist.tableocr.PaddleTextRecognizer
 import com.example.yuanassist.ui.CharacterImportReviewActivity
@@ -82,7 +81,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         BIRD_FOOD,
         MAINLINE_624,
         STARGAZING,
-        PI_JING_ZHAN_JI,
         CHARACTER_IMPORT,
         INVENTORY_STITCH,
         BOX_OCR,
@@ -122,12 +120,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
         refreshActionButton()
     }
-    private val piJingZhanJiRuntimeManager = PiJingZhanJiRuntimeManager(service) { isRunning ->
-        if (isRunning) {
-            moveWindowToTopLeftSafely()
-        }
-        refreshActionButton()
-    }
     private val stitchEngine = InventoryStitchEngine(service)
     private val characterImportEngine = CharacterImportEngine(service)
     private val ailaoStatusBarManager = AilaoStatusBarManager(service)
@@ -158,7 +150,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private var currentBirdFoodConfig: BirdFoodConfig? = null
     private var currentMainline624Config: Mainline624Config? = null
     private var currentStargazingConfig: StargazingConfig? = null
-    private var currentPiJingZhanJiConfig: PiJingZhanJiConfig? = null
     private var currentCharacterImportConfig: CharacterImportConfig? = null
     private var inventoryStitchPrepared = false
     private var inventoryStitchArchiveId = MyStoneStore.DEFAULT_ARCHIVE_ID
@@ -228,7 +219,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         inventoryStitchPrepared = false
         currentTaskPlan = plan
@@ -270,7 +260,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         inventoryStitchPrepared = false
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         currentBirdFoodConfig = config
         currentMode = DailyMode.BIRD_FOOD
@@ -288,7 +277,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         inventoryStitchPrepared = false
         currentBirdFoodConfig = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         currentMainline624Config = config
         currentMode = DailyMode.MAINLINE_624
@@ -306,29 +294,10 @@ class DailyWindowManager(private val service: AccessibilityService) {
         inventoryStitchPrepared = false
         currentBirdFoodConfig = null
         currentMainline624Config = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         currentStargazingConfig = config
         currentMode = DailyMode.STARGAZING
         stargazingRuntimeManager.prepare(config)
-        showWindow()
-        refreshActionButton()
-    }
-
-    fun submitPiJingZhanJiConfig(config: PiJingZhanJiConfig) {
-        ailaoStatusBarManager.hide()
-        scriptRecorderManager.stop()
-        currentTaskPlan = null
-        currentScriptName = null
-        currentTemplateDir = null
-        inventoryStitchPrepared = false
-        currentBirdFoodConfig = null
-        currentMainline624Config = null
-        currentStargazingConfig = null
-        currentCharacterImportConfig = null
-        currentPiJingZhanJiConfig = config
-        currentMode = DailyMode.PI_JING_ZHAN_JI
-        piJingZhanJiRuntimeManager.prepare(config)
         showWindow()
         refreshActionButton()
     }
@@ -343,7 +312,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = config
         currentMode = DailyMode.CHARACTER_IMPORT
         characterImportEngine.prepare(config)
@@ -352,7 +320,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun startBoxOcrMode() {
-        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || piJingZhanJiRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning || isBoxOcrProcessing) {
+        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning || isBoxOcrProcessing) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
             return
         }
@@ -366,7 +334,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         inventoryStitchPrepared = false
         currentMode = DailyMode.BOX_OCR
@@ -383,7 +350,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         inventoryStitchPrepared = false
         currentMode = null
@@ -392,7 +358,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun startScriptRecorderMode() {
-        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || piJingZhanJiRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
+        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
             return
         }
@@ -405,7 +371,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         inventoryStitchPrepared = false
         currentMode = null
@@ -418,7 +383,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         showWindow()
-        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || piJingZhanJiRuntimeManager.isRunning) {
+        if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
             return
         }
@@ -428,7 +393,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
-        currentPiJingZhanJiConfig = null
         currentCharacterImportConfig = null
         inventoryStitchType = MyStoneStore.normalizeType(stoneType)
         inventoryStitchArchiveId = MyStoneStore.resolveArchiveId(service, archiveId)
@@ -486,12 +450,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
             return
         }
 
-        if (piJingZhanJiRuntimeManager.isRunning) {
-            piJingZhanJiRuntimeManager.stop(showToast = true)
-            refreshActionButton()
-            return
-        }
-
         if (engine.isRunning) {
             engine.stop()
             refreshActionButton()
@@ -522,16 +480,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentStargazingConfig?.let {
             if (!stargazingRuntimeManager.start()) {
                 Toast.makeText(service, "请先确认观星配置", Toast.LENGTH_SHORT).show()
-                openDailyPage()
-                return
-            }
-            refreshActionButton()
-            return
-        }
-
-        currentPiJingZhanJiConfig?.let {
-            if (!piJingZhanJiRuntimeManager.start()) {
-                Toast.makeText(service, "请先确认披荆斩棘配置", Toast.LENGTH_SHORT).show()
                 openDailyPage()
                 return
             }
@@ -639,7 +587,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         birdFoodRuntimeManager.stop()
         mainline624RuntimeManager.stop()
         stargazingRuntimeManager.stop()
-        piJingZhanJiRuntimeManager.stop()
         characterImportEngine.stop(showLog = false)
         engine.stop()
         if (stitchEngine.isRunning) stitchEngine.stop()
@@ -653,7 +600,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private fun refreshActionButton() {
         handler.post {
             val button = floatView?.findViewById<ImageButton>(R.id.btn_daily_action) ?: return@post
-            if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || piJingZhanJiRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
+            if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
                 button.setImageResource(R.drawable.ic_action_pause)
                 button.contentDescription = "暂停"
             } else {

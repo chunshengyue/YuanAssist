@@ -11,6 +11,7 @@
 - 主界面是 Compose 壳，包含 Home、Job、Debug、Mine 四个 Tab；其中 Debug 是调试工作台入口。
 
 ## 先看哪里
+- 想找测试工具当前能力、技术栈和计划：`docs/test_tool_context.md`；其中 App 冒烟体检实现位于 `tools/yuanassist_test_tool/app_smoke.py`
 - 想找主界面入口与功能跳转：`app/src/main/java/com/example/yuanassist/ui/MainActivity.kt`
 - 想找首页按钮怎么进入各功能：`app/src/main/java/com/example/yuanassist/ui/main/HomeActionHandler.kt`
 - 想找无障碍服务、悬浮窗、服务 action 分发：`app/src/main/java/com/example/yuanassist/core/YuanAssistService.kt`
@@ -38,8 +39,6 @@
   - 与日常脚本配套的模板图片。
 - `app/src/main/assets/ocr`
   - OCR 模型与标签。
-- `app/src/main/assets/pi_jing_zhan_ji`
-  - 披荆斩棘题库等专用资源。
 
 ## 功能结构
 - 主壳页面
@@ -81,15 +80,12 @@
 - 角色导入
   - `CharacterImportEngine` 负责截图、OCR、命盘/练度/名称推断。
 - 特定业务运行时
-  - `BirdFoodRuntimeManager`、`Mainline624RuntimeManager`、`PiJingZhanJiRuntimeManager`、`StargazingRuntimeManager` 等是按具体功能封装的运行时管理器。
+  - `BirdFoodRuntimeManager`、`Mainline624RuntimeManager`、`StargazingRuntimeManager` 等是按具体功能封装的运行时管理器。
   - `BirdFoodRuntimeManager` 现在是薄调度层：鸟食流程主体由 `assets/daily_scripts/bird_food_controller.json` 串联 `bird_food_ensure_yuan_bao.json` 和具体鸟食子脚本，manager 只负责配置变量、停止条件、启停和最终提示。
-  - 刷鸟食的小道消息子脚本使用 `bird_food_xiao_dao_xiao_xi.json`；原 `xiao_dao_xiao_xi.json` 保留给披荆斩棘鸢报流程使用，二者不要混用。
+  - 刷鸟食的小道消息子脚本使用 `bird_food_xiao_dao_xiao_xi.json`；原 `xiao_dao_xiao_xi.json` 作为共享历史脚本保留，二者不要混用。
   - `Mainline624RuntimeManager` 已收敛为薄调度层：主体仍执行 `zhu_xian_6_24.json`，manager 只负责次数停止、`game_variant` 变量和开始战斗延时覆盖；首次入口和后续循环都从脚本头部定位组开始，不再维护单独循环入口。
   - `zhu_xian_6_24.json` 开头用 `SCREENSHOT_GROUP` 判断当前界面：可直接识别 6-24 战斗页、6-24 入口、第六章入口、首页故事入口；多次未命中会先返回重试，再调用 `home_page_one_recover.json` 回到首页后从故事入口流程继续。
-  - `PiJingZhanJiRuntimeManager` 的第一模块任务除了 624、赠礼、行囊、家具、材料、观星外，还支持通过总控 JSON 串联鸢报子流程的“鸢报26次”。
-  - `PiJingZhanJiRuntimeManager` 的第一模块前置任务链现在对单项脚本失败更宽容：
-    - 单个前置任务返回失败时会记录失败项并继续执行后续已勾选任务
-    - 第一模块全部结束后，若存在未完成任务，会先弹出 5 秒提示，再进入活动模块或结束
+  - 披荆斩棘功能已从主项目移除并备份到公开仓库：`https://github.com/chunshengyue/yuanassist-pi-jing-zhan-ji`。主项目保留部分共享脚本及其依赖素材，避免影响鸟食、首页恢复、观星等现有链路。
 
 ## Supabase 维护指南
 - 当前 Supabase 项目：
@@ -172,7 +168,6 @@
   - 启动/停止鸟食相关运行时
   - 启动/停止主线 6-24 运行时
   - 启动/停止观星运行时
-  - 启动/停止披荆斩棘运行时
   - 启动/停止角色导入
   - 启动星石拼图
   - 启动框选OCR模式

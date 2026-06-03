@@ -1,0 +1,101 @@
+{
+  "objectId": "4d3f4c6fdc",
+  "title": "刘繇洞窟自用版",
+  "scriptContent": "1回合\t1A\t2A\t5A6A\t3↑\t4↓\n2回合\t1A\t2A\t5A\t4A\t3↓\n3回合\t3↓\t1↑\t2↑\t4↓\t5A\n4回合\t3↓\t4↓\t5A\t2A\t1A\n5回合\t2↓\t4A\t5A\t3↓\t1A\n6回合\t6↑\t5A\t3A4A\t1↑\t2↓\n7回合\t4↓\t1↑\t3↑\t5↓\t2↑\n8回合\t2↓\t4A\t5A\t3↓\t1A\n9回合\t3↓\t1↑\t5A\t4↓\t2A",
+  "instructions": [
+    {
+      "step": 0,
+      "turn": 1,
+      "type": "STAGE_AUTO_NAV",
+      "value": 1003
+    },
+    {
+      "step": 2,
+      "turn": 1,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 3,
+      "turn": 1,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    },
+    {
+      "step": 4,
+      "turn": 1,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 2
+    },
+    {
+      "step": 5,
+      "turn": 1,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 0,
+      "turn": 2,
+      "type": "PURPLE_STAR_CHECK",
+      "value": 0
+    },
+    {
+      "step": 0,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 3,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 4,
+      "turn": 2,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    },
+    {
+      "step": 4,
+      "turn": 3,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 2
+    },
+    {
+      "step": 0,
+      "turn": 4,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 4,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 2
+    },
+    {
+      "step": 2,
+      "turn": 4,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    },
+    {
+      "step": 0,
+      "turn": 5,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 5,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    }
+  ],
+  "visible": 1,
+  "createdAt": "2026-05-30 17:28:10.558+00",
+  "updatedAt": "2026-05-30 17:28:10.558+00",
+  "source": "supabase.strategy_detail"
+}

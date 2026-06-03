@@ -1,0 +1,10 @@
+{
+  "objectId": "085a1dcfcb",
+  "title": "如鸢伍丹洞窟",
+  "scriptContent": "1回合\t4↑\t5↑\t1A\t2↑\t3A\n2回合\t5↓\t4A\t1A\t2A\t3↓\n3回合\t5↓\t2A\t4↓\t1↓\t3A\n4回合\t6↓\t5A\t1A2A\t3A\t4A\n5回合\t5↓\t4↑\t1A\t2↑\t3↓\n6回合\t5↑\t4↑\t1A\t2A\t3A\n7回合\t5↓\t4↓\t1A\t2A\t3A\n8回合\t5A\t4A\t1A\t2A\t3A\n9回合\t4↑9↓\t3A7↑\t1↓10↑\t2↑6A\t5↑8↑",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-29 13:28:05.226+00",
+  "updatedAt": "2026-05-29 13:47:17.823+00",
+  "source": "supabase.strategy_detail"
+}

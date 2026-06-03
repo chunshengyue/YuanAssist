@@ -64,10 +64,6 @@ class HomeActionHandler(
         openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_AILAO_15_MIN)
     }
 
-    fun openPiJingZhanJi() {
-        openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_PI_JING_ZHAN_JI)
-    }
-
     fun openInventoryStitch() {
         openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_INVENTORY_STITCH)
     }

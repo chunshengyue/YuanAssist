@@ -20,7 +20,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 2
+      "on_fail": 2,
+      "name": "名册"
     },
     {
       "id": 2,
@@ -40,7 +41,8 @@
         }
       },
       "on_success": 3,
-      "on_fail": 4
+      "on_fail": 4,
+      "name": "yuanbao"
     },
     {
       "id": 3,

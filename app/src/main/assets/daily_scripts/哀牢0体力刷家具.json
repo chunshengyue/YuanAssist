@@ -22,7 +22,8 @@
             },
             "template_name": "哀牢.png",
             "threshold": 0.77,
-            "type": "template"
+            "type": "template",
+            "name": "哀牢"
           },
           {
             "click": 0,
@@ -36,7 +37,8 @@
             },
             "template_name": "进入哀牢.png",
             "threshold": 0.77,
-            "type": "template"
+            "type": "template",
+            "name": "进入哀牢"
           },
           {
             "click": 0,
@@ -50,7 +52,8 @@
             },
             "template_name": "4家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "4家具"
           },
           {
             "click": 0,
@@ -64,7 +67,8 @@
             },
             "template_name": "8家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "8家具"
           },
           {
             "click": 0,
@@ -78,7 +82,8 @@
             },
             "template_name": "13家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "13家具"
           },
           {
             "click": 0,
@@ -92,7 +97,8 @@
             },
             "template_name": "19家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "19家具"
           },
           {
             "click": 0,
@@ -106,7 +112,8 @@
             },
             "template_name": "23家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "23家具"
           },
           {
             "click": 0,
@@ -120,7 +127,8 @@
             },
             "template_name": "28家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "28家具"
           }
         ]
       },
@@ -158,7 +166,8 @@
         "template_name": "哀牢.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "name": "哀牢"
     },
     {
       "action": "MATCH_TEMPLATE",
@@ -179,7 +188,8 @@
         "template_name": "进入哀牢.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "name": "进入哀牢"
     },
     {
       "action": "SCREENSHOT_GROUP",
@@ -202,7 +212,8 @@
             },
             "template_name": "4家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "4家具"
           },
           {
             "click": 1,
@@ -216,7 +227,8 @@
             },
             "template_name": "8家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "8家具"
           },
           {
             "click": 1,
@@ -230,7 +242,8 @@
             },
             "template_name": "13家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "13家具"
           },
           {
             "click": 1,
@@ -244,7 +257,8 @@
             },
             "template_name": "19家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "19家具"
           },
           {
             "click": 1,
@@ -258,7 +272,8 @@
             },
             "template_name": "23家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "23家具"
           },
           {
             "click": 1,
@@ -272,7 +287,8 @@
             },
             "template_name": "28家具.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "28家具"
           }
         ]
       },
@@ -297,7 +313,8 @@
         "template_name": "哀牢进入战斗.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "name": "哀牢进入战斗"
     },
     {
       "action": "OCR",

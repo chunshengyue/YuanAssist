@@ -1,0 +1,10 @@
+{
+  "objectId": "0933dad2c3",
+  "title": "地宫60孙辅",
+  "scriptContent": "1回合\t1↑\t2A\t3↑\t4↓\t5A\n2回合\t1A8↓9↓\t2A\t3A4A5A\t6↓\t7↓\n3回合\t2↓3↓4↓\t5A\t6A7A8A\t9↓\t1↓\n4回合\t2A\t3A\t4A\t5↓\t1↓\n5回合\t3↓\t4A\t1↑\t5↓\t2↓\n6回合\t2↑3A4A\t1A\t6↓7↓8↓\t9↓\t5A\n7回合\t2A6圈8A9↑\t1A\t3↓4↓5↓\t\t7↑",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-30 06:56:32.436+00",
+  "updatedAt": "2026-05-30 06:56:32.436+00",
+  "source": "supabase.strategy_detail"
+}

@@ -1,0 +1,10 @@
+{
+  "objectId": "5ff7cec934",
+  "title": "伍丹洞窟",
+  "scriptContent": "1回合\t1↓\t2A\t3A\t4A\t5A\n2回合\t2A\t1A\t3A\t4A\t5A\n3回合\t2A\t3A\t1↓\t4A\t5A\n4回合\t2A\t3A\t4A\t1↑\t5A\n5回合\t3A\t4A\t2↓\t5A\t1↑\n6回合\t1A\t2A\t3A\t4A\t5A\n7回合\t2A\t1↑\t3A\t4A\t5A\n8回合\t2A\t3A\t1A\t4A\t5A\n9回合\t3↑6A\t2↑8↑\t5↑9↑\t4↓10↓\t1A7A",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-29 18:54:50+00",
+  "updatedAt": "2026-05-29 18:54:50+00",
+  "source": "supabase.strategy_detail"
+}

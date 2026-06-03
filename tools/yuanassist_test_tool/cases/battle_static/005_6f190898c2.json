@@ -1,0 +1,10 @@
+{
+  "objectId": "6f190898c2",
+  "title": "如鸢6月洞窟徐曼15-30",
+  "scriptContent": "1回合\t3↑\t2↑\t5↑\t4↓\t1A\n2回合\t1↓\t5A\t4A\t3A\t2↓\n3回合\t4↓\t3A\t2A\t5A\t1A\n4回合\t2↓\t1A\t3A\t\t\n5回合\t4↑\t5A\t3↑\t1A\t2A\n6回合\t4A10A\t3A7A\t2A8↑\t1↑6A\t5↑9↑\n7回合\t\t2A\t1A\t\t3↓\n8回合\t5↓\t1↑\t2A\t3A\t4A\n9回合\t5A\t1A\t2A\t3A\t4A\n10回合\t\t\t2A\t1A\t3A\n11回合\t5A\t1A\t2A\t3A\t4A",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-06-01 08:34:43.37+00",
+  "updatedAt": "2026-06-01 08:34:43.37+00",
+  "source": "supabase.strategy_detail"
+}

@@ -1,0 +1,10 @@
+{
+  "objectId": "9cf8ef590d",
+  "title": "六月许攸洞窟",
+  "scriptContent": "1回合\t1↑\t5↑\t2A\t4↓\t3A\n2回合\t3↓\t4↓\t5↓\t2↑\t1A\n3回合\t5↑\t4A\t3A\t2A\t1A\n4回合\t5↓\t3A\t4A\t2↓\t1↑\n5回合\t5A\t4↑\t3↓\t2A\t1A\n6回合\t4↑9↓\t3A7↑\t5↑8↑\t2↑6A\t1A10↓",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-06-01 08:52:44.412+00",
+  "updatedAt": "2026-06-01 08:52:44.412+00",
+  "source": "supabase.strategy_detail"
+}

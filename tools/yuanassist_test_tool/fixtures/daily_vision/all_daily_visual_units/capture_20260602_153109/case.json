@@ -1,0 +1,359 @@
+{
+  "id": "capture_20260602_153109",
+  "title": "capture_20260602_153109",
+  "script": "__all_daily_visual_units__",
+  "screenshot": "screenshot.png",
+  "warn_unexpected_hits": true,
+  "expectations": [
+    {
+      "type": "miss",
+      "node": "bird_food_ensure_yuan_bao.json:task:1:step:0",
+      "template_name": "tfqk.png"
+    },
+    {
+      "type": "hit",
+      "node": "bird_food_ensure_yuan_bao.json:task:1:step:1",
+      "template_name": "yuanbao.png"
+    },
+    {
+      "type": "miss",
+      "node": "bird_food_ensure_yuan_bao.json:task:1:step:2",
+      "template_name": "daily_script_templates/pi_jing_zhan_ji_mi_tan_song_li_30/名册.png"
+    },
+    {
+      "type": "miss",
+      "node": "bird_food_xiao_dao_xiao_xi.json:task:10",
+      "template_name": "shouji.png"
+    },
+    {
+      "type": "miss",
+      "node": "bird_food_xiao_dao_xiao_xi.json:task:2",
+      "template_name": "shouqu.png"
+    },
+    {
+      "type": "miss",
+      "node": "bird_food_xiao_dao_xiao_xi.json:task:4",
+      "template_name": "yezi.png"
+    },
+    {
+      "type": "miss",
+      "node": "bird_food_xiao_dao_xiao_xi.json:task:6",
+      "template_name": "mazi.png"
+    },
+    {
+      "type": "miss",
+      "node": "bird_food_xiao_dao_xiao_xi.json:task:62",
+      "template_name": "queren.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:2",
+      "template_name": "gongwu.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:31",
+      "template_name": "qianwang.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:32",
+      "template_name": "qianwang.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:33",
+      "template_name": "qianwang.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:34",
+      "template_name": "qianwang.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:40",
+      "template_name": "jizhi.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:4",
+      "template_name": "queren.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:6:step:1",
+      "template_name": "xuanze.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:6:step:2",
+      "template_name": "tijiao.png"
+    },
+    {
+      "type": "miss",
+      "node": "dai_ban_gong_wu.json:task:103",
+      "template_name": "jiangli.png"
+    },
+    {
+      "type": "hit",
+      "node": "home_page_one_recover.json:task:1",
+      "template_name": "yuanbao.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:2",
+      "template_name": "large_diaocha.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:3",
+      "template_name": "zhuyu.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:6",
+      "template_name": "chuanwen.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:11",
+      "template_name": "tiaoguo.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:14",
+      "template_name": "chukou.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:15",
+      "template_name": "no_tiaoguo.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:32",
+      "template_name": "queren.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:37",
+      "template_name": "tiyan.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:1201",
+      "template_name": "xuanxiang2.png"
+    },
+    {
+      "type": "miss",
+      "node": "ta_de_chuan_wen.json:task:1202",
+      "template_name": "xuanxiang.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:2",
+      "template_name": "diaocha.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:3",
+      "template_name": "diaocha.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:202",
+      "template_name": "kuaisudiaocha.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:4",
+      "template_name": "sherou.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:402",
+      "template_name": "queren.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:7:step:0",
+      "template_name": "jiedao1.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:7:step:1",
+      "template_name": "cunzi4.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:7:step:2",
+      "template_name": "shulin.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:7:step:3",
+      "template_name": "jiedao2.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:7:step:4",
+      "template_name": "taohua.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:10",
+      "template_name": "huise_queding.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:1600",
+      "template_name": "biaoxian.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:1601",
+      "template_name": "tiaoguo1.png"
+    },
+    {
+      "type": "miss",
+      "node": "tu_fa_qing_kuang.json:task:27",
+      "template_name": "queding.png"
+    },
+    {
+      "type": "miss",
+      "node": "you_yue_ka_guan_xing_batch.json:task:1",
+      "template_name": "daily_script_templates/wu_yue_ka_guan_xing/观星入口.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:1:step:0",
+      "template_name": "624.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:1:step:1",
+      "template_name": "6-24(1).png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:1:step:2",
+      "template_name": "6-24.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:1:step:3",
+      "template_name": "chapter6.png"
+    },
+    {
+      "type": "hit",
+      "node": "zhu_xian_6_24.json:task:1:step:4",
+      "template_name": "gushi.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:1:step:5",
+      "template_name": "代号鸢故事.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:16",
+      "template_name": "queren.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:22",
+      "template_name": "queding.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:45",
+      "template_name": "chenggong.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:99",
+      "template_name": "youzhou.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:100",
+      "template_name": "jinru.png"
+    },
+    {
+      "type": "miss",
+      "node": "zhu_xian_6_24.json:task:151",
+      "template_name": "jinruguanqia.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:0",
+      "template_name": "哀牢.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:1",
+      "template_name": "进入哀牢.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:2",
+      "template_name": "4家具.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:3",
+      "template_name": "8家具.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:4",
+      "template_name": "13家具.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:5",
+      "template_name": "19家具.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:6",
+      "template_name": "23家具.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:0:step:7",
+      "template_name": "28家具.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢0体力刷家具.json:task:4",
+      "template_name": "哀牢进入战斗.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢15min.json:task:0:step:0",
+      "template_name": "哀牢.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢15min.json:task:0:step:1",
+      "template_name": "进入哀牢.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢15min.json:task:0:step:2",
+      "template_name": "关卡.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢15min.json:task:0:step:3",
+      "template_name": "哀牢关卡20.png"
+    },
+    {
+      "type": "miss",
+      "node": "哀牢15min.json:task:4",
+      "template_name": "哀牢进入战斗.png"
+    }
+  ]
+}

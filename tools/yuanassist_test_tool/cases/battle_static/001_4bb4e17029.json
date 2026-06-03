@@ -1,0 +1,10 @@
+{
+  "objectId": "4bb4e17029",
+  "title": "六月白鹄",
+  "scriptContent": "1回合\t4↑\t3↑\t2↓\t1A\t5A\n2回合\t2A\t4A\t3A\t1A\t5A\n3回合\t4A\t3A\t2A\t1A\t5A\n4回合\t4A\t3A\t2↑\t1↑\t5A\n5回合\t4A\t3A\t2A\t1A\t5A\n6回合\t4A\t3A\t2A\t1A\t5A\n7回合\t4A\t3A\t2A\t1A\t5A\n8回合\t4A\t3A\t2↑\t1A\t5A\n9回合\t4↓\t3A\t2A\t1A\t5A\n10回合\t2↑\t4A\t3A\t1A\t5A\n11回合\t4A\t3A\t2A\t1↑\t5A\n12回合\t2↑\t4A\t3↑\t1A\t5A\n13回合\t4↓7A\t3A6A\t2A5↑\t1A\t8A\n14回合\t4A\t3A\t2A\t1A\t5A\n15回合\t4A\t3A\t2A\t1↑\t5A\n16回合\t\t3A\t2A\t1A\t",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-06-01 11:06:09.305+00",
+  "updatedAt": "2026-06-01 11:06:09.305+00",
+  "source": "supabase.strategy_detail"
+}

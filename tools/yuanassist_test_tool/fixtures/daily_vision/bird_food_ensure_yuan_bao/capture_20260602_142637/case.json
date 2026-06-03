@@ -1,0 +1,8 @@
+{
+  "id": "capture_20260602_142637",
+  "title": "capture_20260602_142637",
+  "script": "bird_food_ensure_yuan_bao.json",
+  "screenshot": "screenshot.png",
+  "warn_unexpected_hits": true,
+  "expectations": []
+}

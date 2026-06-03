@@ -234,7 +234,6 @@ class RunLogActivity : AppCompatActivity() {
                 message.contains("突发情况") || message.contains("小道消息") ||
                 message.contains("他的传闻") || message.contains("待办公务") -> "刷鸟食"
             message.contains("6-24") || message.contains("624") -> "刷6-24"
-            message.contains("披荆") || message.contains("前置任务") -> "披荆斩棘"
             message.contains("无月卡观星") -> "无月卡观星"
             message.contains("作业站") || message.contains("MaaYuan") ||
                 message.contains("攻略详情") || message.contains("神秘代码") -> "作业站"
@@ -259,13 +258,6 @@ class RunLogActivity : AppCompatActivity() {
             "刷6-24" -> when {
                 message.contains("进图") -> "进图流程"
                 message.contains("第") && message.contains("轮") -> "战斗轮次"
-                else -> "总流程"
-            }
-            "披荆斩棘" -> when {
-                message.contains("答题") -> "答题"
-                message.contains("神秘") -> "神秘事件"
-                message.contains("第二模块") || message.contains("活动页") || message.contains("任务页") -> "活动页"
-                message.contains("前置") || message.contains("第一模块") -> "前置任务"
                 else -> "总流程"
             }
             "无月卡观星" -> if (message.contains("批")) "批次" else "总流程"
@@ -522,10 +514,7 @@ private fun colorForRunLogLine(line: String): Color {
     val message = RUN_LOG_LINE_REGEX.matchEntire(line)?.groupValues?.getOrNull(2) ?: line
     return when {
         line.contains("[E]") -> Color(0xFFB84D4D)
-        message.startsWith("[披荆斩棘 / 神秘事件]") || message.startsWith("[披荆神秘]") -> Color(0xFFC57A2D)
-        message.startsWith("[披荆斩棘 / 答题]") || message.startsWith("[披荆答题]") -> Color(0xFF3F6EA8)
         message.contains("OCR") -> Color(0xFF2D8C88)
-        message.startsWith("[披荆斩棘") || message.startsWith("[披荆流程]") -> Color(0xFF8A5A3C)
         message.startsWith("[调试诊断]") -> Color(0xFF7D7D7D)
         line.startsWith("【") -> Color(0xFF9A6435)
         else -> Color(0xFF8A6B5E)

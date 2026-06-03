@@ -30,7 +30,8 @@
         }
       },
       "on_success": 101,
-      "on_fail": 102
+      "on_fail": 102,
+      "name": "shouji"
     },
     {
       "id": 101,
@@ -77,7 +78,8 @@
         }
       },
       "on_success": 3,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "shouqu"
     },
     {
       "id": 3,
@@ -131,7 +133,8 @@
         }
       },
       "on_success": 41,
-      "on_fail": 3
+      "on_fail": 3,
+      "name": "yezi"
     },
     {
       "id": 41,
@@ -149,7 +152,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 3
+      "on_fail": 3,
+      "name": "yezi"
     },
     {
       "id": 42,
@@ -167,7 +171,8 @@
         }
       },
       "on_success": 5,
-      "on_fail": 3
+      "on_fail": 3,
+      "name": "yezi"
     },
     {
       "id": 5,
@@ -201,7 +206,8 @@
         }
       },
       "on_success": 62,
-      "on_fail": 71
+      "on_fail": 71,
+      "name": "mazi"
     },
     {
       "id": 71,
@@ -219,7 +225,8 @@
         }
       },
       "on_success": 31,
-      "on_fail": 72
+      "on_fail": 72,
+      "name": "shouji"
     },
     {
       "id": 72,
@@ -249,7 +256,8 @@
         }
       },
       "on_success": 61,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "queren"
     },
     {
       "id": 7,

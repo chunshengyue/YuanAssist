@@ -1,0 +1,10 @@
+{
+  "objectId": "f1c67a54cc",
+  "title": "去去梦魇20一星庞羲",
+  "scriptContent": "1回合\t2A\t3A\t1↑\t4A\t5A\n2回合\t1A\t2A\t4↓\t3A\t5A\n3回合\t2A\t3A\t1↑\t4A\t5A\n4回合\t2A\t3A\t1↑\t4A\t5A\n5回合\t2A\t3A\t4↑\t1A\t5A\n6回合\t3A\t4A\t2↑\t1↓\t5A\n7回合\t1A\t2A\t5↑\t3A\t4↓\n8回合\t1A\t2A\t\t3A\t4↓\n9回合\t1A\t2A\t\t3A\t4↓\n10回合\t1↓3↓\t4A\t\t2↑\t5↓\n11回合\t1A\t2A\t\t3↓\t4↓\n12回合\t1↓3A\t2A\t\t4↓\t5↓\n13回合\t1↑\t2A\t\t3↑\t4A\n14回合\t1↓3A\t2↓\t\t4↓\t5A\n15回合\t1A\t2A\t\t3↓\t4↓\n16回合\t1↓3A\t2↑\t\t4↓\t5A\n17回合\t1↑\t2A\t\t3↓\t4A\n18回合\t1↓4A\t3A\t\t2↓\t5A\n19回合\t1A\t2A\t\t3↓\t4A\n20回合\t1↓5A\t3A\t\t4↑\t2↓\n21回合\t1↑\t2A\t\t3↓\t4↓\n22回合\t1↓3A\t2A\t\t4↓\t5↓\n23回合\t1A\t2A\t\t3↑\t4A\n24回合\t1↓3A\t2A\t\t4↓\t5↓\n25回合\t1↑\t2A\t\t3↓\t4A\n26回合\t1↓3A\t2↓\t\t4↑\t5A\n27回合\t1A\t2↑\t\t3↓\t4A\n28回合\t1↓4A\t3A\t\t2↓\t5A\n29回合\t1↑\t2A\t\t3↓\t4A\n30回合\t1↓3A\t2A\t\t4↓\t5A\n31回合\t1A\t2↑\t\t3↑\t4↓\n32回合\t1↓3A\t2A\t\t4↓\t5↓\n33回合\t1↑\t2A\t\t3↓\t4↓\n34回合\t1↓3A\t2A\t\t4↑\t5A",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-31 10:22:23.802+00",
+  "updatedAt": "2026-05-31 10:22:23.802+00",
+  "source": "supabase.strategy_detail"
+}

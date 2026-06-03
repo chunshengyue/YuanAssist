@@ -1,0 +1,482 @@
+--------- beginning of kernel
+06-02 16:58:23.259     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.284     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.294     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.301     0     0 W         : warning! writeIoPort busy! call usleep_range
+--------- beginning of system
+06-02 16:58:23.208   357  1909 D CompatibilityChangeReporter: Compat change id reported: 161252188; UID 10112; state: DISABLED
+06-02 16:58:23.214   357  1909 W ActivityTaskManager: callingPackage for (uid=2000, pid=7786) has no WPC
+06-02 16:58:23.215   357  1909 D CompatibilityChangeReporter: Compat change id reported: 244637991; UID 2000; state: ENABLED
+06-02 16:58:23.318     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 265464455; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 265452344; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 266124927; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 265451093; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 265456536; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 255940284; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 236283604; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 263959004; UID 10112; state: DISABLED
+06-02 16:58:23.231   357  1909 D CompatibilityChangeReporter: Compat change id reported: 264304459; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 264301586; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 254631730; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 273509367; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 263259275; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 174042980; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 174042936; UID 10112; state: DISABLED
+06-02 16:58:23.232   357  1909 D CompatibilityChangeReporter: Compat change id reported: 181136395; UID 10112; state: DISABLED
+06-02 16:58:23.344     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.352     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.264   357  1909 D CompatibilityChangeReporter: Compat change id reported: 194480991; UID 10112; state: ENABLED
+06-02 16:58:23.360     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.368     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.304   357  1909 D CompatibilityChangeReporter: Compat change id reported: 184838306; UID 10112; state: DISABLED
+06-02 16:58:23.304   357  1909 D CompatibilityChangeReporter: Compat change id reported: 185004937; UID 10112; state: DISABLED
+06-02 16:58:23.307   357  1909 D CompatibilityChangeReporter: Compat change id reported: 197654537; UID 10112; state: ENABLED
+06-02 16:58:23.319   357  1909 D CompatibilityChangeReporter: Compat change id reported: 205907456; UID 10112; state: ENABLED
+06-02 16:58:23.428     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.336   357  1909 I ActivityTaskManager: START u0 {flg=0x10000000 cmp=com.example.yuanassist/.ui.MainActivity} with LAUNCH_MULTIPLE from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+06-02 16:58:23.349   558   594 V WindowManagerShell: Transition requested: android.os.BinderProxy@c023826 TransitionRequestInfo { type = 1, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.example.yuanassist/.ui.MainActivity } baseActivity=ComponentInfo{com.example.yuanassist/com.example.yuanassist.ui.MainActivity} topActivity=ComponentInfo{com.example.yuanassist/com.example.yuanassist.ui.MainActivity} origActivity=null realActivity=ComponentInfo{com.example.yuanassist/com.example.yuanassist.ui.MainActivity} numActivities=1 lastActiveTime=11980478 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@d71ac67} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{a97fa14 com.example.yuanassist.ui.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 isUserFullscreenOverrideEnabled=false isTopActivityTransparent=false locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null, flags = 0 }
+--------- beginning of main
+06-02 16:58:23.336  1162  1162 I Thread-5: type=1400 audit(0.0:1664): avc:  denied  { search } for  name="/" dev="vboxsf" ino=1 scontext=u:r:mediaprovider_app:s0:c102,c256,c512,c768 tcontext=u:object_r:unlabeled:s0 tclass=dir permissive=1 app=com.android.providers.media.module
+06-02 16:58:23.364  2213  2213 D CoverageChecker: onActivityPaused delayNotify:com.ejoy.unitysdk.UnitySdkActivity
+06-02 16:58:23.370   230   261 D HostConnection: glGetError exceeded.
+06-02 16:58:23.378  2213  2213 D CoverageChecker: no requesting
+06-02 16:58:23.379  2213  2213 D CoverageChecker: onActivityPaused delayNotify:com.ejoy.unitysdk.UnitySdkActivity
+06-02 16:58:23.383   357   389 W libprocessgroup: SetCgroup::ExecuteForProcess: failed to open /dev/cpuctl/top-app/cgroup.procs: No such file or directory
+06-02 16:58:23.400  2213  2213 D CoverageChecker: no requesting
+06-02 16:58:23.379  2213  2213 I Thread-32: type=1400 audit(0.0:1665): avc:  denied  { ioctl } for  path="/dev/fastpipe" dev="tmpfs" ino=529 ioctlcmd=0x6867 scontext=u:r:untrusted_app_30:s0:c111,c256,c512,c768 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:23.529     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.445   217   328 D AudioFlinger: mixer(0x749f0ca24940) throttle end: throttle time(9)
+06-02 16:58:23.447   230   230 I BpBinder: onLastStrongRef automatically unlinking death recipients: 
+06-02 16:58:23.460  2213  2318 W SQLiteLog: (28) double-quoted string literal: "CoRiVtHO8PPeJXI+AJ2NqVgCN41jd9+4VWQgO0Ph4d1b4uctzqyownWwkWtynGNIBLZGAhx/gMN+
+06-02 16:58:23.460  2213  2318 W SQLiteLog: 0SvoFwyaLMoee8HSPvAhenld1rQ6h286JxQzQOQIRavO8DitDOo0cz6Dw9KAjo1VnIeb/jBvubmc
+06-02 16:58:23.460  2213  2318 W SQLiteLog: 3xcfrJcJlnYTjl3j/Vqaqwic
+06-02 16:58:23.460  2213  2318 W SQLiteLog: (28) double-quoted string literal: "4E955908B77E92156CB595ACD8424276"
+06-02 16:58:23.561     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:23.499   558   603 D CompatibilityChangeReporter: Compat change id reported: 289878283; UID 10088; state: ENABLED
+06-02 16:58:23.505   357   862 D CoreBackPreview: Window{16d73e6 u0 Splash Screen com.example.yuanassist}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@1d2017d, mPriority=0, mIsAnimationCallback=false}
+06-02 16:58:23.516   230   230 I surfaceflinger: type=1400 audit(0.0:1667): avc:  denied  { call } for  scontext=u:r:surfaceflinger:s0 tcontext=u:r:init:s0 tclass=binder permissive=1
+06-02 16:58:23.620     0     0 W fastpipe: fileOpOpen: pFilp=00000000a45e4c8c pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:23.624     0     0 W fastpipe: refcount bind: host-handle=135 pFilp=00000000a45e4c8c pSession=000000007d1b9f56 pid=880 HwBinder:196_3
+06-02 16:58:23.516   196   196 I HwBinder:196_3: type=1400 audit(0.0:1666): avc:  denied  { ioctl } for  path="/dev/fastpipe" dev="tmpfs" ino=529 ioctlcmd=0x6867 scontext=u:r:hal_graphics_allocator_default:s0 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:23.519   196   196 I HwBinder:196_3: type=1400 audit(0.0:1668): avc:  denied  { read write } for  name="fastpipe" dev="tmpfs" ino=529 scontext=u:r:hal_graphics_allocator_default:s0 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:23.519   196   196 I HwBinder:196_3: type=1400 audit(0.0:1669): avc:  denied  { open } for  path="/dev/fastpipe" dev="tmpfs" ino=529 scontext=u:r:hal_graphics_allocator_default:s0 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:23.639     0     0 W audit   : audit_lost=783 audit_rate_limit=5 audit_backlog_limit=64
+06-02 16:58:23.641     0     0 E audit   : rate limit exceeded
+06-02 16:58:23.560   558   616 E EGL_emulation: tid 616: eglSurfaceAttrib(1504): error 0x3009 (EGL_BAD_MATCH)
+06-02 16:58:23.560   558   616 W OpenGLRenderer: Failed to set EGL_SWAP_BEHAVIOR on surface 0x7eee05696f50, error=EGL_BAD_MATCH
+06-02 16:58:23.560   558   616 E OpenGLRenderer: Unable to match the desired swap behavior.
+06-02 16:58:23.659     0     0 W fastpipe: fileOpOpen: pFilp=0000000063736845 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:23.663     0     0 W fastpipe: refcount bind: host-handle=137 pFilp=0000000063736845 pSession=0000000032c282ec pid=880 HwBinder:196_3
+06-02 16:58:23.669     0     0 W fastpipe: fileOpOpen: pFilp=00000000f1e5c7b0 pSession=00000000e83d1a6f pid=7789 RenderThread
+06-02 16:58:23.578   558  7789 I ndroid.systemui: fastpipe: Connect success
+06-02 16:58:23.672     0     0 W fastpipe: ioCtlConnect: pFilp=00000000f1e5c7b0 pSession=0000000000000000 pid=7789 RenderThread
+06-02 16:58:23.579   558  7789 D HostConnection: HostRPC::connect sucess: app=com.android.systemui, pid=558, tid=7789, this=0x7eeed5690580
+06-02 16:58:23.580   558  7789 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.systemui
+06-02 16:58:23.680     0     0 W fastpipe: fileOpOpen: pFilp=0000000072751a42 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:23.682     0     0 W fastpipe: refcount bind: host-handle=138 pFilp=0000000072751a42 pSession=0000000055f736f4 pid=880 HwBinder:196_3
+06-02 16:58:23.593  2213  2252 W Tuanjie : WwiseUnity: No platform specific settings were created. Default initialization settings will be used.
+06-02 16:58:23.593  2213  2252 W Tuanjie : AkWwiseInitializationSettings:get_Instance()
+06-02 16:58:23.593  2213  2252 W Tuanjie : AkSoundEngineController:ActivateAudio(Boolean, Boolean)
+06-02 16:58:23.593  2213  2252 W Tuanjie : 
+06-02 16:58:23.686     0     0 W fastpipe: fileOpOpen: pFilp=00000000f0928aeb pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:23.689     0     0 W fastpipe: refcount bind: host-handle=139 pFilp=00000000f0928aeb pSession=000000007117f3cf pid=880 HwBinder:196_3
+06-02 16:58:23.598   558  7789 I ndroid.systemui: fastpipe: close connect
+06-02 16:58:23.691     0     0 W fastpipe: fileOpRelease: pFilp=00000000f1e5c7b0 pSession=00000000df2f9df9 pid=7789 RenderThread
+06-02 16:58:23.632   204   204 D sensor_hal: cb_setDelay handle=0 delay-ns=50000000
+06-02 16:58:23.654   230   262 D PermissionCache: checking android.permission.READ_FRAME_BUFFER for uid=1000 => granted (377 us)
+06-02 16:58:23.752     0     0 W fastpipe: fileOpOpen: pFilp=00000000b263b197 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:23.754     0     0 W fastpipe: refcount bind: host-handle=140 pFilp=00000000b263b197 pSession=0000000014926ccf pid=880 HwBinder:196_3
+06-02 16:58:23.664   357   862 I system_server: fastpipe: Connect success
+06-02 16:58:23.665   357   862 D HostConnection: HostRPC::connect sucess: app=system_server, pid=357, tid=862, this=0x7eeed56b44d0
+06-02 16:58:23.758     0     0 W fastpipe: fileOpOpen: pFilp=00000000ccc67640 pSession=00000000e83d1a6f pid=862 binder:357_A
+06-02 16:58:23.760     0     0 W fastpipe: ioCtlConnect: pFilp=00000000ccc67640 pSession=0000000000000000 pid=862 binder:357_A
+06-02 16:58:23.666   357   862 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:system_server
+06-02 16:58:23.669   558   594 V WindowManagerShell: onTransitionReady android.os.BinderProxy@c023826: {id=6 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@1e0aae} m=OPEN f=NONE leash=Surface(name=Task=8)/@0x14d97f3 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@49fc04f} m=TO_BACK f=NONE leash=Surface(name=Task=7)/@0xb47ecb0 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0}]}
+06-02 16:58:23.671   357   373 V WindowManager: Sent Transition #6 createdAt=06-02 16:58:23.271 via request=TransitionRequestInfo { type = 1, triggerTask = TaskInfo{userId=0 taskId=8 displayId=0 isRunning=true baseIntent=Intent { flg=0x10000000 cmp=com.example.yuanassist/.ui.MainActivity } baseActivity=ComponentInfo{com.example.yuanassist/com.example.yuanassist.ui.MainActivity} topActivity=ComponentInfo{com.example.yuanassist/com.example.yuanassist.ui.MainActivity} origActivity=null realActivity=ComponentInfo{com.example.yuanassist/com.example.yuanassist.ui.MainActivity} numActivities=1 lastActiveTime=11980478 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{3a00140 Task{8bdbec5 #8 type=standard A=10112:com.example.yuanassist}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=null topActivityInfo=ActivityInfo{3023879 com.example.yuanassist.ui.MainActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isSleeping=false topActivityInSizeCompat=false topActivityEligibleForLetterboxEducation= false isLetterboxDoubleTapEnabled= false topActivityEligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 isUserFullscreenOverrideEnabled=false isTopActivityTransparent=false locusId=null displayAreaFeatureId=1 cameraCompatControlState=hidden}, remoteTransition = null, displayChange = null, flags = 0 }
+06-02 16:58:23.671   357   373 V WindowManager:     startWCT=WindowContainerTransaction { changes = {} hops = [] errorCallbackToken=null taskFragmentOrganizer=null }
+06-02 16:58:23.671   357   373 V WindowManager:     info={id=6 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{RemoteToken{3a00140 Task{8bdbec5 #8 type=standard A=10112:com.example.yuanassist}}} m=OPEN f=NONE leash=Surface(name=Task=8)/@0x68ce872 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0},{WCT{RemoteToken{9f48a94 Task{65546a3 #7 type=standard A=10111:com.lingxigames.yuan.cn}}} m=TO_BACK f=NONE leash=Surface(name=Task=7)/@0x3a5d7e8 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0}]}
+06-02 16:58:23.671   357   389 W libprocessgroup: SetCgroup::ExecuteForProcess: failed to open /dev/cpuctl/top-app/cgroup.procs: No such file or directory
+06-02 16:58:23.672   558   594 V WindowManagerShell: Playing animation for (#6)android.os.BinderProxy@c023826@0
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultMixedHandler@4709dc
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.keyguard.KeyguardTransitionHandler@f686ae5
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.pip.PipTransition@22579ba
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.activityembedding.ActivityEmbeddingController@4e7b06b
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.recents.RecentsTransitionHandler@c28e7c8
+06-02 16:58:23.672   558   594 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.splitscreen.StageCoordinator@b9d061
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.transition.RemoteTransitionHandler@8a17786
+06-02 16:58:23.672   558   594 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=6 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@1e0aae} m=OPEN f=NONE leash=Surface(name=Task=8)/@0x14d97f3 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@49fc04f} m=TO_BACK f=NONE leash=Surface(name=Task=7)/@0xb47ecb0 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0}]}
+06-02 16:58:23.672   558   594 V WindowManagerShell:  Delegate animation for #6 to null
+06-02 16:58:23.672   558   594 V WindowManagerShell:  try handler com.android.wm.shell.transition.DefaultTransitionHandler@6cee847
+06-02 16:58:23.672   558   594 V WindowManagerShell: start default transition animation, info = {id=6 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{WCT{android.window.IWindowContainerToken$Stub$Proxy@1e0aae} m=OPEN f=NONE leash=Surface(name=Task=8)/@0x14d97f3 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0},{WCT{android.window.IWindowContainerToken$Stub$Proxy@49fc04f} m=TO_BACK f=NONE leash=Surface(name=Task=7)/@0xb47ecb0 sb=Rect(0, 0 - 1080, 1920) eb=Rect(0, 0 - 1080, 1920) d=0}]}
+06-02 16:58:23.674   357   376 W ProcessStats: Tracking association SourceState{18fc97d com.android.flysilkworm/10059 BFgs #632} whose proc state 4 is better than process ProcessState{d4b1072 com.android.flysilkworm:filedownloader/10059 pkg=com.android.flysilkworm (sub)} proc state 8 (1 skipped)
+06-02 16:58:23.771     0     0 W fastpipe: fileOpOpen: pFilp=00000000e2424d37 pSession=00000000e83d1a6f pid=2017 binder:558_9
+06-02 16:58:23.775     0     0 W fastpipe: ioCtlConnect: pFilp=00000000e2424d37 pSession=0000000000000000 pid=2017 binder:558_9
+06-02 16:58:23.775     0     0 W fastpipe: fileOpOpen: pFilp=0000000035309c1b pSession=00000000e83d1a6f pid=763 binder:558_5
+06-02 16:58:23.688   558  2017 I ndroid.systemui: fastpipe: Connect success
+06-02 16:58:23.784     0     0 W fastpipe: fileOpOpen: pFilp=00000000a5f7dce0 pSession=00000000e83d1a6f pid=572 binder:558_1
+06-02 16:58:23.784     0     0 W fastpipe: ioCtlConnect: pFilp=0000000035309c1b pSession=0000000000000000 pid=763 binder:558_5
+06-02 16:58:23.786     0     0 W fastpipe: ioCtlConnect: pFilp=00000000a5f7dce0 pSession=0000000000000000 pid=572 binder:558_1
+06-02 16:58:23.692   558   763 I ndroid.systemui: fastpipe: Connect success
+06-02 16:58:23.693   558   594 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@942126b animAttr=0x9 type=OPEN isEntrance=false
+06-02 16:58:23.693   558   572 I ndroid.systemui: fastpipe: Connect success
+06-02 16:58:23.694   558  2017 D HostConnection: HostRPC::connect sucess: app=com.android.systemui, pid=558, tid=2017, this=0x7eeed56d1110
+06-02 16:58:23.695   558   763 D HostConnection: HostRPC::connect sucess: app=com.android.systemui, pid=558, tid=763, this=0x7eeed5690580
+06-02 16:58:23.695   558  2017 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.systemui
+06-02 16:58:23.696   558   763 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.systemui
+06-02 16:58:23.697   558   572 D HostConnection: HostRPC::connect sucess: app=com.android.systemui, pid=558, tid=572, this=0x7eeed56e6a40
+06-02 16:58:23.698   558   572 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.systemui
+06-02 16:58:23.867     0     0 W fastpipe: fileOpOpen: pFilp=00000000f1e5c7b0 pSession=00000000e83d1a6f pid=905 binder:793_4
+06-02 16:58:23.871     0     0 W fastpipe: ioCtlConnect: pFilp=00000000f1e5c7b0 pSession=0000000000000000 pid=905 binder:793_4
+06-02 16:58:23.779   793   905 I droid.launcher3: fastpipe: Connect success
+06-02 16:58:23.783   793   905 D HostConnection: HostRPC::connect sucess: app=com.android.launcher3, pid=793, tid=905, this=0x7eeed569eba0
+06-02 16:58:23.788  1167  1167 W ContextImpl: Calling a method in the system process without a qualified user: android.app.ContextImpl.startService:1899 android.content.ContextWrapper.startService:825 android.content.ContextWrapper.startService:825 com.android.coreservice.CoreBroadcastReceiver.onReceive:46 android.app.ActivityThread.handleReceiver:4499 
+06-02 16:58:23.790   793   905 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.launcher3
+06-02 16:58:23.793   558   594 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@5e21274 animAttr=0x8 type=OPEN isEntrance=true
+06-02 16:58:23.812   558   594 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@6cee847
+06-02 16:58:23.820   357   383 W system_server: Long monitor contention with owner ActivityManager (384) at void com.android.server.am.ProcessStatsService.writeStateAsync()(ProcessStatsService.java:264) waiters=0 in void com.android.server.am.ProcessProfileRecord.addPss(long, long, long, boolean, int, long) for 119ms
+06-02 16:58:23.825   357   375 I DropBoxManagerService: add tag=system_server_strictmode isTagEnabled=true flags=0x2
+06-02 16:58:23.918     0     0 W fastpipe: fileOpOpen: pFilp=00000000013731f5 pSession=00000000e83d1a6f pid=594 wmshell.main
+06-02 16:58:23.925     0     0 W fastpipe: ioCtlConnect: pFilp=00000000013731f5 pSession=0000000000000000 pid=594 wmshell.main
+06-02 16:58:23.833   558   594 I ndroid.systemui: fastpipe: Connect success
+06-02 16:58:23.834   558   594 D HostConnection: HostRPC::connect sucess: app=com.android.systemui, pid=558, tid=594, this=0x7eeed56edd50
+06-02 16:58:23.835   217   328 D AudioFlinger: mixer(0x749f0ca24940) throttle end: throttle time(13)
+06-02 16:58:23.837   558   594 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.systemui
+06-02 16:58:23.843   357   375 I DropBoxManagerService: add tag=system_server_strictmode isTagEnabled=true flags=0x2
+06-02 16:58:23.846  2213  2518 E libOpenSLES: frameworks/wilhelm/src/android/AudioPlayer_to_android.cpp:1241: pthread_mutex_lock_timeout_np returned 110
+06-02 16:58:23.850   357   375 I DropBoxManagerService: add tag=system_server_strictmode isTagEnabled=true flags=0x2
+06-02 16:58:23.854  2213  2469 D xigames.yuan.cn: PlayerBase::stop() from IPlayer
+06-02 16:58:23.854  2213  2469 D AudioTrack: stop(16): called with 443210756 frames delivered
+06-02 16:58:23.866  2213  2518 E libOpenSLES: frameworks/wilhelm/src/android/AudioPlayer_to_android.cpp:1241: pthread_mutex_lock_timeout_np returned 110
+06-02 16:58:23.950   217   328 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+06-02 16:58:24.043   217   328 D audioserver: logFgsApiEnd: FGS Logger Transaction failed, -129
+06-02 16:58:24.211  1174  1174 D AppCompatDelegate: Checking for metadata for AppLocalesMetadataHolderService : Service not found
+06-02 16:58:24.313   558   594 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#6)android.os.BinderProxy@c023826@0
+06-02 16:58:24.313   357   373 V WindowManager: Finish Transition #6: created at 06-02 16:58:23.271 collect-started=0.208ms request-sent=64.05ms started=88.108ms ready=374.267ms sent=397.193ms finished=1042.223ms
+06-02 16:58:24.318   558   594 V WindowManagerShell: Track 0 became idle
+06-02 16:58:24.322   558   594 V WindowManagerShell: All active transition animations finished
+06-02 16:58:24.339  2213  2213 E Surface : freeAllBuffers: 1 buffers were freed while being dequeued!
+06-02 16:58:24.345  1174  1174 D OpenCV/StaticHelper: First attempt to load libs
+06-02 16:58:24.345  1174  1174 D OpenCV/StaticHelper: Trying to load library opencv_java4
+06-02 16:58:24.347  1174  1174 D OpenCV/StaticHelper: Library opencv_java4 loaded
+06-02 16:58:24.347  1174  1174 D OpenCV/StaticHelper: First attempt to load libs is OK
+06-02 16:58:24.348  2213  7793 W OpenGLRenderer: Surface doesn't have any previously queued frames, nothing to readback from
+06-02 16:58:24.438     0     0 W fastpipe: fileOpRelease: host-handle=69 pFilp=0000000038feccc5 pSession=00000000e5c45d31 pid=261 RenderEngine
+06-02 16:58:24.446     0     0 W fastpipe: fileOpRelease: host-handle=71 pFilp=0000000043841399 pSession=00000000f6dda23b pid=261 RenderEngine
+06-02 16:58:24.451     0     0 W fastpipe: fileOpRelease: host-handle=73 pFilp=00000000383fcd35 pSession=00000000a17c866f pid=261 RenderEngine
+06-02 16:58:24.458     0     0 W fastpipe: fileOpRelease: host-handle=63 pFilp=0000000078fd90d0 pSession=00000000fdee53e9 pid=261 RenderEngine
+06-02 16:58:24.459     0     0 W fastpipe: fileOpRelease: host-handle=139 pFilp=00000000f0928aeb pSession=000000007117f3cf pid=616 RenderThread
+06-02 16:58:24.468     0     0 W fastpipe: fileOpRelease: host-handle=138 pFilp=0000000072751a42 pSession=0000000055f736f4 pid=616 RenderThread
+06-02 16:58:24.378   357  7795 D libEGL  : loaded /vendor/lib64/egl/libEGL_adreno.so
+06-02 16:58:24.471     0     0 W fastpipe: fileOpRelease: host-handle=137 pFilp=0000000063736845 pSession=0000000032c282ec pid=616 RenderThread
+06-02 16:58:24.476     0     0 W fastpipe: fileOpRelease: host-handle=72 pFilp=000000000b5b0777 pSession=00000000ddbfd3e6 pid=261 RenderEngine
+06-02 16:58:24.386  2213  2213 D CoverageChecker: showCoveredHint begin
+06-02 16:58:24.386  2213  2213 D CompatibilityChangeReporter: Compat change id reported: 147798919; UID 10111; state: ENABLED
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper: General configuration for OpenCV 4.9.0 =====================================
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:   Version control:               4.9.0-dirty
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:   Platform:
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Timestamp:                   2023-12-28T01:20:04Z
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Host:                        Linux 5.4.0-169-generic x86_64
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Target:                      Android 1 aarch64
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     CMake:                       3.22.1-g37088a8
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     CMake generator:             Ninja
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     CMake build tool:            /opt/android-sdk/cmake/3.22.1/bin/ninja
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Configuration:               Release
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:   CPU/HW features:
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Baseline:                    NEON FP16
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Dispatched code generation:  NEON_DOTPROD NEON_FP16 NEON_BF16
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:       requested:                 NEON_FP16 NEON_BF16 NEON_DOTPROD
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:       NEON_DOTPROD (1 files):    + NEON_DOTPROD
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:       NEON_FP16 (2 files):       + NEON_FP16
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:       NEON_BF16 (0 files):       + NEON_BF16
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:   C/C++:
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Built as dynamic libs?:      NO
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C++ standard:                11
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C++ Compiler:                /opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++  (ver 14.0.7)
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C++ flags (Release):         -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security     -fsigned-char -W -Wall -Wreturn-type -Wnon-virtual-dtor -Waddress -Wsequence-point -Wformat -Wformat-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wsign-promo -Wuninitialized -Winconsistent-missing-override -Wno-delete-non-virtual-dtor -Wno-unnamed-type-template-args -Wno-comment -Wno-deprecated-enum-enum-conversion -Wno-deprecated-anon-enum-enum-conversion -fdiagnostics-show-option -Qunused-arguments    -fvisibility=hidden -fvisibility-inlines-hidden  -O3 -DNDEBUG   -DNDEBUG
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C++ flags (Debug):           -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security     -fsigned-char -W -Wall -Wreturn-type -Wnon-virtual-dtor -Waddress -Wsequence-point -Wformat -Wformat-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wsign-promo -Wuninitialized -Winconsistent-missing-override -Wno-delete-non-virtual-dtor -Wno-unnamed-type-template-args -Wno-comment -Wno-deprecated-enum-enum-conversion -Wno-deprecated-anon-enum-enum-conversion -fdiagnostics-show-option -Qunused-arguments    -fvisibility=hidden -fvisibility-inlines-hidden  -fno-limit-debug-info   -O0 -DDEBUG -D_DEBUG -g
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C Compiler:                  /opt/android-sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/clang
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C flags (Release):           -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security    -fsigned-char -W -Wall -Wreturn-type -Wnon-virtual-dtor -Waddress -Wsequence-point -Wformat -Wformat-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wsign-promo -Wuninitialized -Winconsistent-missing-override -Wno-delete-non-virtual-dtor -Wno-unnamed-type-template-args -Wno-comment -Wno-deprecated-enum-enum-conversion -Wno-deprecated-anon-enum-enum-conversion -fdiagnostics-show-option -Qunused-arguments    -fvisibility=hidden -fvisibility-inlines-hidden  -O3 -DNDEBUG   -DNDEBUG
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     C flags (Debug):             -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security    -fsigned-char -W -Wall -Wreturn-type -Wnon-virtual-dtor -Waddress -Wsequence-point -Wformat -Wformat-security -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wundef -Winit-self -Wpointer-arith -Wshadow -Wsign-promo -Wuninitialized -Winconsistent-missing-override -Wno-delete-non-virtual-dtor -Wno-unnamed-type-template-args -Wno-comment -Wno-deprecated-enum-enum-conversion -Wno-deprecated-anon-enum-enum-conversion -fdiagnostics-show-option -Qunused-arguments    -fvisibility=hidden -fvisibility-inlines-hidden  -fno-limit-debug-info   -O0 -DDEBUG -D_DEBUG -g
+06-02 16:58:24.390  1174  1174 I OpenCV/StaticHelper:     Linker flags (Release):      -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments   -Wl,--as-needed -Wl,--no-undefined -Wl,--gc-sections  
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Linker flags (Debug):        -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments   -Wl,--as-needed -Wl,--no-undefined  
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     ccache:                      YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Precompiled headers:         NO
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Extra dependencies:          z dl m log
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     3rdparty dependencies:       libcpufeatures libprotobuf ade tbb ittnotify libjpeg-turbo libwebp libpng libtiff libopenjp2 IlmImf tegra_hal
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   OpenCV modules:
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     To be built:                 calib3d core dnn features2d flann gapi highgui imgcodecs imgproc java ml objdetect photo stitching video videoio
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Disabled:                    world
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Disabled by dependency:      -
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Unavailable:                 python2 python3 ts
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Applications:                -
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Documentation:               NO
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Non-free algorithms:         NO
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Android NDK:                   /opt/android-sdk/ndk/25.2.9519653 (ver 25.2.9519653)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Android ABI:                 arm64-v8a
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     NDK toolchain:               aarch64-linux-android-clang
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     STL type:                    c++_shared
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Native API level:            21
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Android SDK:                   /opt/android-sdk (tools:  build tools: 30.0.3)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   GUI:                           NONE
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Media I/O: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     ZLib:                        z (ver 1.2.12)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     JPEG:                        build-libjpeg-turbo (ver 2.1.3-62)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:       SIMD Support Request:      YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:       SIMD Support:              YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     WEBP:                        build (ver encoder: 0x020f)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     PNG:                         build (ver 1.6.37)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     TIFF:                        build (ver 42 - 4.2.0)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     JPEG 2000:                   build (ver 2.5.0)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     OpenEXR:                     build (ver 2.3.0)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     HDR:                         YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     SUNRASTER:                   YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     PXM:                         YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     PFM:                         YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Video I/O:
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:    MEDIANDK:                     YES
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:    NDK Camera:                   NO
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Parallel framework:            TBB (ver 2020.2 interface 11102)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Trace:                         YES (with Intel ITT)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Other third-party libraries:
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Custom HAL:                  YES (carotene (ver 0.0.1, Auto detected))
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Protobuf:                    build (3.19.1)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Flatbuffers:                 builtin/3rdparty (23.5.9)
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Python (for build):            /usr/bin/python3
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Java:                          export all functions
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     ant:                         NO
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Java wrappers:               YES ()
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:     Java tests:                  NO
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: 
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper:   Install to:                    /home/ci/build/o4a/install
+06-02 16:58:24.391  1174  1174 I OpenCV/StaticHelper: -----------------------------------------------------------------
+06-02 16:58:24.486     0     0 W fastpipe: fileOpOpen: pFilp=00000000ea323169 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:24.490     0     0 W fastpipe: refcount bind: host-handle=141 pFilp=00000000ea323169 pSession=00000000c191fdf1 pid=880 HwBinder:196_3
+06-02 16:58:24.404   357  7795 D libEGL  : loaded /vendor/lib64/egl/libGLESv1_CM_adreno.so
+06-02 16:58:24.494     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.392   196   196 I HwBinder:196_3: type=1400 audit(0.0:1688): avc:  denied  { read write } for  path="/dev/fastpipe" dev="tmpfs" ino=529 scontext=u:r:platform_app:s0:c512,c768 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glClientWaitSyncAPPLE to eglBindTexImage failed
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glCopyTextureLevelsAPPLE to eglWaitSync failed
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glDeleteSyncAPPLE to eglClientWaitSyncKHR failed
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glFenceSyncAPPLE to NULL failed
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glFramebufferTexture2DMultisampleEXT to NULL failed
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glGetInteger64vAPPLE to NULL failed
+06-02 16:58:24.404   357  7795 E libEGL  : denglibo Loader::init_api redirect glGetSyncivAPPLE to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glIsSyncAPPLE to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glRenderbufferStorageMultisampleAPPLE to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glRenderbufferStorageMultisampleEXT to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glResolveMultisampleFramebufferAPPLE to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glTexStorage1DEXT to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glTextureStorage1DEXT to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glTextureStorage2DEXT to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glTextureStorage3DEXT to NULL failed
+06-02 16:58:24.405   357  7795 E libEGL  : denglibo Loader::init_api redirect glWaitSyncAPPLE to NULL failed
+06-02 16:58:24.407   558   616 E EGL_emulation: tid 616: eglSurfaceAttrib(1504): error 0x3009 (EGL_BAD_MATCH)
+06-02 16:58:24.407   558   616 W OpenGLRenderer: Failed to set EGL_SWAP_BEHAVIOR on surface 0x7eee0566d280, error=EGL_BAD_MATCH
+06-02 16:58:24.407   558   616 E OpenGLRenderer: Unable to match the desired swap behavior.
+06-02 16:58:24.414   357  7795 D libEGL  : loaded /vendor/lib64/egl/libGLESv2_adreno.so
+06-02 16:58:24.392   558   558 I RenderThread: type=1400 audit(0.0:1689): avc:  denied  { ioctl } for  path="/dev/fastpipe" dev="tmpfs" ino=529 ioctlcmd=0x6867 scontext=u:r:platform_app:s0:c512,c768 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:24.514     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.516     0     0 W fastpipe: fileOpOpen: pFilp=00000000aa2736a2 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:24.518     0     0 W fastpipe: refcount bind: host-handle=143 pFilp=00000000aa2736a2 pSession=000000007b506c40 pid=880 HwBinder:196_3
+06-02 16:58:24.425  2213  2213 D NGLog   : c.onForegroundStateChanged#22 XDataSdkImpl#onForegroundStateChanged:false
+06-02 16:58:24.523     0     0 W fastpipe: fileOpOpen: pFilp=00000000d01b3198 pSession=00000000e83d1a6f pid=7795 RenderThread
+06-02 16:58:24.524     0     0 W fastpipe: ioCtlConnect: pFilp=00000000d01b3198 pSession=0000000000000000 pid=7795 RenderThread
+06-02 16:58:24.434   357  7795 I system_server: fastpipe: Connect success
+06-02 16:58:24.532     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.442   357  7795 D HostConnection: HostRPC::connect sucess: app=system_server, pid=357, tid=7795, this=0x7eeed56c9e00
+06-02 16:58:24.444   357  7795 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:system_server
+06-02 16:58:24.545     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.560     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.485   357  7795 W OpenGLRenderer: Failed to initialize 101010-2 format, error = EGL_SUCCESS
+06-02 16:58:24.499   357  7795 D EGL_emulation: eglCreateContext: 0x7eee556d65f0: maj 3 min 1 rcv 4
+06-02 16:58:24.597     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.605     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.625     0     0 W fastpipe: fileOpOpen: pFilp=0000000059a9a7c5 pSession=00000000e83d1a6f pid=7795 RenderThread
+06-02 16:58:24.627     0     0 W fastpipe: refcount bind: host-handle=146 pFilp=0000000059a9a7c5 pSession=00000000b84b35d7 pid=7795 RenderThread
+06-02 16:58:24.549   357  7795 E eglCodecCommon: glUtilsParamSize: unknow param 0x000082da
+06-02 16:58:24.549   357  7795 E eglCodecCommon: glUtilsParamSize: unknow param 0x000082e5
+06-02 16:58:24.557   357  7795 D HostConnection: ExtendedRCEncoderContext GL_VERSION return OpenGL ES 3.1 v1
+06-02 16:58:24.564   357  1484 D CompatibilityChangeReporter: Compat change id reported: 168419799; UID 10088; state: DISABLED
+06-02 16:58:24.564   357  1484 D CompatibilityChangeReporter: Compat change id reported: 273564678; UID 10088; state: DISABLED
+06-02 16:58:24.659     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.661     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.568   357  7795 E eglCodecCommon: glUtilsParamSize: unknow param 0x000084ff
+06-02 16:58:24.568   357  7795 E eglCodecCommon: glUtilsParamSize: unknow param 0x000087fe
+06-02 16:58:24.568   357  7795 D skia    : force disable skia program binary by wb!
+06-02 16:58:24.573   357  1909 D CoreBackPreview: Window{7dd03ff u0 Toast}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@ed342b8, mPriority=0, mIsAnimationCallback=false}
+06-02 16:58:24.589  1174  1251 I mple.yuanassist: Background young concurrent copying GC freed 36311(2187KB) AllocSpace objects, 30(764KB) LOS objects, 0% free, 5249KB/5249KB, paused 93us,5us total 107.852ms
+06-02 16:58:24.589  1174  1251 W mple.yuanassist: Reducing the number of considered missed Gc histogram windows from 1195 to 100
+06-02 16:58:24.592  1174  7797 D TrafficStats: tagSocket(74) with statsTag=0xffffffff, statsUid=-1
+06-02 16:58:24.598  1167  1167 W ContextImpl: Calling a method in the system process without a qualified user: android.app.ContextImpl.startService:1899 android.content.ContextWrapper.startService:825 android.content.ContextWrapper.startService:825 com.android.coreservice.CoreBroadcastReceiver.onReceive:55 android.app.ActivityThread.handleReceiver:4499 
+06-02 16:58:24.613   230   261 D HostConnection: glGetError exceeded.
+06-02 16:58:24.710     0     0 W fastpipe: fileOpOpen: pFilp=000000001edf7c78 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:24.710     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.719     0     0 W fastpipe: refcount bind: host-handle=147 pFilp=000000001edf7c78 pSession=00000000349f2f78 pid=880 HwBinder:196_3
+06-02 16:58:24.634   558   616 E EGL_emulation: tid 616: eglSurfaceAttrib(1504): error 0x3009 (EGL_BAD_MATCH)
+06-02 16:58:24.635   558   616 W OpenGLRenderer: Failed to set EGL_SWAP_BEHAVIOR on surface 0x7eee056981e0, error=EGL_BAD_MATCH
+06-02 16:58:24.635   558   616 E OpenGLRenderer: Unable to match the desired swap behavior.
+06-02 16:58:24.738     0     0 W fastpipe: fileOpOpen: pFilp=00000000ca7e8f0f pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:24.740     0     0 W fastpipe: refcount bind: host-handle=149 pFilp=00000000ca7e8f0f pSession=0000000064c45d74 pid=880 HwBinder:196_3
+06-02 16:58:24.652  2213  2480 E SQLiteQuery: exception: Row too big to fit into CursorWindow requiredPos=2, totalRows=3; query: SELECT * FROM stat WHERE insert_time<? AND priority=? ORDER BY _id DESC LIMIT 50
+06-02 16:58:24.655  2213  2478 D TrafficStats: tagSocket(232) with statsTag=0xffffffff, statsUid=-1
+06-02 16:58:24.642   558   558 I RenderThread: type=1400 audit(0.0:1690): avc:  denied  { open } for  path="/dev/fastpipe" dev="tmpfs" ino=529 scontext=u:r:platform_app:s0:c512,c768 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:24.746     0     0 W fastpipe: fileOpOpen: pFilp=00000000d853ff8b pSession=00000000e83d1a6f pid=7800 RenderThread
+06-02 16:58:24.750     0     0 W fastpipe: ioCtlConnect: pFilp=00000000d853ff8b pSession=0000000000000000 pid=7800 RenderThread
+06-02 16:58:24.657   558  7800 I ndroid.systemui: fastpipe: Connect success
+06-02 16:58:24.660   558  7800 D HostConnection: HostRPC::connect sucess: app=com.android.systemui, pid=558, tid=7800, this=0x7eeed5703680
+06-02 16:58:24.663   558  7800 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.android.systemui
+06-02 16:58:24.763     0     0 W fastpipe: fileOpOpen: pFilp=0000000097bc8993 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:24.771     0     0 W fastpipe: refcount bind: host-handle=150 pFilp=0000000097bc8993 pSession=00000000f66488d0 pid=880 HwBinder:196_3
+06-02 16:58:24.781     0     0 W fastpipe: fileOpOpen: pFilp=00000000d94c901d pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:24.782     0     0 W fastpipe: refcount bind: host-handle=151 pFilp=00000000d94c901d pSession=0000000097c31a17 pid=880 HwBinder:196_3
+06-02 16:58:24.696   558  7800 I ndroid.systemui: fastpipe: close connect
+06-02 16:58:24.790     0     0 W fastpipe: fileOpRelease: pFilp=00000000d853ff8b pSession=000000003795650f pid=7800 RenderThread
+06-02 16:58:24.808     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.709  1167  1167 I oid.coreservice: type=1400 audit(0.0:1691): avc:  denied  { ioctl } for  path="/dev/fastpipe" dev="tmpfs" ino=529 ioctlcmd=0x6869 scontext=u:r:system_app:s0 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:24.794  2213  2478 D xdata#AcLogReport: UploadResponse onSuccess
+06-02 16:58:24.934     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:24.841   357  1909 D CoreBackPreview: Window{d5d264 u0 com.example.yuanassist/com.example.yuanassist.ui.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@688bbce, mPriority=0, mIsAnimationCallback=false}
+06-02 16:58:24.993  7769  7769 I AidlLazyServiceRegistrar: Process has 1 (of 1 available) client(s) in use after notification artd has clients: 1
+06-02 16:58:25.087     0     0 I servicemanager: Notifying artd they do (previously: don't) have clients when we now have a record of a client
+06-02 16:58:25.167     0     0 W audit   : audit_lost=801 audit_rate_limit=5 audit_backlog_limit=64
+06-02 16:58:25.168     0     0 E audit   : rate limit exceeded
+06-02 16:58:25.169     0     0 W fastpipe: fileOpOpen: pFilp=00000000c4b12135 pSession=00000000e83d1a6f pid=1591 RenderThread
+06-02 16:58:25.076  1174  1591 I mple.yuanassist: fastpipe: Connect success
+06-02 16:58:25.171     0     0 W fastpipe: ioCtlConnect: pFilp=00000000c4b12135 pSession=0000000000000000 pid=1591 RenderThread
+06-02 16:58:25.078  1174  1591 D HostConnection: HostRPC::connect sucess: app=com.example.yuanassist, pid=1174, tid=1591, this=0x7eeed567ac50
+06-02 16:58:25.066  1174  1174 I RenderThread: type=1400 audit(0.0:1692): avc:  denied  { read write } for  name="fastpipe" dev="tmpfs" ino=529 scontext=u:r:untrusted_app:s0:c112,c256,c512,c768 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1 app=com.example.yuanassist
+06-02 16:58:25.081  1174  1591 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.example.yuanassist
+06-02 16:58:25.084  1174  1591 W OpenGLRenderer: Failed to initialize 101010-2 format, error = EGL_SUCCESS
+06-02 16:58:25.104  1174  1591 D EGL_emulation: eglCreateContext: 0x7eee558355b0: maj 3 min 1 rcv 4
+06-02 16:58:25.282     0     0 W fastpipe: fileOpOpen: pFilp=00000000b1dceaf7 pSession=00000000e83d1a6f pid=1591 RenderThread
+06-02 16:58:25.283     0     0 W fastpipe: refcount bind: host-handle=154 pFilp=00000000b1dceaf7 pSession=00000000a047c990 pid=1591 RenderThread
+06-02 16:58:25.201  1174  1591 D HostConnection: ExtendedRCEncoderContext GL_VERSION return OpenGL ES 3.1 v1
+06-02 16:58:25.204  1174  1591 E eglCodecCommon: glUtilsParamSize: unknow param 0x000084ff
+06-02 16:58:25.205  1174  1591 E eglCodecCommon: glUtilsParamSize: unknow param 0x000087fe
+06-02 16:58:25.205  1174  1591 D skia    : force disable skia program binary by wb!
+06-02 16:58:25.305     0     0 W fastpipe: fileOpOpen: pFilp=00000000dfdece85 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:25.306     0     0 W fastpipe: refcount bind: host-handle=155 pFilp=00000000dfdece85 pSession=0000000021dd6adc pid=880 HwBinder:196_3
+06-02 16:58:25.247  1174  1591 E EGL_emulation: tid 1591: eglSurfaceAttrib(1504): error 0x3009 (EGL_BAD_MATCH)
+06-02 16:58:25.247  1174  1591 W OpenGLRenderer: Failed to set EGL_SWAP_BEHAVIOR on surface 0x7eee05690230, error=EGL_BAD_MATCH
+06-02 16:58:25.247  1174  1591 E OpenGLRenderer: Unable to match the desired swap behavior.
+06-02 16:58:25.363     0     0 W fastpipe: fileOpOpen: pFilp=0000000080ce6eb1 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:25.368     0     0 W fastpipe: refcount bind: host-handle=157 pFilp=0000000080ce6eb1 pSession=00000000568705de pid=880 HwBinder:196_3
+06-02 16:58:25.370     0     0 W fastpipe: fileOpOpen: pFilp=00000000183a6039 pSession=00000000e83d1a6f pid=7808 RenderThread
+06-02 16:58:25.372     0     0 W fastpipe: ioCtlConnect: pFilp=00000000183a6039 pSession=0000000000000000 pid=7808 RenderThread
+06-02 16:58:25.276  1174  7808 I mple.yuanassist: fastpipe: Connect success
+06-02 16:58:25.277  1174  7808 D HostConnection: HostRPC::connect sucess: app=com.example.yuanassist, pid=1174, tid=7808, this=0x7eeed569eba0
+06-02 16:58:25.281  1174  7808 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:com.example.yuanassist
+06-02 16:58:25.380     0     0 W fastpipe: fileOpOpen: pFilp=00000000b98c6bc8 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:25.382     0     0 W fastpipe: refcount bind: host-handle=158 pFilp=00000000b98c6bc8 pSession=00000000b8abd06e pid=880 HwBinder:196_3
+06-02 16:58:25.386     0     0 W fastpipe: fileOpOpen: pFilp=000000009ab0cec8 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:25.388     0     0 W fastpipe: refcount bind: host-handle=159 pFilp=000000009ab0cec8 pSession=00000000e35b9b92 pid=880 HwBinder:196_3
+06-02 16:58:25.294  1174  7808 I mple.yuanassist: fastpipe: close connect
+06-02 16:58:25.390     0     0 W fastpipe: fileOpRelease: pFilp=00000000183a6039 pSession=0000000014050b28 pid=7808 RenderThread
+06-02 16:58:25.620   357   373 W system_server: Failed to determine oat file name for dex location /data/app/~~Xpbyse9sAgyhX41L_b2kUQ==/com.example.yuanassist-h0828SyCh9KdT1kZ3lqnqg==/base.apk: Dalvik cache directory does not exist
+06-02 16:58:25.621  1174  1255 I OpenGLRenderer: Davey! duration=1008ms; Flags=1, FrameTimelineVsyncId=9043513, IntendedVsync=11981746439675, Vsync=11981746439675, InputEventId=0, HandleInputStart=11981747909953, AnimationStart=11981747910174, PerformTraversalsStart=11981747910327, DrawStart=11982391184226, FrameDeadline=11981762106341, FrameInterval=11981747908215, FrameStartTime=8326749, SyncQueued=11982406366535, SyncStart=11982410780105, IssueDrawCommandsStart=11982413452506, SwapBuffers=11982757433792, FrameCompleted=11982758931617, DequeueBufferDuration=2136, QueueBufferDuration=102701, GpuCompleted=11982757433792, SwapBuffersCompleted=11982758931617, DisplayPresentTime=0, CommandSubmissionCompleted=11982757433792, 
+06-02 16:58:25.621   357   373 W ziparchive: Unable to open '/data/app/~~Xpbyse9sAgyhX41L_b2kUQ==/com.example.yuanassist-h0828SyCh9KdT1kZ3lqnqg==/base.dm': No such file or directory
+06-02 16:58:25.624   357   373 I ActivityTaskManager: Displayed com.example.yuanassist/.ui.MainActivity for user 0: +2s410ms
+06-02 16:58:25.628  1174  1174 I Choreographer: Skipped 119 frames!  The application may be doing too much work on its main thread.
+06-02 16:58:25.736     0     0 W fastpipe: fileOpOpen: pFilp=0000000063736845 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:25.738     0     0 W fastpipe: refcount bind: host-handle=160 pFilp=0000000063736845 pSession=000000002f453b6e pid=880 HwBinder:196_3
+06-02 16:58:25.642   357  1909 D CompatibilityChangeReporter: Compat change id reported: 214016041; UID 10112; state: ENABLED
+06-02 16:58:25.643   357  1909 I ImeTracker: com.example.yuanassist:a77f6078: onRequestHide at ORIGIN_SERVER_HIDE_INPUT reason HIDE_UNSPECIFIED_WINDOW
+06-02 16:58:25.643   357  1909 I ImeTracker: com.example.yuanassist:a77f6078: onCancelled at PHASE_SERVER_SHOULD_HIDE
+06-02 16:58:25.741     0     0 W fastpipe: fileOpRelease: host-handle=135 pFilp=00000000a45e4c8c pSession=000000007d1b9f56 pid=197 composer@2.1-se
+06-02 16:58:25.764     0     0 W fastpipe: fileOpOpen: pFilp=000000005baf1f2c pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:25.781     0     0 W fastpipe: refcount bind: host-handle=161 pFilp=000000005baf1f2c pSession=000000004231688d pid=880 HwBinder:196_3
+06-02 16:58:25.687  1167  1167 W ContextImpl: Calling a method in the system process without a qualified user: android.app.ContextImpl.startService:1899 android.content.ContextWrapper.startService:825 android.content.ContextWrapper.startService:825 com.android.coreservice.CoreBroadcastReceiver.onReceive:71 android.app.ActivityThread.handleReceiver:4499 
+06-02 16:58:25.691  2213  7814 E EMASNAccs_NetworkSdk: [anet.HorseRaceDetector] network detect thread start
+06-02 16:58:25.790     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.800     0     0 W fastpipe: fileOpRelease: host-handle=74 pFilp=000000007692a6ad pSession=00000000ecd0341b pid=261 RenderEngine
+06-02 16:58:25.709  1167  1167 W ContextImpl: Calling a method in the system process without a qualified user: android.app.ContextImpl.startService:1899 android.content.ContextWrapper.startService:825 android.content.ContextWrapper.startService:825 com.android.coreservice.CoreBroadcastReceiver.onReceive:71 android.app.ActivityThread.handleReceiver:4499 
+06-02 16:58:25.808     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.833     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.842     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.753   230   261 D HostConnection: glGetError exceeded.
+06-02 16:58:25.850     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.867     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.875     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.917     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:26.042     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:26.059     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:26.067     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:25.985   558   602 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@d47147b
+06-02 16:58:25.985   357  1909 D CoreBackPreview: Window{16d73e6 u0 Splash Screen com.example.yuanassist EXITING}: Setting back callback null
+06-02 16:58:25.987   357  1484 W InputManager-JNI: Input channel object '16d73e6 Splash Screen com.example.yuanassist (client)' was disposed without first being removed with the input manager!
+06-02 16:58:26.126   230   261 D HostConnection: glGetError exceeded.
+06-02 16:58:26.257     0     0 W fastpipe: fileOpRelease: host-handle=143 pFilp=00000000aa2736a2 pSession=000000007b506c40 pid=197 composer@2.1-se
+06-02 16:58:26.259     0     0 W fastpipe: fileOpRelease: host-handle=141 pFilp=00000000ea323169 pSession=00000000c191fdf1 pid=197 composer@2.1-se
+06-02 16:58:26.260     0     0 W fastpipe: fileOpRelease: host-handle=161 pFilp=000000005baf1f2c pSession=000000004231688d pid=197 composer@2.1-se
+06-02 16:58:26.265     0     0 W fastpipe: fileOpRelease: host-handle=160 pFilp=0000000063736845 pSession=000000002f453b6e pid=261 RenderEngine
+06-02 16:58:26.268     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:26.391     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:26.894   180   344 D audio_hw_hal: log_func, out_standby
+06-02 16:58:26.894   180   344 D audio_hw_hal: raw_close_output_stream, dev=0x7ce6905e6950, stream =0x7ce6905e2350
+06-02 16:58:26.894   180   344 D audio_hw_hal: raw_close_output_stream, stream=0x7ce6905e2350,  success!
+06-02 16:58:26.991     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:27.024     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:27.091     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:27.107     0     0 W         : warning! writeIoPort busy! call usleep_range
+06-02 16:58:27.018   558   558 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@fe3343b
+06-02 16:58:27.018   357  1909 D CoreBackPreview: Window{7dd03ff u0 Toast}: Setting back callback null
+06-02 16:58:27.022   357   862 W InputManager-JNI: Input channel object '7dd03ff Toast (client)' was disposed without first being removed with the input manager!
+06-02 16:58:27.026   357   862 W NotificationService: Toast already killed. pkg=com.lingxigames.yuan.cn token=android.os.BinderProxy@983d730
+06-02 16:58:27.123     0     0 W fastpipe: fileOpRelease: host-handle=150 pFilp=0000000097bc8993 pSession=00000000f66488d0 pid=197 composer@2.1-se
+06-02 16:58:27.124     0     0 W fastpipe: fileOpRelease: host-handle=151 pFilp=00000000d94c901d pSession=0000000097c31a17 pid=261 RenderEngine
+06-02 16:58:27.131     0     0 W fastpipe: fileOpRelease: host-handle=147 pFilp=000000001edf7c78 pSession=00000000349f2f78 pid=261 RenderEngine
+06-02 16:58:27.133     0     0 W fastpipe: fileOpRelease: host-handle=149 pFilp=00000000ca7e8f0f pSession=0000000064c45d74 pid=261 RenderEngine
+06-02 16:58:27.787  7820  7820 W BpBinder: Linking to death on android.gui.ISurfaceComposer but there are no threads (yet?) listening to incoming transactions. See ProcessState::startThreadPool and ProcessState::setThreadPoolMaxThreadCount. Generally you should setup the binder threadpool before other initialization steps.
+06-02 16:58:27.787  7820  7820 W ProcessState: Extra binder thread started, but 0 threads requested. Do not use *startThreadPool when zero threads are requested.
+06-02 16:58:27.891     0     0 W fastpipe: fileOpOpen: pFilp=0000000059a78a01 pSession=00000000e83d1a6f pid=880 HwBinder:196_3
+06-02 16:58:27.892     0     0 W fastpipe: refcount bind: host-handle=162 pFilp=0000000059a78a01 pSession=000000001a6062a5 pid=880 HwBinder:196_3
+06-02 16:58:27.792   230   230 I binder:230_2: type=1400 audit(0.0:1695): avc:  denied  { read write } for  path="/dev/fastpipe" dev="tmpfs" ino=529 scontext=u:r:shell:s0 tcontext=u:object_r:device:s0 tclass=chr_file permissive=1
+06-02 16:58:27.896     0     0 I servicemanager: Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest.
+06-02 16:58:27.803   108   108 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@4.0::IMapper/default in either framework or device VINTF manifest.
+06-02 16:58:27.803  7820  7821 I Gralloc4: mapper 4.x is not supported
+06-02 16:58:27.803   108   108 I hwservicemanager: getTransport: Cannot find entry android.hardware.graphics.mapper@3.0::IMapper/default in either framework or device VINTF manifest.
+06-02 16:58:27.803  7820  7821 W Gralloc3: mapper 3.x is not supported
+06-02 16:58:27.799  7820  7820 I binder:7820_1: type=1400 audit(0.0:1696): avc:  denied  { read } for  name="libstagefright_gl1enc.so" dev="sda2" ino=6075 scontext=u:r:shell:s0 tcontext=u:object_r:vendor_file:s0 tclass=file permissive=1
+06-02 16:58:27.905     0     0 W audit   : audit_lost=803 audit_rate_limit=5 audit_backlog_limit=64
+06-02 16:58:27.907     0     0 E audit   : rate limit exceeded
+06-02 16:58:27.799  7820  7820 I binder:7820_1: type=1400 audit(0.0:1697): avc:  denied  { open } for  path="/system/vendor/lib64/libstagefright_gl1enc.so" dev="sda2" ino=6075 scontext=u:r:shell:s0 tcontext=u:object_r:vendor_file:s0 tclass=file permissive=1
+06-02 16:58:27.799  7820  7820 I binder:7820_1: type=1400 audit(0.0:1698): avc:  denied  { getattr } for  path="/system/vendor/lib64/libstagefright_gl1enc.so" dev="sda2" ino=6075 scontext=u:r:shell:s0 tcontext=u:object_r:vendor_file:s0 tclass=file permissive=1
+06-02 16:58:27.799  7820  7820 I binder:7820_1: type=1400 audit(0.0:1699): avc:  denied  { map } for  path="/system/vendor/lib64/libstagefright_gl1enc.so" dev="sda2" ino=6075 scontext=u:r:shell:s0 tcontext=u:object_r:vendor_file:s0 tclass=file permissive=1
+06-02 16:58:27.921     0     0 W fastpipe: fileOpOpen: pFilp=00000000b7c74a08 pSession=00000000e83d1a6f pid=7821 binder:7820_1
+06-02 16:58:27.923     0     0 W fastpipe: ioCtlConnect: pFilp=00000000b7c74a08 pSession=0000000000000000 pid=7821 binder:7820_1
+06-02 16:58:27.827  7820  7821 I screencap: fastpipe: Connect success
+06-02 16:58:27.925     0     0 W fastpipe: fileOpOpen: pFilp=00000000b62aea03 pSession=00000000e83d1a6f pid=7821 binder:7820_1
+06-02 16:58:27.926     0     0 W fastpipe: ioCtlConnect: pFilp=00000000b62aea03 pSession=0000000000000000 pid=7821 binder:7820_1
+06-02 16:58:27.830  7820  7821 I screencap: fastpipe: Connect success
+06-02 16:58:27.831  7820  7821 D HostConnection: HostRPC::connect sucess: app=screencap, pid=7820, tid=7821, this=0x78f5bb6bb630
+06-02 16:58:27.833  7820  7821 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:screencap
+06-02 16:58:27.931     0     0 W fastpipe: fileOpOpen: pFilp=00000000a45e4c8c pSession=00000000e83d1a6f pid=7820 screencap
+06-02 16:58:27.932     0     0 W fastpipe: ioCtlConnect: pFilp=00000000a45e4c8c pSession=0000000000000000 pid=7820 screencap
+06-02 16:58:27.836  7820  7820 I screencap: fastpipe: Connect success
+06-02 16:58:27.838  7820  7820 D HostConnection: HostRPC::connect sucess: app=screencap, pid=7820, tid=7820, this=0x78f5bb6b4320
+06-02 16:58:27.839  7820  7820 D HostConnection: queryAndSetGLESMaxVersion select gles-version: 3.1 hostGLVersion:46 process:screencap
+06-02 16:58:27.937     0     0 W fastpipe: fileOpOpen: pFilp=000000003fe0cdb5 pSession=00000000e83d1a6f pid=7820 screencap
+06-02 16:58:28.216  7820  7820 I screencap: fastpipe: close connect
+06-02 16:58:28.216  7820  7820 I screencap: fastpipe: close connect
+06-02 16:58:28.312     0     0 W fastpipe: fileOpRelease: pFilp=00000000a45e4c8c pSession=000000007fb86293 pid=7820 screencap
+06-02 16:58:28.327     0     0 W fastpipe: fileOpRelease: pFilp=00000000b62aea03 pSession=000000004582e722 pid=7821 binder:7820_1
+06-02 16:58:28.328     0     0 W fastpipe: fileOpRelease, because process terminite! pid=7821 binder:7820_1
+06-02 16:58:28.329     0     0 W fastpipe: fileOpRelease: guestFD=16 pFilp=000000003fe0cdb5 pSession=000000001f5c1046 pid=7821 binder:7820_1
+06-02 16:58:28.331     0     0 W fastpipe: fileOpRelease: pFilp=00000000b7c74a08 pSession=0000000014ca6d71 pid=7821 binder:7820_1
+06-02 16:58:28.332     0     0 W fastpipe: fileOpRelease, because process terminite! pid=7821 binder:7820_1

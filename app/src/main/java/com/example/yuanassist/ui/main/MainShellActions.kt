@@ -7,7 +7,6 @@ data class HomeTabActions(
     val onOpenMainline624: () -> Unit,
     val onOpenStargazing: () -> Unit,
     val onOpenAilao15Min: () -> Unit,
-    val onOpenPiJingZhanJi: () -> Unit,
     val onOpenInventoryStitch: () -> Unit,
     val onOpenBoxOcr: () -> Unit,
     val onOpenCoordinatePicker: () -> Unit,

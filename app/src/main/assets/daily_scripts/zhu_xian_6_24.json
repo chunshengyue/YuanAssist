@@ -20,28 +20,32 @@
               "h": 500,
               "align": "top"
             },
-            "on_success": 19
+            "on_success": 19,
+            "name": "624"
           },
           {
             "type": "template",
             "template_name": "6-24(1).png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24(1)"
           },
           {
             "type": "template",
             "template_name": "6-24.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24"
           },
           {
             "type": "template",
             "template_name": "chapter6.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 13
+            "on_success": 13,
+            "name": "chapter6"
           },
           {
             "type": "template",
@@ -55,7 +59,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": 10
+            "on_success": 10,
+            "name": "gushi"
           },
           {
             "type": "template",
@@ -69,7 +74,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": 10
+            "on_success": 10,
+            "name": "代号鸢故事"
           }
         ],
         "branch_var": "game_variant",
@@ -108,28 +114,32 @@
               "h": 500,
               "align": "top"
             },
-            "on_success": 19
+            "on_success": 19,
+            "name": "624"
           },
           {
             "type": "template",
             "template_name": "6-24(1).png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24(1)"
           },
           {
             "type": "template",
             "template_name": "6-24.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24"
           },
           {
             "type": "template",
             "template_name": "chapter6.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 13
+            "on_success": 13,
+            "name": "chapter6"
           },
           {
             "type": "template",
@@ -143,7 +153,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": 10
+            "on_success": 10,
+            "name": "gushi"
           },
           {
             "type": "template",
@@ -157,7 +168,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": 10
+            "on_success": 10,
+            "name": "代号鸢故事"
           }
         ],
         "branch_var": "game_variant",
@@ -196,28 +208,32 @@
               "h": 500,
               "align": "top"
             },
-            "on_success": 19
+            "on_success": 19,
+            "name": "624"
           },
           {
             "type": "template",
             "template_name": "6-24(1).png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24(1)"
           },
           {
             "type": "template",
             "template_name": "6-24.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24"
           },
           {
             "type": "template",
             "template_name": "chapter6.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 13
+            "on_success": 13,
+            "name": "chapter6"
           },
           {
             "type": "template",
@@ -231,7 +247,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": 10
+            "on_success": 10,
+            "name": "gushi"
           },
           {
             "type": "template",
@@ -245,7 +262,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": 10
+            "on_success": 10,
+            "name": "代号鸢故事"
           }
         ],
         "branch_var": "game_variant",
@@ -289,14 +307,16 @@
             "template_name": "gushi.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 10
+            "on_success": 10,
+            "name": "gushi"
           },
           {
             "type": "template",
             "template_name": "代号鸢故事.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 10
+            "on_success": 10,
+            "name": "代号鸢故事"
           }
         ],
         "branch_var": "game_variant",
@@ -362,7 +382,8 @@
         "terminal_note": "未找到第六章入口，请确认当前是否在主线任务界面"
       },
       "on_success": 13,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "chapter6"
     },
     {
       "id": 13,
@@ -406,14 +427,16 @@
             "template_name": "6-24(1).png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24(1)"
           },
           {
             "type": "template",
             "template_name": "6-24.png",
             "threshold": 0.85,
             "click": 1,
-            "on_success": 151
+            "on_success": 151,
+            "name": "6-24"
           }
         ],
         "terminal_note": "未找到6-24入口，请确认当前是否在第六章"
@@ -438,7 +461,8 @@
         }
       },
       "on_success": -2,
-      "on_fail": 17
+      "on_fail": 17,
+      "name": "queren"
     },
     {
       "id": 17,
@@ -469,7 +493,8 @@
         }
       },
       "on_success": 19,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "624"
     },
     {
       "id": 19,
@@ -501,7 +526,12 @@
       "delay": 3000,
       "params": {
         "threshold": 0.72,
-        "target_chars": ["开", "始", "战", "斗"],
+        "target_chars": [
+          "开",
+          "始",
+          "战",
+          "斗"
+        ],
         "min_hit_count": 2,
         "terminal_note": "第一场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
         "roi": {
@@ -520,7 +550,10 @@
       "action": "OCR",
       "delay": 5000,
       "params": {
-        "target_chars": ["手", "动"],
+        "target_chars": [
+          "手",
+          "动"
+        ],
         "min_hit_count": 2,
         "click": 1,
         "roi": {
@@ -552,7 +585,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": 23
+      "on_fail": 23,
+      "name": "queding"
     },
     {
       "id": 23,
@@ -571,7 +605,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": 24
+      "on_fail": 24,
+      "name": "queding"
     },
     {
       "id": 24,
@@ -590,7 +625,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": 25
+      "on_fail": 25,
+      "name": "queding"
     },
     {
       "id": 25,
@@ -610,7 +646,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": 251
+      "on_fail": 251,
+      "name": "queding"
     },
     {
       "id": 251,
@@ -629,7 +666,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": 252
+      "on_fail": 252,
+      "name": "queding"
     },
     {
       "id": 252,
@@ -648,7 +686,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": 253
+      "on_fail": 253,
+      "name": "queding"
     },
     {
       "id": 253,
@@ -668,7 +707,8 @@
         }
       },
       "on_success": 26,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "queding"
     },
     {
       "id": 26,
@@ -712,7 +752,12 @@
       "delay": 3000,
       "params": {
         "threshold": 0.72,
-        "target_chars": ["开", "始", "战", "斗"],
+        "target_chars": [
+          "开",
+          "始",
+          "战",
+          "斗"
+        ],
         "min_hit_count": 2,
         "terminal_note": "第二场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
         "roi": {
@@ -731,7 +776,10 @@
       "action": "OCR",
       "delay": 5000,
       "params": {
-        "target_chars": ["手", "动"],
+        "target_chars": [
+          "手",
+          "动"
+        ],
         "min_hit_count": 2,
         "click": 1,
         "roi": {
@@ -763,7 +811,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": 31
+      "on_fail": 31,
+      "name": "queding"
     },
     {
       "id": 31,
@@ -782,7 +831,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": 32
+      "on_fail": 32,
+      "name": "queding"
     },
     {
       "id": 32,
@@ -801,7 +851,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": 33
+      "on_fail": 33,
+      "name": "queding"
     },
     {
       "id": 33,
@@ -821,7 +872,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": 331
+      "on_fail": 331,
+      "name": "queding"
     },
     {
       "id": 331,
@@ -840,7 +892,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": 332
+      "on_fail": 332,
+      "name": "queding"
     },
     {
       "id": 332,
@@ -859,7 +912,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": 333
+      "on_fail": 333,
+      "name": "queding"
     },
     {
       "id": 333,
@@ -879,7 +933,8 @@
         }
       },
       "on_success": 34,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "queding"
     },
     {
       "id": 34,
@@ -923,7 +978,12 @@
       "delay": 3000,
       "params": {
         "threshold": 0.72,
-        "target_chars": ["开", "始", "战", "斗"],
+        "target_chars": [
+          "开",
+          "始",
+          "战",
+          "斗"
+        ],
         "min_hit_count": 2,
         "terminal_note": "第三场战斗未识别到开始战斗按钮，请确认当前是否在6-24",
         "roi": {
@@ -942,7 +1002,10 @@
       "action": "OCR",
       "delay": 5000,
       "params": {
-        "target_chars": ["手", "动"],
+        "target_chars": [
+          "手",
+          "动"
+        ],
         "min_hit_count": 2,
         "click": 1,
         "roi": {
@@ -974,7 +1037,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 39
+      "on_fail": 39,
+      "name": "queding"
     },
     {
       "id": 39,
@@ -993,7 +1057,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 40
+      "on_fail": 40,
+      "name": "queding"
     },
     {
       "id": 40,
@@ -1012,7 +1077,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 41
+      "on_fail": 41,
+      "name": "queding"
     },
     {
       "id": 41,
@@ -1032,7 +1098,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 411
+      "on_fail": 411,
+      "name": "queding"
     },
     {
       "id": 411,
@@ -1051,7 +1118,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 412
+      "on_fail": 412,
+      "name": "queding"
     },
     {
       "id": 412,
@@ -1070,7 +1138,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": 413
+      "on_fail": 413,
+      "name": "queding"
     },
     {
       "id": 413,
@@ -1090,7 +1159,8 @@
         }
       },
       "on_success": 42,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "queding"
     },
     {
       "id": 42,
@@ -1145,7 +1215,8 @@
         }
       },
       "on_success": 46,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "chenggong"
     },
     {
       "id": 46,
@@ -1176,7 +1247,8 @@
         }
       },
       "on_success": 10,
-      "on_fail": 100
+      "on_fail": 100,
+      "name": "youzhou"
     },
     {
       "id": 100,
@@ -1196,7 +1268,8 @@
         }
       },
       "on_success": 10,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "jinru"
     },
     {
       "id": 151,
@@ -1216,7 +1289,8 @@
         }
       },
       "on_success": 16,
-      "on_fail": 17
+      "on_fail": 17,
+      "name": "jinruguanqia"
     }
   ]
 }

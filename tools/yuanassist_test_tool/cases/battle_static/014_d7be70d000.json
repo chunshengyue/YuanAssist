@@ -1,0 +1,10 @@
+{
+  "objectId": "d7be70d000",
+  "title": "庞德何时逃离原生家庭21-30四回合",
+  "scriptContent": "1回合\t1↑\t2↓\t4↓\t5↓\t3↓\n2回合\t1A\t2↓\t4↑\t5↑\t3↓\n3回合\t3↑\t9↑10↑\t2A7A8A14圈15A16↓\t4↓5↓6↓11↓12↓13↓\t1↓\n4回合\t\t\t2A6A7↑\t3↓4↓5↓\t1↑",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-31 04:38:18.79+00",
+  "updatedAt": "2026-05-31 04:38:18.79+00",
+  "source": "supabase.strategy_detail"
+}

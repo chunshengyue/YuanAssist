@@ -1,4 +1,4 @@
-﻿{
+{
   "display_name": "突发情况",
   "start_task_id": 1,
   "tasks": [
@@ -31,7 +31,8 @@
         }
       },
       "on_success": 201,
-      "on_fail": 3
+      "on_fail": 3,
+      "name": "diaocha"
     },
     {
       "id": 201,
@@ -61,7 +62,8 @@
         }
       },
       "on_success": 301,
-      "on_fail": 54
+      "on_fail": 54,
+      "name": "diaocha"
     },
     {
       "id": 54,
@@ -80,7 +82,8 @@
         }
       },
       "on_success": 201,
-      "on_fail": 3
+      "on_fail": 3,
+      "name": "diaocha"
     },
     {
       "id": 301,
@@ -110,15 +113,8 @@
         }
       },
       "on_success": 27,
-      "on_fail": 4
-    },
-    {
-      "id": 302,
-      "action": "BACK",
-      "delay": 1500,
-      "params": {},
-      "on_success": -1,
-      "on_fail": -2
+      "on_fail": 4,
+      "name": "kuaisudiaocha"
     },
     {
       "id": 4,
@@ -142,7 +138,8 @@
         }
       },
       "on_success": 402,
-      "on_fail": 6
+      "on_fail": 6,
+      "name": "sherou"
     },
     {
       "id": 402,
@@ -161,7 +158,8 @@
         }
       },
       "on_success": 401,
-      "on_fail": 6
+      "on_fail": 6,
+      "name": "queren"
     },
     {
       "id": 401,
@@ -214,7 +212,8 @@
         }
       },
       "on_success": 27,
-      "on_fail": 6
+      "on_fail": 6,
+      "name": "kuaisudiaocha"
     },
     {
       "id": 6,
@@ -246,7 +245,8 @@
               "h": 400,
               "align": "top"
             },
-            "on_success": 701
+            "on_success": 701,
+            "name": "jiedao1"
           },
           {
             "type": "template",
@@ -259,7 +259,8 @@
               "h": 400,
               "align": "top"
             },
-            "on_success": 2201
+            "on_success": 2201,
+            "name": "cunzi4"
           },
           {
             "type": "template",
@@ -272,7 +273,8 @@
               "h": 400,
               "align": "top"
             },
-            "on_success": 2801
+            "on_success": 2801,
+            "name": "shulin"
           },
           {
             "type": "template",
@@ -285,7 +287,8 @@
               "h": 400,
               "align": "top"
             },
-            "on_success": 3601
+            "on_success": 3601,
+            "name": "jiedao2"
           },
           {
             "type": "template",
@@ -298,7 +301,8 @@
               "h": 400,
               "align": "top"
             },
-            "on_success": 4401
+            "on_success": 4401,
+            "name": "taohua"
           }
         ]
       },
@@ -357,7 +361,8 @@
         }
       },
       "on_success": 11,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "huise_queding"
     },
     {
       "id": 11,
@@ -445,7 +450,8 @@
         }
       },
       "on_success": 17,
-      "on_fail": 1601
+      "on_fail": 1601,
+      "name": "biaoxian"
     },
     {
       "id": 1601,
@@ -464,7 +470,8 @@
         }
       },
       "on_success": 17,
-      "on_fail": 17
+      "on_fail": 17,
+      "name": "tiaoguo1"
     },
     {
       "id": 17,
@@ -719,7 +726,8 @@
       },
       "start_cooldown_on_success": true,
       "on_success": 2,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "queding"
     },
     {
       "id": 2801,
@@ -1020,4 +1028,3 @@
     }
   ]
 }
-

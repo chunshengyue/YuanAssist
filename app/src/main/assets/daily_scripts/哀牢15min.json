@@ -22,7 +22,8 @@
             },
             "template_name": "哀牢.png",
             "threshold": 0.77,
-            "type": "template"
+            "type": "template",
+            "name": "哀牢"
           },
           {
             "click": 0,
@@ -36,7 +37,8 @@
             },
             "template_name": "进入哀牢.png",
             "threshold": 0.77,
-            "type": "template"
+            "type": "template",
+            "name": "进入哀牢"
           },
           {
             "click": 0,
@@ -50,7 +52,8 @@
             },
             "template_name": "关卡.png",
             "threshold": 0.88,
-            "type": "template"
+            "type": "template",
+            "name": "关卡"
           },
           {
             "click": 0,
@@ -64,7 +67,8 @@
             },
             "template_name": "哀牢关卡20.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "哀牢关卡20"
           }
         ]
       },
@@ -102,7 +106,8 @@
         "template_name": "哀牢.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "name": "哀牢"
     },
     {
       "action": "MATCH_TEMPLATE",
@@ -123,7 +128,8 @@
         "template_name": "进入哀牢.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "name": "进入哀牢"
     },
     {
       "action": "SCREENSHOT_GROUP",
@@ -146,7 +152,8 @@
             },
             "template_name": "关卡.png",
             "threshold": 0.88,
-            "type": "template"
+            "type": "template",
+            "name": "关卡"
           },
           {
             "click": 1,
@@ -160,7 +167,8 @@
             },
             "template_name": "哀牢关卡20.png",
             "threshold": 0.85,
-            "type": "template"
+            "type": "template",
+            "name": "哀牢关卡20"
           }
         ]
       },
@@ -185,7 +193,8 @@
         "template_name": "哀牢进入战斗.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "name": "哀牢进入战斗"
     },
     {
       "action": "OCR",

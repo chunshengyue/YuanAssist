@@ -1,0 +1,144 @@
+{
+  "id": "20260602_165821",
+  "appId": "com.example.yuanassist",
+  "mainActivity": "com.example.yuanassist/.ui.MainActivity",
+  "adbBin": "C:\\Users\\17525\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+  "serial": "emulator-5554",
+  "apkPath": "",
+  "reportDir": "tools/yuanassist_test_tool/reports/app_smoke/20260602_165821",
+  "screenshot": "tools/yuanassist_test_tool/reports/app_smoke/20260602_165821/screenshot.png",
+  "logcat": "tools/yuanassist_test_tool/reports/app_smoke/20260602_165821/logcat.txt",
+  "summary": {
+    "passed": true,
+    "errors": 0,
+    "warnings": 0,
+    "steps": 11,
+    "installed": false,
+    "started": true,
+    "processAlive": true
+  },
+  "device": {
+    "serial": "emulator-5554",
+    "state": "device",
+    "kind": "emulator",
+    "online": true,
+    "model": "NX809J",
+    "product": "NX809J",
+    "device": "graceltexx",
+    "transportId": "1",
+    "raw": "emulator-5554          device product:NX809J model:NX809J device:graceltexx transport_id:1",
+    "androidSdk": "34",
+    "release": "14",
+    "screenSize": "Physical size: 1080x1920",
+    "density": "Physical density: 480"
+  },
+  "buildConfig": {
+    "applicationId": "com.example.yuanassist",
+    "versionCode": 42,
+    "versionName": "1.1.6.1"
+  },
+  "installedPackage": {
+    "versionCode": 42,
+    "versionName": "1.1.6.1"
+  },
+  "permissions": {
+    "accessibilityEnabled": true,
+    "enabledAccessibilityServices": "com.example.yuanassist/com.example.yuanassist.core.YuanAssistService",
+    "overlayAllowed": true,
+    "overlayRaw": "SYSTEM_ALERT_WINDOW: allow; time=+3h19m21s14ms ago; duration=+11s823ms"
+  },
+  "steps": [
+    {
+      "name": "设备检查",
+      "status": "ok",
+      "message": "emulator-5554 在线",
+      "data": {
+        "kind": "emulator",
+        "model": "NX809J"
+      }
+    },
+    {
+      "name": "设备信息",
+      "status": "ok",
+      "message": "已读取 Android 版本、分辨率和 DPI",
+      "data": {
+        "androidSdk": "34",
+        "release": "14",
+        "model": "NX809J",
+        "screenSize": "Physical size: 1080x1920",
+        "density": "Physical density: 480"
+      }
+    },
+    {
+      "name": "APK 安装",
+      "status": "skip",
+      "message": "未提供 APK，直接检查已安装应用",
+      "data": {}
+    },
+    {
+      "name": "安装包信息",
+      "status": "ok",
+      "message": "versionCode=42 versionName=1.1.6.1",
+      "data": {
+        "versionCode": 42,
+        "versionName": "1.1.6.1"
+      }
+    },
+    {
+      "name": "权限状态",
+      "status": "ok",
+      "message": "无障碍=已开，悬浮窗=已允许",
+      "data": {
+        "accessibilityEnabled": true,
+        "enabledAccessibilityServices": "com.example.yuanassist/com.example.yuanassist.core.YuanAssistService",
+        "overlayAllowed": true,
+        "overlayRaw": "SYSTEM_ALERT_WINDOW: allow; time=+3h19m21s14ms ago; duration=+11s823ms"
+      }
+    },
+    {
+      "name": "清理 logcat",
+      "status": "ok",
+      "message": "已清理启动前日志",
+      "data": {}
+    },
+    {
+      "name": "冷启动",
+      "status": "ok",
+      "message": "已发送启动命令",
+      "data": {
+        "output": "Starting: Intent { cmp=com.example.yuanassist/.ui.MainActivity }"
+      }
+    },
+    {
+      "name": "进程检查",
+      "status": "ok",
+      "message": "进程存活 pid=1174",
+      "data": {
+        "pid": "1174"
+      }
+    },
+    {
+      "name": "启动截图",
+      "status": "ok",
+      "message": "已保存启动后截图",
+      "data": {
+        "path": "D:\\YuanAssist-master\\tools\\yuanassist_test_tool\\reports\\app_smoke\\20260602_165821\\screenshot.png"
+      }
+    },
+    {
+      "name": "采集 logcat",
+      "status": "ok",
+      "message": "已保存启动日志",
+      "data": {
+        "path": "D:\\YuanAssist-master\\tools\\yuanassist_test_tool\\reports\\app_smoke\\20260602_165821\\logcat.txt"
+      }
+    },
+    {
+      "name": "日志扫描",
+      "status": "ok",
+      "message": "未发现关键崩溃/ANR 日志",
+      "data": {}
+    }
+  ],
+  "findings": []
+}

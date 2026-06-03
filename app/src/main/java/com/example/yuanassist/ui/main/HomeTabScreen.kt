@@ -68,7 +68,6 @@ fun HomeTabScreen(
                 HomeEntryButton("刷6-24", R.drawable.item_fenggongzhu, R.drawable.decor_xian, onClick = actions.onOpenMainline624),
                 HomeEntryButton("无月卡观星", R.drawable.item_chendeng2, R.drawable.decor_que, onClick = actions.onOpenStargazing),
                 HomeEntryButton("星石拼图", R.drawable.item_shizimiao, R.drawable.decor_que, onClick = actions.onOpenInventoryStitch),
-                HomeEntryButton("披荆斩棘", R.drawable.item_chenji, R.drawable.decor_que, onClick = actions.onOpenPiJingZhanJi),
                 HomeEntryButton("去去指哀牢", R.drawable.item_caiyan, R.drawable.decor_que, onClick = actions.onOpenAilao15Min),
                 HomeEntryButton("脚本库", R.drawable.item_zhangzhao, R.drawable.decor_que, onClick = actions.onOpenScriptLibrary),
                 HomeEntryButton(

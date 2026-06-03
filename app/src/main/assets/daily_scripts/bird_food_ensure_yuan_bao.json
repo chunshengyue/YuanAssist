@@ -20,7 +20,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -34,7 +35,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -48,7 +50,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 100
+            "on_success": 100,
+            "name": "名册"
           }
         ]
       },
@@ -81,7 +84,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -95,7 +99,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -109,7 +114,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 103
+            "on_success": 103,
+            "name": "名册"
           }
         ]
       },
@@ -142,7 +148,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -156,7 +163,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -170,7 +178,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 106
+            "on_success": 106,
+            "name": "名册"
           }
         ]
       },
@@ -203,7 +212,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -217,7 +227,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -231,7 +242,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 109
+            "on_success": 109,
+            "name": "名册"
           }
         ]
       },
@@ -264,7 +276,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -278,7 +291,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -292,7 +306,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 112
+            "on_success": 112,
+            "name": "名册"
           }
         ]
       },
@@ -325,7 +340,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -339,7 +355,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -353,7 +370,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 115
+            "on_success": 115,
+            "name": "名册"
           }
         ]
       },
@@ -386,7 +404,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -400,7 +419,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -414,7 +434,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 118
+            "on_success": 118,
+            "name": "名册"
           }
         ]
       },
@@ -448,7 +469,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "tfqk"
           },
           {
             "type": "template",
@@ -462,7 +484,8 @@
               "h": 300,
               "align": "center"
             },
-            "on_success": -1
+            "on_success": -1,
+            "name": "yuanbao"
           },
           {
             "type": "template",
@@ -476,7 +499,8 @@
               "h": 250.0,
               "align": "center"
             },
-            "on_success": 121
+            "on_success": 121,
+            "name": "名册"
           }
         ]
       },
@@ -515,7 +539,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 2
+      "on_fail": 2,
+      "name": "yuanbao"
     },
     {
       "id": 103,
@@ -549,7 +574,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 4
+      "on_fail": 4,
+      "name": "yuanbao"
     },
     {
       "id": 106,
@@ -583,7 +609,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 6
+      "on_fail": 6,
+      "name": "yuanbao"
     },
     {
       "id": 109,
@@ -617,7 +644,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 8
+      "on_fail": 8,
+      "name": "yuanbao"
     },
     {
       "id": 112,
@@ -651,7 +679,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 10
+      "on_fail": 10,
+      "name": "yuanbao"
     },
     {
       "id": 115,
@@ -685,7 +714,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 12
+      "on_fail": 12,
+      "name": "yuanbao"
     },
     {
       "id": 118,
@@ -719,7 +749,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": 14
+      "on_fail": 14,
+      "name": "yuanbao"
     },
     {
       "id": 121,
@@ -754,7 +785,8 @@
         }
       },
       "on_success": -1,
-      "on_fail": -2
+      "on_fail": -2,
+      "name": "yuanbao"
     }
   ]
 }

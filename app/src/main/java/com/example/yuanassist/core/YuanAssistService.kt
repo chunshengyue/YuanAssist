@@ -340,21 +340,6 @@ class YuanAssistService : AccessibilityService() {
                     dailyWindowManager?.showWindow()
                 }
             }
-            "ACTION_START_PI_JING_ZHAN_JI" -> {
-                removeInputWindow()
-                uiManager.removeControlWindow()
-                uiManager.removeMinimizedWindow()
-                if (dailyWindowManager == null) {
-                    dailyWindowManager = DailyWindowManager(this)
-                }
-                val config = PiJingZhanJiBridge.pendingConfig
-                if (config == null) {
-                    Toast.makeText(this, "披荆斩棘配置缺失", Toast.LENGTH_SHORT).show()
-                } else {
-                    dailyWindowManager?.submitPiJingZhanJiConfig(config)
-                    dailyWindowManager?.showWindow()
-                }
-            }
             "ACTION_START_INVENTORY_STITCH" -> {
                 removeInputWindow()
                 uiManager.removeControlWindow()
@@ -650,12 +635,6 @@ class YuanAssistService : AccessibilityService() {
                 dailyWindowManager?.showWindow()
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 appendAccessibilityTrace("无月卡观星悬浮窗显示完成：${buildWindowVisibilitySummary()}")
-            } else if (pendingAction == "ACTION_START_PI_JING_ZHAN_JI") {
-                if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
-                PiJingZhanJiBridge.pendingConfig?.let { dailyWindowManager?.submitPiJingZhanJiConfig(it) }
-                dailyWindowManager?.showWindow()
-                updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
-                appendAccessibilityTrace("披荆斩棘悬浮窗显示完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction == "ACTION_START_INVENTORY_STITCH") {
                 if (dailyWindowManager == null) dailyWindowManager = DailyWindowManager(this)
                 val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)

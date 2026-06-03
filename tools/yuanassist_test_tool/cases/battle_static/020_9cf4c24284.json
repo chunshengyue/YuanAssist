@@ -1,0 +1,10 @@
+{
+  "objectId": "9cf4c24284",
+  "title": "去去指哀牢15梦魇",
+  "scriptContent": "1回合\t2↑\t4↑\t1A\t3↑\t5↓\n2回合\t1↓\t4↓\t1A\t2A3A\t5↓\n3回合\t5↑\t2A\t1A\t3↓\t4A\n4回合\t2A\t3A\t1A\t4A\t5↑\n5回合\t3A\t4↑\t1↓\t2↑\t5↓\n6回合\t5↑\t3↑\t1A\t2A\t4A\n7回合\t5↓\t2A\t1↓\t3↓\t4A\n8回合\t2A\t3A\t1A\t4A\t5↑\n9回合\t5↑\t4↓\t1↓\t2↑\t3A\n10回合\t5A\t3A\t1A\t2↓\t4A\n11回合\t5A\t3A\t1↓\t2↓\t4A\n12回合\t5A\t3A\t1A\t2↓\t5↑\n13回合\t5A\t3A\t1↓\t2↓\t4A",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-29 09:33:34.612+00",
+  "updatedAt": "2026-05-29 09:33:34.612+00",
+  "source": "supabase.strategy_detail"
+}

@@ -1,0 +1,10 @@
+{
+  "objectId": "83e78668dd",
+  "title": "代号鸢5月洞窟庞德",
+  "scriptContent": "1回合\t1↑\t3↓\t2↓\t4↓\t5↓\n2回合\t1A\t3↑\t2↓\t4↑\t5↓\n3回合\t1↑\t5圈6A7A8↓\t2↑\t4↓↓↓\t3↑\n4回合\t\t4A5A6A\t1↑\t3↓↓↓\t2↑",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-05-31 13:44:53.321+00",
+  "updatedAt": "2026-05-31 13:44:53.321+00",
+  "source": "supabase.strategy_detail"
+}

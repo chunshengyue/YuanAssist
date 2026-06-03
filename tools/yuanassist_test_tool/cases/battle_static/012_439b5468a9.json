@@ -1,0 +1,77 @@
+{
+  "objectId": "439b5468a9",
+  "title": "刘繇洞窟21-30五回合",
+  "scriptContent": "1回合\t5A\t2↓\t4A\t3A\t1↑\n2回合\t5↑6A\t2A\t4A\t3A\t1A\n3回合\t5↑\t2A\t1↑\t4A\t3A\n4回合\t5A\t4↓\t3A\t2A\t1↑\n5回合\t5A6↑7A8A9A10A\t4↑\t2↑\t1↑\t3A\n6回合\t1A2↑\t\t\t\t",
+  "instructions": [
+    {
+      "step": 2,
+      "turn": 1,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 3,
+      "turn": 1,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 2,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 3,
+      "turn": 2,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 3,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 1,
+      "turn": 3,
+      "type": "TARGET_SWITCH_RIGHT",
+      "value": 1
+    },
+    {
+      "step": 2,
+      "turn": 3,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    },
+    {
+      "step": 2,
+      "turn": 3,
+      "type": "TARGET_SWITCH_LEFT",
+      "value": 1
+    }
+  ],
+  "visible": 1,
+  "createdAt": "2026-05-31 06:23:15.806+00",
+  "updatedAt": "2026-05-31 06:32:47.027+00",
+  "source": "supabase.strategy_detail"
+}

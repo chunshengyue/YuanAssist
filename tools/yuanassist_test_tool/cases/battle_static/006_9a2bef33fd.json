@@ -1,0 +1,10 @@
+{
+  "objectId": "9a2bef33fd",
+  "title": "许曼洞窟 1-20",
+  "scriptContent": "1回合\t1↑\t4↓\t3A\t5↑\t2↑\n2回合\t4↓\t3A\t2↓\t1A\t5A\n3回合\t4A\t3A\t2A\t1A\t5A\n4回合\t2A\t3A\t1A\t圈\t圈\n5回合\t1↑9↓\t3↑5A\t4↑8↑\t2↑6↑\t7A\n6回合\t\t\t\t\t",
+  "instructions": [],
+  "visible": 1,
+  "createdAt": "2026-06-01 05:28:14.001+00",
+  "updatedAt": "2026-06-01 05:40:23.336+00",
+  "source": "supabase.strategy_detail"
+}

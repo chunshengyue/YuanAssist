@@ -136,7 +136,6 @@ class MainActivity : AppCompatActivity() {
                     onOpenMainline624 = homeActionHandler::openMainline624,
                     onOpenStargazing = homeActionHandler::openStargazing,
                     onOpenAilao15Min = homeActionHandler::openAilao15Min,
-                    onOpenPiJingZhanJi = homeActionHandler::openPiJingZhanJi,
                     onOpenInventoryStitch = homeActionHandler::openInventoryStitch,
                     onOpenBoxOcr = homeActionHandler::startBoxOcr,
                     onOpenCoordinatePicker = homeActionHandler::startCoordinatePicker,
