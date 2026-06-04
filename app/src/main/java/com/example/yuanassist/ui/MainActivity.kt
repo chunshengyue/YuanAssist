@@ -69,6 +69,8 @@ class MainActivity : AppCompatActivity() {
         private const val ANNOUNCEMENT_PREFS = "announcement_prefs"
         private const val KEY_LAST_ANNOUNCEMENT_VERSION = "last_announcement_version"
         private const val OFFICIAL_SITE_URL = "https://yuanassist.space"
+        private const val BIUBIU_LINK_URL = "https://www.biubiu001.com/?cfrom=yuanassist"
+        private const val MAAYUAN_LINK_URL = "https://maayuan.top/"
         private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
         private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
         private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
@@ -135,7 +137,6 @@ class MainActivity : AppCompatActivity() {
                     onOpenBirdFood = homeActionHandler::openBirdFood,
                     onOpenMainline624 = homeActionHandler::openMainline624,
                     onOpenStargazing = homeActionHandler::openStargazing,
-                    onOpenAilao15Min = homeActionHandler::openAilao15Min,
                     onOpenInventoryStitch = homeActionHandler::openInventoryStitch,
                     onOpenBoxOcr = homeActionHandler::startBoxOcr,
                     onOpenCoordinatePicker = homeActionHandler::startCoordinatePicker,
@@ -150,6 +151,8 @@ class MainActivity : AppCompatActivity() {
                         homeOverlayState = homeOverlayState.copy(hasUnreadAdminCloudScript = false)
                         startActivity(Intent(this, CloudDailyScriptListActivity::class.java))
                     },
+                    onOpenBiubiuLink = ::openBiubiuLink,
+                    onOpenMaaYuanLink = ::openMaaYuanLink,
                     onCheckUpdate = homeActionHandler::checkUpdate,
                 ),
                 jobActions = JobTabActions(
@@ -404,6 +407,22 @@ class MainActivity : AppCompatActivity() {
     private fun openOfficialSite() {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(OFFICIAL_SITE_URL)))
+        }.onFailure {
+            Toast.makeText(this, "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openBiubiuLink() {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BIUBIU_LINK_URL)))
+        }.onFailure {
+            Toast.makeText(this, "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openMaaYuanLink() {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(MAAYUAN_LINK_URL)))
         }.onFailure {
             Toast.makeText(this, "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
         }

@@ -44,13 +44,12 @@
 - 主壳页面
   - `MainActivity` + `ui/main/*` 负责主导航、状态同步、Debug 页接入。
   - 首页检查更新由 `HomeActionHandler` 处理：发现新版本后优先走 Android `DownloadManager` 应用内下载，下载完成拉起系统安装器；同时保留浏览器下载作为手动入口和兜底。
+  - 首页「友情链接」板块位于常用入口之后，当前一行展示 biubiu 和 maayuan 两个推荐卡片；入口图标使用 `assets/biubiu.jpg`、`assets/maayuan.png`，点击由 `MainActivity` 打开外链。
 - 无障碍自动化
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
 - 日常脚本系统
   - `AutoTaskEngine` 按 `DailyTaskPlan` 执行 CLICK、MATCH_TEMPLATE、OCR、SET_VAR、BACK 等动作。
   - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL，并有独立于攻略评论的云端脚本评论区。管理员设备发布的云端脚本由后端返回 `isAdminPublished`，列表显示“管理员发布”标签；首页「云端脚本」入口红点与消息未读数共用 `get-home-badges` 请求，并按本地已读记录判断，进入列表页后清除。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
-  - 首页日常入口包含“去去指哀牢”：入口页是 `Ailao15MinFragment`，可导入 `assets/daily_scripts/哀牢15min.json`（哀牢1体力循环）或 `assets/daily_scripts/哀牢0体力刷家具.json`（哀牢0体力刷家具）到日常版悬浮窗；1体力循环每 15 分钟刷一次哀牢幻境难度，0体力刷家具会用 assets 根目录的 6 个家具素材替代关卡识别并直接循环。该入口导入前会把待导入脚本写入 `app_prefs`，用户跳转开启无障碍后由 `YuanAssistService.onServiceConnected` 自动恢复导入并显示日常悬浮窗。
-  - “哀牢15min”运行时会在日常悬浮窗下方挂一个专属小状态栏，主体实现是 `AilaoStatusBarManager`，布局是 `layout_ailao_status_bar.xml`；开始后显示“运行中”，进入 15 分钟等待节点时显示倒计时。该状态栏不改 `layout_daily_window.xml`，由 `DailyWindowManager` 负责薄接入、跟随拖动和关闭清理。
   - 现已支持 `SCREENSHOT_GROUP`：
     - 只用于视觉识别候选组，共用一次截图
     - 组内子项当前支持 `ocr`、`template` / `match_template`
@@ -76,7 +75,9 @@
   - 调试页会自动索引 `assets/daily_scripts` 中的脚本视觉节点，包括 `MATCH_TEMPLATE`、`OCR` 以及 `SCREENSHOT_GROUP` 子步骤。
   - OCR 节点即使 JSON 未配置 `template_name`，调试页也会生成稳定派生模板名：`<scriptBaseName>_task_<taskId>_ocr.png`，保存位置是 App 私有 `files/template_overrides/`。
   - 运行时 OCR 节点优先查对应 override 模板；存在则走模板匹配，不存在则回落原 OCR。
+  - `SCREENSHOT_GROUP` 里的 OCR 子步骤也遵循同一套 override 语义；无 `template_name` 时使用 `<scriptBaseName>_task_<taskId>_step_<index>_ocr.png`。
   - 脚本 JSON 可配置脚本级 `display_name` 作为调试页/用户可见名称；节点级 `name` 用于调试选项和运行日志中的任务标识。
+  - 调试页延时增量由 `TemplateDelayOverrideStore` 持久化，运行时会在普通日常脚本开始前和 `RUN_SCRIPT_SEGMENT` 子脚本加载时应用；支持 `MATCH_TEMPLATE`、`OCR`、`SCREENSHOT_GROUP` 子步骤，脚本 key 会兼容 `.json`/无后缀以及 `user:`/裸脚本 id。
 - 角色导入
   - `CharacterImportEngine` 负责截图、OCR、命盘/练度/名称推断。
 - 特定业务运行时
@@ -370,9 +371,13 @@
 ## 可复用模块
 - `AutoTaskEngine`
   - 通用日常脚本执行引擎，支持模板匹配、OCR、点击、变量与分支跳转。
+  - `RUN_SCRIPT_SEGMENT` 加载子脚本时支持 `segmentPlanCustomizer` 钩子；刷鸟食用它把待办公务入口跳过、五铢钱选择区域和开始战斗延时应用到实际子脚本。
 - `DebugWorkbenchCoordinator`
   - 通用调试工作台协调器，适合给模板/OCR/延时调优接入口。
   - 脚本 OCR 节点支持从自身 ROI 裁剪生成 App 私有模板，不修改 assets JSON 或 assets 模板文件。
+- `TemplateDelayOverrideStore`
+  - 调试页延时增量的统一持久化与运行时 plan 覆盖入口；普通日常悬浮窗在启动脚本前应用，`AutoTaskEngine` 在加载 `RUN_SCRIPT_SEGMENT` 子脚本后应用。
+  - `SCREENSHOT_GROUP` 多个子步骤共享任务级 delay；若同组多个子项配置增量，运行时取最大视觉节点增量加到该组任务 delay。
 - `UserDailyScriptStore`
   - 用户脚本 bundle 的创建、读取、导出、模板文件同步。
 - `TemplateOverrideStore`
@@ -410,7 +415,7 @@
 - `DebugWorkbenchCoordinator` 里维护了大量任务、模板、ROI、阈值和角色特殊点位，是识别规则的重要事实来源。
 - 角色导入不仅依赖 OCR，还叠加了名字纠错、命盘匹配、候选打分；不要把它当成简单 OCR 页面。
 - `RecordedDailyScriptViewerActivity` 不只是查看器，它也是脚本结构编辑器，支持改起始任务、增删节点、分支查看、导出。
-- 模板替换、脚本编辑、延时覆盖三者是分开的持久化层，不要误以为都写在一个地方。
+- 模板替换、脚本编辑、延时覆盖三者是分开的持久化层；延时覆盖保存到偏好设置，运行时通过 plan 覆盖应用，不会改写脚本 JSON。
 
 ## 修改建议
 - 涉及模板匹配、OCR、ROI、点位的改动，先确认所属链路是 `1080x1920` 还是 `1440x2560`。

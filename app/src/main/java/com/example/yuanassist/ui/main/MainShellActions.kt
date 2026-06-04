@@ -6,7 +6,6 @@ data class HomeTabActions(
     val onOpenBirdFood: () -> Unit,
     val onOpenMainline624: () -> Unit,
     val onOpenStargazing: () -> Unit,
-    val onOpenAilao15Min: () -> Unit,
     val onOpenInventoryStitch: () -> Unit,
     val onOpenBoxOcr: () -> Unit,
     val onOpenCoordinatePicker: () -> Unit,
@@ -17,6 +16,8 @@ data class HomeTabActions(
     val onOpenFeedback: () -> Unit,
     val onOpenScriptLibrary: () -> Unit,
     val onOpenCloudDailyScript: () -> Unit,
+    val onOpenBiubiuLink: () -> Unit,
+    val onOpenMaaYuanLink: () -> Unit,
     val onCheckUpdate: () -> Unit,
 )
 

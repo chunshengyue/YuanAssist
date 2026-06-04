@@ -48,6 +48,7 @@ class BirdFoodRuntimeManager(
         engine.verboseLoggingEnabled = true
         engine.diagnosticLoggingEnabled = config.debugModeEnabled
         engine.globalDelayOffsetMs = config.lowSpecDelayMs
+        engine.segmentPlanCustomizer = ::customizeLoadedPlan
         engine.setRunLogScope("刷鸟食", config.selectedTask.displayName)
     }
 
@@ -179,12 +180,16 @@ class BirdFoodRuntimeManager(
             TemplateDelayOverrideStore.applyToPlan(
                 service,
                 fileName,
-                applyStartBattleDelayOverrides(fileName, customizePlan(fileName, plan))
+                customizeLoadedPlan(fileName, plan)
             )
         } catch (t: Throwable) {
             RunLogger.e(module = "刷鸟食", section = "总流程", message = "加载脚本失败：$fileName", throwable = t)
             null
         }
+    }
+
+    private fun customizeLoadedPlan(fileName: String, plan: DailyTaskPlan): DailyTaskPlan {
+        return applyStartBattleDelayOverrides(fileName, customizePlan(fileName, plan))
     }
 
     private fun customizePlan(fileName: String, plan: DailyTaskPlan): DailyTaskPlan {

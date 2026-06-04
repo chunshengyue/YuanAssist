@@ -60,10 +60,6 @@ class HomeActionHandler(
         openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_STARGAZING)
     }
 
-    fun openAilao15Min() {
-        openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_AILAO_15_MIN)
-    }
-
     fun openInventoryStitch() {
         openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_INVENTORY_STITCH)
     }

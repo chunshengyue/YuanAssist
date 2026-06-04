@@ -1,7 +1,10 @@
 package com.example.yuanassist.ui.main
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -15,19 +18,33 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yuanassist.R
 import com.example.yuanassist.ui.main.components.GufengDecorActionButton
 import com.example.yuanassist.ui.main.theme.BodyInk
+import com.example.yuanassist.ui.main.theme.GlassPanel
+import com.example.yuanassist.ui.main.theme.PaperLine
 import com.example.yuanassist.ui.main.theme.TitleInk
+import com.example.yuanassist.ui.main.theme.WarmRose
 
 @Composable
 fun HomeTabScreen(
@@ -68,7 +85,6 @@ fun HomeTabScreen(
                 HomeEntryButton("刷6-24", R.drawable.item_fenggongzhu, R.drawable.decor_xian, onClick = actions.onOpenMainline624),
                 HomeEntryButton("无月卡观星", R.drawable.item_chendeng2, R.drawable.decor_que, onClick = actions.onOpenStargazing),
                 HomeEntryButton("星石拼图", R.drawable.item_shizimiao, R.drawable.decor_que, onClick = actions.onOpenInventoryStitch),
-                HomeEntryButton("去去指哀牢", R.drawable.item_caiyan, R.drawable.decor_que, onClick = actions.onOpenAilao15Min),
                 HomeEntryButton("脚本库", R.drawable.item_zhangzhao, R.drawable.decor_que, onClick = actions.onOpenScriptLibrary),
                 HomeEntryButton(
                     "云端脚本",
@@ -93,6 +109,7 @@ fun HomeTabScreen(
                 HomeEntryButton("框选OCR", R.drawable.item_zhouzhong, R.drawable.decor_xian, onClick = actions.onOpenBoxOcr),
             ),
         )
+        FriendLinksSection(actions = actions)
         Spacer(modifier = Modifier.height(2.dp))
     }
 }
@@ -152,6 +169,175 @@ private fun ModeSection(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FriendLinksSection(actions: HomeTabActions) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SectionHeader(title = "友情链接", subtitle = "同好推荐 · 便捷入口")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FriendLinkCard(
+                title = "biubiu",
+                subtitle = "玩代号鸢，用biubiu加速器",
+                assetPath = "biubiu.jpg",
+                modifier = Modifier.weight(1f),
+                onClick = actions.onOpenBiubiuLink,
+            )
+            FriendLinkCard(
+                title = "maayuan",
+                subtitle = "代号鸢 / 如鸢小助手，解放双手，畅玩无忧",
+                assetPath = "maayuan.png",
+                modifier = Modifier.weight(1f),
+                onClick = actions.onOpenMaaYuanLink,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FriendLinkCard(
+    title: String,
+    subtitle: String,
+    assetPath: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = modifier
+            .height(112.dp)
+            .shadow(
+                elevation = 7.dp,
+                shape = shape,
+                clip = false,
+                ambientColor = Color(0xFFD39A72).copy(alpha = 0.20f),
+                spotColor = Color(0xFF8F5C40).copy(alpha = 0.08f),
+            )
+            .clip(shape)
+            .background(
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        GlassPanel,
+                        Color(0xFFFFF4E2),
+                        Color(0xFFF4E2C7),
+                    ),
+                ),
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        PaperLine.copy(alpha = 0.85f),
+                        WarmRose.copy(alpha = 0.42f),
+                        PaperLine.copy(alpha = 0.70f),
+                    ),
+                ),
+                shape = shape,
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
+            .padding(horizontal = 9.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            FriendLinkAssetIcon(
+                assetPath = assetPath,
+                contentDescription = title,
+                fallbackText = title,
+            )
+            Text(
+                text = title,
+                color = TitleInk,
+                fontSize = 15.sp,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.sp,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "打开",
+                color = TitleInk,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(Color(0xFFFFF8EF).copy(alpha = 0.72f))
+                    .border(0.6.dp, PaperLine.copy(alpha = 0.60f), RoundedCornerShape(999.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+        Text(
+            text = subtitle,
+            color = BodyInk.copy(alpha = 0.88f),
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Serif,
+            letterSpacing = 0.sp,
+            lineHeight = 16.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun FriendLinkAssetIcon(
+    assetPath: String,
+    contentDescription: String,
+    fallbackText: String,
+) {
+    val context = LocalContext.current
+    val imageBitmap = remember(context, assetPath) {
+        runCatching {
+            context.assets.open(assetPath).use { input ->
+                BitmapFactory.decodeStream(input)?.asImageBitmap()
+            }
+        }.getOrNull()
+    }
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFFFF8EF))
+            .border(1.dp, PaperLine.copy(alpha = 0.76f), CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (imageBitmap != null) {
+            Image(
+                bitmap = imageBitmap,
+                contentDescription = contentDescription,
+                modifier = Modifier
+                    .size(31.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Text(
+                text = fallbackText,
+                color = TitleInk,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp,
+            )
         }
     }
 }

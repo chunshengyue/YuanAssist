@@ -47,6 +47,7 @@ import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StoneOcrCoordinator
 import com.example.yuanassist.utils.StoneOcrMode
+import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.example.yuanassist.ui.MyStoneActivity
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
@@ -122,7 +123,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
     private val stitchEngine = InventoryStitchEngine(service)
     private val characterImportEngine = CharacterImportEngine(service)
-    private val ailaoStatusBarManager = AilaoStatusBarManager(service)
     private val windowManager =
         service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private val handler = Handler(Looper.getMainLooper())
@@ -214,7 +214,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
         floatView != null || scriptRecorderManager.isVisible
 
     fun submitTaskPlan(plan: DailyTaskPlan, scriptName: String, templateDir: File? = null) {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         currentBirdFoodConfig = null
         currentMainline624Config = null
@@ -252,7 +251,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun submitBirdFoodConfig(config: BirdFoodConfig) {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
@@ -269,7 +267,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun submitMainline624Config(config: Mainline624Config) {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
@@ -286,7 +283,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun submitStargazingConfig(config: StargazingConfig) {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
@@ -303,7 +299,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun submitCharacterImportConfig(config: CharacterImportConfig) {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
@@ -324,7 +319,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
             return
         }
-        ailaoStatusBarManager.hide()
         stopCoordinatePicker()
         stopBoxOcrOverlay()
         scriptRecorderManager.stop()
@@ -342,7 +336,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun startCoordinatePickerMode() {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         currentTaskPlan = null
         currentScriptName = null
@@ -362,7 +355,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
             Toast.makeText(service, "请先停止当前日常任务", Toast.LENGTH_SHORT).show()
             return
         }
-        ailaoStatusBarManager.hide()
         stopCoordinatePicker()
         scriptRecorderManager.stop()
         currentTaskPlan = null
@@ -380,7 +372,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     fun prepareInventoryStitching(stoneType: String, archiveId: String? = null) {
-        ailaoStatusBarManager.hide()
         scriptRecorderManager.stop()
         showWindow()
         if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning) {
@@ -547,20 +538,15 @@ class DailyWindowManager(private val service: AccessibilityService) {
             openDailyPage()
             return
         }
+        val runtimePlan = applyRuntimeDelayOverrides(plan)
 
         RunLogger.clear()
         RunLogger.i("开始日常脚本：${currentScriptName ?: "未命名"}")
-        if (isAilao15MinScript()) {
-            ailaoStatusBarManager.showRunning(lastWindowX, lastWindowY)
-        }
         refreshActionButton()
         engine.startPlan(
-            plan = plan,
+            plan = runtimePlan,
             onCompleted = { success, errorMsg ->
                 handler.post {
-                    if (isAilao15MinScript()) {
-                        ailaoStatusBarManager.hide()
-                    }
                     refreshActionButton()
                     val message = if (success) {
                         "日常任务已完成"
@@ -570,20 +556,33 @@ class DailyWindowManager(private val service: AccessibilityService) {
                     Toast.makeText(service, message, Toast.LENGTH_SHORT).show()
                 }
             },
-            onTaskScheduled = { task, effectiveDelay ->
-                if (isAilao15MinScript() && task.id == 20 && effectiveDelay > 0L) {
-                    handler.post {
-                        ailaoStatusBarManager.showCooldown(lastWindowX, lastWindowY)
-                    }
-                }
-            },
             templateDir = currentTemplateDir,
             scriptFileName = currentScriptName,
         )
     }
 
+    private fun applyRuntimeDelayOverrides(plan: DailyTaskPlan): DailyTaskPlan {
+        val scriptName = currentScriptName?.takeIf { it.isNotBlank() } ?: return plan
+        val isUserScript = currentTemplateDir != null && !scriptName.startsWith("user:")
+        val taskKey = if (isUserScript) {
+            "user:$scriptName"
+        } else {
+            scriptName
+        }
+        val extraTaskKeys = if (isUserScript) {
+            listOf(scriptName)
+        } else {
+            emptyList()
+        }
+        return TemplateDelayOverrideStore.applyToPlan(
+            context = service,
+            taskKey = taskKey,
+            plan = plan,
+            extraTaskKeys = extraTaskKeys
+        )
+    }
+
     private fun stopCurrentWork() {
-        ailaoStatusBarManager.hide()
         birdFoodRuntimeManager.stop()
         mainline624RuntimeManager.stop()
         stargazingRuntimeManager.stop()
@@ -609,9 +608,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
             }
         }
     }
-
-    private fun isAilao15MinScript(): Boolean =
-        currentScriptName == AilaoStatusBarManager.SCRIPT_FILE_NAME
 
     private fun showStoneOcrPrompt() {
         DialogUtils.safeShowOverlayDialog(
@@ -1281,7 +1277,6 @@ class DailyWindowManager(private val service: AccessibilityService) {
             lastWindowX = params.x
             lastWindowY = params.y
             safelyUpdateViewLayout(targetView, params, "更新悬浮窗位置失败")
-            ailaoStatusBarManager.updateAnchor(lastWindowX, lastWindowY)
         }
     }
 
@@ -1353,13 +1348,11 @@ class DailyWindowManager(private val service: AccessibilityService) {
                         params.x = initialX + (event.rawX - initialTouchX).toInt()
                         params.y = initialY + (event.rawY - initialTouchY).toInt()
                         safelyUpdateViewLayout(targetView, params, "拖动悬浮窗失败")
-                        ailaoStatusBarManager.updateAnchor(params.x, params.y)
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
                         lastWindowX = params.x
                         lastWindowY = params.y
-                        ailaoStatusBarManager.updateAnchor(lastWindowX, lastWindowY)
                         if (abs(event.rawX - initialTouchX) < 10 &&
                             abs(event.rawY - initialTouchY) < 10
                         ) {

@@ -1836,7 +1836,7 @@ class DebugWorkbenchCoordinator(
             val index = dailyScriptIndexesByTask[scriptFile] ?: buildDailyScriptDebugIndex(scriptFile)
             if (index != null) {
                 dailyScriptIndexesByTask[scriptFile] = index
-                templateOptionsByTask[scriptFile] = index.templateNames
+                templateOptionsByTask[scriptFile] = dailyScriptTemplateOptions(scriptFile, index.templateNames)
             } else {
                 templateOptionsByTask[scriptFile] = emptyList()
             }
@@ -1855,6 +1855,16 @@ class DebugWorkbenchCoordinator(
             }
     }
 
+    private fun dailyScriptTemplateOptions(scriptFile: String, templateNames: List<String>): List<String> {
+        return buildList {
+            addAll(templateNames)
+            when (scriptFile) {
+                DAI_BAN_GONG_WU_SCRIPT -> add(DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION)
+                "zhu_xian_6_24.json" -> add(MAINLINE_624_START_BATTLE_DELAY_OPTION)
+            }
+        }.distinct()
+    }
+
     private fun loadTemplateDelayEntries() {
         templateDelayEntriesByTaskTemplate.clear()
         dailyScriptIndexesByTask.forEach { (taskKey, index) ->
@@ -1866,15 +1876,42 @@ class DebugWorkbenchCoordinator(
                 }
             }
         }
-        registerBirdFoodDelay(TASK_BIRD_FOOD_NAV, STAGE_HOME_RECOVERY_YUANBAO_TEMPLATE, BIRD_FOOD_YUANBAO_TASK_ID)
-        registerBirdFoodDelay(TASK_BIRD_FOOD_NAV, BIRD_FOOD_SCREEN_TEMPLATE, BIRD_FOOD_SCREEN_TASK_ID)
+        registerTemplateDelay(
+            TASK_BIRD_FOOD_NAV,
+            STAGE_HOME_RECOVERY_YUANBAO_TEMPLATE,
+            BIRD_FOOD_YUANBAO_TASK_ID,
+            BIRD_FOOD_RUNTIME_TEMPLATE_DELAY_MS
+        )
+        registerTemplateDelay(
+            TASK_BIRD_FOOD_NAV,
+            BIRD_FOOD_SCREEN_TEMPLATE,
+            BIRD_FOOD_SCREEN_TASK_ID,
+            BIRD_FOOD_RUNTIME_TEMPLATE_DELAY_MS
+        )
+        registerTemplateDelay(
+            DAI_BAN_GONG_WU_SCRIPT,
+            DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION,
+            0,
+            daiBanGongWuStartBattleBaseDelayMs()
+        )
+        registerTemplateDelay(
+            "zhu_xian_6_24.json",
+            MAINLINE_624_START_BATTLE_DELAY_OPTION,
+            0,
+            3000L
+        )
         registerBattleFlowTemplateDelayEntries()
     }
 
-    private fun registerBirdFoodDelay(taskKey: String, templateName: String, taskId: Int) {
+    private fun registerTemplateDelay(
+        taskKey: String,
+        templateName: String,
+        taskId: Int,
+        baseDelayMs: Long
+    ) {
         templateDelayEntriesByTaskTemplate
             .getOrPut(taskTemplateKey(taskKey, templateName)) { mutableListOf() }
-            .add(TemplateDelayEntry(taskId, BIRD_FOOD_RUNTIME_TEMPLATE_DELAY_MS))
+            .add(TemplateDelayEntry(taskId, baseDelayMs))
     }
 
     private fun registerBattleFlowTemplateDelayEntries() {

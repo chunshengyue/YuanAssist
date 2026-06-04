@@ -26,6 +26,7 @@ import com.example.yuanassist.utils.BirdFoodDebugScreenshotStore
 import com.example.yuanassist.utils.CloudScriptOverrideStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StartBattleShared
+import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.example.yuanassist.utils.TemplateOverrideStore
 import com.example.yuanassist.tableocr.PaddleTextBlock
 import com.example.yuanassist.tableocr.PaddleTextElement
@@ -62,6 +63,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     var verboseLoggingEnabled = true
     var diagnosticLoggingEnabled = false
     var globalDelayOffsetMs = 0L
+    var segmentPlanCustomizer: ((String, DailyTaskPlan) -> DailyTaskPlan)? = null
     var runLogModule: String? = null
     var runLogSection: String? = null
 
@@ -611,6 +613,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             child.verboseLoggingEnabled = verboseLoggingEnabled
             child.diagnosticLoggingEnabled = diagnosticLoggingEnabled
             child.globalDelayOffsetMs = globalDelayOffsetMs
+            child.segmentPlanCustomizer = segmentPlanCustomizer
             child.setRunLogScope(runLogModule, runLogSection)
         }
         childScriptEngine?.startPlan(
@@ -916,6 +919,26 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         sharedRegion: SearchRegion,
         mapping: ScreenshotMapping,
     ) {
+        val overrideTemplateName = screenshotGroupOcrTemplateOverrideName(task, step, index)
+        if (overrideTemplateName != null && TemplateOverrideStore.hasOverride(service, overrideTemplateName)) {
+            val match = findScreenshotGroupTemplateMatch(
+                task,
+                step.copy(
+                    template_name = overrideTemplateName,
+                    threshold = step.threshold ?: params.threshold,
+                ),
+                swBitmap,
+                sharedRegion,
+                mapping,
+            )
+            if (match != null) {
+                applyScreenshotGroupMatch(task, generation, match, sharedRegion, swBitmap, mapping)
+            } else {
+                executeScreenshotGroupStep(task, generation, params, steps, index + 1, swBitmap, sharedRegion, mapping)
+            }
+            return
+        }
+
         val stepRoi = step.roi
         val region = if (stepRoi == null) {
             sharedRegion
@@ -1607,20 +1630,22 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             logError("加载子脚本失败：$scriptName", t)
             null
         } ?: return null
-        if (plan.tasks.none { it.id == entryTaskId }) {
+        val customizedPlan = segmentPlanCustomizer?.invoke(scriptName, plan) ?: plan
+        val planWithDelayOverrides = TemplateDelayOverrideStore.applyToPlan(service, scriptName, customizedPlan)
+        if (planWithDelayOverrides.tasks.none { it.id == entryTaskId }) {
             logError("子脚本入口无效：$scriptName entry=$entryTaskId")
             return null
         }
         if (exitTaskId == null) {
-            return plan.copy(start_task_id = entryTaskId)
+            return planWithDelayOverrides.copy(start_task_id = entryTaskId)
         }
-        if (plan.tasks.none { it.id == exitTaskId }) {
+        if (planWithDelayOverrides.tasks.none { it.id == exitTaskId }) {
             logError("子脚本出口无效：$scriptName exit=$exitTaskId")
             return null
         }
-        return plan.copy(
+        return planWithDelayOverrides.copy(
             start_task_id = entryTaskId,
-            tasks = plan.tasks.map { source ->
+            tasks = planWithDelayOverrides.tasks.map { source ->
                 var nextTask = source
                 if (source.on_success == exitTaskId) {
                     nextTask = nextTask.copy(on_success = -1)
@@ -1723,6 +1748,25 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             }
         }
         return TemplateOverrideStore.ocrTemplateFileName(currentScriptFileName, task.id)
+    }
+
+    private fun screenshotGroupOcrTemplateOverrideName(
+        task: DailyTask,
+        step: ScreenshotStep,
+        stepIndex: Int,
+    ): String? {
+        step.template_name?.let { templateName ->
+            return if (templateName.contains('/') || templateName.contains('\\')) {
+                templateName
+            } else {
+                currentAssetTemplateDir
+                    ?.let { dir -> "$dir/$templateName" }
+                    ?: templateName
+            }
+        }
+        val baseName = TemplateOverrideStore.ocrTemplateFileName(currentScriptFileName, task.id)
+            ?: return null
+        return baseName.removeSuffix("_ocr.png") + "_step_${stepIndex + 1}_ocr.png"
     }
 
     private fun executeTemplateSearch(
