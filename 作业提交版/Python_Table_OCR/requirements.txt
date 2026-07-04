@@ -1,0 +1,5 @@
+opencv-contrib-python==4.10.0.84
+numpy
+paddlepaddle==3.3.1
+paddleocr==3.6.0
+pytest

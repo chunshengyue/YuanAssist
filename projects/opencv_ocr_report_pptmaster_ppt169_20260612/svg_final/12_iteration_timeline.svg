@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">ITERATION STORY</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">12 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">系统迭代过程：每一阶段都对应一个具体失败点</text></g>
+  <g id="timeline">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,148 H1218 A6,6 0 0 1 1224,154 V574 A6,6 0 0 1 1218,580 H62 A6,6 0 0 1 56,574 V154 A6,6 0 0 1 62,148 Z" />
+    <line x1="150" y1="206" x2="150" y2="520" stroke="#CBD5E1" stroke-width="2" />
+    <rect x="142" y="198" width="16" height="16" fill="#1F2933" /><text x="190" y="213" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">阶段一：云端表格 OCR</text><text x="500" y="213" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933">快速验证可行性，但高频调用成本和结构不稳定问题逐渐显现。</text>
+    <rect x="142" y="276" width="16" height="16" fill="#1F2933" /><text x="190" y="291" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">阶段二：直接整图 OCR</text><text x="500" y="291" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933">能识别一些文字，但返回无序文本流，无法可靠恢复表格行列关系。</text>
+    <rect x="142" y="354" width="16" height="16" fill="#1F2933" /><text x="190" y="369" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">阶段三：图像预处理</text><text x="500" y="369" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933">改善文字和线条对比度，但仍没有解决“结构是谁来判断”的问题。</text>
+    <rect x="142" y="432" width="16" height="16" fill="#1565C0" /><text x="190" y="447" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">阶段四：区域定位 + 网格恢复</text><text x="500" y="447" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933">把表格主体和单元格边界显式恢复，OCR 只负责读取局部内容。</text>
+    <rect x="142" y="510" width="16" height="16" fill="#0F766E" /><text x="190" y="525" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#0F766E">阶段五：复杂格处理与后处理</text><text x="500" y="525" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933">处理多行动作、符号粘连和低置信结果，形成可调试的结构化输出。</text>
+  </g>
+  <g id="insight">
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M62,604 H1218 A6,6 0 0 1 1224,610 V638 A6,6 0 0 1 1218,644 H62 A6,6 0 0 1 56,638 V610 A6,6 0 0 1 62,604 Z" />
+    <text x="80" y="630" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933">迭代特征：不是一步到位的算法替换，而是在真实样本中不断暴露边界情况，并按阶段逐步收敛。</text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

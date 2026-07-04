@@ -267,6 +267,51 @@ class YuanAssistService : AccessibilityService() {
         }
     }
 
+    private fun importOneKeyDailyQueue(fileNames: List<String>?) {
+        removeInputWindow()
+        uiManager.removeControlWindow()
+        uiManager.removeMinimizedWindow()
+        if (dailyWindowManager == null) {
+            dailyWindowManager = DailyWindowManager(this)
+        }
+        if (fileNames.isNullOrEmpty()) {
+            Toast.makeText(this, "一键日常未选择脚本", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val selections = runCatching {
+            fileNames.map { rawName ->
+                val assetFileName = if (rawName.endsWith(".json", ignoreCase = true)) {
+                    rawName
+                } else {
+                    "$rawName.json"
+                }
+                val assetPath = "daily_scripts/daily/$assetFileName"
+                val jsonContent = assets.open(assetPath).bufferedReader(Charsets.UTF_8).use { it.readText() }
+                DailyPlanSelection(
+                    fileName = assetFileName.removeSuffix(".json"),
+                    jsonContent = jsonContent,
+                )
+            }
+        }
+        val result = selections.fold(
+            onSuccess = {
+                dailyWindowManager?.submitTaskPlanQueueJson(it)
+                    ?: Result.failure(IllegalStateException("日常悬浮窗未初始化"))
+            },
+            onFailure = { Result.failure<Unit>(it) },
+        )
+        if (result?.isFailure == true) {
+            Toast.makeText(
+                this,
+                "一键日常导入失败：${result.exceptionOrNull()?.message}",
+                Toast.LENGTH_SHORT,
+            ).show()
+        } else {
+            dailyWindowManager?.showWindow()
+            updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
             val action = intent?.action
@@ -281,6 +326,7 @@ class YuanAssistService : AccessibilityService() {
                 action != "ACTION_START_COORDINATE_PICKER" &&
                 action != "ACTION_START_DAILY_SCRIPT_RECORDER" &&
                 action != "ACTION_IMPORT_RECORDED_DAILY_PLAN" &&
+                action != "ACTION_IMPORT_ONE_KEY_DAILY_QUEUE" &&
                 action != "ACTION_CLOSE_COMBAT_WINDOW" &&
                 action != "ACTION_CLOSE_DAILY_WINDOW"
             ) {
@@ -406,6 +452,11 @@ class YuanAssistService : AccessibilityService() {
                 val templateDirPath = intent?.getStringExtra("EXTRA_DAILY_PLAN_TEMPLATE_DIR")
                 importRecordedDailyPlan(fileName, jsonContent, templateDirPath)
             }
+            OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE -> {
+                clearPendingStartAction(OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE)
+                val fileNames = OneKeyDailyBridge.consumePendingScriptFileNames(this)
+                importOneKeyDailyQueue(fileNames)
+            }
             "ACTION_START_COMBAT_WINDOW" -> {
                 dailyWindowManager?.hideWindow()
                 showControlWindow()
@@ -462,7 +513,13 @@ class YuanAssistService : AccessibilityService() {
                         var importCount = 0
                         list.forEach { ins ->
                             val normalizedInstruction = ins.toScriptInstructionOrNull() ?: return@forEach
-                            val exists = combatEngine.instructionList.any {
+                            val skipDedupe = when (normalizedInstruction.type) {
+                                InstructionType.TARGET_SWITCH,
+                                InstructionType.TARGET_SWITCH_LEFT,
+                                InstructionType.TARGET_SWITCH_RIGHT -> true
+                                else -> false
+                            }
+                            val exists = !skipDedupe && combatEngine.instructionList.any {
                                 val existingInstruction = it.normalized()
                                 existingInstruction.turn == normalizedInstruction.turn &&
                                     existingInstruction.step == normalizedInstruction.step &&
@@ -667,6 +724,9 @@ class YuanAssistService : AccessibilityService() {
                 dailyWindowManager?.startScriptRecorderMode()
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 appendAccessibilityTrace("脚本录制器悬浮窗准备完成：${buildWindowVisibilitySummary()}")
+            } else if (pendingAction == OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE) {
+                importOneKeyDailyQueue(OneKeyDailyBridge.consumePendingScriptFileNames(this))
+                appendAccessibilityTrace("一键日常导入悬浮窗准备完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction == "ACTION_IMPORT_RECORDED_DAILY_PLAN") {
                 val fileName = prefs.getString("pending_daily_plan_file_name", null)
                 val jsonContent = prefs.getString("pending_daily_plan_json", null)
@@ -1133,6 +1193,13 @@ class YuanAssistService : AccessibilityService() {
                     oldTask.clickCount.toLong()
                 )
             )
+        }
+    }
+
+    private fun clearPendingStartAction(expectedAction: String) {
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        if (prefs.getString("pending_start_action", null) == expectedAction) {
+            prefs.edit().remove("pending_start_action").apply()
         }
     }
 

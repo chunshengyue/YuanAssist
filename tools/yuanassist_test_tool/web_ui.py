@@ -963,7 +963,6 @@ INDEX_HTML = r"""<!doctype html>
       background: linear-gradient(90deg, rgba(161, 44, 44, .24), rgba(255,255,255,.34));
       box-shadow: inset 0 0 0 1px rgba(161, 44, 44, .22);
     }
-    .vision-row.selected-ocr { border-color: rgba(54, 93, 114, .72); background: rgba(54, 93, 114, .10); }
     .vision-row.selected-ignore { border-color: rgba(124, 103, 89, .60); background: rgba(124, 103, 89, .08); }
 
     .vision-actions {
@@ -1814,7 +1813,7 @@ INDEX_HTML = r"""<!doctype html>
             ${renderVisionSummary(reportItem, unitObservations, nodes)}
             ${renderVisionGroup("命中", groupedNodes.hit, observationByNode, true)}
             ${renderVisionGroup("未命中", groupedNodes.miss, observationByNode, true)}
-            ${renderVisionGroup("其它 / OCR / 异常", groupedNodes.other, observationByNode, false)}
+            ${renderVisionGroup("其它 / 异常", groupedNodes.other, observationByNode, false)}
           </div>
         </section>
       `;
@@ -1842,7 +1841,7 @@ INDEX_HTML = r"""<!doctype html>
     function groupVisionNodes(nodes, observationByNode) {
       const groups = { hit: [], miss: [], other: [] };
       nodes.forEach(node => {
-        if (node.kind !== "template") {
+        if (!["template", "ocr"].includes(node.kind)) {
           groups.other.push(node);
           return;
         }
@@ -1888,8 +1887,7 @@ INDEX_HTML = r"""<!doctype html>
             ${ocrInput}
           </div>
           <div class="vision-actions">
-            ${node.kind === "template" ? `<button type="button" data-vision-mark="hit">应命中</button><button type="button" data-vision-mark="miss">不应命中</button>` : ""}
-            ${node.kind === "ocr" ? `<button type="button" data-vision-mark="ocr">OCR</button>` : ""}
+            ${["template", "ocr"].includes(node.kind) ? `<button type="button" data-vision-mark="hit">应命中</button><button type="button" data-vision-mark="miss">不应命中</button>` : ""}
             <button class="ghost-button" type="button" data-vision-mark="ignore">忽略</button>
           </div>
         </article>
@@ -1925,12 +1923,12 @@ INDEX_HTML = r"""<!doctype html>
           const kind = row?.dataset.kind;
           const mark = button.dataset.visionMark;
           if (!row || !node || !mark) return;
-          row.classList.remove("selected-hit", "selected-miss", "selected-ocr", "selected-ignore");
+          row.classList.remove("selected-hit", "selected-miss", "selected-ignore");
           const expectation = { type: mark, node };
           if (row.dataset.nodeName) {
             expectation.node_name = row.dataset.nodeName;
           }
-          if (mark === "ocr") {
+          if (kind === "ocr" && ["hit", "miss"].includes(mark)) {
             const input = row.querySelector(`[data-ocr-text="${cssEscape(node)}"]`);
             expectation.expected_text = input?.value || "";
           }
@@ -1946,16 +1944,22 @@ INDEX_HTML = r"""<!doctype html>
     function applyVisionDefaultExpectations(nodes, observationByNode) {
       currentVisionExpectations = new Map();
       nodes.forEach(node => {
-        if (node.kind !== "template") return;
+        if (!["template", "ocr"].includes(node.kind)) return;
         const observation = observationByNode.get(node.key);
         if (!observation || !["hit", "miss"].includes(observation.status)) return;
         const mark = observation.status === "hit" ? "hit" : "miss";
-        currentVisionExpectations.set(node.key, {
+        const expectation = {
           type: mark,
           node: node.key,
-          node_name: node.name || "",
-          template_name: node.templateName || ""
-        });
+          node_name: node.name || ""
+        };
+        if (node.kind === "template") {
+          expectation.template_name = node.templateName || "";
+        }
+        if (node.kind === "ocr") {
+          expectation.expected_text = node.unitValue || visionNodeText(node) || "";
+        }
+        currentVisionExpectations.set(node.key, expectation);
         const row = document.querySelector(`.vision-row[data-node="${cssEscape(node.key)}"]`);
         row?.classList.add(`selected-${mark}`);
       });
@@ -1966,7 +1970,7 @@ INDEX_HTML = r"""<!doctype html>
         const node = row.dataset.node;
         if (!node || !currentVisionExpectations.has(node)) return;
         const expectation = currentVisionExpectations.get(node);
-        if (expectation.type !== "ocr") return;
+        if (!["hit", "miss"].includes(expectation.type)) return;
         const input = row.querySelector(`[data-ocr-text="${cssEscape(node)}"]`);
         expectation.expected_text = input?.value || "";
       });

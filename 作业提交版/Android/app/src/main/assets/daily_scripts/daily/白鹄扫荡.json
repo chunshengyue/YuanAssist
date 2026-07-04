@@ -1,0 +1,136 @@
+{
+  "display_name": "白鹄扫荡",
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/daily",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_name": "home_page_two_recover.json"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 509.41504,
+        "y": 542.46875
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 3000,
+      "id": 2,
+      "name": "白鹄行动",
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "bottom",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 83.52734,
+          "y": 1307.6836
+        },
+        "template_name": "白鹄扫荡_白鹄行动.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 3,
+      "name": "扫荡",
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 303.08105,
+          "y": 1553.9658
+        },
+        "template_name": "白鹄扫荡_扫荡.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 4,
+      "name": "最多",
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 820.27734,
+          "y": 959.1328
+        },
+        "template_name": "白鹄扫荡_最多.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 5,
+      "name": "开始扫荡",
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 521.9072,
+          "y": 1203.8164
+        },
+        "template_name": "白鹄扫荡_开始扫荡.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 3000,
+      "id": 6,
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 877.22754,
+        "y": 1765.7422
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

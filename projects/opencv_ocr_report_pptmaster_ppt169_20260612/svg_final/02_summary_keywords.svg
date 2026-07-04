@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" />
+    <rect x="0" y="0" width="12" height="720" fill="#1565C0" />
+  </g>
+  <g id="header">
+    <text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">SUMMARY</text>
+    <text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">02 / 15</text>
+  </g>
+  <g id="title">
+    <text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">摘要与关键词：本项目的重点是“结构恢复”，不是简单调用 OCR</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M62,116 H1218 A6,6 0 0 1 1224,122 V164 A6,6 0 0 1 1218,170 H62 A6,6 0 0 1 56,164 V122 A6,6 0 0 1 62,116 Z" />
+    <text x="78" y="150" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">核心结论：先用 OpenCV 把截图中的表格结构恢复出来，再让 OCR 读取单元格，才能得到可供自动化系统使用的结构化数据。</text>
+  </g>
+  <g id="cards">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,202 H598 A6,6 0 0 1 604,208 V348 A6,6 0 0 1 598,354 H62 A6,6 0 0 1 56,348 V208 A6,6 0 0 1 62,202 Z" />
+    <text x="80" y="236" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">研究对象</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="80" y="268">游戏攻略截图中的回合行动表格，包含角色动作、方向箭头、</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="80" y="293">攻击符号、多行说明和装饰性背景，不能直接当普通文档表格处理。</text><path fill="#FFFFFF" stroke="#CBD5E1" d="M682,202 H1218 A6,6 0 0 1 1224,208 V348 A6,6 0 0 1 1218,354 H682 A6,6 0 0 1 676,348 V208 A6,6 0 0 1 682,202 Z" />
+    <text x="700" y="236" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">方法路线</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="700" y="268">灰度化、降噪、二值化用于改善图像质量；区域定位和网格恢复</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="700" y="293">负责把 OCR 输入缩小到单元格，后处理再统一字段和动作语义。</text><path fill="#FFFFFF" stroke="#CBD5E1" d="M62,386 H598 A6,6 0 0 1 604,392 V532 A6,6 0 0 1 598,538 H62 A6,6 0 0 1 56,532 V392 A6,6 0 0 1 62,386 Z" />
+    <text x="80" y="420" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F766E">工程价值</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="80" y="452">相对云端表格 OCR，本地链路降低长期调用成本，且中间结果可视化，</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="80" y="477">便于判断问题来自区域定位、网格恢复、OCR 识别还是后处理规则。</text><path fill="#FFFFFF" stroke="#CBD5E1" d="M682,386 H1218 A6,6 0 0 1 1224,392 V532 A6,6 0 0 1 1218,538 H682 A6,6 0 0 1 676,532 V392 A6,6 0 0 1 682,386 Z" />
+    <text x="700" y="420" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F766E">输出形态</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="700" y="452">最终目标不是生成一段 OCR 文本，而是输出字段边界清晰、动作顺序</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="700" y="477">可靠、异常可追踪的 CSV 或脚本数据。</text></g>
+  <g id="keywords">
+    <path fill="#F6F8FB" stroke="#CBD5E1" d="M62,570 H1218 A6,6 0 0 1 1224,576 V622 A6,6 0 0 1 1218,628 H62 A6,6 0 0 1 56,622 V576 A6,6 0 0 1 62,570 Z" />
+    <text x="80" y="606" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#566273">关键词：OpenCV / OCR / 表格识别 / 图像预处理 / 网格结构恢复 / 结构化数据 / 游戏自动化</text>
+  </g>
+  <g id="footer">
+    <rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" />
+    <text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text>
+  </g>
+</svg>

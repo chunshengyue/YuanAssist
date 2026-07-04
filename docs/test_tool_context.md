@@ -58,9 +58,10 @@
 - 模板匹配支持 `MATCH_TEMPLATE`，以及 `SCREENSHOT_GROUP` 中的 `template` / `match_template` 子步骤。
 - 视觉节点整理支持两类去重单位：模板按 `素材路径 + ROI`，OCR 按 `目标文字 + ROI`；同一单位下重复出现的脚本节点会合并展示。
 - 期望类型支持：
-  - `hit` / `match`：该节点应命中，分数需达到 `min_score` 或脚本阈值。
-  - `miss` / `not_match` / `no_match`：该节点不应命中，分数需低于 `max_score` 或脚本阈值。
-  - `ocr`：先保存 OCR 节点与期望文本，当前没有接入离线 OCR 后端时报告 `SKIP_OCR_BACKEND`。
+  - `hit` / `match`：该节点应命中；模板分数需达到 `min_score` 或脚本阈值，OCR 节点会比对 `expected_text`。
+  - `miss` / `not_match` / `no_match`：该节点不应命中；模板分数需低于 `max_score` 或脚本阈值，OCR 节点会确认不出现 `expected_text`。
+  - 旧 `ocr` 类型仅保留兼容读取；新 case 不再单独使用 OCR expectation 类型。
+- OCR 节点会复用模板匹配同一套 ROI/display 映射裁剪截图；本地存在 `pytesseract` 或 `paddleocr` 后端时执行文本识别并比对期望，否则报告 `SKIP_OCR_BACKEND`。
 - ROI 与模板缩放尽量复刻 `AutoTaskEngine` 的 `1080x1920` 日常视觉基准、`align` 和截图/显示尺寸映射；case 可通过 `display.width`、`display.height`、`display.raw_status_bar_height` 指定显示侧信息。
 - 可通过 `warn_unexpected_hits: true` 让未声明期望的高分模板命中作为 warning 暴露，用于发现误识别。
 
@@ -85,6 +86,18 @@
 - 会保存启动截图、logcat 和 `summary.json` 到 `tools/yuanassist_test_tool/reports/app_smoke/<timestamp>/`。
 - 会扫描关键崩溃/异常日志：`FATAL EXCEPTION`、ANR、`SecurityException`、权限拒绝、Activity 启动失败。
 
+当前支持一键回归聚合：
+- 模块：`tools/yuanassist_test_tool/regression.py`
+- 命令：`python -m tools.yuanassist_test_tool regression`
+- 默认聚合执行：
+  - 内置日常脚本资产体检 `daily-assets`
+  - 日常视觉回归 `daily-vision`
+  - 本地战斗攻略静态 case 检查
+  - App 冒烟默认跳过，避免一键离线回归依赖模拟器状态
+- 可用 `--include-app-smoke` 加入设备侧冒烟；可配合 `--apk` 和 `--install-apk` 安装 APK 后检查。
+- 会输出聚合 `summary.json` 和 `summary.txt` 到 `tools/yuanassist_test_tool/reports/regression/<timestamp>/`。
+- 任一套件出现 error 时返回非 0；`--strict` 下 warning 也会导致非 0。
+
 当前支持真实数据入口：
 - 通过 Supabase CLI 执行只读查询：`supabase db query --linked`。
 - 从 `public.strategy_detail` 拉取本站攻略 payload。
@@ -104,7 +117,8 @@
 - 测试工具 Web UI 启动或打开首页时会自动清理 `tools/yuanassist_test_tool/.tmp/vision_capture/`，避免未保存截图草稿堆积。
 - `截图调试` 的首次采集预览只展示观察结果，不触发 `EXPECTATIONS_EMPTY` 或 `UNEXPECTED_TEMPLATE_HIT` 这类回归提示；保存素材后再跑 `daily-vision` 回归时才按 expectations 和 `warn_unexpected_hits` 检查。
 - `截图调试` 展示视觉节点时会去重：模板按 `template_name + ROI`，OCR 按 `target_text/target_chars + ROI`；同一单位只展示一次，不同 ROI 会分别展示。合并项会保留 `duplicateCount` / `duplicateNodes` 供前端提示。
-- `截图调试` 前端会按观察结果默认标记模板单位：过阈值为 `hit`，没过阈值为 `miss`；用户再手动修正误判项。
+- `截图调试` 前端会按观察结果默认标记模板和 OCR 单位：命中为 `hit`，未命中为 `miss`；用户再手动修正误判项。
+- `截图调试` 前端会把模板和 OCR 都统一保存为 `hit` / `miss` / `ignore`；OCR 不再单独保存 `type=ocr`，而是在 `hit` / `miss` 期望里携带 `expected_text`。
 - `截图调试` 内置回归测试区：可刷新已保存 case 列表、测试全部正式 case、测试选中 case，或用当前 adb 设备截图替换选中 case 的 `screenshot.png` 后立即测试；前端列表会过滤掉没有 expectations 的历史空 case。
 - `截图调试` 的“忽略”会保存为 `{"type":"ignore"}`，用于压制 `warn_unexpected_hits` 下的“未声明期望的模板也命中”提醒。
 - `截图调试` 当前会展示 OCR 节点并允许保存期望文本，但真实 OCR 离线后端仍未接入，回归时继续报告 `SKIP_OCR_BACKEND`。
@@ -144,6 +158,16 @@ python -m tools.yuanassist_test_tool daily-assets
 检查日常视觉回归素材：
 ```powershell
 python -m tools.yuanassist_test_tool daily-vision
+```
+
+执行一键回归：
+```powershell
+python -m tools.yuanassist_test_tool regression
+```
+
+执行一键回归并包含 App 冒烟：
+```powershell
+python -m tools.yuanassist_test_tool regression --include-app-smoke --apk app\build\outputs\apk\debug\app-debug.apk --install-apk
 ```
 
 检查单个日常视觉回归素材：
@@ -279,7 +303,7 @@ python -m tools.yuanassist_test_tool app-smoke --no-install
 ## 推荐入手顺序
 1. 内置日常脚本资产体检：先稳定覆盖脚本图、模板引用、子脚本串联和调试可见性。
 2. 日常视觉回归素材采集：先通过本地截图 fixture 覆盖日常脚本视觉节点、自动导航和关键恢复链路；后续基于 `adb_device.py` 加 Py + adb 的半自动采集按钮。
-3. OCR 回归后端：优先保持 case 格式稳定，再评估 Python Paddle 后端或客户端导出 OCR 结果的混合方案。
+3. OCR 回归后端：当前已接入可选本地后端结构，优先继续稳定 case 规模、识别文本归一化和报告展示；如需提高中文识别稳定性，再评估固定 Python Paddle 模型路径或客户端导出 OCR 结果的混合方案。
 4. 战斗脚本和攻略导入的静态回归测试：保留为辅助检查，不作为主线。
 5. 用 Appium / UiAutomator2 覆盖日常脚本导入、调试页节点选择、模板替换/恢复。
 6. 覆盖战斗悬浮窗的跟打模式展示、开始、暂停、继续、停止。

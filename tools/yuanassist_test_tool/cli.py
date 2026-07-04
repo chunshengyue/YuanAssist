@@ -11,6 +11,7 @@ from .battle_static import BattleStaticInput, check_battle_static
 from .cases import DEFAULT_BATTLE_CASE_DIR, reports_to_dict, save_strategy_cases, summarize_reports
 from .daily_assets import check_daily_assets
 from .daily_vision import DEFAULT_DAILY_VISION_DIR, check_daily_vision
+from .regression import DEFAULT_REGRESSION_REPORT_DIR, run_regression
 from .supabase_cli import DEFAULT_SUPABASE_BIN, SupabaseCliError, fetch_strategy_cases
 from .web_ui import serve
 
@@ -101,6 +102,19 @@ def build_parser() -> argparse.ArgumentParser:
     smoke.add_argument("--json", action="store_true", help="Print machine-readable JSON report.")
     smoke.add_argument("--strict", action="store_true", help="Treat warnings as failures.")
     smoke.set_defaults(func=run_app_smoke_command)
+
+    regression = subparsers.add_parser(
+        "regression",
+        help="Run the default one-command regression suite and write an aggregate report.",
+    )
+    regression.add_argument("--include-app-smoke", action="store_true", help="Also run adb-based App smoke checks.")
+    regression.add_argument("--serial", default=DEFAULT_EMULATOR_SERIAL, help=f"ADB serial for --include-app-smoke. Default: {DEFAULT_EMULATOR_SERIAL}")
+    regression.add_argument("--apk", type=Path, help="APK path for --include-app-smoke.")
+    regression.add_argument("--install-apk", action="store_true", help="Install --apk before App smoke checks.")
+    regression.add_argument("--report-dir", type=Path, default=DEFAULT_REGRESSION_REPORT_DIR, help="Directory for aggregate regression reports.")
+    regression.add_argument("--json", action="store_true", help="Print machine-readable JSON report.")
+    regression.add_argument("--strict", action="store_true", help="Treat warnings as failures.")
+    regression.set_defaults(func=run_regression_command)
 
     ui = subparsers.add_parser(
         "ui",
@@ -271,6 +285,29 @@ def run_app_smoke_command(args: argparse.Namespace) -> int:
     except OSError as exc:
         print(f"文件错误：{exc}")
         return 2
+
+    if args.json:
+        print(json.dumps(report.to_dict(Path(".")), ensure_ascii=False, indent=2))
+    else:
+        print(report.to_text())
+
+    if report.errors:
+        return 1
+    if args.strict and report.warnings:
+        return 1
+    return 0
+
+
+def run_regression_command(args: argparse.Namespace) -> int:
+    report = run_regression(
+        Path("."),
+        include_app_smoke=args.include_app_smoke,
+        serial=args.serial,
+        apk_path=args.apk,
+        install_apk=bool(args.apk and args.install_apk),
+        strict=args.strict,
+        report_dir=args.report_dir,
+    )
 
     if args.json:
         print(json.dumps(report.to_dict(Path(".")), ensure_ascii=False, indent=2))

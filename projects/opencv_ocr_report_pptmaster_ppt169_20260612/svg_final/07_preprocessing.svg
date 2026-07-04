@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">KEY TECHNIQUE 01</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">07 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">图像预处理：改善文字和线条质量，但不承担最终结构判断</text></g>
+  <g id="left">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,146 H542 A6,6 0 0 1 548,152 V544 A6,6 0 0 1 542,550 H62 A6,6 0 0 1 56,544 V152 A6,6 0 0 1 62,146 Z" />
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">保留下来的基础操作</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="224">1. 灰度化：去掉颜色信息，减少立绘与背景色彩对线条、文字</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="250">   提取的干扰。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="288">2. 模糊降噪：平滑局部噪声，为阈值分割提供更稳定输入。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="326">3. 二值化：把文字和表格线条转为高对比前景，使边界更容易</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="352">   被后续定位和网格恢复使用。</text><path fill="#EEF3F8" stroke="#CBD5E1" d="M88,432 H490 A6,6 0 0 1 496,438 V502 A6,6 0 0 1 490,508 H88 A6,6 0 0 1 82,502 V438 A6,6 0 0 1 88,432 Z" />
+    <text x="104" y="462" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#0F766E">阶段收益</text>
+    <text x="104" y="490" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#1F2933">提升 OCR 对表格内部文字的稳定性，也让边框和网格线更容易从背景中分离。</text>
+  </g>
+  <g id="placeholders">
+    <path fill="#F6F8FB" stroke="#CBD5E1" d="M596,146 H1218 A6,6 0 0 1 1224,152 V544 A6,6 0 0 1 1218,550 H596 A6,6 0 0 1 590,544 V152 A6,6 0 0 1 596,146 Z" />
+    <path fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8" d="M626,190 H788 A4,4 0 0 1 792,194 V406 A4,4 0 0 1 788,410 H626 A4,4 0 0 1 622,406 V194 A4,4 0 0 1 626,190 Z" />
+    <text x="707" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#566273" text-anchor="middle">原图</text>
+    <path fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8" d="M830,190 H992 A4,4 0 0 1 996,194 V406 A4,4 0 0 1 992,410 H830 A4,4 0 0 1 826,406 V194 A4,4 0 0 1 830,190 Z" />
+    <text x="911" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#566273" text-anchor="middle">灰度 / 降噪</text>
+    <path fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8" d="M1034,190 H1196 A4,4 0 0 1 1200,194 V406 A4,4 0 0 1 1196,410 H1034 A4,4 0 0 1 1030,406 V194 A4,4 0 0 1 1034,190 Z" />
+    <text x="1115" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#566273" text-anchor="middle">二值化</text>
+    <text x="911" y="456" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#566273" text-anchor="middle">图像占位：可替换为预处理前后对比图</text>
+  </g>
+  <g id="warning">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,578 H1218 A6,6 0 0 1 1224,584 V632 A6,6 0 0 1 1218,638 H62 A6,6 0 0 1 56,632 V584 A6,6 0 0 1 62,578 Z" />
+    <text x="80" y="614" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933">边界：预处理解决的是图像质量问题，不能单独解决表格结构问题；参数对截图风格仍有依赖。</text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

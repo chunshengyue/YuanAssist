@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="720" fill="#0F172A" />
+    <rect x="0" y="0" width="12" height="720" fill="#1565C0" />
+  </g>
+  <g id="header">
+    <text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#CBD5E1">CONCLUSION</text>
+    <text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#CBD5E1" text-anchor="end">15 / 15</text>
+  </g>
+  <g id="title">
+    <text x="56" y="118" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="38" font-weight="700" fill="#FFFFFF">总结：结构恢复是本项目的主线，也是区别于直接 OCR 的关键</text>
+    <text x="58" y="166" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" fill="#CBD5E1">本项目来自真实应用需求，目标是把游戏攻略截图转换为程序可读取的数据。</text>
+  </g>
+  <g id="summary-cards">
+    <path fill="#FFFFFF" fill-opacity="0.06" stroke="#CBD5E1" d="M62,224 H406 A6,6 0 0 1 412,230 V428 A6,6 0 0 1 406,434 H62 A6,6 0 0 1 56,428 V230 A6,6 0 0 1 62,224 Z" />
+    <text x="82" y="262" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#CBD5E1">01</text>
+    <text x="82" y="300" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">技术路线清晰</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#CBD5E1" x="82" y="340">围绕预处理、区域定位、网格恢复、</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#CBD5E1" x="82" y="368">单元格 OCR 和后处理形成完整链路。</text><path fill="#1565C0" stroke="#1565C0" d="M468,224 H812 A6,6 0 0 1 818,230 V428 A6,6 0 0 1 812,434 H468 A6,6 0 0 1 462,428 V230 A6,6 0 0 1 468,224 Z" />
+    <text x="488" y="262" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#FFFFFF">02</text>
+    <text x="488" y="300" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">工程问题真实</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="488" y="340">方案强调成本控制、调试可解释性和</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="488" y="368">与自动化执行模块的衔接。</text><path fill="#FFFFFF" fill-opacity="0.06" stroke="#CBD5E1" d="M874,224 H1218 A6,6 0 0 1 1224,230 V428 A6,6 0 0 1 1218,434 H874 A6,6 0 0 1 868,428 V230 A6,6 0 0 1 874,224 Z" />
+    <text x="894" y="262" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#CBD5E1">03</text>
+    <text x="894" y="300" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">边界认识明确</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#CBD5E1" x="894" y="340">复杂截图适应性、参数泛化和量化</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#CBD5E1" x="894" y="368">评估仍是后续重点。</text></g>
+  <g id="final-statement">
+    <path fill="#FFFFFF" fill-opacity="0.06" stroke="#CBD5E1" d="M62,500 H1218 A6,6 0 0 1 1224,506 V578 A6,6 0 0 1 1218,584 H62 A6,6 0 0 1 56,578 V506 A6,6 0 0 1 62,500 Z" />
+    <text x="82" y="548" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">从课程展示角度看，本项目能够体现图像处理知识在真实业务问题中的应用过程，而不是停留在单一接口调用。</text>
+  </g>
+  <g id="footer">
+    <rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" />
+    <text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#CBD5E1">Source: report_draft_revised.docx</text>
+  </g>
+</svg>

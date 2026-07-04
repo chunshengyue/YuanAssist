@@ -1,0 +1,92 @@
+package com.example.yuanassist.utils
+
+import android.content.Context
+import android.content.res.AssetManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import java.io.File
+import java.io.FileOutputStream
+
+object TemplateOverrideStore {
+
+    private const val DIR_NAME = "template_overrides"
+
+    const val START_BATTLE_TEMPLATE_FILE_NAME = "__start_battle_template__.png"
+    const val START_BATTLE_TEMPLATE_THRESHOLD = 0.75f
+
+    private fun overrideDir(context: Context): File =
+        File(context.filesDir, DIR_NAME).apply {
+            if (!exists()) mkdirs()
+        }
+
+    fun overrideFile(context: Context, fileName: String): File =
+        File(overrideDir(context), fileName)
+
+    fun hasOverride(context: Context, fileName: String): Boolean =
+        overrideFile(context, fileName).exists()
+
+    fun saveOverride(context: Context, fileName: String, bitmap: Bitmap): Boolean {
+        return try {
+            val file = overrideFile(context, fileName)
+            file.parentFile?.let { parent ->
+                if (!parent.exists()) parent.mkdirs()
+            }
+            FileOutputStream(file).use { output ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+                output.flush()
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    fun restoreOverride(context: Context, fileName: String): Boolean {
+        val file = overrideFile(context, fileName)
+        return !file.exists() || file.delete()
+    }
+
+    fun loadBitmap(context: Context, assets: AssetManager, fileName: String): Bitmap? {
+        return try {
+            val overrideFile = overrideFile(context, fileName)
+            if (overrideFile.exists()) {
+                BitmapFactory.decodeFile(overrideFile.absolutePath)
+            } else {
+                assets.open(fileName).use { BitmapFactory.decodeStream(it) }
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    fun cacheKey(context: Context, fileName: String): String {
+        val overrideFile = overrideFile(context, fileName)
+        return if (overrideFile.exists()) {
+            "$fileName#override#${overrideFile.lastModified()}"
+        } else {
+            "$fileName#asset"
+        }
+    }
+
+    fun ocrTemplateFileName(scriptFileName: String?, taskId: Int): String? {
+        val rawName = scriptFileName
+            ?.substringAfterLast('/')
+            ?.substringAfterLast('\\')
+            ?.removePrefix("user:")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: return null
+        val baseName = rawName.substringBeforeLast('.', rawName)
+        val safeBaseName = buildString {
+            baseName.forEach { char ->
+                append(
+                    when {
+                        char.isLetterOrDigit() || char == '_' || char == '-' -> char
+                        else -> '_'
+                    }
+                )
+            }
+        }.trim('_').ifBlank { "script" }
+        return "${safeBaseName}_task_${taskId}_ocr.png"
+    }
+}

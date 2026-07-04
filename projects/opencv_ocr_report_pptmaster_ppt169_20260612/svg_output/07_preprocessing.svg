@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/><rect x="0" y="0" width="12" height="720" fill="#1565C0"/></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">KEY TECHNIQUE 01</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">07 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">图像预处理：改善文字和线条质量，但不承担最终结构判断</text></g>
+  <g id="left">
+    <rect x="56" y="146" width="492" height="404" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">保留下来的基础操作</text>
+    <text x="82" y="224" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933"><tspan x="82" dy="0">1. 灰度化：去掉颜色信息，减少立绘与背景色彩对线条、文字</tspan><tspan x="82" dy="26">   提取的干扰。</tspan><tspan x="82" dy="38">2. 模糊降噪：平滑局部噪声，为阈值分割提供更稳定输入。</tspan><tspan x="82" dy="38">3. 二值化：把文字和表格线条转为高对比前景，使边界更容易</tspan><tspan x="82" dy="26">   被后续定位和网格恢复使用。</tspan></text>
+    <rect x="82" y="432" width="414" height="76" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="104" y="462" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#0F766E">阶段收益</text>
+    <text x="104" y="490" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#1F2933">提升 OCR 对表格内部文字的稳定性，也让边框和网格线更容易从背景中分离。</text>
+  </g>
+  <g id="placeholders">
+    <rect x="590" y="146" width="634" height="404" rx="6" fill="#F6F8FB" stroke="#CBD5E1"/>
+    <rect x="622" y="190" width="170" height="220" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8"/>
+    <text x="707" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#566273" text-anchor="middle">原图</text>
+    <rect x="826" y="190" width="170" height="220" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8"/>
+    <text x="911" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#566273" text-anchor="middle">灰度 / 降噪</text>
+    <rect x="1030" y="190" width="170" height="220" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8"/>
+    <text x="1115" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#566273" text-anchor="middle">二值化</text>
+    <text x="911" y="456" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#566273" text-anchor="middle">图像占位：可替换为预处理前后对比图</text>
+  </g>
+  <g id="warning">
+    <rect x="56" y="578" width="1168" height="60" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="80" y="614" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933">边界：预处理解决的是图像质量问题，不能单独解决表格结构问题；参数对截图风格仍有依赖。</text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

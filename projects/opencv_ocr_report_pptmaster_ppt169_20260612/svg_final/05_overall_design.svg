@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">OVERALL DESIGN</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">05 / 15</text></g>
+  <g id="title">
+    <text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">总体设计：先结构化图像，再识别文本</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M62,116 H1218 A6,6 0 0 1 1224,122 V160 A6,6 0 0 1 1218,166 H62 A6,6 0 0 1 56,160 V122 A6,6 0 0 1 62,116 Z" />
+    <text x="78" y="148" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">设计核心是把 OCR 从“整体判断者”降为“局部读取器”，先用图像处理把表格边界和单元格结构确定下来。</text>
+  </g>
+  <g id="design-table">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,202 H1218 A6,6 0 0 1 1224,208 V556 A6,6 0 0 1 1218,562 H62 A6,6 0 0 1 56,556 V208 A6,6 0 0 1 62,202 Z" />
+    <path fill="#0F172A" d="M62,202 H1218 A6,6 0 0 1 1224,208 V244 A6,6 0 0 1 1218,250 H62 A6,6 0 0 1 56,244 V208 A6,6 0 0 1 62,202 Z" />
+    <text x="92" y="233" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">处理阶段</text>
+    <text x="342" y="233" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">主要任务</text>
+    <text x="828" y="233" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">输出结果</text>
+    <line x1="56" y1="298" x2="1224" y2="298" stroke="#CBD5E1" />
+    <line x1="56" y1="370" x2="1224" y2="370" stroke="#CBD5E1" />
+    <line x1="56" y1="442" x2="1224" y2="442" stroke="#CBD5E1" />
+    <line x1="56" y1="514" x2="1224" y2="514" stroke="#CBD5E1" />
+    <line x1="282" y1="202" x2="282" y2="562" stroke="#CBD5E1" />
+    <line x1="764" y1="202" x2="764" y2="562" stroke="#CBD5E1" />
+    <text x="92" y="282" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">预处理</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="342" y="274">灰度化、模糊降噪、二值化，提升文字与表格线条的对比度</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="828" y="274">增强后的灰度图或二值图</text><text x="92" y="354" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">区域定位</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="342" y="346">筛选表格主体，排除立绘、标题、水印、背景纹理等干扰</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="828" y="346">裁剪后的表格区域</text><text x="92" y="426" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">网格恢复</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="342" y="418">检测横线、竖线和交点，推断行列分隔与单元格边界</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="828" y="418">行列结构与单元格图像</text><text x="92" y="498" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1565C0">识别后处理</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="342" y="490">对单元格 OCR，并规范化回合、动作、说明等业务字段</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="828" y="490">结构化 CSV / 脚本数据</text></g>
+  <g id="bottom">
+    <path fill="#F6F8FB" stroke="#CBD5E1" d="M62,594 H1218 A6,6 0 0 1 1224,600 V636 A6,6 0 0 1 1218,642 H62 A6,6 0 0 1 56,636 V600 A6,6 0 0 1 62,594 Z" />
+    <text x="80" y="624" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933">分层收益：局部 OCR 错误不会破坏整张表格结构，调试时也能定位到具体处理阶段。</text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

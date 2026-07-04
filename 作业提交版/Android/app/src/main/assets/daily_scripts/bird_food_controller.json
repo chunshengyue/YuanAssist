@@ -1,0 +1,32 @@
+{
+  "display_name": "刷鸟食总控",
+  "start_task_id": 1,
+  "tasks": [
+    {
+      "id": 1,
+      "name": "前往鸢报界面",
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "bird_food_ensure_yuan_bao.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 2,
+      "on_fail": -2
+    },
+    {
+      "id": 2,
+      "name": "执行鸟食子任务",
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "BIRD_FOOD_TASK_SCRIPT",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": -1,
+      "on_fail": -1
+    }
+  ]
+}

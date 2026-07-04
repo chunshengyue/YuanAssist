@@ -1,0 +1,117 @@
+{
+  "display_name": "领取体力",
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/daily",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_name": "home_page_one_recover.json"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 1,
+      "name": "活动入口",
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "top",
+          "h": 800.0,
+          "w": 250.0,
+          "x": 998.53516,
+          "y": 645.0332
+        },
+        "target_chars": [
+          "活",
+          "动"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 2,
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 494.4629,
+        "y": 567.125
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 3,
+      "name": "领取",
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 339.4541,
+        "y": 975.21094
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 4,
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 951.1465,
+        "y": 644.2324
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 5,
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 329.79785,
+        "y": 1394.4521
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 6,
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 938.1621,
+        "y": 562.8125
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

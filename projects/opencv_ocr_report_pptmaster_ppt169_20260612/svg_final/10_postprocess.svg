@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">POST-PROCESSING</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">10 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">后处理：自动化系统需要结构化字段，而不是一段接近原图的 OCR 文本</text></g>
+  <g id="left">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,146 H570 A6,6 0 0 1 576,152 V560 A6,6 0 0 1 570,566 H62 A6,6 0 0 1 56,560 V152 A6,6 0 0 1 62,146 Z" />
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#B91C1C">OCR 原始输出常见问题</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="226">• 回合字段不统一：1回合、1 回合、识别成近似字</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="260">• 动作串粘连：数字、方向、攻击符号缺少边界</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="294">• 多行内容混合：说明文字与动作列互相干扰</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="328">• 局部低置信：单个格子错误不能扩散到整张表结构</text><path fill="#EEF3F8" stroke="#CBD5E1" d="M88,440 H518 A6,6 0 0 1 524,446 V508 A6,6 0 0 1 518,514 H88 A6,6 0 0 1 82,508 V446 A6,6 0 0 1 88,440 Z" />
+    <text x="104" y="470" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1565C0">处理原则</text>
+    <text x="104" y="498" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#1F2933">能确定的规范化；不能确定的保留原始痕迹并暴露给调试链路。</text>
+  </g>
+  <g id="right">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M626,146 H1218 A6,6 0 0 1 1224,152 V560 A6,6 0 0 1 1218,566 H626 A6,6 0 0 1 620,560 V152 A6,6 0 0 1 626,146 Z" />
+    <path fill="#0F172A" d="M626,146 H1218 A6,6 0 0 1 1224,152 V188 A6,6 0 0 1 1218,194 H626 A6,6 0 0 1 620,188 V152 A6,6 0 0 1 626,146 Z" />
+    <text x="648" y="177" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">转换目标</text>
+    <text x="840" y="177" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">处理方式</text>
+    <line x1="812" y1="146" x2="812" y2="566" stroke="#CBD5E1" />
+    <line x1="620" y1="254" x2="1224" y2="254" stroke="#CBD5E1" />
+    <line x1="620" y1="326" x2="1224" y2="326" stroke="#CBD5E1" />
+    <line x1="620" y1="398" x2="1224" y2="398" stroke="#CBD5E1" />
+    <line x1="620" y1="470" x2="1224" y2="470" stroke="#CBD5E1" />
+    <text x="648" y="232" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1565C0">回合</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="840" y="224">统一为稳定行字段，修正空格和近似误识别。</text><text x="648" y="304" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1565C0">角色列</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="840" y="296">保持列位置，不因个别单元格错误改变布局。</text><text x="648" y="376" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1565C0">动作</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="840" y="368">解析数字、方向、攻击符号与组合动作。</text><text x="648" y="448" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1565C0">说明</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="840" y="440">与动作字段区分，避免混入自动执行指令。</text><text x="648" y="520" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#0F766E">输出</text><text font-size="16" font-family="Consolas, Courier New, monospace" fill="#1F2933" x="840" y="512">round, col_1, col_2, col_3, note...</text></g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

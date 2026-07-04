@@ -1,0 +1,218 @@
+{
+  "display_name": "家具互动",
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/daily",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_name": "home_page_one_recover.json"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 411.68555,
+        "y": 1643.1191
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 2,
+      "name": "心纸居",
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 111.078125,
+          "y": 478.81934
+        },
+        "template_name": "家具互动_心纸居.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 3500,
+      "id": 3,
+      "name": "随便点点_中",
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 648.76855,
+        "y": 816.7295
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "id": 4,
+      "name": "放大镜_中",
+      "on_fail": 6,
+      "on_success": 15,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 760.83203,
+          "y": 929.7793
+        },
+        "template_name": "家具互动_放大镜.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 3500,
+      "id": 6,
+      "name": "随便点点_上",
+      "on_fail": -2,
+      "on_success": 7,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 648.76855,
+        "y": 666.7295
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "id": 7,
+      "name": "放大镜_上",
+      "on_fail": 8,
+      "on_success": 15,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 760.83203,
+          "y": 929.7793
+        },
+        "template_name": "家具互动_放大镜.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 3500,
+      "id": 8,
+      "name": "随便点点_左",
+      "on_fail": -2,
+      "on_success": 9,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 498.76855,
+        "y": 816.7295
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "id": 9,
+      "name": "放大镜_左",
+      "on_fail": 10,
+      "on_success": 15,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 760.83203,
+          "y": 929.7793
+        },
+        "template_name": "家具互动_放大镜.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 3500,
+      "id": 10,
+      "name": "随便点点_右",
+      "on_fail": -2,
+      "on_success": 11,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "x": 798.76855,
+        "y": 816.7295
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 1500,
+      "id": 11,
+      "name": "放大镜_右",
+      "on_fail": -2,
+      "on_success": 15,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 760.83203,
+          "y": 929.7793
+        },
+        "template_name": "家具互动_放大镜.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SET_VAR",
+      "delay": 5000,
+      "id": 15,
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "threshold": 0.8,
+        "var_name": "1",
+        "var_value": "1"
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

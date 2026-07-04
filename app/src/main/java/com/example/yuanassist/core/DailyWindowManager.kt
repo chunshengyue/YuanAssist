@@ -84,6 +84,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         STARGAZING,
         CHARACTER_IMPORT,
         INVENTORY_STITCH,
+        COORDINATE_PICKER,
         BOX_OCR,
     }
 
@@ -100,6 +101,17 @@ class DailyWindowManager(private val service: AccessibilityService) {
         val topRatio: Float,
         val widthRatio: Float,
         val heightRatio: Float,
+    )
+
+    private data class QueuedTaskPlan(
+        val plan: DailyTaskPlan,
+        val scriptName: String,
+        val templateDir: File? = null,
+    )
+
+    private data class QueueFailure(
+        val scriptName: String,
+        val errorMessage: String,
     )
 
     private val engine = AutoTaskEngine(service)
@@ -147,6 +159,10 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private var currentTaskPlan: DailyTaskPlan? = null
     private var currentScriptName: String? = null
     private var currentTemplateDir: File? = null
+    private var queuedTaskPlans: List<QueuedTaskPlan> = emptyList()
+    private var queuedTaskIndex = 0
+    private val queueFailures = mutableListOf<QueueFailure>()
+    private var isQueuedTaskSequenceRunning = false
     private var currentBirdFoodConfig: BirdFoodConfig? = null
     private var currentMainline624Config: Mainline624Config? = null
     private var currentStargazingConfig: StargazingConfig? = null
@@ -215,6 +231,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
     fun submitTaskPlan(plan: DailyTaskPlan, scriptName: String, templateDir: File? = null) {
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
@@ -250,8 +267,46 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
     }
 
+    fun submitTaskPlanQueueJson(selections: List<DailyPlanSelection>): Result<Unit> {
+        return runCatching {
+            require(selections.isNotEmpty()) { "未选择任何脚本" }
+            val queue = selections.map { selection ->
+                val plan = gson.fromJson(selection.jsonContent, DailyTaskPlan::class.java)
+                val templateDir = selection.templateDirPath
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(::File)
+                    ?.takeIf { it.exists() && it.isDirectory }
+                QueuedTaskPlan(
+                    plan = plan,
+                    scriptName = selection.fileName,
+                    templateDir = templateDir,
+                )
+            }
+            submitTaskPlanQueue(queue)
+        }
+    }
+
+    private fun submitTaskPlanQueue(queue: List<QueuedTaskPlan>) {
+        require(queue.isNotEmpty()) { "未选择任何脚本" }
+        scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
+        currentBirdFoodConfig = null
+        currentMainline624Config = null
+        currentStargazingConfig = null
+        currentCharacterImportConfig = null
+        inventoryStitchPrepared = false
+        queuedTaskPlans = queue
+        currentTaskPlan = queue.first().plan
+        currentScriptName = queue.first().scriptName
+        currentTemplateDir = queue.first().templateDir
+        currentMode = DailyMode.TASK_PLAN
+        showWindow()
+        refreshActionButton()
+    }
+
     fun submitBirdFoodConfig(config: BirdFoodConfig) {
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -268,6 +323,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
     fun submitMainline624Config(config: Mainline624Config) {
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -284,6 +340,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
     fun submitStargazingConfig(config: StargazingConfig) {
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -300,6 +357,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
     fun submitCharacterImportConfig(config: CharacterImportConfig) {
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -322,6 +380,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         stopCoordinatePicker()
         stopBoxOcrOverlay()
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -337,6 +396,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
 
     fun startCoordinatePickerMode() {
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -345,8 +405,9 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentStargazingConfig = null
         currentCharacterImportConfig = null
         inventoryStitchPrepared = false
-        currentMode = null
+        currentMode = DailyMode.COORDINATE_PICKER
         showWindow()
+        refreshActionButton()
         startCoordinatePicker()
     }
 
@@ -357,6 +418,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
         stopCoordinatePicker()
         scriptRecorderManager.stop()
+        clearQueuedTaskPlans()
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
@@ -381,6 +443,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentTaskPlan = null
         currentScriptName = null
         currentTemplateDir = null
+        clearQueuedTaskPlans()
         currentBirdFoodConfig = null
         currentMainline624Config = null
         currentStargazingConfig = null
@@ -400,6 +463,11 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     private fun toggleExecution() {
+        if (currentMode == DailyMode.COORDINATE_PICKER) {
+            startCoordinatePicker()
+            return
+        }
+
         if (currentMode == DailyMode.BOX_OCR) {
             if (isBoxOcrProcessing) {
                 Toast.makeText(service, "框选OCR识别中，请稍候", Toast.LENGTH_SHORT).show()
@@ -441,10 +509,15 @@ class DailyWindowManager(private val service: AccessibilityService) {
             return
         }
 
-        if (engine.isRunning) {
-            engine.stop()
+        if (isQueuedTaskSequenceRunning || engine.isRunning) {
+            val wasQueueRunning = isQueuedTaskSequenceRunning
+            stopTaskPlanExecution()
             refreshActionButton()
-            Toast.makeText(service, "日常任务已暂停", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                service,
+                if (wasQueueRunning) "一键日常已暂停" else "日常任务已暂停",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
@@ -533,6 +606,10 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
 
         val plan = currentTaskPlan
+        if (queuedTaskPlans.isNotEmpty()) {
+            startQueuedTaskPlans()
+            return
+        }
         if (plan == null) {
             Toast.makeText(service, "请先确认日常任务", Toast.LENGTH_SHORT).show()
             openDailyPage()
@@ -561,6 +638,107 @@ class DailyWindowManager(private val service: AccessibilityService) {
         )
     }
 
+    private fun startQueuedTaskPlans() {
+        if (queuedTaskPlans.isEmpty()) {
+            Toast.makeText(service, "请先确认一键日常任务", Toast.LENGTH_SHORT).show()
+            return
+        }
+        queueFailures.clear()
+        queuedTaskIndex = 0
+        isQueuedTaskSequenceRunning = true
+        RunLogger.clear()
+        RunLogger.i("开始一键日常，共${queuedTaskPlans.size}个脚本")
+        refreshActionButton()
+        startQueuedTaskPlanAt(queuedTaskIndex)
+    }
+
+    private fun startQueuedTaskPlanAt(index: Int) {
+        val queueItem = queuedTaskPlans.getOrNull(index) ?: run {
+            finishQueuedTaskPlans()
+            return
+        }
+        currentTaskPlan = queueItem.plan
+        currentScriptName = queueItem.scriptName
+        currentTemplateDir = queueItem.templateDir
+        val runtimePlan = applyRuntimeDelayOverrides(queueItem.plan)
+        RunLogger.i("开始日常脚本：${queueItem.scriptName}（${index + 1}/${queuedTaskPlans.size}）")
+        engine.startPlan(
+            plan = runtimePlan,
+            onCompleted = { success, errorMsg ->
+                handler.post {
+                    handleQueuedTaskCompleted(
+                        success = success,
+                        errorMsg = errorMsg,
+                    )
+                }
+            },
+            templateDir = queueItem.templateDir,
+            scriptFileName = queueItem.scriptName,
+        )
+    }
+
+    private fun handleQueuedTaskCompleted(success: Boolean, errorMsg: String) {
+        val queueItem = queuedTaskPlans.getOrNull(queuedTaskIndex)
+        if (queueItem != null) {
+            if (success) {
+                RunLogger.i("日常脚本完成：${queueItem.scriptName}")
+            } else {
+                queueFailures += QueueFailure(
+                    scriptName = queueItem.scriptName,
+                    errorMessage = errorMsg,
+                )
+                RunLogger.i("日常脚本失败：${queueItem.scriptName}，原因：$errorMsg")
+            }
+        }
+        if (!isQueuedTaskSequenceRunning) {
+            refreshActionButton()
+            return
+        }
+        val nextIndex = queuedTaskIndex + 1
+        if (nextIndex < queuedTaskPlans.size) {
+            queuedTaskIndex = nextIndex
+            startQueuedTaskPlanAt(nextIndex)
+        } else {
+            finishQueuedTaskPlans()
+        }
+    }
+
+    private fun finishQueuedTaskPlans() {
+        isQueuedTaskSequenceRunning = false
+        refreshActionButton()
+        if (queueFailures.isEmpty()) {
+            Toast.makeText(service, "一键日常已完成", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val summary = queueFailures.joinToString("\n") {
+            "• ${it.scriptName}${it.errorMessage.takeIf { message -> message.isNotBlank() }?.let { message -> "：$message" } ?: ""}"
+        }
+        val themeContext = DialogUtils.getThemeContext(service)
+        val messageView = TextView(themeContext).apply {
+            text = "以下任务执行失败，其余任务已继续完成：\n$summary"
+            setTextColor(Color.parseColor("#4E3C1E"))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            setLineSpacing(dp(4).toFloat(), 1f)
+        }
+        val container = LinearLayout(themeContext).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), 0)
+            addView(
+                messageView,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+        }
+        DialogUtils.safeShowOverlayDialog(
+            AlertDialog.Builder(themeContext)
+                .setTitle("一键日常执行结束")
+                .setView(container)
+                .setPositiveButton("知道了", null)
+        )
+    }
+
     private fun applyRuntimeDelayOverrides(plan: DailyTaskPlan): DailyTaskPlan {
         val scriptName = currentScriptName?.takeIf { it.isNotBlank() } ?: return plan
         val isUserScript = currentTemplateDir != null && !scriptName.startsWith("user:")
@@ -582,12 +760,24 @@ class DailyWindowManager(private val service: AccessibilityService) {
         )
     }
 
+    private fun stopTaskPlanExecution() {
+        isQueuedTaskSequenceRunning = false
+        engine.stop()
+    }
+
+    private fun clearQueuedTaskPlans() {
+        queuedTaskPlans = emptyList()
+        queuedTaskIndex = 0
+        queueFailures.clear()
+        isQueuedTaskSequenceRunning = false
+    }
+
     private fun stopCurrentWork() {
         birdFoodRuntimeManager.stop()
         mainline624RuntimeManager.stop()
         stargazingRuntimeManager.stop()
         characterImportEngine.stop(showLog = false)
-        engine.stop()
+        stopTaskPlanExecution()
         if (stitchEngine.isRunning) stitchEngine.stop()
         stopCoordinatePicker()
         stopBoxOcrOverlay()
@@ -599,7 +789,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private fun refreshActionButton() {
         handler.post {
             val button = floatView?.findViewById<ImageButton>(R.id.btn_daily_action) ?: return@post
-            if (engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
+            if (isQueuedTaskSequenceRunning || engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
                 button.setImageResource(R.drawable.ic_action_pause)
                 button.contentDescription = "暂停"
             } else {
@@ -1206,27 +1396,9 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     private fun buildPickedCoordinate(rawX: Float, rawY: Float): PickedCoordinate {
-        val (screenWidth, screenHeight) = getRealScreenSize()
-        val gameScale = min(screenWidth / BASE_W, screenHeight / BASE_H)
-        val gameWidth = BASE_W * gameScale
-        val gameHeight = BASE_H * gameScale
-        val offsetX = (screenWidth - gameWidth) / 2f
-        val offsetY = (screenHeight - gameHeight) / 2f
-        val statusBarHeight = getScaledStatusBarHeight()
-
         val screenX = rawX.roundToInt()
         val screenY = rawY.roundToInt()
-        val designX = ((rawX - offsetX) / gameScale).roundToInt()
-        val centerY = ((rawY - offsetY) / gameScale).roundToInt()
-        val topY = ((rawY - statusBarHeight) / gameScale).roundToInt()
-        val absoluteY = (rawY * BASE_H / screenHeight).roundToInt()
-
-        val clipboardText = buildString {
-            appendLine("屏幕坐标: x=$screenX, y=$screenY")
-            appendLine("""center: { "x": $designX, "y": $centerY, "align": "center" }""")
-            appendLine("""top: { "x": $designX, "y": $topY, "align": "top" }""")
-            append("""absolute: { "x": $designX, "y": $absoluteY, "align": "absolute" }""")
-        }
+        val clipboardText = "屏幕坐标: x=$screenX, y=$screenY"
 
         return PickedCoordinate(
             clipboardText = clipboardText,

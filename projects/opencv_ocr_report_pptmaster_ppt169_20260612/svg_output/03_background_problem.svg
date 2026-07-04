@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/>
+    <rect x="0" y="0" width="12" height="720" fill="#1565C0"/>
+  </g>
+  <g id="header">
+    <text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">PROJECT BACKGROUND</text>
+    <text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">03 / 15</text>
+  </g>
+  <g id="title">
+    <text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">项目背景：自动化系统需要“可解析表格”，而不是一张可阅读截图</text>
+    <rect x="56" y="116" width="736" height="54" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="78" y="150" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">真实业务需求来自游戏自动化辅助 App：社区攻略表格要被转换成程序可消费的数据。</text>
+  </g>
+  <g id="left-text">
+    <rect x="56" y="198" width="560" height="354" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="235" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="23" font-weight="700" fill="#1565C0">为什么截图不能直接使用</text>
+    <text x="82" y="272" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933">
+      <tspan x="82" dy="0">攻略材料通常以图片形式传播，表格里记录每一回合不同角色</tspan>
+      <tspan x="82" dy="27">的攻击、防御、技能释放或特殊动作。人可以直接阅读截图，</tspan>
+      <tspan x="82" dy="27">但自动化系统需要的是字段稳定、顺序明确的数据。</tspan>
+      <tspan x="82" dy="42">早期曾尝试百度表格 OCR API，接入成本低，也能快速验证</tspan>
+      <tspan x="82" dy="27">可行性；但在真实用户场景中，高频调用会带来持续成本，</tspan>
+      <tspan x="82" dy="27">且云端结果仍然难以直接转化为自动执行所需结构。</tspan>
+    </text>
+  </g>
+  <g id="placeholder">
+    <rect x="662" y="198" width="562" height="354" rx="6" fill="#F6F8FB" stroke="#CBD5E1"/>
+    <rect x="704" y="236" width="478" height="230" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8"/>
+    <text x="943" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#566273" text-anchor="middle">原始攻略截图占位</text>
+    <text x="943" y="374" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#8A94A6" text-anchor="middle">可替换为真实样例图：立绘、表格、说明文字混在一张截图中</text>
+    <rect x="704" y="496" width="120" height="32" rx="16" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="764" y="518" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933" text-anchor="middle">立绘干扰</text>
+    <rect x="842" y="496" width="120" height="32" rx="16" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="902" y="518" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933" text-anchor="middle">装饰边框</text>
+    <rect x="980" y="496" width="120" height="32" rx="16" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="1040" y="518" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933" text-anchor="middle">动作符号</text>
+  </g>
+  <g id="bottom-insight">
+    <rect x="56" y="584" width="1168" height="56" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="80" y="619" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">
+      需求转变：从“让 OCR 读出文字”转向“构建一条本地、低成本、可解释的表格结构恢复链路”。
+    </text>
+  </g>
+  <g id="footer">
+    <rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/>
+    <text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text>
+  </g>
+</svg>

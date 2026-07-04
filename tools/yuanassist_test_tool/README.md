@@ -10,6 +10,7 @@ The tool currently supports:
 - offline visual regression case checks for built-in daily scripts
 - adb device discovery for USB devices and Android emulators
 - adb-based app smoke checks for install, launch, permissions, screenshots, logcat, and crash scanning
+- a one-command regression runner that aggregates offline checks and optional App smoke checks
 - read-only strategy payload fetching through Supabase CLI
 - a local visual dashboard with tabs for daily asset checks and battle strategy checks
 
@@ -40,7 +41,8 @@ The daily visual checker can validate local fixture cases:
 - `MATCH_TEMPLATE` nodes
 - `SCREENSHOT_GROUP` template / match_template child steps
 - expected hits and expected misses against a saved screenshot
-- OCR expectations as structured case data; OCR execution is currently skipped until a Python/client OCR backend is connected
+- OCR expectations against a saved screenshot when a local OCR backend is available
+- OCR execution uses the same ROI/display mapping as template matching, and falls back to a clear skip when no local backend is installed
 
 The adb helper can:
 - resolve adb from `C:\Users\17525\AppData\Local\Android\Sdk\platform-tools\adb.exe`, or from PATH
@@ -58,6 +60,12 @@ The app smoke checker can:
 - capture a launch screenshot and logcat
 - scan logcat for fatal exceptions, ANR, security exceptions, permission denials, and Activity launch failures
 - write `summary.json`, `screenshot.png`, and `logcat.txt` under `tools/yuanassist_test_tool/reports/app_smoke/`
+
+The regression runner can:
+- run daily asset checks, daily visual regression, and local battle static cases in one command
+- optionally include adb-based App smoke checks
+- write aggregate `summary.json` and `summary.txt` under `tools/yuanassist_test_tool/reports/regression/`
+- return a non-zero exit code when any suite has errors, or when `--strict` treats warnings as failures
 
 The local dashboard also provides a constrained JSON editor for built-in daily scripts:
 - open JSON from a daily asset check card
@@ -87,7 +95,7 @@ The local dashboard also has a `截图调试` tab:
 - capture the current device screenshot through adb
 - display one result per full template path + ROI unit, and one OCR unit per expected text + ROI
 - mark over-threshold units as expected hits by default, and below-threshold units as expected misses by default
-- mark nodes as expected hit, expected miss, OCR expectation, or ignored
+- mark template and OCR nodes as expected hit, expected miss, or ignored
 - save `screenshot.png` and `case.json` under `tools/yuanassist_test_tool/fixtures/daily_vision/`
 - refresh saved visual cases
 - run all saved visual regression cases
@@ -144,6 +152,18 @@ Run app smoke against the already installed app:
 
 ```powershell
 python -m tools.yuanassist_test_tool app-smoke --no-install
+```
+
+Run the default one-command regression suite:
+
+```powershell
+python -m tools.yuanassist_test_tool regression
+```
+
+Include App smoke in the regression suite:
+
+```powershell
+python -m tools.yuanassist_test_tool regression --include-app-smoke --apk app\build\outputs\apk\debug\app-debug.apk --install-apk
 ```
 
 Fetch public strategy payloads through Supabase CLI and save local cases:
@@ -215,7 +235,7 @@ Daily visual case example:
       "reason": "防止首页误识别成战斗页"
     },
     {
-      "type": "ocr",
+      "type": "hit",
       "node": "task:12",
       "expected_text": "开始"
     }

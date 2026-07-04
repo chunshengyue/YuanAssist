@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/><rect x="0" y="0" width="12" height="720" fill="#1565C0"/></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">LIMITS AND NEXT STEPS</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">14 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">存在问题与改进方向：泛化、参数和量化评估仍需补齐</text></g>
+  <g id="limits">
+    <rect x="56" y="148" width="360" height="170" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="184" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#B91C1C">R1</text><text x="82" y="218" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1F2933">截图风格适应性</text><text x="82" y="254" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="82" dy="0">复杂背景、立绘贴近表格、细线断裂</tspan><tspan x="82" dy="24">仍会影响定位和网格恢复。</tspan></text>
+    <rect x="460" y="148" width="360" height="170" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="486" y="184" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#B91C1C">R2</text><text x="486" y="218" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1F2933">参数图像依赖</text><text x="486" y="254" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="486" dy="0">阈值、形态学核大小和线条合并</tspan><tspan x="486" dy="24">策略在不同截图上最优值不同。</tspan></text>
+    <rect x="864" y="148" width="360" height="170" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="890" y="184" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#B91C1C">R3</text><text x="890" y="218" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1F2933">复杂格边界情况</text><text x="890" y="254" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="890" dy="0">多行动作、混合说明和特殊符号</tspan><tspan x="890" dy="24">组合仍可能造成局部识别不稳定。</tspan></text>
+  </g>
+  <g id="next">
+    <rect x="56" y="356" width="1168" height="210" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="82" y="396" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="23" font-weight="700" fill="#1565C0">后续改进方向</text>
+    <text x="110" y="438" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933"><tspan x="110" dy="0">1. 引入更稳健的表格检测模型或学习式区域定位，提高复杂截图下的表格主体提取能力。</tspan><tspan x="110" dy="34">2. 针对动作符号构建更专门的识别与解析模块，而不是完全依赖通用 OCR。</tspan><tspan x="110" dy="34">3. 补充系统实验数据和误差统计，例如定位成功率、单元格识别准确率和错误类型。</tspan><tspan x="110" dy="34">4. 与自动化执行模块形成更紧密闭环，让截图最终转化为可验证、可编辑、可执行数据。</tspan></text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

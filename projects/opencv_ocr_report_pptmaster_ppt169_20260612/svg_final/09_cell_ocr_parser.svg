@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">KEY TECHNIQUE 03</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">09 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">单元格 OCR 与复杂动作解析：识别文本之后还要恢复动作语义</text></g>
+  <g id="examples">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,146 H1218 A6,6 0 0 1 1224,152 V254 A6,6 0 0 1 1218,260 H62 A6,6 0 0 1 56,254 V152 A6,6 0 0 1 62,146 Z" />
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#1565C0">复杂动作格示例</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M326,174 H438 A4,4 0 0 1 442,178 V218 A4,4 0 0 1 438,222 H326 A4,4 0 0 1 322,218 V178 A4,4 0 0 1 326,174 Z" /><text x="382" y="205" font-family="Consolas, Courier New, monospace" font-size="22" font-weight="700" fill="#1F2933" text-anchor="middle">3↑</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M474,174 H586 A4,4 0 0 1 590,178 V218 A4,4 0 0 1 586,222 H474 A4,4 0 0 1 470,218 V178 A4,4 0 0 1 474,174 Z" /><text x="530" y="205" font-family="Consolas, Courier New, monospace" font-size="22" font-weight="700" fill="#1F2933" text-anchor="middle">5A</text>
+    <path fill="#1565C0" d="M622,174 H734 A4,4 0 0 1 738,178 V218 A4,4 0 0 1 734,222 H622 A4,4 0 0 1 618,218 V178 A4,4 0 0 1 622,174 Z" /><text x="678" y="205" font-family="Consolas, Courier New, monospace" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="middle">3A/4A</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M770,174 H910 A4,4 0 0 1 914,178 V218 A4,4 0 0 1 910,222 H770 A4,4 0 0 1 766,218 V178 A4,4 0 0 1 770,174 Z" /><text x="840" y="205" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">多行动作</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M946,174 H1086 A4,4 0 0 1 1090,178 V218 A4,4 0 0 1 1086,222 H946 A4,4 0 0 1 942,218 V178 A4,4 0 0 1 946,174 Z" /><text x="1016" y="205" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">条件说明</text>
+  </g>
+  <g id="strategy">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,300 H410 A6,6 0 0 1 416,306 V524 A6,6 0 0 1 410,530 H62 A6,6 0 0 1 56,524 V306 A6,6 0 0 1 62,300 Z" />
+    <text x="82" y="338" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#1565C0">01</text>
+    <text x="82" y="372" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1F2933">子行切分</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="410">复杂格不直接整体识别，先在单元格内部判断是否存在多行内容，</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="435">把 OCR 输入进一步拆小。</text><path fill="#1565C0" d="M466,300 H814 A6,6 0 0 1 820,306 V524 A6,6 0 0 1 814,530 H466 A6,6 0 0 1 460,524 V306 A6,6 0 0 1 466,300 Z" />
+    <text x="486" y="338" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#FFFFFF">02</text>
+    <text x="486" y="372" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">动作符号解析</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="486" y="410">结合业务规则识别数字、方向箭头、攻击符号和组合动作，尽量</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="486" y="435">恢复原始动作顺序。</text><path fill="#FFFFFF" stroke="#CBD5E1" d="M870,300 H1218 A6,6 0 0 1 1224,306 V524 A6,6 0 0 1 1218,530 H870 A6,6 0 0 1 864,524 V306 A6,6 0 0 1 870,300 Z" />
+    <text x="890" y="338" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#1565C0">03</text>
+    <text x="890" y="372" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1F2933">低置信保留</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="890" y="410">遇到无法完全判断的片段时保留原始识别痕迹和调试信息，避免</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="890" y="435">后处理过度修正。</text></g>
+  <g id="bottom"><path fill="#F6F8FB" stroke="#CBD5E1" d="M62,568 H1218 A6,6 0 0 1 1224,574 V622 A6,6 0 0 1 1218,628 H62 A6,6 0 0 1 56,622 V574 A6,6 0 0 1 62,568 Z" /><text x="80" y="604" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933">这一阶段把系统从“能读出表格文字”推进到“能理解攻略动作表达”，也是自动化执行能否衔接的关键。</text></g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

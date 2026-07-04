@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -87,6 +88,8 @@ class MatchObservation:
     center: tuple[float, float] | None = None
     roi_rect: tuple[int, int, int, int] | None = None
     template_path: str = ""
+    text: str = ""
+    backend: str = ""
     message: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -101,8 +104,17 @@ class MatchObservation:
             "center": self.center,
             "roiRect": self.roi_rect,
             "templatePath": self.template_path,
+            "text": self.text,
+            "backend": self.backend,
             "message": self.message,
         }
+
+
+@dataclass
+class OcrResult:
+    text: str
+    confidence: float | None = None
+    backend: str = ""
 
 
 @dataclass
@@ -496,7 +508,10 @@ def check_vision_case(project_root: Path, case: VisionCase, *, expectation_warni
     node_by_key = {node.key: node for node in nodes}
 
     template_nodes = [node for node in nodes if node.kind == "template"]
-    observations = run_template_observations(project_root, case, script_data, template_nodes, report)
+    ocr_nodes = [node for node in nodes if node.kind == "ocr"]
+    template_observations = run_template_observations(project_root, case, script_data, template_nodes, report)
+    ocr_observations = run_ocr_observations(project_root, case, ocr_nodes, report)
+    observations = template_observations + ocr_observations
     report.observations.extend(observations)
     observation_by_key = {item.node.key: item for item in observations}
 
@@ -528,7 +543,13 @@ def check_vision_case(project_root: Path, case: VisionCase, *, expectation_warni
             if node.kind == "template":
                 expected_template_units.add(template_roi_key(node))
         elif expectation.type == "ocr":
-            check_expected_ocr(report, expectation, node)
+            report.add(
+                "WARN",
+                "EXPECT_OCR_TYPE_LEGACY",
+                "OCR 期望类型已并入 hit/miss；请把 type=ocr 改为 type=hit 并保留 expected_text",
+                node=node.key,
+            )
+            check_expected_ocr(report, expectation, node, observation_by_key.get(node.key))
         else:
             report.add(
                 "WARN",
@@ -559,8 +580,8 @@ def check_vision_case(project_root: Path, case: VisionCase, *, expectation_warni
         report.add("WARN", "EXPECTATIONS_EMPTY", "case 没有 expectations，只输出观察结果")
 
     unknown_keys = set(node_by_key) - {item.node.key for item in observations}
-    if unknown_keys and not template_nodes:
-        report.add("SKIP", "TEMPLATE_NODES_EMPTY", "脚本中没有可离线模板匹配的节点")
+    if unknown_keys and not template_nodes and not ocr_nodes:
+        report.add("SKIP", "VISION_NODES_EMPTY", "脚本中没有可离线检查的视觉节点")
 
     return report
 
@@ -756,6 +777,165 @@ def run_template_observations(
     return observations
 
 
+def run_ocr_observations(
+    project_root: Path,
+    case: VisionCase,
+    nodes: list[VisionNode],
+    report: VisionCaseReport,
+) -> list[MatchObservation]:
+    if not nodes:
+        return []
+
+    try:
+        import cv2  # type: ignore
+        import numpy as np  # type: ignore
+    except ImportError as exc:
+        report.add("SKIP", "VISION_BACKEND_MISSING", f"缺少 OpenCV/numpy，跳过 OCR：{exc}")
+        return []
+
+    backend, backend_error = resolve_ocr_backend()
+    if backend is None:
+        report.add("SKIP", "OCR_BACKEND_MISSING", backend_error or "未找到可用 OCR 后端")
+        return [
+            MatchObservation(
+                node=node,
+                status="skip",
+                threshold=node.threshold,
+                backend="",
+                message=backend_error or "未找到可用 OCR 后端",
+            )
+            for node in nodes
+        ]
+
+    screenshot = read_cv_image(cv2, np, case.screenshot)
+    if screenshot is None:
+        report.add("ERROR", "SCREENSHOT_READ_FAILED", f"无法读取截图：{case.screenshot}")
+        return []
+
+    screenshot_h, screenshot_w = screenshot.shape[:2]
+    display_w = case.display_width or screenshot_w
+    display_h = case.display_height or screenshot_h
+    observations: list[MatchObservation] = []
+    for node in nodes:
+        roi_rect = build_roi_rect(
+            node.roi,
+            screenshot_w=screenshot_w,
+            screenshot_h=screenshot_h,
+            display_w=display_w,
+            display_h=display_h,
+            raw_status_bar_height=case.raw_status_bar_height,
+        )
+        x, y, w, h = roi_rect
+        crop = screenshot[y : y + h, x : x + w]
+        try:
+            result = backend(crop)
+        except Exception as exc:  # OCR engines often fail because of local model/runtime setup.
+            observations.append(
+                MatchObservation(
+                    node=node,
+                    status="error",
+                    threshold=node.threshold,
+                    roi_rect=roi_rect,
+                    message=f"OCR 执行失败：{exc}",
+                )
+            )
+            continue
+        expected = ocr_text_value(node)
+        status = "ocr"
+        if expected:
+            status = "hit" if ocr_text_matches(result.text, expected, "contains") else "miss"
+        observations.append(
+            MatchObservation(
+                node=node,
+                status=status,
+                score=result.confidence,
+                threshold=node.threshold,
+                roi_rect=roi_rect,
+                text=result.text,
+                backend=result.backend,
+                message="已执行 OCR" if result.text else "OCR 未识别到文本",
+            )
+        )
+    return observations
+
+
+def resolve_ocr_backend() -> tuple[CallableOcr | None, str]:
+    backend = resolve_pytesseract_backend()
+    if backend is not None:
+        return backend, ""
+    backend = resolve_paddleocr_backend()
+    if backend is not None:
+        return backend, ""
+    return None, "未找到可用 OCR 后端；可安装 pytesseract + Tesseract，或安装并配置 paddleocr 后重试"
+
+
+CallableOcr = Any
+
+
+def resolve_pytesseract_backend() -> CallableOcr | None:
+    try:
+        import cv2  # type: ignore
+        import pytesseract  # type: ignore
+        from PIL import Image  # type: ignore
+    except ImportError:
+        return None
+
+    def run(crop: Any) -> OcrResult:
+        rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(rgb)
+        text = pytesseract.image_to_string(image, lang="chi_sim+eng")
+        return OcrResult(text=normalize_ocr_output(text), backend="pytesseract")
+
+    return run
+
+
+_PADDLE_OCR_INSTANCE: Any | None = None
+
+
+def resolve_paddleocr_backend() -> CallableOcr | None:
+    try:
+        import cv2  # type: ignore
+        from paddleocr import PaddleOCR  # type: ignore
+    except ImportError:
+        return None
+
+    def get_instance() -> Any:
+        global _PADDLE_OCR_INSTANCE
+        if _PADDLE_OCR_INSTANCE is None:
+            try:
+                _PADDLE_OCR_INSTANCE = PaddleOCR(use_angle_cls=True, lang="ch", show_log=False)
+            except TypeError:
+                _PADDLE_OCR_INSTANCE = PaddleOCR(use_angle_cls=True, lang="ch")
+        return _PADDLE_OCR_INSTANCE
+
+    def run(crop: Any) -> OcrResult:
+        rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+        raw = get_instance().ocr(rgb, cls=True)
+        texts, scores = extract_paddle_texts(raw)
+        confidence = sum(scores) / len(scores) if scores else None
+        return OcrResult(text=normalize_ocr_output("".join(texts)), confidence=confidence, backend="paddleocr")
+
+    return run
+
+
+def extract_paddle_texts(raw: Any) -> tuple[list[str], list[float]]:
+    texts: list[str] = []
+    scores: list[float] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, tuple) and value and isinstance(value[0], str):
+            texts.append(value[0])
+            if len(value) > 1 and isinstance(value[1], int | float):
+                scores.append(float(value[1]))
+            return
+        if isinstance(value, list):
+            for item in value:
+                walk(item)
+
+    walk(raw)
+    return texts, scores
+
+
 def read_cv_image(cv2_module: Any, np_module: Any, path: Path) -> Any:
     try:
         data = np_module.fromfile(str(path), dtype=np_module.uint8)
@@ -773,7 +953,7 @@ def check_expected_hit(
     observation: MatchObservation | None,
 ) -> None:
     if node.kind == "ocr":
-        check_expected_ocr(report, expectation, node)
+        check_expected_ocr(report, expectation, node, observation)
         return
     if observation is None:
         report.add("ERROR", "EXPECTED_HIT_NOT_OBSERVED", "期望命中，但没有观察结果", node=node.key)
@@ -795,7 +975,7 @@ def check_expected_miss(
     observation: MatchObservation | None,
 ) -> None:
     if node.kind == "ocr":
-        report.add("SKIP", "OCR_BACKEND_MISSING", "OCR 节点暂未接入离线识别后端", node=node.key)
+        check_expected_ocr_miss(report, expectation, node, observation)
         return
     if observation is None:
         report.add("ERROR", "EXPECTED_MISS_NOT_OBSERVED", "期望不命中，但没有观察结果", node=node.key)
@@ -810,15 +990,63 @@ def check_expected_miss(
         )
 
 
-def check_expected_ocr(report: VisionCaseReport, expectation: VisionExpectation, node: VisionNode) -> None:
+def check_expected_ocr(
+    report: VisionCaseReport,
+    expectation: VisionExpectation,
+    node: VisionNode,
+    observation: MatchObservation | None,
+) -> None:
     if node.kind != "ocr":
         report.add("WARN", "EXPECT_OCR_ON_TEMPLATE", "OCR 期望绑定到了非 OCR 节点", node=node.key)
         return
     expected_text = expectation.expected_text or node.target_text or "".join(node.target_chars)
-    message = "OCR 节点暂未接入离线识别后端"
-    if expected_text:
-        message += f"，已记录期望文本：{expected_text}"
-    report.add("SKIP", "OCR_BACKEND_MISSING", message, node=node.key)
+    if observation is None:
+        report.add("ERROR", "EXPECTED_OCR_NOT_OBSERVED", "期望 OCR 命中，但没有观察结果", node=node.key)
+        return
+    if observation.status == "skip":
+        message = observation.message or "OCR 节点暂未接入离线识别后端"
+        if expected_text:
+            message += f"，已记录期望文本：{expected_text}"
+        report.add("SKIP", "OCR_BACKEND_MISSING", message, node=node.key)
+        return
+    if observation.status == "error":
+        report.add("ERROR", "OCR_EXECUTION_FAILED", observation.message or "OCR 执行失败", node=node.key)
+        return
+    if not expected_text:
+        report.add("WARN", "OCR_EXPECTED_TEXT_MISSING", "OCR 期望缺少 expected_text，且脚本节点也没有目标文字", node=node.key)
+        return
+    if not ocr_text_matches(observation.text, expected_text, expectation.match):
+        report.add(
+            "ERROR",
+            "EXPECTED_OCR_FAILED",
+            f"期望 OCR 文本 {expected_text}，实际识别：{observation.text or '空'}",
+            node=node.key,
+        )
+
+
+def check_expected_ocr_miss(
+    report: VisionCaseReport,
+    expectation: VisionExpectation,
+    node: VisionNode,
+    observation: MatchObservation | None,
+) -> None:
+    expected_text = expectation.expected_text or node.target_text or "".join(node.target_chars)
+    if observation is None:
+        report.add("ERROR", "EXPECTED_OCR_MISS_NOT_OBSERVED", "期望 OCR 不命中，但没有观察结果", node=node.key)
+        return
+    if observation.status == "skip":
+        report.add("SKIP", "OCR_BACKEND_MISSING", observation.message or "OCR 节点暂未接入离线识别后端", node=node.key)
+        return
+    if observation.status == "error":
+        report.add("ERROR", "OCR_EXECUTION_FAILED", observation.message or "OCR 执行失败", node=node.key)
+        return
+    if expected_text and ocr_text_matches(observation.text, expected_text, expectation.match):
+        report.add(
+            "ERROR",
+            "EXPECTED_OCR_MISS_FAILED",
+            f"期望 OCR 不出现 {expected_text}，实际识别：{observation.text or '空'}",
+            node=node.key,
+        )
 
 
 def resolve_expected_node(expectation: VisionExpectation, nodes: list[VisionNode]) -> VisionNode | None:
@@ -1003,6 +1231,26 @@ def as_float_or_none(value: Any) -> float | None:
 def as_int_or_none(value: Any) -> int | None:
     number = as_float_or_none(value)
     return int(number) if number is not None else None
+
+
+def normalize_ocr_output(value: str) -> str:
+    return re.sub(r"\s+", "", value or "")
+
+
+def ocr_text_matches(actual: str, expected: str, match: str) -> bool:
+    actual_text = normalize_ocr_output(actual)
+    expected_text = normalize_ocr_output(expected)
+    if not expected_text:
+        return False
+    normalized_match = (match or "contains").lower()
+    if normalized_match in {"exact", "equals", "equal"}:
+        return actual_text == expected_text
+    if normalized_match in {"regex", "regexp"}:
+        try:
+            return re.search(expected, actual or "") is not None
+        except re.error:
+            return False
+    return expected_text in actual_text
 
 
 def describe_expectation(expectation: VisionExpectation) -> str:

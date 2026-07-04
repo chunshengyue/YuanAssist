@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="720" fill="#0F172A"/>
+    <rect x="0" y="0" width="12" height="720" fill="#1565C0"/>
+  </g>
+  <g id="header">
+    <text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#CBD5E1">CONCLUSION</text>
+    <text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#CBD5E1" text-anchor="end">15 / 15</text>
+  </g>
+  <g id="title">
+    <text x="56" y="118" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="38" font-weight="700" fill="#FFFFFF">总结：结构恢复是本项目的主线，也是区别于直接 OCR 的关键</text>
+    <text x="58" y="166" font-family="Microsoft YaHei, Arial, sans-serif" font-size="20" fill="#CBD5E1">本项目来自真实应用需求，目标是把游戏攻略截图转换为程序可读取的数据。</text>
+  </g>
+  <g id="summary-cards">
+    <rect x="56" y="224" width="356" height="210" rx="6" fill="#FFFFFF" fill-opacity="0.06" stroke="#CBD5E1"/>
+    <text x="82" y="262" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#CBD5E1">01</text>
+    <text x="82" y="300" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">技术路线清晰</text>
+    <text x="82" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#CBD5E1"><tspan x="82" dy="0">围绕预处理、区域定位、网格恢复、</tspan><tspan x="82" dy="28">单元格 OCR 和后处理形成完整链路。</tspan></text>
+    <rect x="462" y="224" width="356" height="210" rx="6" fill="#1565C0" stroke="#1565C0"/>
+    <text x="488" y="262" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#FFFFFF">02</text>
+    <text x="488" y="300" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">工程问题真实</text>
+    <text x="488" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#FFFFFF"><tspan x="488" dy="0">方案强调成本控制、调试可解释性和</tspan><tspan x="488" dy="28">与自动化执行模块的衔接。</tspan></text>
+    <rect x="868" y="224" width="356" height="210" rx="6" fill="#FFFFFF" fill-opacity="0.06" stroke="#CBD5E1"/>
+    <text x="894" y="262" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#CBD5E1">03</text>
+    <text x="894" y="300" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">边界认识明确</text>
+    <text x="894" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#CBD5E1"><tspan x="894" dy="0">复杂截图适应性、参数泛化和量化</tspan><tspan x="894" dy="28">评估仍是后续重点。</tspan></text>
+  </g>
+  <g id="final-statement">
+    <rect x="56" y="500" width="1168" height="84" rx="6" fill="#FFFFFF" fill-opacity="0.06" stroke="#CBD5E1"/>
+    <text x="82" y="548" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">从课程展示角度看，本项目能够体现图像处理知识在真实业务问题中的应用过程，而不是停留在单一接口调用。</text>
+  </g>
+  <g id="footer">
+    <rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/>
+    <text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#CBD5E1">Source: report_draft_revised.docx</text>
+  </g>
+</svg>

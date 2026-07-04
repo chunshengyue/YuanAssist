@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/>
+    <rect x="0" y="0" width="12" height="720" fill="#1565C0"/>
+    <rect x="56" y="596" width="1168" height="1" fill="#CBD5E1"/>
+  </g>
+  <g id="header">
+    <text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">IMAGE PROCESSING COURSE PROJECT</text>
+    <text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">01 / 15</text>
+  </g>
+  <g id="title-block">
+    <text x="56" y="128" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="52" font-weight="700" fill="#1F2933">
+      <tspan x="56" dy="0">基于 OpenCV 与 OCR 的</tspan>
+      <tspan x="56" dy="62">游戏攻略表格识别系统</tspan>
+    </text>
+    <text x="58" y="278" font-family="Microsoft YaHei, Arial, sans-serif" font-size="22" fill="#566273">项目报告型 PPT：面向老师直接阅读，突出工程链路、实现取舍与改进方向</text>
+  </g>
+  <g id="abstract-panel">
+    <rect x="56" y="330" width="720" height="190" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="366" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">摘要</text>
+    <text x="82" y="402" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933">
+      <tspan x="82" dy="0">本项目面向游戏自动化辅助场景中的攻略表格识别需求，研究并实现一套</tspan>
+      <tspan x="82" dy="27">结合 OpenCV 图像处理与 OCR 文本识别的本地化处理方案。系统不再把</tspan>
+      <tspan x="82" dy="27">整张攻略截图交给 OCR 一次性判断，而是先通过预处理、区域定位、网格</tspan>
+      <tspan x="82" dy="27">结构恢复和单元格切分，把复杂截图转化为适合识别的小规模图像单元，</tspan>
+      <tspan x="82" dy="27">再通过文本规范化与动作序列解析生成结构化结果。</tspan>
+    </text>
+  </g>
+  <g id="route-panel">
+    <rect x="820" y="330" width="360" height="190" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="846" y="366" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1F2933">技术主线</text>
+    <text x="846" y="404" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">
+      <tspan x="846" dy="0">复杂截图</tspan>
+      <tspan x="846" dy="32">→ 表格区域</tspan>
+      <tspan x="846" dy="32">→ 网格结构</tspan>
+      <tspan x="846" dy="32">→ 单元格 OCR</tspan>
+      <tspan x="846" dy="32">→ CSV / 业务数据</tspan>
+    </text>
+    <rect x="1040" y="386" width="82" height="82" rx="6" fill="#1565C0"/>
+    <text x="1081" y="420" font-family="Consolas, Courier New, monospace" font-size="24" font-weight="700" fill="#FFFFFF" text-anchor="middle">CSV</text>
+    <text x="1081" y="448" font-family="Consolas, Courier New, monospace" font-size="18" fill="#FFFFFF" text-anchor="middle">1xN</text>
+  </g>
+  <g id="keywords">
+    <text x="56" y="558" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#566273">
+      关键词：OpenCV；OCR；表格识别；图像预处理；结构化数据；游戏自动化
+    </text>
+  </g>
+  <g id="footer">
+    <text x="56" y="680" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx, extracted as plain text</text>
+  </g>
+</svg>

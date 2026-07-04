@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">REQUIREMENT ANALYSIS</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">04 / 15</text></g>
+  <g id="title">
+    <text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">需求分析：这不是单一 OCR 任务，而是图像、结构、语义三层恢复</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M62,116 H1218 A6,6 0 0 1 1224,122 V160 A6,6 0 0 1 1218,166 H62 A6,6 0 0 1 56,160 V122 A6,6 0 0 1 62,116 Z" />
+    <text x="78" y="148" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">系统需要从复杂截图中定位表格，恢复行列边界，再把单元格文本整理成稳定字段。</text>
+  </g>
+  <g id="layers">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,204 H406 A6,6 0 0 1 412,210 V424 A6,6 0 0 1 406,430 H62 A6,6 0 0 1 56,424 V210 A6,6 0 0 1 62,204 Z" />
+    <text x="82" y="240" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#1565C0">L1 IMAGE</text>
+    <text x="82" y="274" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#1F2933">图像层：稳定定位</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="312">从复杂截图中找到真正的表格主体，尽量排除角色立绘、</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="339">标题、水印、背景纹理和压缩噪声。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="381">输出：裁剪后的表格区域。</text><path fill="#1565C0" stroke="#1565C0" d="M468,204 H812 A6,6 0 0 1 818,210 V424 A6,6 0 0 1 812,430 H468 A6,6 0 0 1 462,424 V210 A6,6 0 0 1 468,204 Z" />
+    <text x="488" y="240" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#FFFFFF">L2 STRUCTURE</text>
+    <text x="488" y="274" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">结构层：恢复行列</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="488" y="312">根据横线、竖线和交点关系推断单元格边界，让 OCR</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="488" y="339">输入从整图缩小到局部单元格。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#FFFFFF" x="488" y="381">输出：行列结构与单元格图像。</text><path fill="#FFFFFF" stroke="#CBD5E1" d="M874,204 H1218 A6,6 0 0 1 1224,210 V424 A6,6 0 0 1 1218,430 H874 A6,6 0 0 1 868,424 V210 A6,6 0 0 1 874,204 Z" />
+    <text x="894" y="240" font-family="Consolas, Courier New, monospace" font-size="13" font-weight="700" fill="#1565C0">L3 SEMANTICS</text>
+    <text x="894" y="274" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="24" font-weight="700" fill="#1F2933">语义层：规范动作</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="894" y="312">把 OCR 原始文本整理为回合、角色、动作和说明字段，</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="894" y="339">处理多行动作、符号粘连和低置信片段。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="894" y="381">输出：CSV 或脚本数据。</text></g>
+  <g id="constraints">
+    <path fill="#F6F8FB" stroke="#CBD5E1" d="M62,470 H1218 A6,6 0 0 1 1224,476 V580 A6,6 0 0 1 1218,586 H62 A6,6 0 0 1 56,580 V476 A6,6 0 0 1 62,470 Z" />
+    <text x="82" y="508" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="23" font-weight="700" fill="#1F2933">工程约束</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="300" y="502">本地可运行：减少高频云端 API 依赖</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="300" y="534">中间结果可视化：能定位失败发生在哪个阶段</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="760" y="502">面向固定结构：不追求任意文档 OCR</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="760" y="534">可迭代：新样本出现后按阶段增量优化</text></g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

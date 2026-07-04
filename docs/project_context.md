@@ -11,7 +11,7 @@
 - 主界面是 Compose 壳，包含 Home、Job、Debug、Mine 四个 Tab；其中 Debug 是调试工作台入口。
 
 ## 先看哪里
-- 想找测试工具当前能力、技术栈和计划：`docs/test_tool_context.md`；其中 App 冒烟体检实现位于 `tools/yuanassist_test_tool/app_smoke.py`
+- 想找测试工具当前能力、技术栈和计划：`docs/test_tool_context.md`；其中一键回归入口位于 `tools/yuanassist_test_tool/regression.py`，App 冒烟体检实现位于 `tools/yuanassist_test_tool/app_smoke.py`
 - 想找主界面入口与功能跳转：`app/src/main/java/com/example/yuanassist/ui/MainActivity.kt`
 - 想找首页按钮怎么进入各功能：`app/src/main/java/com/example/yuanassist/ui/main/HomeActionHandler.kt`
 - 想找无障碍服务、悬浮窗、服务 action 分发：`app/src/main/java/com/example/yuanassist/core/YuanAssistService.kt`
@@ -43,6 +43,7 @@
 ## 功能结构
 - 主壳页面
   - `MainActivity` + `ui/main/*` 负责主导航、状态同步、Debug 页接入。
+  - 首页 `日常版` 现包含「一键日常」入口：只读取 `assets/daily_scripts/daily/` 下的内置脚本，多选后导入现有日常悬浮窗，开始执行时按列表顺序逐个运行，单项失败不中断，全部结束后统一汇总失败项；当前内置项已包含领取体力、领取月卡、家具互动、家具历险、相见、鸢报一轮等；若导入时跳去开启无障碍或悬浮窗权限，待导入脚本列表会先持久化，权限补齐后可继续恢复导入。
   - 首页检查更新由 `HomeActionHandler` 处理：发现新版本后优先走 Android `DownloadManager` 应用内下载，下载完成拉起系统安装器；同时保留浏览器下载作为手动入口和兜底。
   - 首页「友情链接」板块位于常用入口之后，当前一行展示 biubiu 和 maayuan 两个推荐卡片；入口图标使用 `assets/biubiu.jpg`、`assets/maayuan.png`，点击由 `MainActivity` 打开外链。
 - 无障碍自动化
@@ -73,6 +74,7 @@
 - 调试工作台
   - `DebugWorkbenchCoordinator` 负责从图片中测试模板/OCR、替换模板、调延时、查看命中范围。
   - 调试页会自动索引 `assets/daily_scripts` 中的脚本视觉节点，包括 `MATCH_TEMPLATE`、`OCR` 以及 `SCREENSHOT_GROUP` 子步骤。
+  - 调试页对内置脚本的索引现支持递归读取 `assets/daily_scripts` 下的 `.json`，因此 `daily/*.json` 这类一键日常脚本也会进入任务列表并支持模板/OCR 调试与替换。
   - OCR 节点即使 JSON 未配置 `template_name`，调试页也会生成稳定派生模板名：`<scriptBaseName>_task_<taskId>_ocr.png`，保存位置是 App 私有 `files/template_overrides/`。
   - 运行时 OCR 节点优先查对应 override 模板；存在则走模板匹配，不存在则回落原 OCR。
   - `SCREENSHOT_GROUP` 里的 OCR 子步骤也遵循同一套 override 语义；无 `template_name` 时使用 `<scriptBaseName>_task_<taskId>_step_<index>_ocr.png`。
@@ -179,6 +181,7 @@
   - 悬浮窗再负责开始/停止当前选中的那一项
 - 日常版悬浮窗的图标点击会回到对应日常页面，动作按钮负责执行或停止当前工作，关闭按钮负责停止当前工作并移除悬浮窗。
 - `DailyWindowManager.hideWindow()` 会停止当前工作、移除悬浮窗并标记关闭；无障碍服务最终销毁时应走 `DailyWindowManager.release()`，同时取消内部 `uiScope`，避免 OCR/统计等异步任务继续持有旧 service。
+- “屏幕选点”属于日常版悬浮窗的持续模式之一：每次点击悬浮窗开始按钮会重新打开一次选点遮罩，点屏复制坐标后只关闭当次遮罩，不退出选点模式，便于连续多次取点。
 - “框选OCR”属于日常版悬浮窗挂载的一种轻工具模式：
   - 首页快捷按钮负责把模式导入到 `DailyWindowManager`
   - 悬浮窗开始按钮负责弹出可拖动/缩放的选区
@@ -367,6 +370,7 @@
   - 先看 `DailyWindowManager`
   - 再看对应 runtime manager
   - 再看 `layout_daily_window.xml`
+  - 若是一键日常队列执行问题，也先看 `DailyWindowManager` 的队列调度与失败汇总逻辑
 
 ## 可复用模块
 - `AutoTaskEngine`
@@ -402,7 +406,9 @@
 
 ## 资产与脚本组织规则
 - 内置脚本主要放在 `app/src/main/assets/daily_scripts`。
+- 「一键日常」内置脚本放在 `app/src/main/assets/daily_scripts/daily/*.json`。
 - 脚本模板主要放在 `app/src/main/assets/daily_script_templates/<script-name>/`。
+- 「一键日常」模板统一放在 `app/src/main/assets/daily_script_templates/daily/`，若不同任务存在同名模板，统一改成带任务名前缀的文件名，并同步更新 `template_name`。
 - 调试页对脚本节点的展示，依赖脚本内容本身和 `DailyScriptDebugIndex` 的映射。
 - 若新增一类日常脚本或模板节点，最好同时考虑：
   - 脚本 JSON 是否能被调试页索引

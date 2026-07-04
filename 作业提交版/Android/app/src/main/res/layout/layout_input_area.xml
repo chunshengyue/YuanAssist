@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<View xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/view_input_touch"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#05000000" />
+    <!-- #05000000 是极淡的黑色，几乎看不见，但能拦截事件。如果想要完全透明改成 #00000000 -->

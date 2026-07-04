@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" />
+    <rect x="0" y="0" width="12" height="720" fill="#1565C0" />
+  </g>
+  <g id="header">
+    <text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">PROJECT BACKGROUND</text>
+    <text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">03 / 15</text>
+  </g>
+  <g id="title">
+    <text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">项目背景：自动化系统需要“可解析表格”，而不是一张可阅读截图</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M62,116 H786 A6,6 0 0 1 792,122 V164 A6,6 0 0 1 786,170 H62 A6,6 0 0 1 56,164 V122 A6,6 0 0 1 62,116 Z" />
+    <text x="78" y="150" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">真实业务需求来自游戏自动化辅助 App：社区攻略表格要被转换成程序可消费的数据。</text>
+  </g>
+  <g id="left-text">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,198 H610 A6,6 0 0 1 616,204 V546 A6,6 0 0 1 610,552 H62 A6,6 0 0 1 56,546 V204 A6,6 0 0 1 62,198 Z" />
+    <text x="82" y="235" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="23" font-weight="700" fill="#1565C0">为什么截图不能直接使用</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="272">攻略材料通常以图片形式传播，表格里记录每一回合不同角色</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="299">的攻击、防御、技能释放或特殊动作。人可以直接阅读截图，</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="326">但自动化系统需要的是字段稳定、顺序明确的数据。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="368">早期曾尝试百度表格 OCR API，接入成本低，也能快速验证</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="395">可行性；但在真实用户场景中，高频调用会带来持续成本，</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="82" y="422">且云端结果仍然难以直接转化为自动执行所需结构。</text></g>
+  <g id="placeholder">
+    <path fill="#F6F8FB" stroke="#CBD5E1" d="M668,198 H1218 A6,6 0 0 1 1224,204 V546 A6,6 0 0 1 1218,552 H668 A6,6 0 0 1 662,546 V204 A6,6 0 0 1 668,198 Z" />
+    <path fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="8 8" d="M708,236 H1178 A4,4 0 0 1 1182,240 V462 A4,4 0 0 1 1178,466 H708 A4,4 0 0 1 704,462 V240 A4,4 0 0 1 708,236 Z" />
+    <text x="943" y="340" font-family="Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#566273" text-anchor="middle">原始攻略截图占位</text>
+    <text x="943" y="374" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#8A94A6" text-anchor="middle">可替换为真实样例图：立绘、表格、说明文字混在一张截图中</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M720,496 H808 A16,16 0 0 1 824,512 V512 A16,16 0 0 1 808,528 H720 A16,16 0 0 1 704,512 V512 A16,16 0 0 1 720,496 Z" />
+    <text x="764" y="518" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933" text-anchor="middle">立绘干扰</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M858,496 H946 A16,16 0 0 1 962,512 V512 A16,16 0 0 1 946,528 H858 A16,16 0 0 1 842,512 V512 A16,16 0 0 1 858,496 Z" />
+    <text x="902" y="518" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933" text-anchor="middle">装饰边框</text>
+    <path fill="#EEF3F8" stroke="#CBD5E1" d="M996,496 H1084 A16,16 0 0 1 1100,512 V512 A16,16 0 0 1 1084,528 H996 A16,16 0 0 1 980,512 V512 A16,16 0 0 1 996,496 Z" />
+    <text x="1040" y="518" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933" text-anchor="middle">动作符号</text>
+  </g>
+  <g id="bottom-insight">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,584 H1218 A6,6 0 0 1 1224,590 V634 A6,6 0 0 1 1218,640 H62 A6,6 0 0 1 56,634 V590 A6,6 0 0 1 62,584 Z" />
+    <text x="80" y="619" font-family="Microsoft YaHei, Arial, sans-serif" font-size="18" fill="#1F2933">
+      需求转变：从“让 OCR 读出文字”转向“构建一条本地、低成本、可解释的表格结构恢复链路”。
+    </text>
+  </g>
+  <g id="footer">
+    <rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" />
+    <text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text>
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC" /><rect x="0" y="0" width="12" height="720" fill="#1565C0" /></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">KEY TECHNIQUE 02</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">08 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">表格区域定位与网格恢复：把 OCR 输入限定到可控单元格</text></g>
+  <g id="grid-demo">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M62,148 H570 A6,6 0 0 1 576,154 V552 A6,6 0 0 1 570,558 H62 A6,6 0 0 1 56,552 V154 A6,6 0 0 1 62,148 Z" />
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">网格恢复示意</text>
+    <rect x="96" y="230" width="420" height="240" fill="#FFFFFF" stroke="#1F2933" stroke-width="2" />
+    <line x1="180" y1="230" x2="180" y2="470" stroke="#CBD5E1" />
+    <line x1="264" y1="230" x2="264" y2="470" stroke="#CBD5E1" />
+    <line x1="348" y1="230" x2="348" y2="470" stroke="#1565C0" stroke-width="2" />
+    <line x1="432" y1="230" x2="432" y2="470" stroke="#CBD5E1" />
+    <line x1="96" y1="290" x2="516" y2="290" stroke="#CBD5E1" />
+    <line x1="96" y1="350" x2="516" y2="350" stroke="#1565C0" stroke-width="2" />
+    <line x1="96" y1="410" x2="516" y2="410" stroke="#CBD5E1" />
+    <text x="306" y="512" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1F2933" text-anchor="middle">横线 + 竖线 + 交点关系 → 单元格边界</text>
+  </g>
+  <g id="right">
+    <path fill="#FFFFFF" stroke="#CBD5E1" d="M626,148 H1218 A6,6 0 0 1 1224,154 V332 A6,6 0 0 1 1218,338 H626 A6,6 0 0 1 620,332 V154 A6,6 0 0 1 626,148 Z" />
+    <text x="646" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">区域定位的演进</text>
+    <text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="646" y="220">早期单纯寻找最大候选块，容易把立绘或上方说明一起裁入。</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="646" y="248">后续改为优先寻找规则网格主体，综合线条密度、矩形特征和网格规律，</text><text font-size="17" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="646" y="276">使裁剪范围既覆盖完整表格，又尽量避免无关元素。</text><path fill="#EEF3F8" stroke="#CBD5E1" d="M626,370 H902 A6,6 0 0 1 908,376 V552 A6,6 0 0 1 902,558 H626 A6,6 0 0 1 620,552 V376 A6,6 0 0 1 626,370 Z" />
+    <text x="646" y="406" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#0F766E">收益</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="646" y="442">OCR 不再猜整张表格布局。</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="646" y="468">单元格局部错误不会破坏整体行列关系。</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="646" y="494">行列边界保留后，后处理和人工校验更稳定。</text><path fill="#FFFFFF" stroke="#CBD5E1" d="M942,370 H1218 A6,6 0 0 1 1224,376 V552 A6,6 0 0 1 1218,558 H942 A6,6 0 0 1 936,552 V376 A6,6 0 0 1 942,370 Z" />
+    <text x="962" y="406" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#B91C1C">边界问题</text>
+    <text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="962" y="442">细线、断线和压缩质量会影响线条检测。</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="962" y="468">表头合并单元格会增加边界推断难度。</text><text font-size="16" font-family="Microsoft YaHei, Arial, sans-serif" fill="#1F2933" x="962" y="494">阈值、核大小和线合并策略仍需调参。</text></g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1" /><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

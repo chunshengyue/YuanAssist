@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/><rect x="0" y="0" width="12" height="720" fill="#1565C0"/></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">OUTPUT AND DEBUG</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">11 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">输出结果与可调试性：结果不是 OCR 文本，而是边界清楚的表格数据</text></g>
+  <g id="csv">
+    <rect x="56" y="148" width="682" height="398" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">CSV 输出示例占位</text>
+    <rect x="82" y="218" width="630" height="248" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <rect x="82" y="218" width="630" height="40" fill="#0F172A"/>
+    <text x="118" y="244" font-family="Consolas, Courier New, monospace" font-size="14" font-weight="700" fill="#FFFFFF">round</text>
+    <text x="230" y="244" font-family="Consolas, Courier New, monospace" font-size="14" font-weight="700" fill="#FFFFFF">col_1</text>
+    <text x="342" y="244" font-family="Consolas, Courier New, monospace" font-size="14" font-weight="700" fill="#FFFFFF">col_2</text>
+    <text x="454" y="244" font-family="Consolas, Courier New, monospace" font-size="14" font-weight="700" fill="#FFFFFF">col_3</text>
+    <text x="566" y="244" font-family="Consolas, Courier New, monospace" font-size="14" font-weight="700" fill="#FFFFFF">note</text>
+    <line x1="82" y1="306" x2="712" y2="306" stroke="#CBD5E1"/><line x1="82" y1="354" x2="712" y2="354" stroke="#CBD5E1"/><line x1="82" y1="402" x2="712" y2="402" stroke="#CBD5E1"/><line x1="194" y1="218" x2="194" y2="466" stroke="#CBD5E1"/><line x1="306" y1="218" x2="306" y2="466" stroke="#CBD5E1"/><line x1="418" y1="218" x2="418" y2="466" stroke="#CBD5E1"/><line x1="530" y1="218" x2="530" y2="466" stroke="#CBD5E1"/>
+    <text x="118" y="288" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">1回合</text><text x="230" y="288" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">3↑</text><text x="342" y="288" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">5A</text><text x="454" y="288" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">4↑</text><text x="566" y="288" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933">条件动作</text>
+    <text x="118" y="336" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">2回合</text><text x="230" y="336" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">5↑</text><text x="342" y="336" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">3↓</text><text x="454" y="336" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">2A</text><text x="566" y="336" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933">说明字段</text>
+    <text x="118" y="384" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">3回合</text><text x="230" y="384" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">3↓</text><text x="342" y="384" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">2↓</text><text x="454" y="384" font-family="Consolas, Courier New, monospace" font-size="14" fill="#1F2933">4↓</text><text x="566" y="384" font-family="Microsoft YaHei, Arial, sans-serif" font-size="14" fill="#1F2933">可校验</text>
+    <text x="82" y="510" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#566273">占位数据用于说明字段形态；实际内容可由识别结果替换。</text>
+  </g>
+  <g id="debug">
+    <rect x="782" y="148" width="442" height="398" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="808" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#0F766E">为什么链路可调试</text>
+    <text x="808" y="226" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="808" dy="0">1. 预处理结果可单独查看，判断阈值和降噪是否合适。</tspan><tspan x="808" dy="34">2. 区域定位结果可检查是否裁入立绘、漏掉表头或尾列。</tspan><tspan x="808" dy="34">3. 网格恢复结果可直接观察行列线和单元格边界。</tspan><tspan x="808" dy="34">4. OCR 与后处理错误可以追溯到具体单元格。</tspan></text>
+    <rect x="808" y="416" width="364" height="72" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="830" y="448" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1565C0">工程意义</text>
+    <text x="830" y="474" font-family="Microsoft YaHei, Arial, sans-serif" font-size="15" fill="#1F2933">当新截图失败时，不需要整体推翻方案，而是定位到阶段后增量优化。</text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

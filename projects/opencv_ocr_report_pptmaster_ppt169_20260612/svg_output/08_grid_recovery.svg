@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/><rect x="0" y="0" width="12" height="720" fill="#1565C0"/></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">KEY TECHNIQUE 02</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">08 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">表格区域定位与网格恢复：把 OCR 输入限定到可控单元格</text></g>
+  <g id="grid-demo">
+    <rect x="56" y="148" width="520" height="410" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">网格恢复示意</text>
+    <rect x="96" y="230" width="420" height="240" fill="#FFFFFF" stroke="#1F2933" stroke-width="2"/>
+    <line x1="180" y1="230" x2="180" y2="470" stroke="#CBD5E1"/>
+    <line x1="264" y1="230" x2="264" y2="470" stroke="#CBD5E1"/>
+    <line x1="348" y1="230" x2="348" y2="470" stroke="#1565C0" stroke-width="2"/>
+    <line x1="432" y1="230" x2="432" y2="470" stroke="#CBD5E1"/>
+    <line x1="96" y1="290" x2="516" y2="290" stroke="#CBD5E1"/>
+    <line x1="96" y1="350" x2="516" y2="350" stroke="#1565C0" stroke-width="2"/>
+    <line x1="96" y1="410" x2="516" y2="410" stroke="#CBD5E1"/>
+    <text x="306" y="512" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" font-weight="700" fill="#1F2933" text-anchor="middle">横线 + 竖线 + 交点关系 → 单元格边界</text>
+  </g>
+  <g id="right">
+    <rect x="620" y="148" width="604" height="190" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="646" y="184" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="22" font-weight="700" fill="#1565C0">区域定位的演进</text>
+    <text x="646" y="220" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" fill="#1F2933"><tspan x="646" dy="0">早期单纯寻找最大候选块，容易把立绘或上方说明一起裁入。</tspan><tspan x="646" dy="28">后续改为优先寻找规则网格主体，综合线条密度、矩形特征和网格规律，</tspan><tspan x="646" dy="28">使裁剪范围既覆盖完整表格，又尽量避免无关元素。</tspan></text>
+    <rect x="620" y="370" width="288" height="188" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="646" y="406" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#0F766E">收益</text>
+    <text x="646" y="442" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="646" dy="0">OCR 不再猜整张表格布局。</tspan><tspan x="646" dy="26">单元格局部错误不会破坏整体行列关系。</tspan><tspan x="646" dy="26">行列边界保留后，后处理和人工校验更稳定。</tspan></text>
+    <rect x="936" y="370" width="288" height="188" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="962" y="406" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#B91C1C">边界问题</text>
+    <text x="962" y="442" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="962" dy="0">细线、断线和压缩质量会影响线条检测。</tspan><tspan x="962" dy="26">表头合并单元格会增加边界推断难度。</tspan><tspan x="962" dy="26">阈值、核大小和线合并策略仍需调参。</tspan></text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>

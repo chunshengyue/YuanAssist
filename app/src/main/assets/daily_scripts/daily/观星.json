@@ -1,0 +1,93 @@
+{
+  "display_name": "观星",
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/wu_yue_ka_guan_xing",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_name": "home_page_two_recover.json"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SET_VAR",
+      "delay": 0,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "var_name": "current_batch_count",
+        "var_value": "1"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SET_VAR",
+      "delay": 0,
+      "id": 2,
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "var_name": "stargazing_click_x",
+        "var_value": "763.49"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SET_VAR",
+      "delay": 0,
+      "id": 3,
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "var_name": "stargazing_click_y",
+        "var_value": "1318.2489"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SET_VAR",
+      "delay": 0,
+      "id": 4,
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "var_name": "stargazing_click_align",
+        "var_value": "bottom"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SET_VAR",
+      "delay": 0,
+      "id": 5,
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "var_name": "stargazing_click_interval",
+        "var_value": "1200"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 6,
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "entry_task_id": 11,
+        "inherit_variables": true,
+        "script_name": "wu_yue_ka_guan_xing_batch.json"
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <g id="background"><rect x="0" y="0" width="1280" height="720" fill="#FAFBFC"/><rect x="0" y="0" width="12" height="720" fill="#1565C0"/></g>
+  <g id="header"><text x="56" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273">PROCESS PIPELINE</text><text x="1224" y="42" font-family="Consolas, Courier New, monospace" font-size="12" fill="#566273" text-anchor="end">06 / 15</text></g>
+  <g id="title"><text x="56" y="92" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="34" font-weight="700" fill="#1F2933">处理流程：从攻略截图到结构化 CSV，关键是逐步缩小 OCR 的问题规模</text></g>
+  <g id="pipeline">
+    <rect x="56" y="160" width="1168" height="210" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <rect x="82" y="214" width="128" height="92" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="146" y="244" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1F2933" text-anchor="middle">原始截图</text>
+    <text x="146" y="274" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#566273" text-anchor="middle">复杂背景输入</text>
+    <polygon points="228,260 256,246 256,274" fill="#1565C0"/>
+    <rect x="276" y="214" width="128" height="92" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="340" y="244" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1F2933" text-anchor="middle">预处理</text>
+    <text x="340" y="274" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#566273" text-anchor="middle">降噪与二值化</text>
+    <polygon points="422,260 450,246 450,274" fill="#1565C0"/>
+    <rect x="470" y="214" width="128" height="92" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="534" y="244" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1F2933" text-anchor="middle">区域定位</text>
+    <text x="534" y="274" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#566273" text-anchor="middle">找到表格主体</text>
+    <polygon points="616,260 644,246 644,274" fill="#1565C0"/>
+    <rect x="664" y="214" width="128" height="92" rx="6" fill="#1565C0" stroke="#1565C0"/>
+    <text x="728" y="244" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" text-anchor="middle">网格恢复</text>
+    <text x="728" y="274" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#FFFFFF" text-anchor="middle">行列与边界</text>
+    <polygon points="810,260 838,246 838,274" fill="#1565C0"/>
+    <rect x="858" y="214" width="128" height="92" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="922" y="244" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1F2933" text-anchor="middle">单元格 OCR</text>
+    <text x="922" y="274" font-family="Microsoft YaHei, Arial, sans-serif" font-size="13" fill="#566273" text-anchor="middle">局部文字读取</text>
+    <polygon points="1004,260 1032,246 1032,274" fill="#1565C0"/>
+    <rect x="1052" y="214" width="128" height="92" rx="6" fill="#EEF3F8" stroke="#CBD5E1"/>
+    <text x="1116" y="244" font-family="Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700" fill="#1F2933" text-anchor="middle">结构化输出</text>
+    <text x="1116" y="274" font-family="Consolas, Courier New, monospace" font-size="14" fill="#566273" text-anchor="middle">CSV / script</text>
+  </g>
+  <g id="explanations">
+    <rect x="56" y="408" width="360" height="160" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="82" y="444" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#1565C0">为什么不是整图 OCR</text>
+    <text x="82" y="478" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="82" dy="0">整图 OCR 得到的是无序文本流，无法稳定恢复表格行列关系，</tspan><tspan x="82" dy="25">动作顺序也容易混乱。</tspan></text>
+    <rect x="460" y="408" width="360" height="160" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="486" y="444" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#0F766E">结构恢复的作用</text>
+    <text x="486" y="478" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="486" dy="0">用横线、竖线和交点先确定单元格边界，OCR 只负责读更小、</tspan><tspan x="486" dy="25">更干净的局部图像。</tspan></text>
+    <rect x="864" y="408" width="360" height="160" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text x="890" y="444" font-family="SimHei, Microsoft YaHei, Arial, sans-serif" font-size="21" font-weight="700" fill="#F59E0B">后处理的必要性</text>
+    <text x="890" y="478" font-family="Microsoft YaHei, Arial, sans-serif" font-size="16" fill="#1F2933"><tspan x="890" dy="0">OCR 文本还要统一回合格式、动作符号和说明字段，才能真正</tspan><tspan x="890" dy="25">进入自动化执行链路。</tspan></text>
+  </g>
+  <g id="footer"><rect x="56" y="660" width="1168" height="1" fill="#CBD5E1"/><text x="56" y="682" font-family="Consolas, Courier New, monospace" font-size="11" fill="#8A94A6">Source: report_draft_revised.docx</text></g>
+</svg>
