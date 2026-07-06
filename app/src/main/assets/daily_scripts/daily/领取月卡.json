@@ -17,7 +17,7 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "OCR",
       "delay": 2500,
       "id": 1,
       "name": "商城",
