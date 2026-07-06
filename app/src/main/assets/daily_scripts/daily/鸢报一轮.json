@@ -64,6 +64,7 @@
       "params": {
         "script_name": "bird_food_xiao_dao_xiao_xi.json",
         "entry_task_id": 1,
+        "exit_task_id": 72,
         "inherit_variables": true
       },
       "on_success": 5,

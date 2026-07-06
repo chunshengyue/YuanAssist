@@ -21,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yuanassist.ui.main.theme.BodyInk
@@ -42,16 +44,20 @@ fun SubpageRadioOption(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     enabled: Boolean = true,
+    titleFontSize: TextUnit? = null,
+    indicatorSize: Dp = 18.dp,
 ) {
     SubpageOptionRow(
         text = text,
         subtitle = subtitle,
         selected = selected,
         enabled = enabled,
+        titleFontSize = titleFontSize,
         indicator = {
             SubpageCircleIndicator(
                 selected = selected,
                 enabled = enabled,
+                size = indicatorSize,
             )
         },
         onClick = onClick,
@@ -68,12 +74,14 @@ fun SubpageCheckOption(
     subtitle: String? = null,
     enabled: Boolean = true,
     indicatorSize: Dp = 16.dp,
+    titleFontSize: TextUnit? = null,
 ) {
     SubpageOptionRow(
         text = text,
         subtitle = subtitle,
         selected = checked,
         enabled = enabled,
+        titleFontSize = titleFontSize,
         indicator = {
             SubpageSquareIndicator(
                 checked = checked,
@@ -90,11 +98,13 @@ fun SubpageCheckOption(
 fun SubpageCircleIndicator(
     selected: Boolean,
     enabled: Boolean,
+    size: Dp = 18.dp,
     modifier: Modifier = Modifier,
 ) {
+    val dotSize = (size.value * 0.44f).coerceAtLeast(6f).dp
     Box(
         modifier = modifier
-            .size(18.dp)
+            .size(size)
             .border(
                 width = 1.5.dp,
                 color = when {
@@ -113,7 +123,7 @@ fun SubpageCircleIndicator(
         if (selected) {
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(dotSize)
                     .background(OptionDotFill, CircleShape),
             )
         }
@@ -165,6 +175,7 @@ private fun SubpageOptionRow(
     subtitle: String?,
     selected: Boolean,
     enabled: Boolean,
+    titleFontSize: TextUnit?,
     indicator: @Composable () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -174,7 +185,7 @@ private fun SubpageOptionRow(
         selected -> OptionSelectedText
         else -> OptionUnselectedText
     }
-    val titleSize = when {
+    val titleSize = titleFontSize ?: when {
         subtitle != null -> 15.sp
         text.length <= 4 -> 16.sp
         text.length >= 10 -> 14.sp
@@ -205,6 +216,8 @@ private fun SubpageOptionRow(
                 fontFamily = FontFamily.Serif,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
                 fontSize = titleSize,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(

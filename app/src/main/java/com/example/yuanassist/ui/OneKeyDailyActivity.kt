@@ -11,7 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -22,14 +25,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.yuanassist.core.DailyPlanSelection
 import com.example.yuanassist.core.OneKeyDailyBridge
 import com.example.yuanassist.core.YuanAssistService
+import com.example.yuanassist.model.DailyTask
 import com.example.yuanassist.model.DailyTaskPlan
+import com.example.yuanassist.model.TaskParams
 import com.example.yuanassist.ui.main.theme.BodyInk
+import com.example.yuanassist.ui.subpage.SubpageRadioOption
 import com.example.yuanassist.ui.subpage.StoneStyleButton
 import com.example.yuanassist.ui.subpage.SubpageCheckOption
 import com.example.yuanassist.ui.subpage.SubpageScaffold
 import com.example.yuanassist.ui.subpage.SubpageSectionCard
+import com.example.yuanassist.ui.subpage.SubpageTextField
 import com.google.gson.Gson
 
 class OneKeyDailyActivity : AppCompatActivity() {
@@ -39,21 +47,75 @@ class OneKeyDailyActivity : AppCompatActivity() {
         private const val PREFS_APP = "app_prefs"
         private const val KEY_PENDING_START_ACTION = "pending_start_action"
         private const val KEY_PENDING_PERMISSION_REQUEST = "pending_one_key_daily_permission_request"
+        private const val KEY_REMEMBERED_SELECTED_FILES = "one_key_daily_selected_files"
+        private const val KEY_REMEMBERED_TRAINING_OPTION = "one_key_daily_training_option"
+        private const val KEY_REMEMBERED_STARGAZING_OPTION = "one_key_daily_stargazing_option"
+        private const val KEY_REMEMBERED_STARGAZING_WITH_CARD_COUNT =
+            "one_key_daily_stargazing_with_card_count"
+        private const val KEY_REMEMBERED_STARGAZING_WITHOUT_CARD_COUNT =
+            "one_key_daily_stargazing_without_card_count"
+        private const val KEY_REMEMBERED_DEBUG_MODE = "one_key_daily_debug_mode"
+        private const val KEY_REMEMBERED_SAVE_SCREENSHOT = "one_key_daily_save_screenshot"
         private const val PENDING_PERMISSION_OVERLAY = "overlay"
         private const val PENDING_PERMISSION_ACCESSIBILITY = "accessibility"
+        private const val TRAINING_FILE_NAME = "历练.json"
+        private const val STARGAZING_FILE_NAME = "观星.json"
+        private const val STARGAZING_DEFAULT_COUNT = "30"
+        private const val STARGAZING_BATCH_SIZE = 30
+        private const val STARGAZING_CLICK_INTERVAL = "1200"
         private val PREFERRED_ORDER = listOf(
             "领取体力",
             "领取月卡",
+            "行囊派遣",
+            "送礼一次",
+            "历练",
+            "观星",
+            "白鹄扫荡",
+            "鸢报一轮",
+            "相见",
+            "密探升级",
+            "家具历险",
+            "家具打造",
+            "材料打造",
+            "密探特训",
         )
+        private val TRAINING_OPTIONS = listOf(
+            TrainingOption("1", "铜钱"),
+            TrainingOption("2", "经验"),
+            TrainingOption("3", "风火"),
+            TrainingOption("4", "地水"),
+            TrainingOption("5", "阴阳"),
+        )
+        private const val DEFAULT_TRAINING_OPTION = "2"
+        private const val DEFAULT_STARGAZING_OPTION = "single"
+        private val CONFIG_OPTION_FONT_SIZE = 13.sp
+        private val CONFIG_FIELD_LABEL_FONT_SIZE = 12.sp
+        private val CONFIG_INDENT = 18.dp
+        private val CONFIG_RADIO_INDICATOR_SIZE = 14.dp
     }
 
     private data class DailyAssetEntry(
         val fileName: String,
         val displayName: String,
-        val taskCount: Int,
+        val jsonContent: String,
+    )
+
+    private data class TrainingOption(
+        val value: String,
+        val label: String,
+    )
+
+    private data class StargazingOption(
+        val value: String,
+        val label: String,
     )
 
     private val gson = Gson()
+    private val stargazingOptions = listOf(
+        StargazingOption("single", "观星一次"),
+        StargazingOption("with_card", "有月卡观星"),
+        StargazingOption("without_card", "无月卡观星"),
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,7 +152,7 @@ class OneKeyDailyActivity : AppCompatActivity() {
                 fileName = fileName,
                 displayName = plan.display_name?.takeIf { it.isNotBlank() }
                     ?: fileName.removeSuffix(".json"),
-                taskCount = plan.tasks.size,
+                jsonContent = content,
             )
         }.sortedWith(
             compareBy<DailyAssetEntry> { entry ->
@@ -101,7 +163,21 @@ class OneKeyDailyActivity : AppCompatActivity() {
 
     @Composable
     private fun OneKeyDailyScreen(entries: List<DailyAssetEntry>) {
-        val selectedFileNames = remember { mutableStateListOf<String>() }
+        val selectedFileNames = remember(entries) {
+            mutableStateListOf<String>().apply {
+                addAll(loadRememberedSelectedFileNames(entries))
+            }
+        }
+        var trainingSelection by remember { mutableStateOf(loadRememberedTrainingSelection()) }
+        var stargazingSelection by remember { mutableStateOf(loadRememberedStargazingSelection()) }
+        var stargazingWithCardCount by remember { mutableStateOf(loadRememberedStargazingWithCardCount()) }
+        var stargazingWithoutCardCount by remember {
+            mutableStateOf(loadRememberedStargazingWithoutCardCount())
+        }
+        var debugModeEnabled by remember { mutableStateOf(loadRememberedDebugModeEnabled()) }
+        var saveDebugScreenshotsEnabled by remember {
+            mutableStateOf(loadRememberedSaveDebugScreenshotsEnabled())
+        }
         var importing by remember { mutableStateOf(false) }
         val selectedCount = selectedFileNames.size
 
@@ -135,18 +211,143 @@ class OneKeyDailyActivity : AppCompatActivity() {
             } else {
                 SubpageSectionCard {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        entries.forEach { entry ->
-                            val checked = selectedFileNames.contains(entry.fileName)
-                            SubpageCheckOption(
-                                text = entry.displayName,
-                                checked = checked,
-                                subtitle = "文件：${entry.fileName.removeSuffix(".json")}    任务数：${entry.taskCount}",
-                                onClick = {
-                                    if (checked) {
-                                        selectedFileNames.remove(entry.fileName)
-                                    } else {
-                                        selectedFileNames.add(entry.fileName)
+                        entries.chunked(2).forEach { rowEntries ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                rowEntries.forEach { entry ->
+                                    val checked = selectedFileNames.contains(entry.fileName)
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        SubpageCheckOption(
+                                            text = entry.displayName,
+                                            checked = checked,
+                                            onClick = {
+                                                if (checked) {
+                                                    selectedFileNames.remove(entry.fileName)
+                                                } else {
+                                                    selectedFileNames.add(entry.fileName)
+                                                }
+                                                saveRememberedSelectedFileNames(selectedFileNames.toList())
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                        if (checked && entry.fileName == TRAINING_FILE_NAME) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(start = CONFIG_INDENT),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                            ) {
+                                                TRAINING_OPTIONS.forEach { option ->
+                                                    SubpageRadioOption(
+                                                        text = option.label,
+                                                        selected = trainingSelection == option.value,
+                                                        onClick = {
+                                                            trainingSelection = option.value
+                                                            saveRememberedTrainingSelection(option.value)
+                                                        },
+                                                        titleFontSize = CONFIG_OPTION_FONT_SIZE,
+                                                        indicatorSize = CONFIG_RADIO_INDICATOR_SIZE,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        if (checked && entry.fileName == STARGAZING_FILE_NAME) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(start = CONFIG_INDENT),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                            ) {
+                                                stargazingOptions.forEach { option ->
+                                                    SubpageRadioOption(
+                                                        text = option.label,
+                                                        selected = stargazingSelection == option.value,
+                                                        onClick = {
+                                                            stargazingSelection = option.value
+                                                            saveRememberedStargazingSelection(option.value)
+                                                        },
+                                                        titleFontSize = CONFIG_OPTION_FONT_SIZE,
+                                                        indicatorSize = CONFIG_RADIO_INDICATOR_SIZE,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                    )
+                                                }
+                                                if (stargazingSelection != DEFAULT_STARGAZING_OPTION) {
+                                                    val isWithCard = stargazingSelection == "with_card"
+                                                    SubpageTextField(
+                                                        value = if (isWithCard) {
+                                                            stargazingWithCardCount
+                                                        } else {
+                                                            stargazingWithoutCardCount
+                                                        },
+                                                        onValueChange = { value ->
+                                                            if (isWithCard) {
+                                                                stargazingWithCardCount = value
+                                                                saveRememberedStargazingWithCardCount(value)
+                                                            } else {
+                                                                stargazingWithoutCardCount = value
+                                                                saveRememberedStargazingWithoutCardCount(value)
+                                                            }
+                                                        },
+                                                        label = if (isWithCard) {
+                                                            "输入有月卡观星次数"
+                                                        } else {
+                                                            "输入无月卡观星次数"
+                                                        },
+                                                        labelFontSize = CONFIG_FIELD_LABEL_FONT_SIZE,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
+                                }
+                                if (rowEntries.size < 2) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                SubpageSectionCard(
+                    title = "调试",
+                    subtitle = "用于运行时查看识别 ROI 红框，也可按需保存调试截图",
+                ) {
+                    SubpageCheckOption(
+                        text = "启用调试模式",
+                        checked = debugModeEnabled,
+                        onClick = {
+                            debugModeEnabled = !debugModeEnabled
+                            saveRememberedDebugModeEnabled(debugModeEnabled)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (debugModeEnabled) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            SubpageRadioOption(
+                                text = "保存调试截图",
+                                selected = saveDebugScreenshotsEnabled,
+                                onClick = {
+                                    saveDebugScreenshotsEnabled = true
+                                    saveRememberedSaveDebugScreenshotsEnabled(true)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            SubpageRadioOption(
+                                text = "不保存调试截图",
+                                selected = !saveDebugScreenshotsEnabled,
+                                onClick = {
+                                    saveDebugScreenshotsEnabled = false
+                                    saveRememberedSaveDebugScreenshotsEnabled(false)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -169,6 +370,7 @@ class OneKeyDailyActivity : AppCompatActivity() {
                                     selectedFileNames.clear()
                                     selectedFileNames.addAll(entries.map { it.fileName })
                                 }
+                                saveRememberedSelectedFileNames(selectedFileNames.toList())
                             },
                         )
                         StoneStyleButton(
@@ -179,6 +381,12 @@ class OneKeyDailyActivity : AppCompatActivity() {
                                 importSelections(
                                     entries = entries,
                                     selectedFileNames = selectedFileNames.toList(),
+                                    trainingSelection = trainingSelection,
+                                    stargazingSelection = stargazingSelection,
+                                    stargazingWithCardCount = stargazingWithCardCount,
+                                    stargazingWithoutCardCount = stargazingWithoutCardCount,
+                                    debugModeEnabled = debugModeEnabled,
+                                    saveDebugScreenshotsEnabled = saveDebugScreenshotsEnabled,
                                     onFinished = { importing = false },
                                 )
                             },
@@ -192,6 +400,12 @@ class OneKeyDailyActivity : AppCompatActivity() {
     private fun importSelections(
         entries: List<DailyAssetEntry>,
         selectedFileNames: List<String>,
+        trainingSelection: String,
+        stargazingSelection: String,
+        stargazingWithCardCount: String,
+        stargazingWithoutCardCount: String,
+        debugModeEnabled: Boolean,
+        saveDebugScreenshotsEnabled: Boolean,
         onFinished: () -> Unit,
     ) {
         if (selectedFileNames.isEmpty()) {
@@ -207,11 +421,30 @@ class OneKeyDailyActivity : AppCompatActivity() {
             return
         }
 
-        val pendingFileNames = selectedEntries.map { it.fileName }
+        val pendingSelections = runCatching {
+            selectedEntries.map { entry ->
+                DailyPlanSelection(
+                    fileName = entry.fileName.removeSuffix(".json"),
+                    jsonContent = buildImportJson(
+                        entry = entry,
+                        trainingSelection = trainingSelection,
+                        stargazingSelection = stargazingSelection,
+                        stargazingWithCardCount = stargazingWithCardCount,
+                        stargazingWithoutCardCount = stargazingWithoutCardCount,
+                    ),
+                )
+            }
+        }.getOrElse { error ->
+            Toast.makeText(this, error.message ?: "导入参数无效", Toast.LENGTH_SHORT).show()
+            onFinished()
+            return
+        }
         prefs().edit()
             .putString(KEY_PENDING_START_ACTION, OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE)
+            .putBoolean(KEY_REMEMBERED_DEBUG_MODE, debugModeEnabled)
+            .putBoolean(KEY_REMEMBERED_SAVE_SCREENSHOT, saveDebugScreenshotsEnabled)
             .apply()
-        OneKeyDailyBridge.savePendingScriptFileNames(this, pendingFileNames)
+        OneKeyDailyBridge.savePendingSelections(this, pendingSelections)
 
         if (!Settings.canDrawOverlays(this)) {
             prefs().edit().putString(KEY_PENDING_PERMISSION_REQUEST, PENDING_PERMISSION_OVERLAY).apply()
@@ -253,8 +486,8 @@ class OneKeyDailyActivity : AppCompatActivity() {
         if (pendingAction != OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE) return
         val pendingPermissionRequest = prefs().getString(KEY_PENDING_PERMISSION_REQUEST, null)
         if (pendingPermissionRequest != PENDING_PERMISSION_OVERLAY) return
-        val pendingFileNames = OneKeyDailyBridge.peekPendingScriptFileNames(this)
-        if (pendingFileNames.isNullOrEmpty()) {
+        val pendingSelections = OneKeyDailyBridge.peekPendingSelections(this)
+        if (pendingSelections.isNullOrEmpty()) {
             prefs().edit()
                 .remove(KEY_PENDING_START_ACTION)
                 .remove(KEY_PENDING_PERMISSION_REQUEST)
@@ -302,6 +535,262 @@ class OneKeyDailyActivity : AppCompatActivity() {
             }
         }
         return false
+    }
+
+    private fun buildImportJson(
+        entry: DailyAssetEntry,
+        trainingSelection: String,
+        stargazingSelection: String,
+        stargazingWithCardCount: String,
+        stargazingWithoutCardCount: String,
+    ): String {
+        if (entry.fileName == TRAINING_FILE_NAME) {
+            val plan = gson.fromJson(entry.jsonContent, DailyTaskPlan::class.java)
+            val updatedTasks = plan.tasks.map { task ->
+                if (task.id == 100 && task.action == "SET_VAR" && task.params?.var_name == "which") {
+                    task.copy(params = task.params.copy(var_value = trainingSelection))
+                } else {
+                    task
+                }
+            }
+            return gson.toJson(plan.copy(tasks = updatedTasks))
+        }
+        if (entry.fileName == STARGAZING_FILE_NAME) {
+            return gson.toJson(
+                buildStargazingPlan(
+                    selection = stargazingSelection,
+                    withCardCountText = stargazingWithCardCount,
+                    withoutCardCountText = stargazingWithoutCardCount,
+                )
+            )
+        }
+        return entry.jsonContent
+    }
+
+    private fun buildStargazingPlan(
+        selection: String,
+        withCardCountText: String,
+        withoutCardCountText: String,
+    ): DailyTaskPlan {
+        return when (selection) {
+            "with_card" -> buildWithCardStargazingPlan(
+                parsePositiveCount(withCardCountText, "有月卡观星"),
+            )
+            "without_card" -> buildWithoutCardStargazingPlan(
+                totalCount = parsePositiveCount(withoutCardCountText, "无月卡观星"),
+                displayName = "无月卡观星",
+            )
+            else -> buildWithoutCardStargazingPlan(totalCount = 1, displayName = "观星一次")
+        }
+    }
+
+    private fun buildWithCardStargazingPlan(totalCount: Int): DailyTaskPlan {
+        val tasks = mutableListOf<DailyTask>()
+        val fullBatchCount = totalCount / STARGAZING_BATCH_SIZE
+        val remainder = totalCount % STARGAZING_BATCH_SIZE
+        var nextTaskId = 1
+
+        repeat(fullBatchCount) { index ->
+            val taskId = nextTaskId
+            nextTaskId += 1
+            val onSuccess = if (index == fullBatchCount - 1 && remainder == 0) -1 else nextTaskId
+            tasks += DailyTask(
+                id = taskId,
+                action = "RUN_SCRIPT_SEGMENT",
+                delay = 0,
+                params = TaskParams(
+                    script_name = "you_yue_ka_guan_xing_batch.json",
+                    entry_task_id = 0,
+                    inherit_variables = true,
+                ),
+                on_success = onSuccess,
+                on_fail = -2,
+            )
+        }
+
+        if (remainder > 0 || tasks.isEmpty()) {
+            appendWithoutCardStargazingTasks(
+                tasks = tasks,
+                startTaskId = nextTaskId,
+                totalCount = if (remainder > 0) remainder else totalCount,
+                firstEntryTaskId = 0,
+            )
+        }
+
+        return DailyTaskPlan(
+            start_task_id = 1,
+            tasks = tasks,
+            asset_template_dir = "daily_script_templates/wu_yue_ka_guan_xing",
+            display_name = "有月卡观星",
+        )
+    }
+
+    private fun buildWithoutCardStargazingPlan(totalCount: Int, displayName: String): DailyTaskPlan {
+        val tasks = mutableListOf<DailyTask>()
+        appendWithoutCardStargazingTasks(
+            tasks = tasks,
+            startTaskId = 1,
+            totalCount = totalCount,
+            firstEntryTaskId = 0,
+        )
+        return DailyTaskPlan(
+            start_task_id = 1,
+            tasks = tasks,
+            asset_template_dir = "daily_script_templates/wu_yue_ka_guan_xing",
+            display_name = displayName,
+        )
+    }
+
+    private fun appendWithoutCardStargazingTasks(
+        tasks: MutableList<DailyTask>,
+        startTaskId: Int,
+        totalCount: Int,
+        firstEntryTaskId: Int,
+    ) {
+        var nextTaskId = startTaskId
+        val intervalTaskId = nextTaskId
+        nextTaskId += 1
+        tasks += DailyTask(
+            id = intervalTaskId,
+            action = "SET_VAR",
+            delay = 0,
+            params = TaskParams(
+                var_name = "stargazing_click_interval",
+                var_value = STARGAZING_CLICK_INTERVAL,
+            ),
+            on_success = nextTaskId,
+            on_fail = -2,
+        )
+
+        val batches = buildStargazingBatches(totalCount)
+        batches.forEachIndexed { index, batchCount ->
+            val setCountTaskId = nextTaskId
+            val runSegmentTaskId = nextTaskId + 1
+            nextTaskId += 2
+            val onSuccess = if (index == batches.lastIndex) -1 else nextTaskId
+            tasks += DailyTask(
+                id = setCountTaskId,
+                action = "SET_VAR",
+                delay = 0,
+                params = TaskParams(
+                    var_name = "current_batch_count",
+                    var_value = batchCount.toString(),
+                ),
+                on_success = runSegmentTaskId,
+                on_fail = -2,
+            )
+            tasks += DailyTask(
+                id = runSegmentTaskId,
+                action = "RUN_SCRIPT_SEGMENT",
+                delay = 0,
+                params = TaskParams(
+                    script_name = "wu_yue_ka_guan_xing_batch.json",
+                    entry_task_id = if (index == 0) firstEntryTaskId else 3,
+                    inherit_variables = true,
+                ),
+                on_success = onSuccess,
+                on_fail = -2,
+            )
+        }
+    }
+
+    private fun buildStargazingBatches(totalCount: Int): List<Int> {
+        val batches = mutableListOf<Int>()
+        var remaining = totalCount
+        while (remaining > 0) {
+            val batchCount = remaining.coerceAtMost(STARGAZING_BATCH_SIZE)
+            batches += batchCount
+            remaining -= batchCount
+        }
+        return batches
+    }
+
+    private fun parsePositiveCount(raw: String, label: String): Int {
+        val value = raw.trim().toIntOrNull()
+        require(value != null && value > 0) { "请输入有效的${label}次数" }
+        return value
+    }
+
+    private fun loadRememberedSelectedFileNames(entries: List<DailyAssetEntry>): List<String> {
+        val availableFileNames = entries.mapTo(linkedSetOf()) { it.fileName }
+        return prefs()
+            .getStringSet(KEY_REMEMBERED_SELECTED_FILES, emptySet())
+            .orEmpty()
+            .filter { it in availableFileNames }
+    }
+
+    private fun saveRememberedSelectedFileNames(fileNames: List<String>) {
+        prefs().edit()
+            .putStringSet(KEY_REMEMBERED_SELECTED_FILES, fileNames.toCollection(linkedSetOf()))
+            .apply()
+    }
+
+    private fun loadRememberedTrainingSelection(): String {
+        val saved = prefs().getString(KEY_REMEMBERED_TRAINING_OPTION, DEFAULT_TRAINING_OPTION)
+        return saved?.takeIf { value -> TRAINING_OPTIONS.any { it.value == value } }
+            ?: DEFAULT_TRAINING_OPTION
+    }
+
+    private fun saveRememberedTrainingSelection(value: String) {
+        prefs().edit()
+            .putString(KEY_REMEMBERED_TRAINING_OPTION, value)
+            .apply()
+    }
+
+    private fun loadRememberedStargazingSelection(): String {
+        val saved = prefs().getString(KEY_REMEMBERED_STARGAZING_OPTION, DEFAULT_STARGAZING_OPTION)
+        return saved?.takeIf { value -> stargazingOptions.any { it.value == value } }
+            ?: DEFAULT_STARGAZING_OPTION
+    }
+
+    private fun saveRememberedStargazingSelection(value: String) {
+        prefs().edit()
+            .putString(KEY_REMEMBERED_STARGAZING_OPTION, value)
+            .apply()
+    }
+
+    private fun loadRememberedStargazingWithCardCount(): String {
+        return prefs().getString(
+            KEY_REMEMBERED_STARGAZING_WITH_CARD_COUNT,
+            STARGAZING_DEFAULT_COUNT,
+        ) ?: STARGAZING_DEFAULT_COUNT
+    }
+
+    private fun saveRememberedStargazingWithCardCount(value: String) {
+        prefs().edit()
+            .putString(KEY_REMEMBERED_STARGAZING_WITH_CARD_COUNT, value)
+            .apply()
+    }
+
+    private fun loadRememberedStargazingWithoutCardCount(): String {
+        return prefs().getString(
+            KEY_REMEMBERED_STARGAZING_WITHOUT_CARD_COUNT,
+            STARGAZING_DEFAULT_COUNT,
+        ) ?: STARGAZING_DEFAULT_COUNT
+    }
+
+    private fun saveRememberedStargazingWithoutCardCount(value: String) {
+        prefs().edit()
+            .putString(KEY_REMEMBERED_STARGAZING_WITHOUT_CARD_COUNT, value)
+            .apply()
+    }
+
+    private fun loadRememberedDebugModeEnabled(): Boolean =
+        prefs().getBoolean(KEY_REMEMBERED_DEBUG_MODE, false)
+
+    private fun saveRememberedDebugModeEnabled(value: Boolean) {
+        prefs().edit()
+            .putBoolean(KEY_REMEMBERED_DEBUG_MODE, value)
+            .apply()
+    }
+
+    private fun loadRememberedSaveDebugScreenshotsEnabled(): Boolean =
+        prefs().getBoolean(KEY_REMEMBERED_SAVE_SCREENSHOT, false)
+
+    private fun saveRememberedSaveDebugScreenshotsEnabled(value: Boolean) {
+        prefs().edit()
+            .putBoolean(KEY_REMEMBERED_SAVE_SCREENSHOT, value)
+            .apply()
     }
 
     private fun prefs() = getSharedPreferences(PREFS_APP, MODE_PRIVATE)

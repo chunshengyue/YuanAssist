@@ -1,0 +1,266 @@
+{
+  "display_name": "材料打造",
+  "start_task_id": 1,
+  "asset_template_dir": "daily_script_templates/daily",
+  "tasks": [
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 1,
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 999.4354,
+          "y": 1549.2097
+        },
+        "template_name": "材料打造_心纸入口.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 2,
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 157.4708,
+          "y": 468.6007
+        },
+        "template_name": "材料打造_心纸工坊.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 3,
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 552.2803,
+          "y": 348.5807
+        },
+        "target_chars": [
+          "材",
+          "料",
+          "合",
+          "成"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 1500,
+      "id": 4,
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 215.65126,
+          "y": 459.10684
+        },
+        "target_chars": [
+          "学",
+          "徒"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 5,
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 696.7886,
+          "y": 998.2146
+        },
+        "template_name": "材料打造_加号.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 6,
+      "on_fail": -2,
+      "on_success": 7,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 7,
+      "on_fail": -2,
+      "on_success": 8,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 8,
+      "on_fail": -2,
+      "on_success": 9,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 9,
+      "on_fail": -2,
+      "on_success": 10,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 10,
+      "on_fail": -2,
+      "on_success": 11,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 11,
+      "on_fail": -2,
+      "on_success": 12,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 12,
+      "on_fail": -2,
+      "on_success": 13,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 500,
+      "id": 13,
+      "on_fail": -2,
+      "on_success": 14,
+      "params": {
+        "align": "center",
+        "ref_task_id": 5,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 1500,
+      "id": 14,
+      "on_fail": -2,
+      "on_success": 15,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 2,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 543.13513,
+          "y": 1121.3901
+        },
+        "target_chars": [
+          "确",
+          "认",
+          "打",
+          "造"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 15,
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "ref_task_id": 1,
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

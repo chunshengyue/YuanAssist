@@ -17,7 +17,7 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "OCR",
+      "action": "MATCH_TEMPLATE",
       "delay": 2500,
       "id": 1,
       "name": "商城",
@@ -46,9 +46,97 @@
       "action": "OCR",
       "delay": 3000,
       "id": 2,
-      "name": "福利",
+      "name": "月卡商店",
+      "on_fail": -2,
+      "on_success": 20,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 3,
+        "roi": {
+          "align": "top",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 771.75,
+          "y": 376.44434
+        },
+        "target_chars": [
+          "月",
+          "卡",
+          "商",
+          "店"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 20,
+      "on_fail": 3,
+      "on_success": 21,
+      "params": {
+        "align": "top",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "top",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 312.0,
+          "y": 1022.0
+        },
+        "target_chars": [
+          "免",
+          "费"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 2500,
+      "id": 21,
+      "on_fail": -2,
+      "on_success": 22,
+      "params": {
+        "align": "top",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 250.0,
+          "x": 530.4375,
+          "y": 1310.2227
+        },
+        "template_name": "领取月卡_购买.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 22,
       "on_fail": -2,
       "on_success": 3,
+      "params": {
+        "align": "bottom",
+        "threshold": 0.8,
+        "x": 210.9375,
+        "y": 1774.2227
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 3000,
+      "id": 3,
+      "name": "福利",
+      "on_fail": -2,
+      "on_success": 4,
       "params": {
         "align": "center",
         "click": 1,
@@ -69,22 +157,27 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "OCR",
       "delay": 2500,
-      "id": 3,
+      "id": 4,
+      "name": "领取",
       "on_fail": -2,
-      "on_success": 4,
+      "on_success": 5,
       "params": {
         "align": "center",
         "click": 1,
+        "min_hit_count": 1,
         "roi": {
-          "align": "center",
-          "h": 250.0,
+          "align": "bottom",
+          "h": 400.0,
           "w": 250.0,
           "x": 549.8203,
-          "y": 1622.4014
+          "y": 1550.4014
         },
-        "template_name": "领取月卡_领取.png",
+        "target_chars": [
+          "领",
+          "取"
+        ],
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -92,7 +185,7 @@
     {
       "action": "CLICK",
       "delay": 3000,
-      "id": 4,
+      "id": 5,
       "on_fail": -2,
       "on_success": -1,
       "params": {

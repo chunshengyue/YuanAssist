@@ -267,39 +267,26 @@ class YuanAssistService : AccessibilityService() {
         }
     }
 
-    private fun importOneKeyDailyQueue(fileNames: List<String>?) {
+    private fun importOneKeyDailyQueue(selections: List<DailyPlanSelection>?) {
         removeInputWindow()
         uiManager.removeControlWindow()
         uiManager.removeMinimizedWindow()
         if (dailyWindowManager == null) {
             dailyWindowManager = DailyWindowManager(this)
         }
-        if (fileNames.isNullOrEmpty()) {
+        if (selections.isNullOrEmpty()) {
             Toast.makeText(this, "一键日常未选择脚本", Toast.LENGTH_SHORT).show()
             return
         }
-        val selections = runCatching {
-            fileNames.map { rawName ->
-                val assetFileName = if (rawName.endsWith(".json", ignoreCase = true)) {
-                    rawName
-                } else {
-                    "$rawName.json"
-                }
-                val assetPath = "daily_scripts/daily/$assetFileName"
-                val jsonContent = assets.open(assetPath).bufferedReader(Charsets.UTF_8).use { it.readText() }
-                DailyPlanSelection(
-                    fileName = assetFileName.removeSuffix(".json"),
-                    jsonContent = jsonContent,
-                )
-            }
-        }
-        val result = selections.fold(
-            onSuccess = {
-                dailyWindowManager?.submitTaskPlanQueueJson(it)
-                    ?: Result.failure(IllegalStateException("日常悬浮窗未初始化"))
-            },
-            onFailure = { Result.failure<Unit>(it) },
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val debugModeEnabled = prefs.getBoolean("one_key_daily_debug_mode", false)
+        val saveDebugScreenshotsEnabled = prefs.getBoolean("one_key_daily_save_screenshot", false)
+        dailyWindowManager?.configureTaskPlanDebug(
+            debugModeEnabled = debugModeEnabled,
+            saveDebugScreenshotsEnabled = saveDebugScreenshotsEnabled,
         )
+        val result = dailyWindowManager?.submitTaskPlanQueueJson(selections)
+            ?: Result.failure(IllegalStateException("日常悬浮窗未初始化"))
         if (result?.isFailure == true) {
             Toast.makeText(
                 this,
@@ -454,8 +441,8 @@ class YuanAssistService : AccessibilityService() {
             }
             OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE -> {
                 clearPendingStartAction(OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE)
-                val fileNames = OneKeyDailyBridge.consumePendingScriptFileNames(this)
-                importOneKeyDailyQueue(fileNames)
+                val selections = OneKeyDailyBridge.consumePendingSelections(this)
+                importOneKeyDailyQueue(selections)
             }
             "ACTION_START_COMBAT_WINDOW" -> {
                 dailyWindowManager?.hideWindow()
@@ -725,7 +712,7 @@ class YuanAssistService : AccessibilityService() {
                 updateOverlayStatePrefs(combatOpen = false, dailyOpen = true)
                 appendAccessibilityTrace("脚本录制器悬浮窗准备完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction == OneKeyDailyBridge.ACTION_IMPORT_ONE_KEY_DAILY_QUEUE) {
-                importOneKeyDailyQueue(OneKeyDailyBridge.consumePendingScriptFileNames(this))
+                importOneKeyDailyQueue(OneKeyDailyBridge.consumePendingSelections(this))
                 appendAccessibilityTrace("一键日常导入悬浮窗准备完成：${buildWindowVisibilitySummary()}")
             } else if (pendingAction == "ACTION_IMPORT_RECORDED_DAILY_PLAN") {
                 val fileName = prefs.getString("pending_daily_plan_file_name", null)

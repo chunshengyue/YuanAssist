@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.yuanassist.ui.main.theme.BodyInk
@@ -57,6 +58,7 @@ fun SubpageTextField(
     label: String,
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
+    labelFontSize: TextUnit = 14.sp,
 ) {
     OutlinedTextField(
         value = value,
@@ -65,6 +67,7 @@ fun SubpageTextField(
             Text(
                 text = label,
                 fontFamily = FontFamily.Serif,
+                fontSize = labelFontSize,
             )
         },
         modifier = modifier,

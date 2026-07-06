@@ -77,6 +77,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
     private val windowManager =
         service.getSystemService(AccessibilityService.WINDOW_SERVICE) as WindowManager
     private val matchedPointsByTaskId = mutableMapOf<Int, PointF>()
+    private val debugRoiByTaskId = mutableMapOf<Int, DebugRoiRect>()
     private val variables = mutableMapOf<String, String>()
     private var runGeneration = 0L
     private var debugRoiView: View? = null
@@ -171,6 +172,13 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val ownsBitmap: Boolean
     )
 
+    private data class DebugRoiRect(
+        val left: Int,
+        val top: Int,
+        val width: Int,
+        val height: Int
+    )
+
     private data class StartBattleOcrHit(
         val lineText: String,
         val normalizedLineText: String,
@@ -236,6 +244,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         currentTaskId = plan.start_task_id
         isRunning = true
         matchedPointsByTaskId.clear()
+        debugRoiByTaskId.clear()
         variables.clear()
         variables.putAll(initialVariables)
         lastMatchX = 0f
@@ -261,6 +270,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         childScriptEngine?.release()
         childScriptEngine = null
         matchedPointsByTaskId.clear()
+        debugRoiByTaskId.clear()
         variables.clear()
         verboseInfo("引擎已被用户停止")
         completePlan(false, "已停止", -1)
@@ -279,6 +289,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         currentScriptFileName = null
         childScriptEngine?.release()
         childScriptEngine = null
+        debugRoiByTaskId.clear()
         templateCache.evictAll()
     }
 
@@ -326,6 +337,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         logInfo("$taskLabel：$msg")
                     } else {
                         logError("$taskLabel：$msg")
+                        showTerminalDebugRoi(task.id)
                     }
                     completePlan(false, msg, task.on_fail, task, task.params?.terminal_note)
                     return
@@ -363,6 +375,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                     logInfo("$taskLabel：$msg")
                 } else {
                     logError("$taskLabel：$msg")
+                    showTerminalDebugRoi(task.id)
                 }
                 completePlan(false, msg, nextTaskId, task, task.params?.terminal_note)
             }
@@ -1109,6 +1122,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         logInfo("$taskLabel：$msg")
                     } else {
                         logError("$taskLabel：$msg")
+                        showTerminalDebugRoi(task.id)
                     }
                     completePlan(false, msg, match.nextTaskId, task, match.terminalNote)
                 }
@@ -1318,11 +1332,21 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         }
 
         if (debugRoiEnabled) {
+            val displayLeft = (debugLeft * mapping.screenshotToDisplayX).toInt()
+            val displayTop = (debugTop * mapping.screenshotToDisplayY).toInt()
+            val displayWidth = (debugWidth * mapping.screenshotToDisplayX).toInt()
+            val displayHeight = (debugHeight * mapping.screenshotToDisplayY).toInt()
+            debugRoiByTaskId[taskId] = DebugRoiRect(
+                left = displayLeft,
+                top = displayTop,
+                width = displayWidth,
+                height = displayHeight,
+            )
             showDebugRoi(
-                (debugLeft * mapping.screenshotToDisplayX).toInt(),
-                (debugTop * mapping.screenshotToDisplayY).toInt(),
-                (debugWidth * mapping.screenshotToDisplayX).toInt(),
-                (debugHeight * mapping.screenshotToDisplayY).toInt(),
+                displayLeft,
+                displayTop,
+                displayWidth,
+                displayHeight,
                 1500L
             )
         }
@@ -1987,6 +2011,18 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                 debugRoiView = null
             }
         }
+    }
+
+    private fun showTerminalDebugRoi(taskId: Int) {
+        if (!debugRoiEnabled) return
+        val rect = debugRoiByTaskId[taskId] ?: return
+        showDebugRoi(
+            left = rect.left,
+            top = rect.top,
+            width = rect.width,
+            height = rect.height,
+            holdMs = 2500L
+        )
     }
 
     private fun overlayType(): Int =

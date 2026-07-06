@@ -11,38 +11,38 @@ object OneKeyDailyBridge {
     private const val KEY_PENDING_ONE_KEY_DAILY_QUEUE = "pending_one_key_daily_queue"
 
     @Volatile
-    var pendingScriptFileNames: List<String>? = null
+    var pendingSelections: List<DailyPlanSelection>? = null
 
     private val gson = Gson()
-    private val listType = object : TypeToken<List<String>>() {}.type
+    private val listType = object : TypeToken<List<DailyPlanSelection>>() {}.type
 
-    fun savePendingScriptFileNames(context: Context, fileNames: List<String>) {
-        pendingScriptFileNames = fileNames
+    fun savePendingSelections(context: Context, selections: List<DailyPlanSelection>) {
+        pendingSelections = selections
         context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY_PENDING_ONE_KEY_DAILY_QUEUE, gson.toJson(fileNames))
+            .putString(KEY_PENDING_ONE_KEY_DAILY_QUEUE, gson.toJson(selections))
             .apply()
     }
 
-    fun peekPendingScriptFileNames(context: Context): List<String>? {
-        pendingScriptFileNames?.takeIf { it.isNotEmpty() }?.let { return it }
+    fun peekPendingSelections(context: Context): List<DailyPlanSelection>? {
+        pendingSelections?.takeIf { it.isNotEmpty() }?.let { return it }
         val raw = context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
             .getString(KEY_PENDING_ONE_KEY_DAILY_QUEUE, null)
             ?: return null
-        return runCatching { gson.fromJson<List<String>>(raw, listType) }
+        return runCatching { gson.fromJson<List<DailyPlanSelection>>(raw, listType) }
             .getOrNull()
-            ?.filter { it.isNotBlank() }
+            ?.filter { it.fileName.isNotBlank() && it.jsonContent.isNotBlank() }
             ?.takeIf { it.isNotEmpty() }
     }
 
-    fun consumePendingScriptFileNames(context: Context): List<String>? {
-        val fileNames = peekPendingScriptFileNames(context)
-        clearPendingScriptFileNames(context)
-        return fileNames
+    fun consumePendingSelections(context: Context): List<DailyPlanSelection>? {
+        val selections = peekPendingSelections(context)
+        clearPendingSelections(context)
+        return selections
     }
 
-    fun clearPendingScriptFileNames(context: Context) {
-        pendingScriptFileNames = null
+    fun clearPendingSelections(context: Context) {
+        pendingSelections = null
         context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
             .edit()
             .remove(KEY_PENDING_ONE_KEY_DAILY_QUEUE)

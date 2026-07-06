@@ -245,6 +245,16 @@ class DailyWindowManager(private val service: AccessibilityService) {
         refreshActionButton()
     }
 
+    fun configureTaskPlanDebug(
+        debugModeEnabled: Boolean,
+        saveDebugScreenshotsEnabled: Boolean,
+    ) {
+        engine.debugRoiEnabled = debugModeEnabled
+        engine.debugScreenshotEnabled = debugModeEnabled && saveDebugScreenshotsEnabled
+        engine.verboseLoggingEnabled = true
+        engine.diagnosticLoggingEnabled = debugModeEnabled
+    }
+
     fun submitTaskPlanJson(fileName: String, jsonContent: String): Result<Unit> {
         return runCatching {
             val plan = gson.fromJson(jsonContent, DailyTaskPlan::class.java)

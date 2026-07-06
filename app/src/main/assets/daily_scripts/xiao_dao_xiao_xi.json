@@ -177,32 +177,27 @@
         "min_hit_count": 1,
         "click": 1,
         "roi": {
-          "x": 880,
-          "y": 1099,
+          "x": 878,
+          "y": 1095,
           "w": 220,
           "h": 220,
           "align": "center"
         }
       },
       "on_success": 52,
-      "on_fail": -2
+      "on_fail": 6
     },
     {
       "id": 52,
-      "action": "OCR",
+      "action": "MATCH_TEMPLATE",
       "delay": 800,
       "params": {
-        "target_chars": [
-          "前",
-          "往",
-          "收",
-          "集"
-        ],
-        "min_hit_count": 2,
+        "template_name": "前往收集.png",
+        "threshold": 0.8,
         "click": 1,
         "roi": {
-          "x": 533,
-          "y": 1305,
+          "x": 541,
+          "y": 1308,
           "w": 260,
           "h": 220,
           "align": "center"
