@@ -34,7 +34,7 @@
           "x": 976.70355,
           "y": 1112.7681
         },
-        "template_name": "名册.png",
+        "template_name": "pics/送礼一次/名册.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -75,7 +75,8 @@
           "密",
           "探",
           "送",
-          "礼"
+          "礼",
+          "禮"
         ],
         "threshold": 0.8
       },
@@ -103,7 +104,9 @@
           "批",
           "量",
           "赠",
-          "礼"
+          "贈",
+          "礼",
+          "禮"
         ],
         "threshold": 0.8
       },
@@ -144,8 +147,11 @@
         },
         "target_chars": [
           "确",
+          "確",
           "认",
+          "認",
           "赠",
+          "贈",
           "送"
         ],
         "threshold": 0.8
@@ -172,6 +178,7 @@
         },
         "target_chars": [
           "确",
+          "確",
           "定"
         ],
         "threshold": 0.8

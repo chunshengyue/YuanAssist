@@ -17,6 +17,7 @@ data class HomeTabActions(
     val onOpenFeedback: () -> Unit,
     val onOpenScriptLibrary: () -> Unit,
     val onOpenCloudDailyScript: () -> Unit,
+    val onOpenAuthorHomepage: () -> Unit,
     val onOpenBiubiuLink: () -> Unit,
     val onOpenMaaYuanLink: () -> Unit,
     val onCheckUpdate: () -> Unit,

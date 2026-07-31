@@ -47,13 +47,13 @@
           "x": 83.52734,
           "y": 1502
         },
-        "template_name": "白鹄扫荡_白鹄行动.png",
+        "template_name": "pics/白鹄扫荡/白鹄扫荡_白鹄行动.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "OCR",
       "delay": 2500,
       "id": 3,
       "name": "扫荡",
@@ -62,6 +62,7 @@
       "params": {
         "align": "center",
         "click": 1,
+        "min_hit_count": 1,
         "roi": {
           "align": "center",
           "h": 250.0,
@@ -69,7 +70,13 @@
           "x": 303.08105,
           "y": 1553.9658
         },
-        "template_name": "白鹄扫荡_扫荡.png",
+        "target_chars": [
+          "扫",
+          "掃",
+          "荡",
+          "蕩",
+          "汤"
+        ],
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -91,7 +98,7 @@
           "x": 820.27734,
           "y": 959.1328
         },
-        "template_name": "白鹄扫荡_最多.png",
+        "template_name": "pics/白鹄扫荡/白鹄扫荡_最多.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -113,7 +120,7 @@
           "x": 521.9072,
           "y": 1203.8164
         },
-        "template_name": "白鹄扫荡_开始扫荡.png",
+        "template_name": "pics/白鹄扫荡/白鹄扫荡_开始扫荡.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false

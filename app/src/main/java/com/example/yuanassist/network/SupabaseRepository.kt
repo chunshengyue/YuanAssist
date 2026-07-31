@@ -5,7 +5,6 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import com.example.yuanassist.model.MyUser
-import com.example.yuanassist.model.OcrConfig
 import com.example.yuanassist.model.announcement
 import com.example.yuanassist.model.cloud_daily_script
 import com.example.yuanassist.model.cloud_daily_script_comment
@@ -95,7 +94,6 @@ object SupabaseRepository {
     private const val PREFS_SESSION = "supabase_session"
     private const val KEY_CURRENT_USER = "current_user_json"
     private const val PREFS_USER_CACHE = "user_cache"
-    private const val OCR_ROUTE_KEY = "ocr_route"
     private const val BASE_URL = "https://ftryfykwzsadgiayquvz.supabase.co/functions/v1/yuanassist-api-v3"
 
     private val client = OkHttpClient()
@@ -807,16 +805,6 @@ object SupabaseRepository {
             action = "get-latest-announcement",
             payload = emptyMap<String, Any?>(),
             type = announcement::class.java,
-            onSuccess = onSuccess,
-            onError = onError,
-        )
-    }
-
-    fun getOcrRouteConfig(onSuccess: (OcrConfig) -> Unit, onError: (String) -> Unit) {
-        request<OcrConfig>(
-            action = "get-ocr-config",
-            payload = mapOf("key" to OCR_ROUTE_KEY),
-            type = OcrConfig::class.java,
             onSuccess = onSuccess,
             onError = onError,
         )

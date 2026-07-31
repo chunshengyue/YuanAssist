@@ -159,8 +159,11 @@
         },
         "target_chars": [
           "扫",
+          "掃",
           "荡",
-          "汤"
+          "蕩",
+          "汤",
+          "湯"
         ],
         "threshold": 0.77
       },
@@ -183,7 +186,7 @@
           "x": 698.4541,
           "y": 1037.9756
         },
-        "template_name": "历练_加号.png",
+        "template_name": "pics/历练/历练_加号.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -219,7 +222,7 @@
           "x": 541.66406,
           "y": 1324.4697
         },
-        "template_name": "历练_开始扫荡.png",
+        "template_name": "pics/历练/历练_开始扫荡.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false

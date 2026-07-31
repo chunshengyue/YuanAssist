@@ -110,7 +110,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     )
 
     private data class QueueFailure(
-        val scriptName: String,
+        val taskName: String,
         val errorMessage: String,
     )
 
@@ -630,6 +630,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         RunLogger.clear()
         RunLogger.i("开始日常脚本：${currentScriptName ?: "未命名"}")
         refreshActionButton()
+        engine.setRunLogScope(null)
         engine.startPlan(
             plan = runtimePlan,
             onCompleted = { success, errorMsg ->
@@ -657,7 +658,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         queuedTaskIndex = 0
         isQueuedTaskSequenceRunning = true
         RunLogger.clear()
-        RunLogger.i("开始一键日常，共${queuedTaskPlans.size}个脚本")
+        RunLogger.i(module = "一键日常", section = "总流程", message = "开始，共${queuedTaskPlans.size}个脚本")
         refreshActionButton()
         startQueuedTaskPlanAt(queuedTaskIndex)
     }
@@ -671,7 +672,13 @@ class DailyWindowManager(private val service: AccessibilityService) {
         currentScriptName = queueItem.scriptName
         currentTemplateDir = queueItem.templateDir
         val runtimePlan = applyRuntimeDelayOverrides(queueItem.plan)
-        RunLogger.i("开始日常脚本：${queueItem.scriptName}（${index + 1}/${queuedTaskPlans.size}）")
+        val sectionName = queueItem.runLogSectionName()
+        engine.setRunLogScope("一键日常", sectionName)
+        RunLogger.i(
+            module = "一键日常",
+            section = sectionName,
+            message = "开始（${index + 1}/${queuedTaskPlans.size}）"
+        )
         engine.startPlan(
             plan = runtimePlan,
             onCompleted = { success, errorMsg ->
@@ -690,14 +697,15 @@ class DailyWindowManager(private val service: AccessibilityService) {
     private fun handleQueuedTaskCompleted(success: Boolean, errorMsg: String) {
         val queueItem = queuedTaskPlans.getOrNull(queuedTaskIndex)
         if (queueItem != null) {
+            val sectionName = queueItem.runLogSectionName()
             if (success) {
-                RunLogger.i("日常脚本完成：${queueItem.scriptName}")
+                RunLogger.i(module = "一键日常", section = sectionName, message = "完成")
             } else {
                 queueFailures += QueueFailure(
-                    scriptName = queueItem.scriptName,
+                    taskName = sectionName,
                     errorMessage = errorMsg,
                 )
-                RunLogger.i("日常脚本失败：${queueItem.scriptName}，原因：$errorMsg")
+                RunLogger.e(module = "一键日常", section = sectionName, message = "失败：$errorMsg")
             }
         }
         if (!isQueuedTaskSequenceRunning) {
@@ -717,11 +725,17 @@ class DailyWindowManager(private val service: AccessibilityService) {
         isQueuedTaskSequenceRunning = false
         refreshActionButton()
         if (queueFailures.isEmpty()) {
+            RunLogger.i(module = "一键日常", section = "总流程", message = "全部完成")
             Toast.makeText(service, "一键日常已完成", Toast.LENGTH_SHORT).show()
             return
         }
+        RunLogger.e(
+            module = "一键日常",
+            section = "总流程",
+            message = "完成，失败${queueFailures.size}项：${queueFailures.joinToString("、") { it.taskName }}"
+        )
         val summary = queueFailures.joinToString("\n") {
-            "• ${it.scriptName}${it.errorMessage.takeIf { message -> message.isNotBlank() }?.let { message -> "：$message" } ?: ""}"
+            "• ${it.taskName}${it.errorMessage.takeIf { message -> message.isNotBlank() }?.let { message -> "：$message" } ?: ""}"
         }
         val themeContext = DialogUtils.getThemeContext(service)
         val messageView = TextView(themeContext).apply {
@@ -747,6 +761,13 @@ class DailyWindowManager(private val service: AccessibilityService) {
                 .setView(container)
                 .setPositiveButton("知道了", null)
         )
+    }
+
+    private fun QueuedTaskPlan.runLogSectionName(): String {
+        return plan.display_name
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: scriptName.trim().ifBlank { "未命名脚本" }
     }
 
     private fun applyRuntimeDelayOverrides(plan: DailyTaskPlan): DailyTaskPlan {

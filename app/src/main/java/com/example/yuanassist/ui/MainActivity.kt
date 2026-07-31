@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         private const val ANNOUNCEMENT_PREFS = "announcement_prefs"
         private const val KEY_LAST_ANNOUNCEMENT_VERSION = "last_announcement_version"
         private const val OFFICIAL_SITE_URL = "https://yuanassist.space"
+        private const val AUTHOR_HOMEPAGE_URL = "https://www.xiaohongshu.com/user/profile/66b9ca9d000000000d02489e?xsec_token=YBdKvMYYB1EsXgYkSxzK4QKna9qnPYQKfDMLYnLXIjzgY%3D&xsec_source=app_share&xhsshare=&shareRedId=ODxEOUZGPU02NzUyOTgwNjZHOTk4PT9O&apptime=1783404213&share_id=7749f56a846742109835098a7eeb5f5d&share_channel=wechat"
         private const val BIUBIU_LINK_URL = "https://www.biubiu001.com/?cfrom=yuanassist"
         private const val MAAYUAN_LINK_URL = "https://maayuan.top/"
         private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
@@ -152,6 +153,7 @@ class MainActivity : AppCompatActivity() {
                         homeOverlayState = homeOverlayState.copy(hasUnreadAdminCloudScript = false)
                         startActivity(Intent(this, CloudDailyScriptListActivity::class.java))
                     },
+                    onOpenAuthorHomepage = ::openAuthorHomepage,
                     onOpenBiubiuLink = ::openBiubiuLink,
                     onOpenMaaYuanLink = ::openMaaYuanLink,
                     onCheckUpdate = homeActionHandler::checkUpdate,
@@ -416,6 +418,14 @@ class MainActivity : AppCompatActivity() {
     private fun openBiubiuLink() {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(BIUBIU_LINK_URL)))
+        }.onFailure {
+            Toast.makeText(this, "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openAuthorHomepage() {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(AUTHOR_HOMEPAGE_URL)))
         }.onFailure {
             Toast.makeText(this, "未找到可用的浏览器", Toast.LENGTH_SHORT).show()
         }

@@ -1,26 +1,230 @@
 {
   "display_name": "家具打造",
-  "start_task_id": 1,
+  "start_task_id": 100,
   "asset_template_dir": "daily_script_templates/daily",
   "tasks": [
     {
-      "action": "MATCH_TEMPLATE",
+      "id": 100,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "家具打造",
+            "target_chars": [
+              "家",
+              "具",
+              "打",
+              "造"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 280.0,
+              "y": 348.5807
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸工坊",
+            "template_name": "pics/家具打造/家具打造_心纸工坊.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 158.864,
+              "y": 499.1714
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 101
+    },
+    {
+      "id": 101,
+      "name": "返回后重新定位",
+      "action": "BACK",
+      "delay": 800,
+      "params": {},
+      "on_success": 102,
+      "on_fail": 102
+    },
+    {
+      "id": 102,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "家具打造",
+            "target_chars": [
+              "家",
+              "具",
+              "打",
+              "造"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 280.0,
+              "y": 348.5807
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸工坊",
+            "template_name": "pics/家具打造/家具打造_心纸工坊.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 158.864,
+              "y": 499.1714
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 103
+    },
+    {
+      "id": 103,
+      "name": "返回后重新定位",
+      "action": "BACK",
+      "delay": 800,
+      "params": {},
+      "on_success": 104,
+      "on_fail": 104
+    },
+    {
+      "id": 104,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "家具打造",
+            "target_chars": [
+              "家",
+              "具",
+              "打",
+              "造"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 280.0,
+              "y": 348.5807
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸工坊",
+            "template_name": "pics/家具打造/家具打造_心纸工坊.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 158.864,
+              "y": 499.1714
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 105
+    },
+    {
+      "id": 105,
+      "name": "恢复到首页第一页",
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "home_page_one_recover.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 1,
+      "on_fail": -2
+    },
+    {
+      "action": "CLICK",
       "delay": 2500,
       "id": 1,
       "on_fail": -2,
       "on_success": 2,
       "params": {
         "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 999.5222,
-          "y": 1560.5332
-        },
-        "template_name": "家具打造_心纸入口.png",
-        "threshold": 0.77
+        "threshold": 0.8,
+        "x": 993.0,
+        "y": 1550.0
       },
       "start_cooldown_on_success": false
     },
@@ -40,7 +244,7 @@
           "x": 158.864,
           "y": 499.1714
         },
-        "template_name": "家具打造_心纸工坊.png",
+        "template_name": "pics/家具打造/家具打造_心纸工坊.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -54,12 +258,39 @@
       "params": {
         "align": "center",
         "click": 1,
-        "min_hit_count": 1,
+        "min_hit_count": 2,
         "roi": {
           "align": "center",
           "h": 250.0,
           "w": 250.0,
-          "x": 944.21576,
+          "x": 280.0,
+          "y": 348.5807
+        },
+        "target_chars": [
+          "家",
+          "具",
+          "打",
+          "造"
+        ],
+        "threshold": 0.8
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 4,
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 1,
+        "roi": {
+          "align": "center",
+          "h": 250.0,
+          "w": 540.0,
+          "x": 810.0,
           "y": 1595.8065
         },
         "target_chars": [
@@ -73,9 +304,9 @@
     {
       "action": "OCR",
       "delay": 1500,
-      "id": 4,
+      "id": 5,
       "on_fail": -2,
-      "on_success": 5,
+      "on_success": 6,
       "params": {
         "align": "center",
         "click": 1,
@@ -89,7 +320,9 @@
         },
         "target_chars": [
           "确",
+          "確",
           "认",
+          "認",
           "打",
           "造"
         ],
@@ -100,9 +333,9 @@
     {
       "action": "CLICK",
       "delay": 2500,
-      "id": 5,
+      "id": 6,
       "on_fail": -2,
-      "on_success": 6,
+      "on_success": 7,
       "params": {
         "align": "center",
         "threshold": 0.8,
@@ -114,7 +347,7 @@
     {
       "action": "CLICK",
       "delay": 1500,
-      "id": 6,
+      "id": 7,
       "on_fail": -2,
       "on_success": -1,
       "params": {

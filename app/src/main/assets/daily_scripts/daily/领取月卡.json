@@ -89,7 +89,8 @@
         },
         "target_chars": [
           "免",
-          "费"
+          "费",
+          "費"
         ],
         "threshold": 0.8
       },
@@ -111,7 +112,7 @@
           "x": 530.4375,
           "y": 1310.2227
         },
-        "template_name": "领取月卡_购买.png",
+        "template_name": "pics/领取月卡/领取月卡_购买.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -172,10 +173,11 @@
           "h": 400.0,
           "w": 250.0,
           "x": 549.8203,
-          "y": 1550.4014
+          "y": 1500.4014
         },
         "target_chars": [
           "领",
+          "領",
           "取"
         ],
         "threshold": 0.77

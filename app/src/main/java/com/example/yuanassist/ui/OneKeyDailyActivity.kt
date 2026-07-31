@@ -71,13 +71,14 @@ class OneKeyDailyActivity : AppCompatActivity() {
             "历练",
             "观星",
             "白鹄扫荡",
-            "鸢报一轮",
             "相见",
+            "鸢报一轮",
             "密探升级",
+            "家具互动",
+            "密探特训",
             "家具历险",
             "家具打造",
             "材料打造",
-            "密探特训",
         )
         private val TRAINING_OPTIONS = listOf(
             TrainingOption("1", "铜钱"),

@@ -32,7 +32,7 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 3000,
       "id": 2,
       "name": "升级入口",
@@ -40,16 +40,38 @@
       "on_success": 3,
       "params": {
         "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "bottom",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 187.61621,
-          "y": 1551.5049
-        },
-        "template_name": "密探升1级_升级入口.png",
-        "threshold": 0.77
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "升级入口1",
+            "click": 1,
+            "template_name": "pics/密探升级/密探升1级_升级入口.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "bottom",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 187.61621,
+              "y": 1551.5049
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "升级入口2",
+            "click": 1,
+            "template_name": "pics/密探升级/升级2.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "bottom",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 187.61621,
+              "y": 1551.5049
+            },
+            "on_success": 3
+          }
+        ]
       },
       "start_cooldown_on_success": false
     },
@@ -70,7 +92,7 @@
           "x": 818.77637,
           "y": 1768.3857
         },
-        "template_name": "密探升1级_升级按钮.png",
+        "template_name": "pics/密探升级/密探升1级_升级按钮.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false

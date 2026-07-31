@@ -180,25 +180,43 @@ private fun FriendLinksSection(actions: HomeTabActions) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SectionHeader(title = "友情链接", subtitle = "同好推荐 · 便捷入口")
-        Row(
+        SectionHeader(title = "相关链接")
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FriendLinkCard(
-                title = "biubiu",
-                subtitle = "玩代号鸢，用biubiu加速器",
-                assetPath = "biubiu.jpg",
-                modifier = Modifier.weight(1f),
-                onClick = actions.onOpenBiubiuLink,
-            )
-            FriendLinkCard(
-                title = "maayuan",
-                subtitle = "代号鸢 / 如鸢小助手，解放双手，畅玩无忧",
-                assetPath = "maayuan.png",
-                modifier = Modifier.weight(1f),
-                onClick = actions.onOpenMaaYuanLink,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FriendLinkCard(
+                    title = "作者主页",
+                    subtitle = "小红书主页-春笙月，反馈问题和提供建议",
+                    assetPath = "author_home.png",
+                    modifier = Modifier.weight(1f),
+                    onClick = actions.onOpenAuthorHomepage,
+                )
+                FriendLinkCard(
+                    title = "maayuan",
+                    subtitle = "代号鸢 / 如鸢小助手，解放双手，畅玩无忧",
+                    assetPath = "maayuan.png",
+                    modifier = Modifier.weight(1f),
+                    onClick = actions.onOpenMaaYuanLink,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FriendLinkCard(
+                    title = "biubiu",
+                    subtitle = "玩代号鸢，用biubiu加速器",
+                    assetPath = "biubiu.jpg",
+                    modifier = Modifier.weight(1f),
+                    onClick = actions.onOpenBiubiuLink,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }
@@ -211,34 +229,33 @@ private fun FriendLinkCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(12.dp)
     Column(
         modifier = modifier
-            .height(112.dp)
             .shadow(
-                elevation = 7.dp,
+                elevation = 3.dp,
                 shape = shape,
                 clip = false,
-                ambientColor = Color(0xFFD39A72).copy(alpha = 0.20f),
-                spotColor = Color(0xFF8F5C40).copy(alpha = 0.08f),
+                ambientColor = Color(0xFFD39A72).copy(alpha = 0.12f),
+                spotColor = Color(0xFF8F5C40).copy(alpha = 0.05f),
             )
             .clip(shape)
             .background(
-                brush = Brush.horizontalGradient(
+                brush = Brush.verticalGradient(
                     listOf(
+                        Color(0xFFFFFBF3),
                         GlassPanel,
-                        Color(0xFFFFF4E2),
-                        Color(0xFFF4E2C7),
+                        Color(0xFFF8EBD5),
                     ),
                 ),
             )
             .border(
-                width = 1.dp,
+                width = 0.8.dp,
                 brush = Brush.horizontalGradient(
                     listOf(
-                        PaperLine.copy(alpha = 0.85f),
-                        WarmRose.copy(alpha = 0.42f),
-                        PaperLine.copy(alpha = 0.70f),
+                        PaperLine.copy(alpha = 0.58f),
+                        WarmRose.copy(alpha = 0.25f),
+                        PaperLine.copy(alpha = 0.48f),
                     ),
                 ),
                 shape = shape,
@@ -248,13 +265,13 @@ private fun FriendLinkCard(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 9.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             FriendLinkAssetIcon(
                 assetPath = assetPath,
@@ -264,37 +281,43 @@ private fun FriendLinkCard(
             Text(
                 text = title,
                 color = TitleInk,
-                fontSize = 15.sp,
+                fontSize = 13.sp,
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.sp,
                 modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "打开",
-                color = TitleInk,
-                fontSize = 11.sp,
+                text = "›",
+                color = PaperLine,
+                fontSize = 16.sp,
                 fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.sp,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(Color(0xFFFFF8EF).copy(alpha = 0.72f))
-                    .border(0.6.dp, PaperLine.copy(alpha = 0.60f), RoundedCornerShape(999.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.8.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            PaperLine.copy(alpha = 0.08f),
+                            PaperLine.copy(alpha = 0.46f),
+                            WarmRose.copy(alpha = 0.18f),
+                            PaperLine.copy(alpha = 0.08f),
+                        ),
+                    ),
+                ),
+        )
         Text(
             text = subtitle,
             color = BodyInk.copy(alpha = 0.88f),
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontFamily = FontFamily.Serif,
             letterSpacing = 0.sp,
-            lineHeight = 16.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            lineHeight = 15.sp,
         )
     }
 }
@@ -315,10 +338,10 @@ private fun FriendLinkAssetIcon(
     }
     Box(
         modifier = Modifier
-            .size(34.dp)
+            .size(30.dp)
             .clip(CircleShape)
-            .background(Color(0xFFFFF8EF))
-            .border(1.dp, PaperLine.copy(alpha = 0.76f), CircleShape),
+            .background(Color(0xFFFFF8EF).copy(alpha = 0.86f))
+            .border(0.8.dp, PaperLine.copy(alpha = 0.58f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         if (imageBitmap != null) {
@@ -326,7 +349,7 @@ private fun FriendLinkAssetIcon(
                 bitmap = imageBitmap,
                 contentDescription = contentDescription,
                 modifier = Modifier
-                    .size(31.dp)
+                    .size(27.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
             )
@@ -346,7 +369,7 @@ private fun FriendLinkAssetIcon(
 @Composable
 private fun SectionHeader(
     title: String,
-    subtitle: String,
+    subtitle: String = "",
 ) {
     Row(
         modifier = Modifier

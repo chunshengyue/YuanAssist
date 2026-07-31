@@ -1,26 +1,230 @@
 {
   "display_name": "材料打造",
-  "start_task_id": 1,
+  "start_task_id": 100,
   "asset_template_dir": "daily_script_templates/daily",
   "tasks": [
     {
-      "action": "MATCH_TEMPLATE",
+      "id": 100,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "材料合成",
+            "target_chars": [
+              "材",
+              "料",
+              "合",
+              "成"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 552.2803,
+              "y": 348.5807
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸工坊",
+            "template_name": "pics/材料打造/材料打造_心纸工坊.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 157.4708,
+              "y": 468.6007
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 101
+    },
+    {
+      "id": 101,
+      "name": "返回后重新定位",
+      "action": "BACK",
+      "delay": 800,
+      "params": {},
+      "on_success": 102,
+      "on_fail": 102
+    },
+    {
+      "id": 102,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "材料合成",
+            "target_chars": [
+              "材",
+              "料",
+              "合",
+              "成"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 552.2803,
+              "y": 348.5807
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸工坊",
+            "template_name": "pics/材料打造/材料打造_心纸工坊.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 157.4708,
+              "y": 468.6007
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 103
+    },
+    {
+      "id": 103,
+      "name": "返回后重新定位",
+      "action": "BACK",
+      "delay": 800,
+      "params": {},
+      "on_success": 104,
+      "on_fail": 104
+    },
+    {
+      "id": 104,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "材料合成",
+            "target_chars": [
+              "材",
+              "料",
+              "合",
+              "成"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 552.2803,
+              "y": 348.5807
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸工坊",
+            "template_name": "pics/材料打造/材料打造_心纸工坊.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 157.4708,
+              "y": 468.6007
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 105
+    },
+    {
+      "id": 105,
+      "name": "恢复到首页第一页",
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "params": {
+        "script_name": "home_page_one_recover.json",
+        "entry_task_id": 1,
+        "inherit_variables": true
+      },
+      "on_success": 1,
+      "on_fail": -2
+    },
+    {
+      "action": "CLICK",
       "delay": 2500,
       "id": 1,
       "on_fail": -2,
       "on_success": 2,
       "params": {
         "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 999.4354,
-          "y": 1549.2097
-        },
-        "template_name": "材料打造_心纸入口.png",
-        "threshold": 0.77
+        "threshold": 0.8,
+        "x": 993.0,
+        "y": 1550.0
       },
       "start_cooldown_on_success": false
     },
@@ -40,7 +244,7 @@
           "x": 157.4708,
           "y": 468.6007
         },
-        "template_name": "材料打造_心纸工坊.png",
+        "template_name": "pics/材料打造/材料打造_心纸工坊.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -91,6 +295,7 @@
         },
         "target_chars": [
           "学",
+          "學",
           "徒"
         ],
         "threshold": 0.8
@@ -113,7 +318,7 @@
           "x": 696.7886,
           "y": 998.2146
         },
-        "template_name": "材料打造_加号.png",
+        "template_name": "pics/材料打造/材料打造_加号.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -241,7 +446,9 @@
         },
         "target_chars": [
           "确",
+          "確",
           "认",
+          "認",
           "打",
           "造"
         ],
@@ -257,8 +464,9 @@
       "on_success": -1,
       "params": {
         "align": "center",
-        "ref_task_id": 1,
-        "threshold": 0.8
+        "threshold": 0.8,
+        "x": 999.4354,
+        "y": 1549.2097
       },
       "start_cooldown_on_success": false
     }

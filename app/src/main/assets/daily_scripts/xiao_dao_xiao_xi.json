@@ -19,7 +19,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "shouji.png",
+        "template_name": "pics/小道消息/shouji.png",
         "threshold": 0.85,
         "roi": {
           "x": 248,
@@ -60,7 +60,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "shouqu.png",
+        "template_name": "pics/小道消息/shouqu.png",
         "threshold": 0.75,
         "click": 1,
         "branch_var": "branch",
@@ -122,7 +122,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 800,
       "params": {
-        "template_name": "yezi.png",
+        "template_name": "pics/小道消息/yezi.png",
         "threshold": 0.8,
         "roi": {
           "x": 154,
@@ -141,7 +141,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 2000,
       "params": {
-        "template_name": "yezi.png",
+        "template_name": "pics/小道消息/yezi.png",
         "threshold": 0.8,
         "roi": {
           "x": 154,
@@ -189,10 +189,16 @@
     },
     {
       "id": 52,
-      "action": "MATCH_TEMPLATE",
+      "action": "OCR",
       "delay": 800,
       "params": {
-        "template_name": "前往收集.png",
+        "target_chars": [
+          "前",
+          "往",
+          "收",
+          "集"
+        ],
+        "min_hit_count": 2,
         "threshold": 0.8,
         "click": 1,
         "roi": {
@@ -211,7 +217,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "mazi.png",
+        "template_name": "pics/小道消息/mazi.png",
         "threshold": 0.85,
         "terminal_note": "当前任务鸟食耗尽",
         "branch_var": "auto_eat_enabled",
@@ -236,7 +242,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "shouji.png",
+        "template_name": "pics/小道消息/shouji.png",
         "threshold": 0.85,
         "roi": {
           "x": 248,
@@ -255,7 +261,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "queren.png",
+        "template_name": "pics/小道消息/queren.png",
         "threshold": 0.85,
         "click": 1,
         "roi": {

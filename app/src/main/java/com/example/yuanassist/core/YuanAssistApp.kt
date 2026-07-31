@@ -12,12 +12,7 @@ class YuanAssistApp : Application() {
         RunLogger.initialize(this)
         RunLogger.clear()
         cleanupStaleUpdateApk()
-        OcrRouteManager.initialize(this)
-        try {
-            OcrRouteManager.refreshFromRemote(this)
-        } catch (e: Exception) {
-            Log.e("YuanAssistApp", "Supabase 初始化失败: ${e.message}", e)
-        }
+        OcrRouteManager.initialize()
     }
 
     private fun cleanupStaleUpdateApk() {

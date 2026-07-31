@@ -9,14 +9,14 @@
       "params": {
         "align": "center",
         "click": 0,
-        "template_name": "daily_script_templates/pi_jing_zhan_ji_mi_tan_song_li_30/名册.png",
+        "template_name": "pics/导航到主页第二页/名册.png",
         "threshold": 0.75,
         "roi": {
           "align": "center",
           "x": 976.70355,
           "y": 1112.7681,
-          "w": 250.0,
-          "h": 250.0
+          "w": 250,
+          "h": 250
         }
       },
       "on_success": -1,
@@ -30,19 +30,19 @@
       "params": {
         "align": "center",
         "click": 0,
-        "template_name": "yuanbao.png",
+        "template_name": "pics/导航到主页第二页/yuanbao.png",
         "threshold": 0.85,
         "roi": {
           "align": "center",
-          "x": 441.0,
-          "y": 920.0,
-          "w": 200.0,
-          "h": 300.0
+          "x": 441,
+          "y": 920,
+          "w": 200,
+          "h": 300
         }
       },
       "on_success": 3,
       "on_fail": 4,
-      "name": "yuanbao"
+      "name": "主页鸢报入口"
     },
     {
       "id": 3,

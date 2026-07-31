@@ -227,7 +227,6 @@ class DebugWorkbenchCoordinator(
 
         private val DEFAULT_DAILY_TEST_SCRIPT_FILES = listOf(
             "tu_fa_qing_kuang.json",
-            "xiao_dao_xiao_xi.json",
             "ta_de_chuan_wen.json",
             DAI_BAN_GONG_WU_SCRIPT,
             "zhu_xian_6_24.json",
@@ -242,7 +241,6 @@ class DebugWorkbenchCoordinator(
             TASK_BATTLE_FLOW to "战斗流程",
             TASK_BIRD_FOOD_NAV to "鸢报界面导航",
             "tu_fa_qing_kuang.json" to "突发情况",
-            "xiao_dao_xiao_xi.json" to "小道消息",
             "ta_de_chuan_wen.json" to "他的传闻",
             DAI_BAN_GONG_WU_SCRIPT to "待办公务",
             "zhu_xian_6_24.json" to "主线624",
@@ -548,7 +546,9 @@ class DebugWorkbenchCoordinator(
     }
 
     fun dismissReplacementDialog() {
-        activeReplacementSession?.previewBitmap?.takeIf { !it.isRecycled }?.recycle()
+        activeReplacementSession?.previewBitmap
+            ?.takeIf { it !== currentBitmap && it !== previewBitmap && !it.isRecycled }
+            ?.recycle()
         activeReplacementSession = null
         pushState()
     }
@@ -1272,7 +1272,11 @@ class DebugWorkbenchCoordinator(
     }
 
     private fun openReplacementDialog() {
-        val source = currentBitmap ?: return
+        val source = currentBitmap?.takeIf { !it.isRecycled } ?: run {
+            showToast("截图已失效，请重新上传截图")
+            log("Replacement aborted: current screenshot bitmap has been recycled")
+            return
+        }
         val target = replacementTargetsForOption(selectedTemplate).firstOrNull() ?: run {
             showToast("当前识别项不支持替换素材")
             return
@@ -1307,7 +1311,10 @@ class DebugWorkbenchCoordinator(
             showToast("模板文件不存在")
             return null
         }
-        val previewBitmap = Bitmap.createBitmap(source, area.rect.left, area.rect.top, area.rect.width(), area.rect.height())
+        val previewBitmap = createReplacementPreviewBitmap(source, area.rect) ?: run {
+            showToast("替换预览生成失败，请重新上传截图")
+            return null
+        }
         val gameScale = min(source.width / BASE_W, source.height / BASE_H)
         if (replacementNode.action == "OCR") {
             return buildReplacementSession(
@@ -1342,7 +1349,10 @@ class DebugWorkbenchCoordinator(
             showToast("当前识别项没有可裁剪的 ROI")
             return null
         }
-        val previewBitmap = Bitmap.createBitmap(source, area.rect.left, area.rect.top, area.rect.width(), area.rect.height())
+        val previewBitmap = createReplacementPreviewBitmap(source, area.rect) ?: run {
+            showToast("替换预览生成失败，请重新上传截图")
+            return null
+        }
         val gameScale = min(source.width / BASE_W, source.height / BASE_H)
         return buildReplacementSession(
             target = target,
@@ -1351,6 +1361,18 @@ class DebugWorkbenchCoordinator(
             gameScale = gameScale,
             saveMode = SaveMode.OVERRIDE,
         )
+    }
+
+    private fun createReplacementPreviewBitmap(source: Bitmap, rect: Rect): Bitmap? {
+        if (source.isRecycled) return null
+        return runCatching {
+            val cropped = Bitmap.createBitmap(source, rect.left, rect.top, rect.width(), rect.height())
+            if (cropped === source) {
+                source.copy(Bitmap.Config.ARGB_8888, false)
+            } else {
+                cropped
+            }
+        }.getOrNull()
     }
 
     private fun buildReplacementSession(

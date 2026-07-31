@@ -43,9 +43,9 @@
 ## 功能结构
 - 主壳页面
   - `MainActivity` + `ui/main/*` 负责主导航、状态同步、Debug 页接入。
-- 首页 `日常版` 现包含「一键日常」入口：只读取 `assets/daily_scripts/daily/` 下的内置脚本，多选后导入现有日常悬浮窗，开始执行时按列表顺序逐个运行，单项失败不中断，全部结束后统一汇总失败项；页面会记住上次勾选的脚本、`历练` / `观星` 选项以及一键日常专用的“调试模式 / 保存调试截图”开关，退出后再次进入不清空；当前内置项已包含领取体力、领取月卡、行囊派遣、送礼一次、历练、观星、白鹄扫荡、鸢报一轮、相见、密探升级、家具互动、家具历险、家具打造、材料打造、密探特训等；其中 `历练` 支持铜钱/经验/风火/地水/阴阳五入口单选，默认经验；`观星` 支持「观星一次 / 有月卡观星 / 无月卡观星」三种模式，后两者默认 30 次且可改；调试模式开启后，一键日常运行时会按脚本节点在屏幕上绘制 ROI 红框，若同时开启“保存调试截图”则继续沿用 `AutoTaskEngine` 的截图保存链路；`领取月卡` 在原“福利”识别前会先执行一段“月卡补充”流程；若导入时跳去开启无障碍或悬浮窗权限，待导入脚本列表会先持久化，权限补齐后可继续恢复导入。
+- 首页 `日常版` 现包含「一键日常」入口：只读取 `assets/daily_scripts/daily/` 下的内置脚本，多选后导入现有日常悬浮窗，开始执行时按列表顺序逐个运行，单项失败不中断，全部结束后统一汇总失败项；运行日志使用 `一键日常` 模块，队列汇总写入 `总流程` 板块，每个小任务按脚本 `display_name` 单独写入自己的板块；页面会记住上次勾选的脚本、`历练` / `观星` 选项以及一键日常专用的“调试模式 / 保存调试截图”开关，退出后再次进入不清空；当前内置项已包含领取体力、领取月卡、行囊派遣、送礼一次、历练、观星、白鹄扫荡、相见、鸢报一轮、密探升级、家具互动、密探特训、家具历险、家具打造、材料打造等；`家具打造` / `材料打造` 开头会先定位当前页面，识别不到时有限次返回后调用 `home_page_one_recover.json` 回到首页第一页；这两个脚本的开局深层定位只允许分别通过 `家具打造` / `材料合成` OCR 跳到对应打造流程，不允许通过加号等后续控件直接跳转；其中 `历练` 支持铜钱/经验/风火/地水/阴阳五入口单选，默认经验；`观星` 支持「观星一次 / 有月卡观星 / 无月卡观星」三种模式，后两者默认 30 次且可改；调试模式开启后，一键日常运行时会按脚本节点在屏幕上绘制 ROI 红框，若同时开启“保存调试截图”则继续沿用 `AutoTaskEngine` 的截图保存链路；`领取月卡` 在原“福利”识别前会先执行一段“月卡补充”流程；若导入时跳去开启无障碍或悬浮窗权限，待导入脚本列表会先持久化，权限补齐后可继续恢复导入。
   - 首页检查更新由 `HomeActionHandler` 处理：发现新版本后优先走 Android `DownloadManager` 应用内下载，下载完成拉起系统安装器；同时保留浏览器下载作为手动入口和兜底。
-  - 首页「友情链接」板块位于常用入口之后，当前一行展示 biubiu 和 maayuan 两个推荐卡片；入口图标使用 `assets/biubiu.jpg`、`assets/maayuan.png`，点击由 `MainActivity` 打开外链。
+  - 首页「相关链接」板块位于常用入口之后，以两列卡片展示作者主页、maayuan、biubiu 三个推荐入口；入口图标使用 `assets/author_home.png`、`assets/maayuan.png`、`assets/biubiu.jpg`，点击由 `MainActivity` 打开外链。
 - 无障碍自动化
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
 - 日常脚本系统
@@ -85,7 +85,7 @@
 - 特定业务运行时
   - `BirdFoodRuntimeManager`、`Mainline624RuntimeManager`、`StargazingRuntimeManager` 等是按具体功能封装的运行时管理器。
   - `BirdFoodRuntimeManager` 现在是薄调度层：鸟食流程主体由 `assets/daily_scripts/bird_food_controller.json` 串联 `bird_food_ensure_yuan_bao.json` 和具体鸟食子脚本，manager 只负责配置变量、停止条件、启停和最终提示。
-  - 刷鸟食的小道消息子脚本使用 `bird_food_xiao_dao_xiao_xi.json`；原 `xiao_dao_xiao_xi.json` 作为共享历史脚本保留，二者不要混用。
+  - 刷鸟食的小道消息子脚本使用 `bird_food_xiao_dao_xiao_xi.json`；一键日常“鸢报一轮”使用旧 `xiao_dao_xiao_xi.json`，保留其中“最多/前往收集”的一次性收取逻辑，二者不要混用。
   - `Mainline624RuntimeManager` 已收敛为薄调度层：主体仍执行 `zhu_xian_6_24.json`，manager 只负责次数停止、`game_variant` 变量和开始战斗延时覆盖；首次入口和后续循环都从脚本头部定位组开始，不再维护单独循环入口。
   - `zhu_xian_6_24.json` 开头用 `SCREENSHOT_GROUP` 判断当前界面：可直接识别 6-24 战斗页、6-24 入口、第六章入口、首页故事入口；多次未命中会先返回重试，再调用 `home_page_one_recover.json` 回到首页后从故事入口流程继续。
   - 披荆斩棘功能已从主项目移除并备份到公开仓库：`https://github.com/chunshengyue/yuanassist-pi-jing-zhan-ji`。主项目保留部分共享脚本及其依赖素材，避免影响鸟食、首页恢复、观星等现有链路。
@@ -342,6 +342,10 @@
   - 先看 `DebugWorkbenchCoordinator`
   - 再看 `AutoTaskEngine` 的 OCR 流程
   - 角色导入相关再看 `CharacterImportEngine`
+- 线上 OCR 接口
+  - 表格云端 OCR 与星石云端 OCR 共用 `OcrManager` / `OcrRouteManager`。
+  - 当前线上 OCR 地址固定为 `https://ocr.yuanassist.space/release/ocr`，不再通过 Supabase `ocr_route` 切换，也不再保留腾讯云函数兜底地址。
+  - 表格云端 OCR 使用 `force_mode = 0`、`response_mode = parsed`；星石云端 OCR 使用 `force_mode = 2`、`response_mode = raw`。
 - 星石本地 OCR / 划分预览
   - 先看 `StonePaddleLocalRecognizer`
   - 当前本地链路已改为：`Paddle 检测框驱动划分 + Paddle 单格识别`
@@ -409,6 +413,8 @@
 - 「一键日常」内置脚本放在 `app/src/main/assets/daily_scripts/daily/*.json`。
 - 脚本模板主要放在 `app/src/main/assets/daily_script_templates/<script-name>/`。
 - 「一键日常」模板统一放在 `app/src/main/assets/daily_script_templates/daily/`，若不同任务存在同名模板，统一改成带任务名前缀的文件名，并同步更新 `template_name`。
+- 当前内置脚本实际引用的模板素材已优先整理到 `app/src/main/assets/pics/<display_name>/`。
+- 当 `template_name` 写成 `pics/...` 这类带斜杠路径时，运行时会按 `assets` 相对路径直接取图，不再依赖脚本里的 `asset_template_dir`。
 - 调试页对脚本节点的展示，依赖脚本内容本身和 `DailyScriptDebugIndex` 的映射。
 - 若新增一类日常脚本或模板节点，最好同时考虑：
   - 脚本 JSON 是否能被调试页索引

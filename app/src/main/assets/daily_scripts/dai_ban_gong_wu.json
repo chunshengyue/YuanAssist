@@ -16,30 +16,51 @@
     },
     {
       "id": 2,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 1500,
       "params": {
-        "template_name": "gongwu.png",
-        "threshold": 0.85,
         "terminal_note": "待办公务路径错误",
-        "roi": {
-          "x": 539,
-          "y": 210,
-          "w": 200,
-          "h": 500,
-          "align": "top"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/gongwu.png",
+            "threshold": 0.85,
+            "roi": {
+              "x": 539,
+              "y": 210,
+              "w": 200,
+              "h": 500,
+              "align": "top"
+            },
+            "on_success": 31,
+            "name": "待办公务入口按钮"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/gongwu繁体.png",
+            "threshold": 0.85,
+            "roi": {
+              "x": 539,
+              "y": 210,
+              "w": 200,
+              "h": 500,
+              "align": "top"
+            },
+            "on_success": 31,
+            "name": "待办公务入口按钮_繁体"
+          }
+        ]
       },
       "on_success": 31,
       "on_fail": -2,
-      "name": "gongwu"
+      "name": "待办公务入口按钮"
     },
     {
       "id": 31,
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "qianwang.png",
+        "template_name": "pics/待办公务/qianwang.png",
         "threshold": 0.85,
         "click": 1,
         "roi": {
@@ -52,7 +73,7 @@
       },
       "on_success": 311,
       "on_fail": 32,
-      "name": "qianwang"
+      "name": "待办公务前往按钮"
     },
     {
       "id": 311,
@@ -70,7 +91,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "qianwang.png",
+        "template_name": "pics/待办公务/qianwang.png",
         "threshold": 0.85,
         "click": 1,
         "roi": {
@@ -83,7 +104,7 @@
       },
       "on_success": 321,
       "on_fail": 33,
-      "name": "qianwang"
+      "name": "待办公务前往按钮"
     },
     {
       "id": 321,
@@ -101,7 +122,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "qianwang.png",
+        "template_name": "pics/待办公务/qianwang.png",
         "threshold": 0.85,
         "click": 1,
         "roi": {
@@ -114,7 +135,7 @@
       },
       "on_success": 331,
       "on_fail": 34,
-      "name": "qianwang"
+      "name": "待办公务前往按钮"
     },
     {
       "id": 331,
@@ -132,7 +153,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 3000,
       "params": {
-        "template_name": "qianwang.png",
+        "template_name": "pics/待办公务/qianwang.png",
         "threshold": 0.85,
         "click": 1,
         "roi": {
@@ -145,7 +166,7 @@
       },
       "on_success": 341,
       "on_fail": 31,
-      "name": "qianwang"
+      "name": "待办公务前往按钮"
     },
     {
       "id": 341,
@@ -163,7 +184,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "jizhi.png",
+        "template_name": "pics/待办公务/jizhi.png",
         "threshold": 0.85,
         "terminal_note": "当前任务鸟食耗尽",
         "branch_var": "auto_eat_enabled",
@@ -181,28 +202,50 @@
       },
       "on_success": 4,
       "on_fail": 6,
-      "name": "jizhi"
+      "name": "待办公务鸟食按钮"
     },
     {
       "id": 4,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 1500,
       "params": {
-        "template_name": "queren.png",
-        "threshold": 0.85,
-        "click": 1,
         "terminal_note": "待办公务路径错误",
-        "roi": {
-          "x": 542,
-          "y": 1356,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/queren.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 542,
+              "y": 1356,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 41,
+            "name": "待办公务确认按钮"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/queren繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 542,
+              "y": 1356,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 41,
+            "name": "待办公务确认按钮_繁体"
+          }
+        ]
       },
       "on_success": 41,
       "on_fail": -2,
-      "name": "queren"
+      "name": "待办公务确认按钮"
     },
     {
       "id": 41,
@@ -279,8 +322,11 @@
             },
             "target_chars": [
               "扫",
+              "掃",
               "荡",
-              "汤"
+              "蕩",
+              "汤",
+              "湯"
             ],
             "min_hit_count": 1,
             "preprocess": "light_text",
@@ -288,7 +334,7 @@
           },
           {
             "type": "template",
-            "template_name": "xuanze.png",
+            "template_name": "pics/待办公务/xuanze.png",
             "threshold": 0.85,
             "click": 1,
             "roi": {
@@ -299,11 +345,26 @@
               "align": "center"
             },
             "on_success": 101,
-            "name": "xuanze"
+            "name": "待办公务选择按钮"
           },
           {
             "type": "template",
-            "template_name": "tijiao.png",
+            "template_name": "pics/待办公务/xuanze繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 837,
+              "y": 806,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 101,
+            "name": "待办公务选择按钮_繁体"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/tijiao.png",
             "threshold": 0.85,
             "click": 1,
             "roi": {
@@ -314,7 +375,7 @@
               "align": "center"
             },
             "on_success": 13,
-            "name": "tijiao"
+            "name": "待办公务提交按钮"
           }
         ]
       },
@@ -345,7 +406,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "jizhi.png",
+        "template_name": "pics/待办公务/jizhi.png",
         "threshold": 0.85,
         "roi": {
           "x": 217,
@@ -357,28 +418,50 @@
       },
       "on_success": 102,
       "on_fail": 103,
-      "name": "jizhi"
+      "name": "待办公务鸟食按钮"
     },
     {
       "id": 102,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 1500,
       "params": {
-        "template_name": "queren.png",
-        "threshold": 0.85,
-        "click": 1,
         "terminal_note": "待办公务路径错误",
-        "roi": {
-          "x": 542,
-          "y": 1356,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/queren.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 542,
+              "y": 1356,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 1021,
+            "name": "待办公务确认按钮"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/queren繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 542,
+              "y": 1356,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 1021,
+            "name": "待办公务确认按钮_繁体"
+          }
+        ]
       },
       "on_success": 1021,
       "on_fail": -2,
-      "name": "queren"
+      "name": "待办公务确认按钮"
     },
     {
       "id": 1021,
@@ -390,23 +473,44 @@
     },
     {
       "id": 103,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 1200,
       "params": {
-        "template_name": "jiangli.png",
-        "threshold": 0.77,
         "terminal_note": "待办公务路径错误",
-        "roi": {
-          "x": 540,
-          "y": 522,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/jiangli.png",
+            "threshold": 0.77,
+            "roi": {
+              "x": 540,
+              "y": 522,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 99,
+            "name": "待办公务奖励按钮"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/jiangli繁体.png",
+            "threshold": 0.77,
+            "roi": {
+              "x": 540,
+              "y": 522,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 99,
+            "name": "待办公务奖励按钮_繁体"
+          }
+        ]
       },
       "on_success": 99,
       "on_fail": -2,
-      "name": "jiangli"
+      "name": "待办公务奖励按钮"
     },
     {
       "id": 104,
@@ -423,7 +527,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "jizhi.png",
+        "template_name": "pics/待办公务/jizhi.png",
         "threshold": 0.85,
         "roi": {
           "x": 217,
@@ -435,28 +539,50 @@
       },
       "on_success": 14,
       "on_fail": 103,
-      "name": "jizhi"
+      "name": "待办公务鸟食按钮"
     },
     {
       "id": 14,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 1500,
       "params": {
-        "template_name": "queren.png",
-        "threshold": 0.85,
-        "click": 1,
         "terminal_note": "待办公务路径错误",
-        "roi": {
-          "x": 542,
-          "y": 1356,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/queren.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 542,
+              "y": 1356,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 141,
+            "name": "待办公务确认按钮"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/待办公务/queren繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 542,
+              "y": 1356,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 141,
+            "name": "待办公务确认按钮_繁体"
+          }
+        ]
       },
       "on_success": 141,
       "on_fail": -2,
-      "name": "queren"
+      "name": "待办公务确认按钮"
     },
     {
       "id": 141,

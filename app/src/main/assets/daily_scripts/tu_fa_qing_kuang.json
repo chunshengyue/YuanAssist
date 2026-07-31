@@ -19,7 +19,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "diaocha.png",
+        "template_name": "pics/突发情况/diaocha.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -32,7 +32,7 @@
       },
       "on_success": 201,
       "on_fail": 3,
-      "name": "diaocha"
+      "name": "突发情况开始调查按钮"
     },
     {
       "id": 201,
@@ -50,7 +50,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "diaocha.png",
+        "template_name": "pics/突发情况/diaocha.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -63,14 +63,14 @@
       },
       "on_success": 301,
       "on_fail": 54,
-      "name": "diaocha"
+      "name": "突发情况开始调查按钮"
     },
     {
       "id": 54,
       "action": "MATCH_TEMPLATE",
       "delay": 5000,
       "params": {
-        "template_name": "diaocha.png",
+        "template_name": "pics/突发情况/diaocha.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -83,7 +83,7 @@
       },
       "on_success": 201,
       "on_fail": 3,
-      "name": "diaocha"
+      "name": "突发情况开始调查按钮"
     },
     {
       "id": 301,
@@ -101,7 +101,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1200,
       "params": {
-        "template_name": "kuaisudiaocha.png",
+        "template_name": "pics/突发情况/kuaisudiaocha.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -114,14 +114,14 @@
       },
       "on_success": 27,
       "on_fail": 4,
-      "name": "kuaisudiaocha"
+      "name": "突发情况快速调查按钮"
     },
     {
       "id": 4,
       "action": "MATCH_TEMPLATE",
       "delay": 800,
       "params": {
-        "template_name": "sherou.png",
+        "template_name": "pics/突发情况/sherou.png",
         "threshold": 0.85,
         "terminal_note": "当前任务鸟食耗尽",
         "branch_var": "auto_eat_enabled",
@@ -139,14 +139,14 @@
       },
       "on_success": 402,
       "on_fail": 6,
-      "name": "sherou"
+      "name": "突发情况鸟食按钮"
     },
     {
       "id": 402,
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "queren.png",
+        "template_name": "pics/突发情况/queren.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -159,7 +159,7 @@
       },
       "on_success": 401,
       "on_fail": 6,
-      "name": "queren"
+      "name": "突发情况确认按钮"
     },
     {
       "id": 401,
@@ -200,7 +200,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1200,
       "params": {
-        "template_name": "kuaisudiaocha.png",
+        "template_name": "pics/突发情况/kuaisudiaocha.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -213,7 +213,7 @@
       },
       "on_success": 27,
       "on_fail": 6,
-      "name": "kuaisudiaocha"
+      "name": "突发情况快速调查按钮"
     },
     {
       "id": 6,
@@ -236,7 +236,7 @@
         "screenshot_steps": [
           {
             "type": "template",
-            "template_name": "jiedao1.png",
+            "template_name": "pics/突发情况/jiedao1.png",
             "threshold": 0.85,
             "roi": {
               "x": 331,
@@ -246,11 +246,11 @@
               "align": "top"
             },
             "on_success": 701,
-            "name": "jiedao1"
+            "name": "突发情况街道1"
           },
           {
             "type": "template",
-            "template_name": "cunzi4.png",
+            "template_name": "pics/突发情况/cunzi4.png",
             "threshold": 0.75,
             "roi": {
               "x": 935,
@@ -260,11 +260,11 @@
               "align": "top"
             },
             "on_success": 2201,
-            "name": "cunzi4"
+            "name": "突发情况村子按钮"
           },
           {
             "type": "template",
-            "template_name": "shulin.png",
+            "template_name": "pics/突发情况/shulin.png",
             "threshold": 0.85,
             "roi": {
               "x": 208,
@@ -274,11 +274,11 @@
               "align": "top"
             },
             "on_success": 2801,
-            "name": "shulin"
+            "name": "突发情况树林按钮"
           },
           {
             "type": "template",
-            "template_name": "jiedao2.png",
+            "template_name": "pics/突发情况/jiedao2.png",
             "threshold": 0.85,
             "roi": {
               "x": 227,
@@ -288,11 +288,11 @@
               "align": "top"
             },
             "on_success": 3601,
-            "name": "jiedao2"
+            "name": "突发情况街道2"
           },
           {
             "type": "template",
-            "template_name": "taohua.png",
+            "template_name": "pics/突发情况/taohua.png",
             "threshold": 0.85,
             "roi": {
               "x": 240,
@@ -302,7 +302,7 @@
               "align": "top"
             },
             "on_success": 4401,
-            "name": "taohua"
+            "name": "突发情况桃花按钮"
           }
         ]
       },
@@ -349,7 +349,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "huise_queding.png",
+        "template_name": "pics/突发情况/huise_queding.png",
         "threshold": 0.75,
         "terminal_note": "突发情况路径错误",
         "roi": {
@@ -362,7 +362,7 @@
       },
       "on_success": 11,
       "on_fail": -2,
-      "name": "huise_queding"
+      "name": "突发情况灰色确定按钮"
     },
     {
       "id": 11,
@@ -439,7 +439,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1000,
       "params": {
-        "template_name": "biaoxian.png",
+        "template_name": "pics/突发情况/biaoxian.png",
         "threshold": 0.75,
         "roi": {
           "x": 504,
@@ -451,14 +451,14 @@
       },
       "on_success": 17,
       "on_fail": 1601,
-      "name": "biaoxian"
+      "name": "突发情况表现按钮"
     },
     {
       "id": 1601,
       "action": "MATCH_TEMPLATE",
       "delay": 2000,
       "params": {
-        "template_name": "tiaoguo1.png",
+        "template_name": "pics/突发情况/tiaoguo1.png",
         "threshold": 0.75,
         "click": 1,
         "roi": {
@@ -471,7 +471,7 @@
       },
       "on_success": 17,
       "on_fail": 17,
-      "name": "tiaoguo1"
+      "name": "突发情况跳过按钮"
     },
     {
       "id": 17,
@@ -712,7 +712,7 @@
       "action": "MATCH_TEMPLATE",
       "delay": 1500,
       "params": {
-        "template_name": "queding.png",
+        "template_name": "pics/突发情况/queding.png",
         "threshold": 0.75,
         "click": 1,
         "terminal_note": "突发情况路径错误",
@@ -727,7 +727,7 @@
       "start_cooldown_on_success": true,
       "on_success": 2,
       "on_fail": -2,
-      "name": "queding"
+      "name": "突发情况确定按钮"
     },
     {
       "id": 2801,

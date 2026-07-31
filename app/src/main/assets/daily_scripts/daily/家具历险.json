@@ -1,39 +1,230 @@
 {
   "display_name": "家具历险",
-  "start_task_id": 0,
+  "start_task_id": 100,
   "asset_template_dir": "daily_script_templates/daily",
   "tasks": [
     {
+      "id": 100,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "家具历险",
+            "target_chars": [
+              "历",
+              "歷",
+              "险",
+              "險"
+            ],
+            "min_hit_count": 1,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 575.0998,
+              "y": 1572.2036
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸居",
+            "template_name": "pics/家具互动/家具互动_心纸居.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 158.864,
+              "y": 499.1714
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 101
+    },
+    {
+      "id": 101,
+      "name": "返回后重新定位",
+      "action": "BACK",
+      "delay": 800,
+      "params": {},
+      "on_success": 102,
+      "on_fail": 102
+    },
+    {
+      "id": 102,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "家具历险",
+            "target_chars": [
+              "历",
+              "歷",
+              "险",
+              "險"
+            ],
+            "min_hit_count": 1,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 575.0998,
+              "y": 1572.2036
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸居",
+            "template_name": "pics/家具互动/家具互动_心纸居.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 158.864,
+              "y": 499.1714
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 103
+    },
+    {
+      "id": 103,
+      "name": "返回后重新定位",
+      "action": "BACK",
+      "delay": 800,
+      "params": {},
+      "on_success": 104,
+      "on_fail": 104
+    },
+    {
+      "id": 104,
+      "name": "定位当前界面",
+      "action": "SCREENSHOT_GROUP",
+      "delay": 800,
+      "params": {
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "家具历险",
+            "target_chars": [
+              "历",
+              "歷",
+              "险",
+              "險"
+            ],
+            "min_hit_count": 1,
+            "threshold": 0.8,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 575.0998,
+              "y": 1572.2036
+            },
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "心纸居",
+            "template_name": "pics/家具互动/家具互动_心纸居.png",
+            "threshold": 0.77,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 158.864,
+              "y": 499.1714
+            },
+            "on_success": 2
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口",
+            "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          }
+        ]
+      },
+      "on_success": 1,
+      "on_fail": 105
+    },
+    {
+      "id": 105,
+      "name": "恢复到首页第一页",
       "action": "RUN_SCRIPT_SEGMENT",
       "delay": 0,
-      "id": 0,
-      "on_fail": 6,
-      "on_success": 1,
       "params": {
         "script_name": "home_page_one_recover.json",
         "entry_task_id": 1,
         "inherit_variables": true
       },
-      "start_cooldown_on_success": false
+      "on_success": 1,
+      "on_fail": -2
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "CLICK",
       "delay": 2500,
       "id": 1,
       "on_fail": -2,
       "on_success": 2,
       "params": {
         "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 996.03845,
-          "y": 1554.0885
-        },
-        "template_name": "家具历险_心纸入口.png",
-        "threshold": 0.77
+        "threshold": 0.8,
+        "x": 993.0,
+        "y": 1550.0
       },
       "start_cooldown_on_success": false
     },
@@ -50,10 +241,10 @@
           "align": "center",
           "h": 250.0,
           "w": 250.0,
-          "x": 921.2031,
-          "y": 1045.3549
+          "x": 158.864,
+          "y": 499.1714
         },
-        "template_name": "家具历险_历险.png",
+        "template_name": "pics/家具历险/家具历险_历险.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -79,7 +270,9 @@
         "target_chars": [
           "一",
           "键",
+          "鍵",
           "领",
+          "領",
           "取"
         ],
         "threshold": 0.8
@@ -102,7 +295,7 @@
           "x": 528.76416,
           "y": 515.19666
         },
-        "template_name": "家具历险_获得奖励.png",
+        "template_name": "pics/家具历险/家具历险_获得奖励.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -136,7 +329,7 @@
           "x": 554.1098,
           "y": 1808.2357
         },
-        "template_name": "家具历险_家具开始.png",
+        "template_name": "pics/家具历险/家具历险_家具开始.png",
         "threshold": 0.72
       },
       "start_cooldown_on_success": false
@@ -157,7 +350,7 @@
           "x": 939.25195,
           "y": 1088.381
         },
-        "template_name": "家具历险_结算.png",
+        "template_name": "pics/家具历险/家具历险_结算.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -181,7 +374,8 @@
         },
         "target_chars": [
           "跳",
-          "过"
+          "过",
+          "過"
         ],
         "threshold": 0.8
       },
@@ -203,7 +397,7 @@
           "x": 528.76416,
           "y": 519.6391
         },
-        "template_name": "家具历险_奖励2.png",
+        "template_name": "pics/家具历险/家具历险_奖励2.png",
         "threshold": 0.77
       },
       "start_cooldown_on_success": false
@@ -278,7 +472,9 @@
         },
         "target_chars": [
           "历",
-          "险"
+          "歷",
+          "险",
+          "險"
         ],
         "threshold": 0.8
       },
