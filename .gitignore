@@ -55,6 +55,7 @@ AGENTS.md
 CLAUDE.md
 .claude/
 .codex-compare/
+.codex/
 .codex_tmp/
 .codex_tmp_user_import/
 .gradle-user/
@@ -101,3 +102,8 @@ task_plan.md
 user_daily_scripts/
 card.png
 *.xlsx
+
+# Local screenshots and one-off debug exports
+Screenshot_*/
+tmp_hr_debug/
+/星汉镜-浠洒_圆形素材分析/
