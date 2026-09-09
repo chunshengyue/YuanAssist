@@ -462,7 +462,29 @@
       },
       "on_success": -2,
       "on_fail": 17,
-      "name": "主线624确认按钮"
+      "name": "主线624确认按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "认",
+              "認"
+            ],
+            "min_hit_count": 1,
+            "terminal_note": "体力已耗尽",
+            "roi": {
+              "x": 540,
+              "y": 1357,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 17,
@@ -590,7 +612,29 @@
       },
       "on_success": 26,
       "on_fail": 23,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第一场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 23,
@@ -610,7 +654,28 @@
       },
       "on_success": 26,
       "on_fail": 24,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 24,
@@ -630,7 +695,28 @@
       },
       "on_success": 26,
       "on_fail": 25,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 25,
@@ -651,7 +737,29 @@
       },
       "on_success": 26,
       "on_fail": 251,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第一场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 251,
@@ -671,7 +779,28 @@
       },
       "on_success": 26,
       "on_fail": 252,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 252,
@@ -691,7 +820,28 @@
       },
       "on_success": 26,
       "on_fail": 253,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 253,
@@ -712,7 +862,29 @@
       },
       "on_success": 26,
       "on_fail": -2,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第一场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 26,
@@ -820,7 +992,29 @@
       },
       "on_success": 34,
       "on_fail": 31,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第二场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 31,
@@ -840,7 +1034,28 @@
       },
       "on_success": 34,
       "on_fail": 32,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 32,
@@ -860,7 +1075,28 @@
       },
       "on_success": 34,
       "on_fail": 33,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 33,
@@ -881,7 +1117,29 @@
       },
       "on_success": 34,
       "on_fail": 331,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第二场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 331,
@@ -901,7 +1159,28 @@
       },
       "on_success": 34,
       "on_fail": 332,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 332,
@@ -921,7 +1200,28 @@
       },
       "on_success": 34,
       "on_fail": 333,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 333,
@@ -942,7 +1242,29 @@
       },
       "on_success": 34,
       "on_fail": -2,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第二场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 34,
@@ -1050,7 +1372,29 @@
       },
       "on_success": 42,
       "on_fail": 39,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第三场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 39,
@@ -1070,7 +1414,28 @@
       },
       "on_success": 42,
       "on_fail": 40,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 40,
@@ -1090,7 +1455,28 @@
       },
       "on_success": 42,
       "on_fail": 41,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 41,
@@ -1111,7 +1497,29 @@
       },
       "on_success": 42,
       "on_fail": 411,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第三场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 411,
@@ -1131,7 +1539,28 @@
       },
       "on_success": 42,
       "on_fail": 412,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 412,
@@ -1151,7 +1580,28 @@
       },
       "on_success": 42,
       "on_fail": 413,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 413,
@@ -1172,7 +1622,29 @@
       },
       "on_success": 42,
       "on_fail": -2,
-      "name": "主线624战斗确定按钮"
+      "name": "主线624战斗确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "第三场战斗超时或者路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1692,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 42,
@@ -1302,7 +1774,32 @@
       },
       "on_success": 16,
       "on_fail": 17,
-      "name": "主线624进入关卡按钮"
+      "name": "主线624进入关卡按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "进",
+              "進",
+              "入",
+              "关",
+              "關",
+              "卡"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "terminal_note": "6-24路径错误",
+            "roi": {
+              "x": 540,
+              "y": 1286,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     }
   ]
 }

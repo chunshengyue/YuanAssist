@@ -71,6 +71,7 @@ class OneKeyDailyActivity : AppCompatActivity() {
             "历练",
             "观星",
             "白鹄扫荡",
+            "地宫扫荡",
             "相见",
             "鸢报一轮",
             "密探升级",

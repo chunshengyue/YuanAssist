@@ -16,7 +16,17 @@ data class DailyTask(
     val params: TaskParams?, // 有些指令可能没有 params
     val on_success: Int = -1,
     val on_fail: Int = -1,
-    val start_cooldown_on_success: Boolean = false
+    val start_cooldown_on_success: Boolean = false,
+    val mode_overrides: ModeOverrides? = null
+)
+
+data class ModeOverrides(
+    val traditional: TaskOverride? = null
+)
+
+data class TaskOverride(
+    val action: String? = null,
+    val params: TaskParams? = null
 )
 
 data class TaskParams(

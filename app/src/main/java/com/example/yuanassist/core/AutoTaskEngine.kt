@@ -24,10 +24,12 @@ import com.example.yuanassist.model.ScreenshotStep
 import com.example.yuanassist.model.TaskParams
 import com.example.yuanassist.utils.BirdFoodDebugScreenshotStore
 import com.example.yuanassist.utils.CloudScriptOverrideStore
+import com.example.yuanassist.utils.DailyGlobalDelayStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StartBattleShared
 import com.example.yuanassist.utils.TemplateDelayOverrideStore
 import com.example.yuanassist.utils.TemplateOverrideStore
+import com.example.yuanassist.utils.TraditionalModeStore
 import com.example.yuanassist.tableocr.PaddleTextBlock
 import com.example.yuanassist.tableocr.PaddleTextElement
 import com.example.yuanassist.tableocr.PaddleTextLine
@@ -40,10 +42,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.opencv.android.Utils
-import org.opencv.core.Core
-import org.opencv.core.Mat
-import org.opencv.imgproc.Imgproc
 import java.io.File
 import kotlin.math.abs
 import kotlin.math.min
@@ -220,11 +218,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         val terminalNote: String? = null,
     )
 
-    private data class TemplateMatchResult(
-        val center: PointF,
-        val score: Double,
-    )
-
     fun startPlan(
         plan: DailyTaskPlan,
         onCompleted: (Boolean, String) -> Unit,
@@ -240,8 +233,10 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         ocrScope.cancel()
         ocrScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         clearDebugRoi()
-        currentTaskPlan = plan
-        currentTaskId = plan.start_task_id
+        val traditionalPlan = applyTraditionalModeOverridesIfNeeded(plan)
+        val effectivePlan = applyDailyGlobalDelayIfNeeded(traditionalPlan)
+        currentTaskPlan = effectivePlan
+        currentTaskId = effectivePlan.start_task_id
         isRunning = true
         matchedPointsByTaskId.clear()
         debugRoiByTaskId.clear()
@@ -255,11 +250,37 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         this.onTaskScheduled = onTaskScheduled
         customActionHandler = onCustomAction
         currentTemplateDir = templateDir
-        currentAssetTemplateDir = plan.asset_template_dir?.trim()?.takeIf { it.isNotBlank() }
+        currentAssetTemplateDir = effectivePlan.asset_template_dir?.trim()?.takeIf { it.isNotBlank() }
         currentScriptFileName = scriptFileName?.trim()?.takeIf { it.isNotBlank() }
         logDisplayMetrics("startPlan")
         verboseInfo("引擎已启动")
         executeNextTask()
+    }
+
+    private fun applyTraditionalModeOverridesIfNeeded(plan: DailyTaskPlan): DailyTaskPlan {
+        if (!TraditionalModeStore.isEnabled(service)) return plan
+        var appliedCount = 0
+        val tasks = plan.tasks.map { task ->
+            val override = task.mode_overrides?.traditional ?: return@map task
+            val nextAction = override.action?.trim()?.takeIf { it.isNotBlank() }
+            if (nextAction == null && override.params == null) return@map task
+            appliedCount += 1
+            task.copy(
+                action = nextAction ?: task.action,
+                params = override.params ?: task.params,
+            )
+        }
+        if (appliedCount > 0) {
+            verboseInfo("繁体模式已应用 $appliedCount 个节点替换")
+        }
+        return plan.copy(tasks = tasks)
+    }
+
+    private fun applyDailyGlobalDelayIfNeeded(plan: DailyTaskPlan): DailyTaskPlan {
+        val delayMs = DailyGlobalDelayStore.getDelayMs(service)
+        if (delayMs <= 0L) return plan
+        verboseInfo("日常全局延时已应用 ${delayMs}ms")
+        return DailyGlobalDelayStore.applyToPlan(service, plan)
     }
 
     fun stop() {
@@ -651,8 +672,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             .orEmpty()
         val targetText = (p.target_text ?: p.button_name)?.trim().orEmpty()
         val useStartBattlePreset = targetChars.isEmpty() && targetText.isBlank()
-        val isExplicitStartBattleTarget = targetChars.size == 4 &&
-            targetChars.containsAll(listOf('开', '始', '战', '斗'))
+        val isExplicitStartBattleTarget = StartBattleShared.isExplicitStartBattleTarget(targetChars)
         val templateName = p.template_name
         val templateOverrideName = ocrTemplateOverrideName(task, p)
         if (templateOverrideName != null && TemplateOverrideStore.hasOverride(service, templateOverrideName)) {
@@ -1068,7 +1088,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
             if (region.bitmap.width < scaledTemplate.width || region.bitmap.height < scaledTemplate.height) {
                 return null
             }
-            val matchResult = matchTemplate(region.bitmap, scaledTemplate, step.threshold ?: 0.8f)
+            val matchResult = TemplateMatcher.match(region.bitmap, scaledTemplate, step.threshold ?: 0.8f)
                 ?: return null
             return ScreenshotMatch(
                 nextTaskId = resolveScreenshotGroupSuccessTaskId(task, step),
@@ -1365,55 +1385,9 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         BirdFoodDebugScreenshotStore.saveSnapshots(service, originalBitmap, croppedBitmap)
     }
 
-    private fun createYellowTextOcrBitmap(source: Bitmap): Bitmap? {
-        return try {
-            val width = source.width
-            val height = source.height
-            val input = IntArray(width * height)
-            val output = IntArray(width * height)
-            source.getPixels(input, 0, width, 0, 0, width, height)
-            for (i in input.indices) {
-                val color = input[i]
-                val r = Color.red(color)
-                val g = Color.green(color)
-                val b = Color.blue(color)
-                val isYellowText = r >= 150 && g >= 110 && b <= 180 && (r - b) >= 40 && (g - b) >= 30
-                output[i] = if (isYellowText) Color.BLACK else Color.WHITE
-            }
-            Bitmap.createBitmap(output, width, height, Bitmap.Config.ARGB_8888)
-        } catch (t: Throwable) {
-            logError("OCR 黄字预处理失败", t)
-            null
-        }
-    }
-
     private fun createConfiguredOcrBitmap(source: Bitmap, preprocess: String?): Bitmap? {
-        return when (preprocess?.lowercase()) {
-            "yellow_text" -> createYellowTextOcrBitmap(source)
-            "light_text" -> createLightTextOcrBitmap(source)
-            else -> null
-        }
-    }
-
-    private fun createLightTextOcrBitmap(source: Bitmap): Bitmap? {
-        return try {
-            val width = source.width
-            val height = source.height
-            val input = IntArray(width * height)
-            val output = IntArray(width * height)
-            source.getPixels(input, 0, width, 0, 0, width, height)
-            for (i in input.indices) {
-                val color = input[i]
-                val r = Color.red(color)
-                val g = Color.green(color)
-                val b = Color.blue(color)
-                val isLightWarmText = r >= 145 && g >= 120 && b >= 90 && r >= b - 10 && g >= b - 35
-                output[i] = if (isLightWarmText) Color.BLACK else Color.WHITE
-            }
-            Bitmap.createBitmap(output, width, height, Bitmap.Config.ARGB_8888)
-        } catch (t: Throwable) {
-            logError("OCR 浅色文字预处理失败", t)
-            null
+        return OcrPreprocessor.createConfigured(source, preprocess) { message, error ->
+            logError(message, error)
         }
     }
 
@@ -1693,6 +1667,14 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                         params = nextTask.params?.copy(fail_branch_routes = nextFailRoutes)
                     )
                 }
+                if (source.params?.screenshot_steps?.any { it.on_success == exitTaskId } == true) {
+                    val nextSteps = source.params.screenshot_steps.map { step ->
+                        if (step.on_success == exitTaskId) step.copy(on_success = -1) else step
+                    }
+                    nextTask = nextTask.copy(
+                        params = nextTask.params?.copy(screenshot_steps = nextSteps)
+                    )
+                }
                 if (nextTask.id == exitTaskId) {
                     return@map nextTask.copy(on_success = -1, on_fail = -1)
                 }
@@ -1849,7 +1831,7 @@ class AutoTaskEngine(private val service: AccessibilityService) {
                             return finishTask(task, false)
                         }
 
-                        val matchResult = matchTemplate(searchBitmap, scaledTemplate, threshold)
+                        val matchResult = TemplateMatcher.match(searchBitmap, scaledTemplate, threshold)
                         if (matchResult != null) {
                             val screenshotMatchX = matchResult.center.x + searchRegion.offsetX
                             val screenshotMatchY = matchResult.center.y + searchRegion.offsetY
@@ -2031,47 +2013,6 @@ class AutoTaskEngine(private val service: AccessibilityService) {
         } else {
             WindowManager.LayoutParams.TYPE_PHONE
         }
-
-    private inline fun <T> Mat.use(block: (Mat) -> T): T {
-        try {
-            return block(this)
-        } finally {
-            release()
-        }
-    }
-
-    private fun matchTemplate(screenBitmap: Bitmap, templateBitmap: Bitmap, threshold: Float): TemplateMatchResult? {
-        val ownsSourceBitmap = screenBitmap.config != Bitmap.Config.ARGB_8888
-        val sourceBitmap = if (ownsSourceBitmap) screenBitmap.copy(Bitmap.Config.ARGB_8888, false) else screenBitmap
-        try {
-            return Mat().use { srcMat ->
-                Mat().use { tmplMat ->
-                    Mat().use { resultMat ->
-                        Utils.bitmapToMat(sourceBitmap, srcMat)
-                        Utils.bitmapToMat(templateBitmap, tmplMat)
-                        Imgproc.cvtColor(srcMat, srcMat, Imgproc.COLOR_RGBA2GRAY)
-                        Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
-                        Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
-                        val mmLoc = Core.minMaxLoc(resultMat)
-                        diagnosticInfo("匹配分数=${formatScore(mmLoc.maxVal)} 阈值=$threshold")
-                        if (mmLoc.maxVal >= threshold) {
-                            TemplateMatchResult(
-                                center = PointF(
-                                    (mmLoc.maxLoc.x + templateBitmap.width / 2.0).toFloat(),
-                                    (mmLoc.maxLoc.y + templateBitmap.height / 2.0).toFloat()
-                                ),
-                                score = mmLoc.maxVal,
-                            )
-                        } else {
-                            null
-                        }
-                    }
-                }
-            }
-        } finally {
-            if (ownsSourceBitmap) sourceBitmap.recycle()
-        }
-    }
 
     private fun formatScore(score: Double): String = "%.4f".format(score)
 }

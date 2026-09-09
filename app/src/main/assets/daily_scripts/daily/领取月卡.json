@@ -115,7 +115,30 @@
         "template_name": "pics/领取月卡/领取月卡_购买.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "align": "top",
+            "target_chars": [
+              "购",
+              "購",
+              "买",
+              "買"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 530.4375,
+              "y": 1310.2227
+            }
+          }
+        }
+      }
     },
     {
       "action": "CLICK",

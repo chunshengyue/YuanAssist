@@ -53,7 +53,7 @@ class JobStationActivity : AppCompatActivity() {
         private const val PREFS_STRATEGY_STATS = "strategy_detail_stats"
         private const val KEY_LAST_VIEW_PREFIX = "last_view_"
         private const val VIEW_THROTTLE_WINDOW_MS = 10 * 60 * 1000L
-        private const val MAA_YUAN_HOME_URL = "https://maayuan.top/"
+        private const val MAA_YUAN_HOME_URL = "https://maayuan.com/"
         private const val MAA_YUAN_SHARE_URL = "https://share.maayuan.top/"
         private const val TURN_COLUMN_WIDTH_DP = 42f
         private const val DISC_NAME_MAX_LENGTH = 6
@@ -1264,10 +1264,14 @@ class JobStationActivity : AppCompatActivity() {
                 Triple("#FFF4F6", "#E2A3B7", "#A63F67")
             label.contains("暴击检测") ->
                 Triple("#FFF4F0", "#E5A17A", "#B3522A")
+            label.contains("庞统复制检测") ->
+                Triple("#FFFBEF", "#E4C87A", "#9A6A12")
             label.contains("橙星检测") ->
                 Triple("#FFF6E8", "#E3B15F", "#B76A11")
             label.contains("紫星检测") ->
                 Triple("#FBF2FF", "#C9A2E6", "#7B43B6")
+            label.contains("龙气检测") ->
+                Triple("#FFF4E6", "#E4B46A", "#A6651B")
             label.contains("切换左侧目标") || label.contains("切换右侧目标") ->
                 Triple("#EEF5FF", "#9BBBE7", "#3F6EA6")
             else ->

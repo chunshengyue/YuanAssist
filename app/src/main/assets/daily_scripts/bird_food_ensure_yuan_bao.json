@@ -25,6 +25,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -40,6 +55,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -52,6 +82,21 @@
             },
             "on_success": 100,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 100,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -89,6 +134,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -104,6 +164,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -116,6 +191,21 @@
             },
             "on_success": 103,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 103,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -153,6 +243,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -168,6 +273,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -180,6 +300,21 @@
             },
             "on_success": 106,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 106,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -217,6 +352,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -232,6 +382,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -244,6 +409,21 @@
             },
             "on_success": 109,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 109,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -281,6 +461,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -296,6 +491,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -308,6 +518,21 @@
             },
             "on_success": 112,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 112,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -345,6 +570,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -360,6 +600,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -372,6 +627,21 @@
             },
             "on_success": 115,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 115,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -409,6 +679,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -424,6 +709,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -436,6 +736,21 @@
             },
             "on_success": 118,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 118,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -474,6 +789,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/tfqk繁体.png",
+            "threshold": 0.85,
+            "click": 0,
+            "roi": {
+              "x": 170,
+              "y": 1054,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "鸢报界面确认_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/yuanbao.png",
             "threshold": 0.85,
             "click": 1,
@@ -489,6 +819,21 @@
           },
           {
             "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          },
+          {
+            "type": "template",
             "template_name": "pics/导航到鸢报/名册.png",
             "threshold": 0.75,
             "click": 0,
@@ -501,6 +846,21 @@
             },
             "on_success": 121,
             "name": "名册"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/名册繁体.png",
+            "threshold": 0.75,
+            "click": 0,
+            "roi": {
+              "x": 976.70355,
+              "y": 1112.7681,
+              "w": 250,
+              "h": 250,
+              "align": "center"
+            },
+            "on_success": 121,
+            "name": "名册_繁体"
           }
         ]
       },
@@ -524,23 +884,44 @@
     },
     {
       "id": 101,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 2,
-      "name": "主页鸢报入口"
+      "on_fail": 2
     },
     {
       "id": 103,
@@ -559,23 +940,44 @@
     },
     {
       "id": 104,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 4,
-      "name": "主页鸢报入口"
+      "on_fail": 4
     },
     {
       "id": 106,
@@ -594,23 +996,44 @@
     },
     {
       "id": 107,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 6,
-      "name": "主页鸢报入口"
+      "on_fail": 6
     },
     {
       "id": 109,
@@ -629,23 +1052,44 @@
     },
     {
       "id": 110,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 8,
-      "name": "主页鸢报入口"
+      "on_fail": 8
     },
     {
       "id": 112,
@@ -664,23 +1108,44 @@
     },
     {
       "id": 113,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 10,
-      "name": "主页鸢报入口"
+      "on_fail": 10
     },
     {
       "id": 115,
@@ -699,23 +1164,44 @@
     },
     {
       "id": 116,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 12,
-      "name": "主页鸢报入口"
+      "on_fail": 12
     },
     {
       "id": 118,
@@ -734,23 +1220,44 @@
     },
     {
       "id": 119,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
-      "on_fail": 14,
-      "name": "主页鸢报入口"
+      "on_fail": 14
     },
     {
       "id": 121,
@@ -769,20 +1276,42 @@
     },
     {
       "id": 122,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 800,
       "params": {
-        "template_name": "pics/导航到鸢报/yuanbao.png",
-        "threshold": 0.85,
         "terminal_note": "无法返回鸢报界面",
-        "click": 1,
-        "roi": {
-          "x": 441,
-          "y": 920,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口"
+          },
+          {
+            "type": "template",
+            "template_name": "pics/导航到鸢报/yuanbao繁体.png",
+            "threshold": 0.85,
+            "click": 1,
+            "roi": {
+              "x": 441,
+              "y": 920,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": -1,
+            "name": "主页鸢报入口_繁体"
+          }
+        ]
       },
       "on_success": -1,
       "on_fail": -2,

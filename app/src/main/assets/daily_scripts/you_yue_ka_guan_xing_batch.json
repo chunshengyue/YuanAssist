@@ -17,20 +17,12 @@
     },
     {
       "id": 1,
-      "action": "MATCH_TEMPLATE",
-      "delay": 2500,
+      "action": "CLICK",
+      "delay": 1500,
       "params": {
         "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 257.2834,
-          "y": 1219.0525
-        },
-        "template_name": "pics/披荆斩棘特用有月卡观星/观星入口.png",
-        "threshold": 0.77
+        "x": 377.0,
+        "y": 1277.0
       },
       "on_success": 2,
       "on_fail": -2,

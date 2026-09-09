@@ -57,6 +57,20 @@
               "y": 920.0
             },
             "on_success": 1
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口_繁体",
+            "template_name": "pics/导航到主页第一页/yuanbao繁体.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
           }
         ]
       },
@@ -126,6 +140,20 @@
               "y": 920.0
             },
             "on_success": 1
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口_繁体",
+            "template_name": "pics/导航到主页第一页/yuanbao繁体.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
           }
         ]
       },
@@ -186,6 +214,20 @@
             "type": "template",
             "name": "主页鸢报入口",
             "template_name": "pics/导航到主页第一页/yuanbao.png",
+            "threshold": 0.85,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 200.0,
+              "x": 441.0,
+              "y": 920.0
+            },
+            "on_success": 1
+          },
+          {
+            "type": "template",
+            "name": "主页鸢报入口_繁体",
+            "template_name": "pics/导航到主页第一页/yuanbao繁体.png",
             "threshold": 0.85,
             "roi": {
               "align": "center",
@@ -277,27 +319,56 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "OCR",
+      "action": "SCREENSHOT_GROUP",
       "delay": 2500,
       "id": 4,
       "on_fail": -2,
       "on_success": 5,
       "params": {
-        "align": "center",
-        "click": 1,
-        "min_hit_count": 1,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 540.0,
-          "x": 810.0,
-          "y": 1595.8065
-        },
-        "target_chars": [
-          "地",
-          "板"
-        ],
-        "threshold": 0.8
+        "screenshot_steps": [
+          {
+            "type": "ocr",
+            "name": "地板_右",
+            "target_chars": [
+              "地",
+              "板",
+              "水",
+              "面"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "click": 1,
+            "roi": {
+              "align": "center",
+              "h": 100.0,
+              "w": 100.0,
+              "x": 965.0,
+              "y": 1563.0
+            },
+            "on_success": 5
+          },
+          {
+            "type": "ocr",
+            "name": "地板_左",
+            "target_chars": [
+              "地",
+              "板",
+              "水",
+              "面"
+            ],
+            "min_hit_count": 2,
+            "threshold": 0.8,
+            "click": 1,
+            "roi": {
+              "align": "center",
+              "h": 100.0,
+              "w": 100.0,
+              "x": 800.0,
+              "y": 1561.0
+            },
+            "on_success": 5
+          }
+        ]
       },
       "start_cooldown_on_success": false
     },

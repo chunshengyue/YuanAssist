@@ -17,23 +17,15 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "CLICK",
       "delay": 2500,
       "id": 1,
       "on_fail": -2,
       "on_success": 2,
       "params": {
         "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 365.183,
-          "y": 1602.2086
-        },
-        "template_name": "pics/行囊派遣/行囊_据点.png",
-        "threshold": 0.77
+        "x": 347.0,
+        "y": 1614.0
       },
       "start_cooldown_on_success": false
     },
@@ -72,23 +64,44 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 2500,
       "id": 4,
       "on_fail": 3,
       "on_success": 5,
       "params": {
-        "align": "center",
-        "click": 0,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 567.56995,
-          "y": 505.93582
-        },
-        "template_name": "pics/行囊派遣/行囊_获得奖励.png",
-        "threshold": 0.77
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "获得奖励",
+            "template_name": "pics/行囊派遣/行囊_获得奖励.png",
+            "threshold": 0.77,
+            "click": 0,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 567.56995,
+              "y": 505.93582
+            },
+            "on_success": 5
+          },
+          {
+            "type": "template",
+            "name": "获得奖励_繁体",
+            "template_name": "pics/行囊派遣/jiangli繁体.png",
+            "threshold": 0.77,
+            "click": 0,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 567.56995,
+              "y": 505.93582
+            },
+            "on_success": 5
+          }
+        ]
       },
       "start_cooldown_on_success": false
     },
@@ -106,23 +119,44 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 2500,
       "id": 6,
       "on_fail": -2,
       "on_success": 7,
       "params": {
-        "align": "center",
-        "click": 1,
-        "roi": {
-          "align": "bottom",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 708.1843,
-          "y": 1727.6904
-        },
-        "template_name": "pics/行囊派遣/行囊_快速扫荡.png",
-        "threshold": 0.77
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "快速扫荡",
+            "template_name": "pics/行囊派遣/行囊_快速扫荡.png",
+            "threshold": 0.77,
+            "click": 1,
+            "roi": {
+              "align": "bottom",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 708.1843,
+              "y": 1727.6904
+            },
+            "on_success": 7
+          },
+          {
+            "type": "template",
+            "name": "快速扫荡_繁体",
+            "template_name": "pics/行囊派遣/快速扫荡繁体.png",
+            "threshold": 0.77,
+            "click": 1,
+            "roi": {
+              "align": "bottom",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 708.1843,
+              "y": 1727.6904
+            },
+            "on_success": 7
+          }
+        ]
       },
       "start_cooldown_on_success": false
     },
@@ -184,24 +218,45 @@
       "start_cooldown_on_success": false
     },
     {
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 2500,
       "id": 81,
       "name": "扫荡奖励",
       "on_fail": 10,
       "on_success": 9,
       "params": {
-        "align": "center",
-        "click": 0,
-        "roi": {
-          "align": "center",
-          "h": 250.0,
-          "w": 250.0,
-          "x": 567.56995,
-          "y": 505.93582
-        },
-        "template_name": "pics/行囊派遣/行囊_获得奖励.png",
-        "threshold": 0.77
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "扫荡奖励",
+            "template_name": "pics/行囊派遣/行囊_获得奖励.png",
+            "threshold": 0.77,
+            "click": 0,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 567.56995,
+              "y": 505.93582
+            },
+            "on_success": 9
+          },
+          {
+            "type": "template",
+            "name": "扫荡奖励_繁体",
+            "template_name": "pics/行囊派遣/jiangli繁体.png",
+            "threshold": 0.77,
+            "click": 0,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 567.56995,
+              "y": 505.93582
+            },
+            "on_success": 9
+          }
+        ]
       },
       "start_cooldown_on_success": false
     },
@@ -260,7 +315,31 @@
         "template_name": "pics/行囊派遣/一键领取.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "一",
+              "键",
+              "鍵",
+              "领",
+              "領",
+              "取"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "align": "center",
+              "h": 250.0,
+              "w": 250.0,
+              "x": 563.4744,
+              "y": 1688.0568
+            }
+          }
+        }
+      }
     },
     {
       "action": "CLICK",
@@ -296,7 +375,31 @@
         "template_name": "pics/行囊派遣/确认派遣.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "认",
+              "認",
+              "派",
+              "遣"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "align": "center",
+              "h": 300.0,
+              "w": 250.0,
+              "x": 858.7742,
+              "y": 853.39185
+            }
+          }
+        }
+      }
     },
     {
       "action": "MATCH_TEMPLATE",
@@ -317,7 +420,31 @@
         "template_name": "pics/行囊派遣/确认派遣.png",
         "threshold": 0.77
       },
-      "start_cooldown_on_success": false
+      "start_cooldown_on_success": false,
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "认",
+              "認",
+              "派",
+              "遣"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "align": "center",
+              "h": 400.0,
+              "w": 250.0,
+              "x": 856.94464,
+              "y": 1250.4233
+            }
+          }
+        }
+      }
     }
   ]
 }

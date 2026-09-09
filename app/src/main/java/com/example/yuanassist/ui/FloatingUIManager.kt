@@ -8,11 +8,16 @@ import android.view.*
 import android.widget.ImageView
 import com.example.yuanassist.R
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class FloatingUIManager(private val context: Context) {
     companion object {
         private const val FLOAT_WINDOW_EDGE_MARGIN_DP = 12
+        private const val CONTROL_WINDOW_DEFAULT_WIDTH_DP = 308f
+        private const val CONTROL_WINDOW_MIN_WIDTH_DP = 200f
+        private const val CONTROL_WINDOW_MIN_HEIGHT_DP = 220f
     }
 
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -23,17 +28,18 @@ class FloatingUIManager(private val context: Context) {
 
     private var lastWindowX = 0
     private var lastWindowY = 100
+    private var controlBaseWidthPx = 0
+    private var controlBaseHeightPx = 0
+    private var controlWindowScale = 1f
 
     @SuppressLint("ClickableViewAccessibility")
     fun createControlWindow(): View {
         if (controlView != null) return controlView!!
         removeMinimizedWindow()
 
-        val density = context.resources.displayMetrics.density
-        val widthPx = (308f * density + 0.5f).toInt()
-
         val params = WindowManager.LayoutParams(
-            widthPx, WindowManager.LayoutParams.WRAP_CONTENT,
+            dp(CONTROL_WINDOW_DEFAULT_WIDTH_DP),
+            WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
@@ -47,8 +53,11 @@ class FloatingUIManager(private val context: Context) {
 
         val dragHandle = view.findViewById<View>(R.id.tv_drag_handle)
         dragHandle.setOnTouchListener(createDragListener(params, view))
+        view.findViewById<View>(R.id.view_resize_handle)
+            ?.setOnTouchListener(createResizeListener(params, view))
 
         windowManager.addView(view, params)
+        view.post { syncControlWindowScale(view, params) }
         return view
     }
 
@@ -124,6 +133,129 @@ class FloatingUIManager(private val context: Context) {
             }
             inputView = null
         }
+    }
+
+    private fun syncControlWindowScale(targetView: View, params: WindowManager.LayoutParams) {
+        val panel = targetView.findViewById<View>(R.id.combat_control_panel) ?: return
+        ensureControlBaseSize(panel)
+        applyControlWindowScale(targetView, params, controlWindowScale)
+    }
+
+    private fun ensureControlBaseSize(panel: View) {
+        if (controlBaseWidthPx <= 0 && panel.width > 0) {
+            controlBaseWidthPx = panel.width
+        }
+        if (controlBaseHeightPx <= 0 && panel.height > 0) {
+            controlBaseHeightPx = panel.height
+        }
+    }
+
+    private fun applyControlWindowScale(
+        targetView: View,
+        params: WindowManager.LayoutParams,
+        requestedScale: Float
+    ) {
+        val panel = targetView.findViewById<View>(R.id.combat_control_panel) ?: return
+        ensureControlBaseSize(panel)
+        val baseWidth = controlBaseWidthPx.takeIf { it > 0 } ?: panel.width
+        val baseHeight = controlBaseHeightPx.takeIf { it > 0 } ?: panel.height
+        if (baseWidth <= 0 || baseHeight <= 0) return
+
+        val density = context.resources.displayMetrics.density
+        val minWidthPx = (CONTROL_WINDOW_MIN_WIDTH_DP * density + 0.5f).toInt()
+        val minHeightPx = (CONTROL_WINDOW_MIN_HEIGHT_DP * density + 0.5f).toInt()
+        val screenWidth = context.resources.displayMetrics.widthPixels
+        val screenHeight = context.resources.displayMetrics.heightPixels
+        val marginPx = (FLOAT_WINDOW_EDGE_MARGIN_DP * density).roundToInt()
+        val maxWidthPx = (screenWidth - params.x - marginPx).coerceAtLeast(minWidthPx)
+        val maxHeightPx = (screenHeight - params.y - marginPx).coerceAtLeast(minHeightPx)
+
+        val minScale = max(
+            minWidthPx.toFloat() / baseWidth.toFloat(),
+            minHeightPx.toFloat() / baseHeight.toFloat()
+        )
+        val maxScale = max(
+            min(
+                maxWidthPx.toFloat() / baseWidth.toFloat(),
+                maxHeightPx.toFloat() / baseHeight.toFloat()
+            ),
+            minScale
+        )
+        val finalScale = requestedScale.coerceIn(minScale, maxScale)
+        val finalWidth = (baseWidth * finalScale).roundToInt().coerceAtLeast(minWidthPx)
+        val finalHeight = (baseHeight * finalScale).roundToInt().coerceAtLeast(minHeightPx)
+
+        panel.pivotX = 0f
+        panel.pivotY = 0f
+        panel.scaleX = finalScale
+        panel.scaleY = finalScale
+
+        params.width = if (finalScale < 1f) baseWidth else finalWidth
+        params.height = if (finalScale < 1f) baseHeight else finalHeight
+        controlWindowScale = finalScale
+        windowManager.updateViewLayout(targetView, params)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun createResizeListener(
+        params: WindowManager.LayoutParams,
+        targetView: View
+    ): View.OnTouchListener {
+        return object : View.OnTouchListener {
+            private var initialTouchX = 0f
+            private var initialTouchY = 0f
+            private var initialWindowWidth = 0
+            private var initialWindowHeight = 0
+            private var initialScale = 1f
+
+            override fun onTouch(v: View, event: MotionEvent): Boolean {
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        ensureControlBaseSize(targetView.findViewById(R.id.combat_control_panel) ?: return false)
+                        initialScale = controlWindowScale
+                        initialWindowWidth = (controlBaseWidthPx * initialScale).roundToInt()
+                        initialWindowHeight = (controlBaseHeightPx * initialScale).roundToInt()
+                        if (initialWindowWidth <= 0 || initialWindowHeight <= 0) return false
+                        initialTouchX = event.rawX
+                        initialTouchY = event.rawY
+                        return true
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        val panel = targetView.findViewById<View>(R.id.combat_control_panel) ?: return true
+                        val baseWidth = controlBaseWidthPx.takeIf { it > 0 } ?: panel.width
+                        val baseHeight = controlBaseHeightPx.takeIf { it > 0 } ?: panel.height
+                        if (baseWidth <= 0 || baseHeight <= 0) return true
+
+                        val deltaX = event.rawX - initialTouchX
+                        val deltaY = event.rawY - initialTouchY
+                        val proposedWidth = (initialWindowWidth + deltaX).coerceAtLeast(1f)
+                        val proposedHeight = (initialWindowHeight + deltaY).coerceAtLeast(1f)
+                        val scaleFromWidth = proposedWidth / baseWidth.toFloat()
+                        val scaleFromHeight = proposedHeight / baseHeight.toFloat()
+                        val requestedScale = if (abs(scaleFromWidth - initialScale) >= abs(scaleFromHeight - initialScale)) {
+                            scaleFromWidth
+                        } else {
+                            scaleFromHeight
+                        }
+
+                        applyControlWindowScale(targetView, params, requestedScale)
+                        return true
+                    }
+
+                    MotionEvent.ACTION_UP,
+                    MotionEvent.ACTION_CANCEL -> {
+                        return true
+                    }
+                }
+                return false
+            }
+        }
+    }
+
+    private fun dp(value: Float): Int {
+        val density = context.resources.displayMetrics.density
+        return (value * density + 0.5f).toInt()
     }
 
     fun moveMinimizedWindowNearTopSafely() {

@@ -54,10 +54,12 @@ import com.example.yuanassist.ui.subpage.SubpageToggleRow
 
 private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
 private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
+private val NON_DAIHAOYUAN_PREFIX_AGENTS = listOf("吕布", "曹丕")
 private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
+    "赵云", "司马孚", "张松", "孙辅",
     "孟获", "孙静",
-    "吕布", "酆公珠", "酆公玖", "法正", "庞德",
-    "SP陈登", "SP史子渺", "曹丕", "蒯良", "陈群",
+    "酆公珠", "酆公玖", "法正", "庞德",
+    "SP陈登", "SP史子渺", "蒯良", "陈群",
     "卢植", "简雍", "郭女王", "周忠", "陈纪", "陈应",
 )
 private val DAIHAOYUAN_HIDDEN_ALIASES = DAIHAOYUAN_EXTRA_AGENTS.toSet() + setOf(
@@ -282,9 +284,14 @@ fun buildSelectableAgentList(includeDaihaoYuan: Boolean): List<String> {
     val result = LinkedHashSet<String>()
     if (includeDaihaoYuan) {
         result.addAll(DAIHAOYUAN_EXTRA_AGENTS)
+        result.addAll(NON_DAIHAOYUAN_PREFIX_AGENTS)
+    } else {
+        result.addAll(NON_DAIHAOYUAN_PREFIX_AGENTS)
     }
     result.addAll(
-        AgentRepository.ALL_AGENTS.filterNot { it in DAIHAOYUAN_HIDDEN_ALIASES },
+        AgentRepository.ALL_AGENTS.filterNot {
+            it in DAIHAOYUAN_HIDDEN_ALIASES || it in NON_DAIHAOYUAN_PREFIX_AGENTS
+        },
     )
     return result.toList()
 }

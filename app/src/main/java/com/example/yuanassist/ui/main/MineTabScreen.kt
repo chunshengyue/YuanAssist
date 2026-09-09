@@ -63,7 +63,7 @@ fun MineTabScreen(
             badgeCount = state.unreadMessageCount,
         ),
         MineEntryItem("我的收藏", R.drawable.item_xiahouyuan, actions.onOpenFavorite),
-        MineEntryItem("排除密探", R.drawable.item_zhangjiao, actions.onOpenExcludedAgents),
+        MineEntryItem("全局设置", R.drawable.item_zhangjiao, actions.onOpenGlobalSettings),
     ) + if (state.isFeedbackAdmin) {
         listOf(MineEntryItem("反馈管理", R.drawable.item_zhenmi, actions.onOpenFeedbackAdmin))
     } else {

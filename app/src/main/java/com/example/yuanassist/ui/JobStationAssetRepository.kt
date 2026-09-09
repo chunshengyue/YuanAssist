@@ -5,8 +5,11 @@ import com.example.yuanassist.model.AgentRepository
 import com.example.yuanassist.model.BattleStageTarget
 import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.InstructionType
+import com.example.yuanassist.model.DragonQiComparison
+import com.example.yuanassist.model.DragonQiCondition
 import com.example.yuanassist.model.STRATEGY_GAME_DAIHAOYUAN
 import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
+import com.example.yuanassist.model.encodeDragonQiCondition
 import com.example.yuanassist.model.formatStageAutoNavDisplay
 import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.model.strategy_detail
@@ -32,8 +35,10 @@ object JobStationAssetRepository {
         InstructionType.ALL_WIPE_CHECK,
         InstructionType.DEATH_CHECK,
         InstructionType.CRIT_CHECK,
+        InstructionType.PANG_TONG_COPY_CHECK,
         InstructionType.ORANGE_STAR_CHECK,
-        InstructionType.PURPLE_STAR_CHECK
+        InstructionType.PURPLE_STAR_CHECK,
+        InstructionType.DRAGON_QI_CHECK
     )
     @Volatile
     private var maaOperatorDiscCache: Map<String, List<OperatorDiscMeta>>? = null
@@ -340,6 +345,9 @@ object JobStationAssetRepository {
             val node = actions.optJSONObject(key) ?: continue
             val textDoc = node.optString("text_doc").ifBlank { node.optString("focus") }
 
+            // These MaaYuan nodes are converted into instruction chips below, not battle actions.
+            if (isMaaYuanInstructionNode(key, node, textDoc)) continue
+
             val turnMatch = turnActionRegex.find(key) ?: continue
             val turnNum = turnMatch.groupValues[1].toIntOrNull() ?: continue
             val actionOrder = turnMatch.groupValues[2].toIntOrNull() ?: continue
@@ -555,6 +563,50 @@ object JobStationAssetRepository {
                         step = 0,
                         type = InstructionType.DEATH_CHECK.name,
                         value = deathSlot
+                    )
+                }
+                return@forEach
+            }
+
+            val customAction = node.optString("custom_action").trim()
+            if (customAction == "BirdRestart") {
+                val position = node.optJSONObject("custom_action_param")
+                    ?.optLong("position", 0L)
+                    ?.takeIf { it in 1L..5L }
+                val previousActionStep = lastActionStepByTurn[turn]
+                if (position != null && previousActionStep != null) {
+                    instructions += InstructionJson(
+                        turn = turn,
+                        step = previousActionStep,
+                        type = InstructionType.PANG_TONG_COPY_CHECK.name,
+                        value = position,
+                    )
+                } else {
+                    RunLogger.e(
+                        module = "作业站",
+                        section = "MaaYuan 导入",
+                        message = "跳过庞统复制检测：第${turn}回合节点${step}前没有可绑定的真实动作"
+                    )
+                }
+                return@forEach
+            }
+
+            if (customAction == "DragonRestart") {
+                val previousActionStep = lastActionStepByTurn[turn]
+                if (previousActionStep != null) {
+                    instructions += InstructionJson(
+                        turn = turn,
+                        step = previousActionStep,
+                        type = InstructionType.DRAGON_QI_CHECK.name,
+                        value = encodeDragonQiCondition(
+                            DragonQiCondition(DragonQiComparison.BELOW, 2),
+                        ),
+                    )
+                } else {
+                    RunLogger.e(
+                        module = "作业站",
+                        section = "MaaYuan 导入",
+                        message = "跳过龙气检测：第${turn}回合节点${step}前没有可绑定的真实动作"
                     )
                 }
                 return@forEach
@@ -871,8 +923,13 @@ object JobStationAssetRepository {
             InstructionType.ALL_WIPE_CHECK -> "全灭检测"
             InstructionType.DEATH_CHECK -> "阵亡检测 · 第${instruction.value}人"
             InstructionType.CRIT_CHECK -> "暴击检测"
+            InstructionType.PANG_TONG_COPY_CHECK -> "庞统复制检测 · 第${instruction.value}号位"
             InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
             InstructionType.PURPLE_STAR_CHECK -> "紫星检测"
+            InstructionType.DRAGON_QI_CHECK -> {
+                val condition = com.example.yuanassist.model.decodeDragonQiCondition(instruction.value)
+                "龙气检测 · ${condition.comparison.symbol}${condition.count}层"
+            }
             InstructionType.TARGET_SWITCH_LEFT -> "切换左侧目标"
             InstructionType.TARGET_SWITCH,
             InstructionType.TARGET_SWITCH_RIGHT -> "切换右侧目标"
@@ -899,6 +956,24 @@ object JobStationAssetRepository {
     private fun buildOtherActionLabel(node: JSONObject, textDoc: String, actionOrder: Int): String {
         val baseText = textDoc.ifBlank { "动作$actionOrder" }
         return if (baseText.contains("等待")) "等待" else baseText
+    }
+
+    private fun isMaaYuanInstructionNode(
+        key: String,
+        node: JSONObject,
+        textDoc: String
+    ): Boolean {
+        return when (node.optString("custom_action").trim()) {
+            "BirdRestart", "DragonRestart", "DownRestart" -> true
+            else -> {
+                key.contains("全灭重开") ||
+                    textDoc.contains("全灭重开") ||
+                    Regex("""第(\d+)回合行动(\d+)后暴击检测""").containsMatchIn(key) ||
+                    Regex("""第(\d+)回合行动(\d+)后暴击检测""").containsMatchIn(textDoc) ||
+                    Regex("""第(\d+)回合[橙紫]星检测""").containsMatchIn(key) ||
+                    Regex("""第(\d+)回合[橙紫]星检测""").containsMatchIn(textDoc)
+            }
+        }
     }
 
     private fun extractActionParamMs(node: JSONObject): Long? {

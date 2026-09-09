@@ -32,7 +32,30 @@
       },
       "on_success": 201,
       "on_fail": 3,
-      "name": "突发情况开始调查按钮"
+      "name": "突发情况开始调查按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "前",
+              "往",
+              "调",
+              "調",
+              "查"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 544,
+              "y": 1012,
+              "w": 200,
+              "h": 300,
+              "align": "top"
+            }
+          }
+        }
+      }
     },
     {
       "id": 201,
@@ -63,7 +86,30 @@
       },
       "on_success": 301,
       "on_fail": 54,
-      "name": "突发情况开始调查按钮"
+      "name": "突发情况开始调查按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "前",
+              "往",
+              "调",
+              "調",
+              "查"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 544,
+              "y": 1700,
+              "w": 200,
+              "h": 300,
+              "align": "top"
+            }
+          }
+        }
+      }
     },
     {
       "id": 54,
@@ -83,7 +129,30 @@
       },
       "on_success": 201,
       "on_fail": 3,
-      "name": "突发情况开始调查按钮"
+      "name": "突发情况开始调查按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "前",
+              "往",
+              "调",
+              "調",
+              "查"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 544,
+              "y": 1012,
+              "w": 200,
+              "h": 300,
+              "align": "top"
+            }
+          }
+        }
+      }
     },
     {
       "id": 301,
@@ -114,7 +183,30 @@
       },
       "on_success": 27,
       "on_fail": 4,
-      "name": "突发情况快速调查按钮"
+      "name": "突发情况快速调查按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "快",
+              "速",
+              "调",
+              "調",
+              "查"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 765,
+              "y": 1163,
+              "w": 300,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 4,
@@ -159,7 +251,29 @@
       },
       "on_success": 401,
       "on_fail": 6,
-      "name": "突发情况确认按钮"
+      "name": "突发情况确认按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "认",
+              "認"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 544,
+              "y": 1357,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 401,
@@ -213,7 +327,30 @@
       },
       "on_success": 27,
       "on_fail": 6,
-      "name": "突发情况快速调查按钮"
+      "name": "突发情况快速调查按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "快",
+              "速",
+              "调",
+              "調",
+              "查"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 765,
+              "y": 1163,
+              "w": 300,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 6,
@@ -362,7 +499,28 @@
       },
       "on_success": 11,
       "on_fail": -2,
-      "name": "突发情况灰色确定按钮"
+      "name": "突发情况灰色确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "terminal_note": "突发情况路径错误",
+            "roi": {
+              "x": 542,
+              "y": 1751,
+              "w": 200,
+              "h": 300,
+              "align": "bottom"
+            }
+          }
+        }
+      }
     },
     {
       "id": 11,
@@ -436,18 +594,39 @@
     },
     {
       "id": 1600,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 1000,
       "params": {
-        "template_name": "pics/突发情况/biaoxian.png",
-        "threshold": 0.75,
-        "roi": {
-          "x": 504,
-          "y": 856,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "突发情况表现按钮",
+            "template_name": "pics/突发情况/biaoxian.png",
+            "threshold": 0.75,
+            "roi": {
+              "x": 504,
+              "y": 856,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 17
+          },
+          {
+            "type": "template",
+            "name": "突发情况表现按钮_繁体",
+            "template_name": "pics/突发情况/表现繁体.png",
+            "threshold": 0.75,
+            "roi": {
+              "x": 504,
+              "y": 856,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 17
+          }
+        ]
       },
       "on_success": 17,
       "on_fail": 1601,
@@ -727,7 +906,29 @@
       "start_cooldown_on_success": true,
       "on_success": 2,
       "on_fail": -2,
-      "name": "突发情况确定按钮"
+      "name": "突发情况确定按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "定"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "terminal_note": "突发情况路径错误",
+            "roi": {
+              "x": 544,
+              "y": 1308,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 2801,

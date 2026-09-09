@@ -8,8 +8,10 @@ enum class InstructionType(val description: String) {
     ALL_WIPE_CHECK("全灭检测"),
     DEATH_CHECK("阵亡检测"),
     CRIT_CHECK("暴击检测"),
+    PANG_TONG_COPY_CHECK("庞统复制检测"),
     ORANGE_STAR_CHECK("橙星检测"),
     PURPLE_STAR_CHECK("紫星检测"),
+    DRAGON_QI_CHECK("龙气检测"),
     TARGET_SWITCH("向右切换目标"),
     TARGET_SWITCH_LEFT("向左切换目标"),
     TARGET_SWITCH_RIGHT("向右切换目标");
@@ -34,11 +36,48 @@ enum class InstructionType(val description: String) {
             this == STAGE_AUTO_NAV -> "开战前"
             this == ALL_WIPE_CHECK ||
                 this == DEATH_CHECK ||
-                this == ORANGE_STAR_CHECK ||
-                this == PURPLE_STAR_CHECK -> "第 $normalizedTurn 回合"
+            this == ORANGE_STAR_CHECK ||
+            this == PURPLE_STAR_CHECK -> "第 $normalizedTurn 回合"
+            this == DRAGON_QI_CHECK && normalizedStep == 0 -> "第 $normalizedTurn 回合"
             normalizedStep == 0 -> "第 $normalizedTurn 回合 - 整回合"
             else -> "第 $normalizedTurn 回合 - 动作 $normalizedStep 后"
         }
+    }
+}
+
+enum class DragonQiComparison(val symbol: String, val label: String) {
+    AT_LEAST("≥", "大于等于"),
+    EQUAL("=", "等于"),
+    BELOW("<", "小于")
+}
+
+data class DragonQiCondition(
+    val comparison: DragonQiComparison,
+    val count: Int
+)
+
+private const val DRAGON_QI_CONDITION_RADIX = 3
+
+fun encodeDragonQiCondition(condition: DragonQiCondition): Long {
+    return condition.count.coerceAtLeast(0).toLong() * DRAGON_QI_CONDITION_RADIX +
+        condition.comparison.ordinal
+}
+
+fun decodeDragonQiCondition(value: Long): DragonQiCondition {
+    val normalizedValue = value.coerceAtLeast(0L)
+    val comparisonIndex = (normalizedValue % DRAGON_QI_CONDITION_RADIX).toInt()
+    val count = (normalizedValue / DRAGON_QI_CONDITION_RADIX).toInt()
+    return DragonQiCondition(
+        comparison = DragonQiComparison.values().getOrElse(comparisonIndex) { DragonQiComparison.AT_LEAST },
+        count = count
+    )
+}
+
+fun DragonQiCondition.matches(actualCount: Int): Boolean {
+    return when (comparison) {
+        DragonQiComparison.AT_LEAST -> actualCount >= count
+        DragonQiComparison.EQUAL -> actualCount == count
+        DragonQiComparison.BELOW -> actualCount < count
     }
 }
 
@@ -79,11 +118,16 @@ data class ScriptInstruction(
             InstructionType.TARGET_SWITCH_LEFT,
             InstructionType.TARGET_SWITCH_RIGHT -> "${normalized.value}次"
             InstructionType.DEATH_CHECK -> "第${normalized.value}人"
+            InstructionType.PANG_TONG_COPY_CHECK -> "第${normalized.value}号位"
             InstructionType.PAUSE,
             InstructionType.ALL_WIPE_CHECK,
             InstructionType.CRIT_CHECK,
             InstructionType.ORANGE_STAR_CHECK,
             InstructionType.PURPLE_STAR_CHECK -> ""
+            InstructionType.DRAGON_QI_CHECK -> {
+                val condition = decodeDragonQiCondition(normalized.value)
+                "${condition.comparison.symbol}${condition.count}层"
+            }
         }
         val suffix = valueStr.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
         return "$timingText : ${normalized.type.description}$suffix"
@@ -126,6 +170,7 @@ fun ScriptInstruction.toDisplaySummary(): String {
         InstructionType.DELAY_SUBTRACT -> "${normalized.value}ms"
         InstructionType.STAGE_AUTO_NAV -> formatStageAutoNavDisplay(normalized.value)
         InstructionType.DEATH_CHECK -> "第 ${normalized.value} 人"
+        InstructionType.PANG_TONG_COPY_CHECK -> "第 ${normalized.value} 号位"
         InstructionType.TARGET_SWITCH,
         InstructionType.TARGET_SWITCH_LEFT,
         InstructionType.TARGET_SWITCH_RIGHT -> "${normalized.value} 次"
@@ -134,6 +179,10 @@ fun ScriptInstruction.toDisplaySummary(): String {
         InstructionType.CRIT_CHECK,
         InstructionType.ORANGE_STAR_CHECK,
         InstructionType.PURPLE_STAR_CHECK -> null
+        InstructionType.DRAGON_QI_CHECK -> {
+            val condition = decodeDragonQiCondition(normalized.value)
+            "${condition.comparison.symbol}${condition.count}层"
+        }
     }
     return buildString {
         append(normalized.type.formatTiming(normalized.turn, normalized.step))

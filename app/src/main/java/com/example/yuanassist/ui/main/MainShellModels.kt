@@ -12,6 +12,8 @@ enum class MainTab {
 data class HomeOverlayState(
     val combatWindowOpen: Boolean = false,
     val hasUnreadAdminCloudScript: Boolean = false,
+    val currentVersionName: String = "",
+    val latestVersionName: String? = null,
 ) {
     val combatButtonLabel: String
         get() = if (combatWindowOpen) "关闭悬浮窗" else "启动悬浮窗"
@@ -44,6 +46,17 @@ data class DebugReplacementDialogState(
     val initialTopPx: Int,
 )
 
+data class DebugCombatRoiDialogState(
+    val sessionId: Long,
+    val previewBitmap: Bitmap,
+    val title: String,
+    val hint: String,
+    val x: Float,
+    val y: Float,
+    val w: Float,
+    val h: Float,
+)
+
 data class DebugWorkbenchState(
     val taskOptions: List<DebugSelectionOption> = emptyList(),
     val selectedTaskKey: String = "",
@@ -54,6 +67,7 @@ data class DebugWorkbenchState(
     val screenshotBitmap: Bitmap? = null,
     val screenshotTitle: String = "未上传截图",
     val screenshotSubtitle: String = "点击上传截图后可继续在新调试页配置任务与素材。",
+    val isCombatDetection: Boolean = false,
     val isLocalScopeEnabled: Boolean = false,
     val scopeHint: String = "识别范围说明将在这里显示。",
     val delayInput: String = "",
@@ -62,6 +76,9 @@ data class DebugWorkbenchState(
     val delaySummary: String = "当前识别项没有可调整的延时节点。",
     val canReplaceTemplate: Boolean = false,
     val canRestoreTemplate: Boolean = false,
+    val canEditCombatRoi: Boolean = false,
+    val canResetCombatRoi: Boolean = false,
+    val combatRoiDialog: DebugCombatRoiDialogState? = null,
     val replacementDialog: DebugReplacementDialogState? = null,
     val logText: String = "调试日志会显示在这里。",
 )

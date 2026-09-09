@@ -217,7 +217,8 @@ class BirdFoodRuntimeManager(
     private fun applyWuZhuQianSelectionRoi(params: TaskParams?): TaskParams? {
         if (params == null) return null
         val updatedSteps = params.screenshot_steps?.map { step ->
-            if (step.template_name == "xuanze.png") {
+            val templateFileName = step.template_name?.substringAfterLast('/')
+            if (templateFileName == "xuanze.png" || templateFileName == "xuanze繁体.png") {
                 step.copy(
                     roi = step.roi?.copy(
                         x = WU_ZHU_QIAN_SELECTION_ROI_X,

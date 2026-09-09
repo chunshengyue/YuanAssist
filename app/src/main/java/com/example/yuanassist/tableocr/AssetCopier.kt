@@ -5,9 +5,9 @@ import java.io.File
 
 object AssetCopier {
     private val REQUIRED_ASSETS = listOf(
-        "models/PP-OCRv5_mobile_det.nb",
-        "models/PP-OCRv5_mobile_rec.nb",
-        "labels/ppocr_keys_ocrv5.txt"
+        "models/PP-OCRv6_small_det.onnx",
+        "models/PP-OCRv6_small_rec.onnx",
+        "labels/ppocr_keys_ocrv6_small.txt"
     )
 
     fun copyOcrAssets(context: Context): File {
@@ -20,17 +20,17 @@ object AssetCopier {
 
     fun getModelPath(context: Context): String {
         val dir = copyOcrAssets(context)
-        return File(dir, "models/PP-OCRv5_mobile_rec.nb").absolutePath
+        return File(dir, "models/PP-OCRv6_small_rec.onnx").absolutePath
     }
 
     fun getDetModelPath(context: Context): String {
         val dir = copyOcrAssets(context)
-        return File(dir, "models/PP-OCRv5_mobile_det.nb").absolutePath
+        return File(dir, "models/PP-OCRv6_small_det.onnx").absolutePath
     }
 
     fun getLabelPath(context: Context): String {
         val dir = copyOcrAssets(context)
-        return File(dir, "labels/ppocr_keys_ocrv5.txt").absolutePath
+        return File(dir, "labels/ppocr_keys_ocrv6_small.txt").absolutePath
     }
 
     private fun copyRequiredAssets(context: Context, targetDir: File) {

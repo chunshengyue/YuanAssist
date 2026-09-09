@@ -19,20 +19,27 @@ import android.widget.Toast
 import com.example.yuanassist.R
 import com.example.yuanassist.model.BattleStageNavigationRegistry
 import com.example.yuanassist.model.BattleStageTarget
+import com.example.yuanassist.model.DragonQiComparison
 import com.example.yuanassist.model.InstructionType
 import com.example.yuanassist.model.ScriptInstruction
+import com.example.yuanassist.model.decodeDragonQiCondition
+import com.example.yuanassist.model.encodeDragonQiCondition
+import com.example.yuanassist.model.DragonQiCondition
 import com.example.yuanassist.model.decodeStageAutoNavTarget
 import com.example.yuanassist.model.encodeStageAutoNavValue
 import com.example.yuanassist.model.isCaveTarget
 import com.example.yuanassist.model.isStageAutoNavAutoEnterNextFloorEnabled
+import com.example.yuanassist.model.taishanFuStageConfigFromValue
 import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.utils.DialogUtils
+import com.example.yuanassist.utils.protectInputLongPress
 
 object InstructionDialogs {
 
     fun showListDialog(
         context: Context,
-        instructionList: ArrayList<ScriptInstruction>
+        instructionList: ArrayList<ScriptInstruction>,
+        onChanged: () -> Unit = {}
     ) {
         val themeContext = DialogUtils.getThemeContext(context)
         val rootLayout = createDialogCard(themeContext)
@@ -100,12 +107,16 @@ object InstructionDialogs {
                         index = index,
                         instruction = instruction,
                         onEdit = {
-                            showEditDialog(themeContext, instruction, instructionList) { refreshList() }
+                            showEditDialog(themeContext, instruction, instructionList) {
+                                refreshList()
+                                onChanged()
+                            }
                         },
                         onDelete = {
                             showConfirmDeleteDialog(themeContext, instruction) {
                                 instructionList.remove(instruction)
                                 refreshList()
+                                onChanged()
                                 Toast.makeText(context, "已删除", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -115,7 +126,10 @@ object InstructionDialogs {
         }
 
         btnAdd.setOnClickListener {
-            showEditDialog(themeContext, null, instructionList) { refreshList() }
+            showEditDialog(themeContext, null, instructionList) {
+                refreshList()
+                onChanged()
+            }
         }
         btnClose.setOnClickListener {
             dialog.dismiss()
@@ -162,11 +176,13 @@ object InstructionDialogs {
         val tvTurnLabel = createFieldLabel(context, "回合数")
         val etTurn = createStyledInput(context, "第几回合 (必填)").apply {
             inputType = InputType.TYPE_CLASS_NUMBER
+            protectInputLongPress()
             setText(target?.turn?.toString().orEmpty())
         }
         val tvStepLabel = createFieldLabel(context, "动作序号")
         val etStep = createStyledInput(context, "动作序号 (0 或空为整回合)").apply {
             inputType = InputType.TYPE_CLASS_NUMBER
+            protectInputLongPress()
             setText(if (target == null || target.step == 0) "" else target.step.toString())
         }
         val btnType = createSelectorButton(context).apply {
@@ -186,7 +202,13 @@ object InstructionDialogs {
         }
         val etValue = createStyledInput(context, "").apply {
             inputType = InputType.TYPE_CLASS_NUMBER
-            setText(target?.value?.toString() ?: "1000")
+            protectInputLongPress()
+            val initialValue = if (target?.type == InstructionType.DRAGON_QI_CHECK) {
+                decodeDragonQiCondition(target.value).count.toString()
+            } else {
+                target?.value?.toString() ?: "1000"
+            }
+            setText(initialValue)
             layoutParams = LinearLayout.LayoutParams(0, dpToPx(context, 44f), 1f)
         }
         val tvSuffix = TextView(context).apply {
@@ -199,11 +221,47 @@ object InstructionDialogs {
         valueContainer.addView(etValue)
         valueContainer.addView(tvSuffix)
 
+        val initialDragonCondition = target
+            ?.takeIf { it.type == InstructionType.DRAGON_QI_CHECK }
+            ?.let { decodeDragonQiCondition(it.value) }
+            ?: DragonQiCondition(DragonQiComparison.AT_LEAST, 1)
+        val btnDragonComparison = createSelectorButton(context).apply {
+            text = "条件：${initialDragonCondition.comparison.label}"
+            tag = initialDragonCondition.comparison
+            visibility = View.GONE
+        }
+
         val btnStage = createSelectorButton(context).apply {
             val initialStage = decodeStageAutoNavTarget(target?.value ?: 0L)
                 ?: BattleStageNavigationRegistry.supportedTargets.first()
             text = "关卡：${initialStage.description}"
             tag = initialStage
+            visibility = View.GONE
+        }
+        val taishanConfig = taishanFuStageConfigFromValue(target?.value ?: 0L)
+        val tvTaishanTopLevelLabel = createFieldLabel(context, "进入泰山府后顶部第一个关卡").apply {
+            visibility = View.GONE
+        }
+        val etTaishanTopLevel = createStyledInput(context, "填写 1-13").apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            protectInputLongPress()
+            setText(taishanConfig?.topLevel?.toString() ?: "1")
+            visibility = View.GONE
+        }
+        val tvTaishanTargetLevelLabel = createFieldLabel(context, "泰山府目标关卡").apply {
+            visibility = View.GONE
+        }
+        val etTaishanTargetLevel = createStyledInput(context, "填写 1-13").apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            protectInputLongPress()
+            setText(taishanConfig?.targetLevel?.toString() ?: "1")
+            visibility = View.GONE
+        }
+        val tvTaishanHint = TextView(context).apply {
+            text = "请填写点进泰山府界面后，顶部显示的第一个关卡，以及要进入的目标关卡。若进入了错误关卡，请尝试修改顶部关卡数字。"
+            textSize = 12f
+            setTextColor(Color.parseColor("#8C7A61"))
+            setPadding(0, dpToPx(context, 8f), 0, 0)
             visibility = View.GONE
         }
         val tvStageOptionLabel = createFieldLabel(context, "洞窟附属选项").apply {
@@ -228,12 +286,19 @@ object InstructionDialogs {
         fun updateCaveOptionUI(type: InstructionType) {
             val selectedStage = btnStage.tag as? BattleStageTarget
             val showCaveOption = type == InstructionType.STAGE_AUTO_NAV && selectedStage?.isCaveTarget() == true
+            val showTaishanLevel = type == InstructionType.STAGE_AUTO_NAV &&
+                selectedStage == BattleStageTarget.TAI_SHAN_FU
             if (!showCaveOption) {
                 btnCaveNextFloor.tag = false
             }
             val enabled = (btnCaveNextFloor.tag as? Boolean) == true
             tvStageOptionLabel.visibility = if (showCaveOption) View.VISIBLE else View.GONE
             btnCaveNextFloor.visibility = if (showCaveOption) View.VISIBLE else View.GONE
+            tvTaishanTopLevelLabel.visibility = if (showTaishanLevel) View.VISIBLE else View.GONE
+            etTaishanTopLevel.visibility = if (showTaishanLevel) View.VISIBLE else View.GONE
+            tvTaishanTargetLevelLabel.visibility = if (showTaishanLevel) View.VISIBLE else View.GONE
+            etTaishanTargetLevel.visibility = if (showTaishanLevel) View.VISIBLE else View.GONE
+            tvTaishanHint.visibility = if (showTaishanLevel) View.VISIBLE else View.GONE
             btnCaveNextFloor.text = "自动进入下一层：${if (enabled && showCaveOption) "开启" else "关闭"}"
             if (type == InstructionType.STAGE_AUTO_NAV) {
                 tvHint.visibility = View.VISIBLE
@@ -245,6 +310,14 @@ object InstructionDialogs {
             }
         }
 
+        fun hideTaishanFuFields() {
+            tvTaishanTopLevelLabel.visibility = View.GONE
+            etTaishanTopLevel.visibility = View.GONE
+            tvTaishanTargetLevelLabel.visibility = View.GONE
+            etTaishanTargetLevel.visibility = View.GONE
+            tvTaishanHint.visibility = View.GONE
+        }
+
         fun updateValueUI(type: InstructionType) {
             val showTurnField = !type.hidesTurnField()
             val showStepField = !type.hidesStepField()
@@ -252,6 +325,7 @@ object InstructionDialogs {
             etTurn.visibility = if (showTurnField) View.VISIBLE else View.GONE
             tvStepLabel.visibility = if (showStepField) View.VISIBLE else View.GONE
             etStep.visibility = if (showStepField) View.VISIBLE else View.GONE
+            btnDragonComparison.visibility = View.GONE
 
             when (type) {
                 InstructionType.PAUSE,
@@ -263,7 +337,25 @@ object InstructionDialogs {
                     tvStageOptionLabel.visibility = View.GONE
                     btnCaveNextFloor.visibility = View.GONE
                     tvHint.visibility = View.GONE
+                    hideTaishanFuFields()
                     etValue.setText("0")
+                }
+
+                InstructionType.DRAGON_QI_CHECK -> {
+                    valueContainer.visibility = View.VISIBLE
+                    btnDragonComparison.visibility = View.VISIBLE
+                    btnStage.visibility = View.GONE
+                    tvStageOptionLabel.visibility = View.GONE
+                    btnCaveNextFloor.visibility = View.GONE
+                    tvPrefix.visibility = View.VISIBLE
+                    tvPrefix.text = "龙气"
+                    tvSuffix.text = "层"
+                    tvHint.visibility = View.VISIBLE
+                    tvHint.text = "动作序号填 0 时在回合开始检测；填写动作序号后，在该动作间隔结束时检测一次；不满足则走重开分支"
+                    hideTaishanFuFields()
+                    if (target?.type != InstructionType.DRAGON_QI_CHECK && etValue.text.toString() == "1000") {
+                        etValue.setText("1")
+                    }
                 }
 
                 InstructionType.CRIT_CHECK -> {
@@ -273,7 +365,24 @@ object InstructionDialogs {
                     btnCaveNextFloor.visibility = View.GONE
                     tvHint.visibility = View.VISIBLE
                     tvHint.text = "在该动作执行 1.4 秒后截图，检测红色伤害数字或暴击字样；未命中则走重开分支"
+                    hideTaishanFuFields()
                     etValue.setText("0")
+                }
+
+                InstructionType.PANG_TONG_COPY_CHECK -> {
+                    valueContainer.visibility = View.VISIBLE
+                    btnStage.visibility = View.GONE
+                    tvStageOptionLabel.visibility = View.GONE
+                    btnCaveNextFloor.visibility = View.GONE
+                    tvPrefix.visibility = View.VISIBLE
+                    tvPrefix.text = "检测第"
+                    tvSuffix.text = "号位"
+                    tvHint.visibility = View.VISIBLE
+                    tvHint.text = "在动作间隔结束前0.5秒、结束时和结束后0.5秒各截图一次，三次结果取全局最高分；填写 1-5"
+                    hideTaishanFuFields()
+                    if (etValue.text.toString() == "1000" || etValue.text.toString() == "0") {
+                        etValue.setText("1")
+                    }
                 }
 
                 InstructionType.TARGET_SWITCH,
@@ -288,6 +397,7 @@ object InstructionDialogs {
                     tvSuffix.text = "次"
                     tvHint.visibility = View.VISIBLE
                     tvHint.text = "例：填写 1 次表示切换一次目标；方向由指令类型决定"
+                    hideTaishanFuFields()
                     if (etValue.text.toString() == "1000" || etValue.text.toString() == "0") {
                         etValue.setText("1")
                     }
@@ -303,6 +413,7 @@ object InstructionDialogs {
                     tvSuffix.text = "人"
                     tvHint.visibility = View.VISIBLE
                     tvHint.text = "填写 1-5，表示检测对应站位角色是否阵亡"
+                    hideTaishanFuFields()
                     if (etValue.text.toString() == "1000" || etValue.text.toString() == "0") {
                         etValue.setText("1")
                     }
@@ -328,6 +439,7 @@ object InstructionDialogs {
                     tvPrefix.visibility = View.GONE
                     tvSuffix.text = "ms"
                     tvHint.visibility = View.GONE
+                    hideTaishanFuFields()
                     if (etValue.text.toString() == "1" || etValue.text.toString() == "0") {
                         etValue.setText("1000")
                     }
@@ -349,6 +461,20 @@ object InstructionDialogs {
                 btnType.text = "类型：${selected.description}"
                 btnType.tag = selected
                 updateValueUI(selected)
+            }
+        }
+
+        btnDragonComparison.setOnClickListener {
+            val current = btnDragonComparison.tag as? DragonQiComparison ?: DragonQiComparison.AT_LEAST
+            showOptionDialog(
+                context = context,
+                title = "龙气数量条件",
+                options = DragonQiComparison.values().map { it.label },
+                selectedIndex = DragonQiComparison.values().indexOf(current).coerceAtLeast(0)
+            ) { which ->
+                val selected = DragonQiComparison.values()[which]
+                btnDragonComparison.tag = selected
+                btnDragonComparison.text = "条件：${selected.label}"
             }
         }
 
@@ -390,7 +516,13 @@ object InstructionDialogs {
         formLayout.addView(btnType)
         formLayout.addView(tvValueLabel)
         formLayout.addView(valueContainer)
+        formLayout.addView(btnDragonComparison)
         formLayout.addView(btnStage)
+        formLayout.addView(tvTaishanTopLevelLabel)
+        formLayout.addView(etTaishanTopLevel)
+        formLayout.addView(tvTaishanTargetLevelLabel)
+        formLayout.addView(etTaishanTargetLevel)
+        formLayout.addView(tvTaishanHint)
         formLayout.addView(tvStageOptionLabel)
         formLayout.addView(btnCaveNextFloor)
         formLayout.addView(tvHint)
@@ -426,13 +558,48 @@ object InstructionDialogs {
                             ?: BattleStageNavigationRegistry.supportedTargets.first()
                         val autoEnterNextFloor =
                             targetStage.isCaveTarget() && ((btnCaveNextFloor.tag as? Boolean) == true)
-                        encodeStageAutoNavValue(targetStage, autoEnterNextFloor)
+                        val taishanTopLevel = etTaishanTopLevel.text.toString().trim().toIntOrNull() ?: 0
+                        val taishanTargetLevel = etTaishanTargetLevel.text.toString().trim().toIntOrNull() ?: 0
+                        if (targetStage == BattleStageTarget.TAI_SHAN_FU &&
+                            (taishanTopLevel !in 1..13 || taishanTargetLevel !in 1..13)
+                        ) {
+                            Toast.makeText(context, "泰山府顶部关卡和目标关卡只能填写 1-13", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        if (targetStage == BattleStageTarget.TAI_SHAN_FU && taishanTargetLevel < taishanTopLevel) {
+                            Toast.makeText(context, "泰山府目标关卡不能小于顶部第一个关卡", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        encodeStageAutoNavValue(
+                            target = targetStage,
+                            autoEnterNextFloor = autoEnterNextFloor,
+                            taishanFuTopLevel = taishanTopLevel,
+                            taishanFuLevel = taishanTargetLevel,
+                        )
+                    }
+                    InstructionType.DRAGON_QI_CHECK -> {
+                        val count = etValue.text.toString().trim().toIntOrNull()
+                        if (count == null || count < 0) {
+                            Toast.makeText(context, "龙气数量只能填写非负整数", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        val comparison = btnDragonComparison.tag as? DragonQiComparison
+                            ?: DragonQiComparison.AT_LEAST
+                        encodeDragonQiCondition(DragonQiCondition(comparison, count))
                     }
                     else -> etValue.text.toString().trim().toLongOrNull() ?: 0L
                 }
 
                 if (type == InstructionType.DEATH_CHECK && value !in 1L..5L) {
                     Toast.makeText(context, "阵亡检测的人物序号只能填写 1-5", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (type == InstructionType.PANG_TONG_COPY_CHECK && value !in 1L..5L) {
+                    Toast.makeText(context, "复制检测的目标序号只能填写 1-5", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (type == InstructionType.PANG_TONG_COPY_CHECK && step <= 0) {
+                    Toast.makeText(context, "复制检测必须配置动作序号", Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
 

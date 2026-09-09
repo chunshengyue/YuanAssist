@@ -1,5 +1,8 @@
 package com.example.yuanassist.ui.main
 
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.RectF
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,6 +41,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,7 +65,10 @@ import com.example.yuanassist.ui.main.theme.GlassStroke
 import com.example.yuanassist.ui.main.theme.HighlightGold
 import com.example.yuanassist.ui.main.theme.TitleInk
 import com.example.yuanassist.ui.subpage.StoneStyleButton
+import com.example.yuanassist.utils.CombatDetectionRoi
+import com.example.yuanassist.utils.CombatDetectionRoiStore
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 @Composable
 fun DebugTabScreen(
@@ -272,7 +279,145 @@ fun DebugTabScreen(
             onConfirm = actions.onConfirmReplacement,
         )
     }
+    state.combatRoiDialog?.let { dialogState ->
+        DebugCombatRoiDialog(
+            state = dialogState,
+            onMove = actions.onMoveCombatRoi,
+            onDismiss = actions.onDismissCombatRoiDialog,
+            onSave = actions.onSaveCombatRoi,
+        )
+    }
 }
+
+@Composable
+private fun DebugCombatRoiDialog(
+    state: DebugCombatRoiDialogState,
+    onMove: (Float, Float, Float, Float) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.96f).fillMaxHeight(0.9f),
+            shape = RoundedCornerShape(18.dp),
+            color = GlassPanel,
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(state.title, color = TitleInk, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif)
+                Text(state.hint, color = BodyInk.copy(alpha = 0.82f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
+                DebugCombatRoiCanvas(
+                    sessionId = state.sessionId,
+                    bitmap = state.previewBitmap,
+                    roi = CombatDetectionRoi(state.x, state.y, state.w, state.h),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    onMove = onMove,
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DebugMiniButton("取消", Modifier.weight(1f), onClick = onDismiss)
+                    DebugMiniButton("保存修改", Modifier.weight(1f), onClick = onSave)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DebugCombatRoiCanvas(
+    sessionId: Long,
+    bitmap: android.graphics.Bitmap,
+    roi: CombatDetectionRoi,
+    modifier: Modifier = Modifier,
+    onMove: (Float, Float, Float, Float) -> Unit,
+) {
+    BoxWithConstraints(
+        modifier = modifier.background(ConsolePanel, RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        var imageSize by remember(sessionId) { mutableStateOf(IntSize.Zero) }
+        var rect by remember(sessionId) {
+            mutableStateOf(CombatDetectionRoiStore.toBitmapRect(bitmap, roi, align = "bottom").let {
+                RectF(it.left.toFloat(), it.top.toFloat(), it.right.toFloat(), it.bottom.toFloat())
+            })
+        }
+        var dragMode by remember(sessionId) { mutableStateOf(0) }
+        val latestOnMove by rememberUpdatedState(onMove)
+        val imageAspect = bitmap.width.toFloat() / bitmap.height.toFloat().coerceAtLeast(1f)
+        val containerAspect = constraints.maxWidth.toFloat() / constraints.maxHeight.toFloat().coerceAtLeast(1f)
+        val imageWidth = if (imageAspect > containerAspect) maxWidth else maxHeight * imageAspect
+        val imageHeight = if (imageAspect > containerAspect) maxWidth / imageAspect else maxHeight
+        Box(
+            modifier = Modifier.size(imageWidth, imageHeight).clip(RoundedCornerShape(12.dp)).onSizeChanged { imageSize = it },
+        ) {
+            Image(bitmap = bitmap.asImageBitmap(), contentDescription = "战斗 ROI 预览", modifier = Modifier.fillMaxSize())
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier.fillMaxSize().pointerInput(sessionId, imageSize) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            val x = offset.x * bitmap.width / imageSize.width.coerceAtLeast(1)
+                            val y = offset.y * bitmap.height / imageSize.height.coerceAtLeast(1)
+                            val edge = (12f * bitmap.width / imageSize.width.coerceAtLeast(1)).coerceAtLeast(8f)
+                            dragMode = when {
+                                kotlin.math.abs(y - rect.top) <= edge && x in rect.left..rect.right -> -1
+                                kotlin.math.abs(y - rect.bottom) <= edge && x in rect.left..rect.right -> 1
+                                rect.contains(x, y) -> 2
+                                else -> 0
+                            }
+                        },
+                        onDrag = { change, amount ->
+                            change.consume()
+                            if (dragMode == 0 || imageSize.width <= 0) return@detectDragGestures
+                            val dx = amount.x * bitmap.width / imageSize.width
+                            val dy = amount.y * bitmap.height / imageSize.height
+                            rect = when (dragMode) {
+                                -1 -> {
+                                    val top = (rect.top + dy).coerceIn(0f, rect.bottom - 1f)
+                                    RectF(rect.left, top, rect.right, rect.bottom)
+                                }
+                                1 -> {
+                                    val bottom = (rect.bottom + dy).coerceIn(rect.top + 1f, bitmap.height.toFloat())
+                                    RectF(rect.left, rect.top, rect.right, bottom)
+                                }
+                                else -> {
+                                    val left = (rect.left + dx).coerceIn(0f, bitmap.width - rect.width())
+                                    val top = (rect.top + dy).coerceIn(0f, bitmap.height - rect.height())
+                                    RectF(left, top, left + rect.width(), top + rect.height())
+                                }
+                            }
+                        },
+                        onDragEnd = {
+                            if (dragMode != 0) {
+                                val next = CombatDetectionRoiStore.fromBitmapRect(
+                                    bitmap,
+                                    Rect(rect.left.roundToInt(), rect.top.roundToInt(), rect.right.roundToInt(), rect.bottom.roundToInt()),
+                                    align = "bottom",
+                                )
+                                latestOnMove(next.x, next.y, next.w, next.h)
+                            }
+                            dragMode = 0
+                        },
+                        onDragCancel = { dragMode = 0 },
+                    )
+                },
+            ) {
+                val scaleX = size.width / bitmap.width.toFloat().coerceAtLeast(1f)
+                val scaleY = size.height / bitmap.height.toFloat().coerceAtLeast(1f)
+                drawRect(
+                    color = Color(0xFF43A047),
+                    topLeft = Offset(rect.left * scaleX, rect.top * scaleY),
+                    size = androidx.compose.ui.geometry.Size(rect.width() * scaleX, rect.height() * scaleY),
+                    style = Stroke(width = 3.dp.toPx()),
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun DebugGlassPanel(
@@ -419,9 +564,14 @@ private fun DebugActionGrid(
     state: DebugWorkbenchState,
     actions: DebugTabActions,
 ) {
+    val secondaryActions = if (state.isCombatDetection) {
+        listOf("修改区域", "恢复默认")
+    } else {
+        listOf("一键替换", "还原素材")
+    }
     listOf(
         listOf("上传截图", "开始测试"),
-        listOf("一键替换", "还原素材"),
+        secondaryActions,
     ).forEach { rowActions ->
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -431,6 +581,8 @@ private fun DebugActionGrid(
                     val enabled = when (text) {
                         "一键替换" -> state.canReplaceTemplate
                         "还原素材" -> state.canRestoreTemplate
+                        "修改区域" -> state.canEditCombatRoi
+                        "恢复默认" -> state.canResetCombatRoi
                         else -> true
                     }
                     DebugMiniButton(
@@ -442,6 +594,8 @@ private fun DebugActionGrid(
                             "开始测试" -> actions.onRunTest
                             "一键替换" -> actions.onReplaceTemplate
                             "还原素材" -> actions.onRestoreTemplate
+                            "修改区域" -> actions.onOpenCombatRoiDialog
+                            "恢复默认" -> actions.onResetCombatRoi
                             else -> ({})
                         },
                     )

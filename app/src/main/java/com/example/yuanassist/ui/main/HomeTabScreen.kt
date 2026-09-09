@@ -86,6 +86,7 @@ fun HomeTabScreen(
                 HomeEntryButton("刷6-24", R.drawable.item_fenggongzhu, R.drawable.decor_xian, onClick = actions.onOpenMainline624),
                 HomeEntryButton("无月卡观星", R.drawable.item_chendeng2, R.drawable.decor_que, onClick = actions.onOpenStargazing),
                 HomeEntryButton("星石拼图", R.drawable.item_shizimiao, R.drawable.decor_que, onClick = actions.onOpenInventoryStitch),
+                HomeEntryButton("修为计算", R.drawable.item_chenji, R.drawable.decor_xian, onClick = actions.onOpenXiuweiCalculator),
                 HomeEntryButton("脚本库", R.drawable.item_zhangzhao, R.drawable.decor_que, onClick = actions.onOpenScriptLibrary),
                 HomeEntryButton(
                     "云端脚本",
@@ -111,6 +112,10 @@ fun HomeTabScreen(
             ),
         )
         FriendLinksSection(actions = actions)
+        VersionInfo(
+            currentVersionName = overlayState.currentVersionName,
+            latestVersionName = overlayState.latestVersionName,
+        )
         Spacer(modifier = Modifier.height(2.dp))
     }
 }
@@ -219,6 +224,20 @@ private fun FriendLinksSection(actions: HomeTabActions) {
             }
         }
     }
+}
+
+@Composable
+private fun VersionInfo(
+    currentVersionName: String,
+    latestVersionName: String?,
+) {
+    Text(
+        text = "当前版本：$currentVersionName · 最新版本：${latestVersionName ?: "获取中"}",
+        modifier = Modifier.fillMaxWidth(),
+        color = BodyInk.copy(alpha = 0.72f),
+        fontSize = 12.sp,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+    )
 }
 
 @Composable

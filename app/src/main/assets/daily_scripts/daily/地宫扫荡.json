@@ -1,0 +1,166 @@
+{
+  "display_name": "地宫扫荡",
+  "start_task_id": 0,
+  "asset_template_dir": "daily_script_templates/daily",
+  "tasks": [
+    {
+      "action": "RUN_SCRIPT_SEGMENT",
+      "delay": 0,
+      "id": 0,
+      "on_fail": -2,
+      "on_success": 1,
+      "params": {
+        "entry_task_id": 1,
+        "inherit_variables": true,
+        "script_name": "home_page_two_recover.json"
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 1,
+      "name": "进入地宫",
+      "on_fail": -2,
+      "on_success": 2,
+      "params": {
+        "align": "center",
+        "threshold": 0.78,
+        "x": 578.0,
+        "y": 795.0
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SCREENSHOT_GROUP",
+      "delay": 2500,
+      "id": 2,
+      "name": "地宫关卡",
+      "on_fail": -2,
+      "on_success": 3,
+      "params": {
+        "align": "center",
+        "roi": {
+          "align": "center",
+          "h": 500.0,
+          "w": 1080.0,
+          "x": 540.0,
+          "y": 960.0
+        },
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "地宫关卡",
+            "template_name": "pics/地宫扫荡/地宫关卡.png",
+            "threshold": 0.78,
+            "click": 1,
+            "on_success": 3
+          },
+          {
+            "type": "template",
+            "name": "地宫关卡2",
+            "template_name": "pics/地宫扫荡/地宫关卡2.png",
+            "threshold": 0.78,
+            "click": 1,
+            "on_success": 3
+          }
+        ]
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 2500,
+      "id": 3,
+      "name": "扫荡5次",
+      "on_fail": -2,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 3,
+        "roi": {
+          "align": "center",
+          "h": 200.0,
+          "w": 200.0,
+          "x": 396.0,
+          "y": 1365.0
+        },
+        "target_chars": [
+          "扫",
+          "掃",
+          "荡",
+          "蕩",
+          "汤",
+          "湯",
+          "5",
+          "５",
+          "次"
+        ],
+        "threshold": 0.78
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 2500,
+      "id": 4,
+      "name": "点击右下角空白处",
+      "on_fail": -2,
+      "on_success": 5,
+      "params": {
+        "align": "bottom",
+        "threshold": 0.8,
+        "x": 1000.0,
+        "y": 1800.0
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "CLICK",
+      "delay": 1000,
+      "id": 5,
+      "name": "再次进入地宫关卡",
+      "on_fail": -2,
+      "on_success": 6,
+      "params": {
+        "align": "center",
+        "ref_task_id": 2
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "OCR",
+      "delay": 1000,
+      "id": 6,
+      "name": "再次扫荡5次",
+      "on_fail": -2,
+      "on_success": -1,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "min_hit_count": 3,
+        "roi": {
+          "align": "center",
+          "h": 200.0,
+          "w": 200.0,
+          "x": 396.0,
+          "y": 1365.0
+        },
+        "target_chars": [
+          "扫",
+          "掃",
+          "荡",
+          "蕩",
+          "汤",
+          "湯",
+          "5",
+          "５",
+          "次"
+        ],
+        "threshold": 0.78
+      },
+      "start_cooldown_on_success": false
+    }
+  ]
+}

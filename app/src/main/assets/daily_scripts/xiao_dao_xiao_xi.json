@@ -274,7 +274,29 @@
       },
       "on_success": 61,
       "on_fail": -2,
-      "name": "queren"
+      "name": "queren",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "认",
+              "認"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 544,
+              "y": 1351,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 7,

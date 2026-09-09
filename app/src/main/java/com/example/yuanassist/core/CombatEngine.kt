@@ -15,6 +15,7 @@ import android.graphics.Rect
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -25,6 +26,8 @@ import com.example.yuanassist.model.ActionItem
 import com.example.yuanassist.model.BattleStageNavigationRegistry
 import com.example.yuanassist.model.BattleStageTarget
 import com.example.yuanassist.model.DirectStageNavigationConfig
+import com.example.yuanassist.model.decodeDragonQiCondition
+import com.example.yuanassist.model.matches
 import com.example.yuanassist.model.InstructionType
 import com.example.yuanassist.model.ScriptInstruction
 import com.example.yuanassist.model.TemplateRegionConfig
@@ -32,7 +35,10 @@ import com.example.yuanassist.model.TurnData
 import com.example.yuanassist.model.decodeStageAutoNavTarget
 import com.example.yuanassist.model.isCaveTarget
 import com.example.yuanassist.model.isStageAutoNavAutoEnterNextFloorEnabled
+import com.example.yuanassist.model.taishanFuStageConfigFromValue
 import com.example.yuanassist.utils.AppConfig
+import com.example.yuanassist.utils.CombatDetectionRoiKey
+import com.example.yuanassist.utils.CombatDetectionRoiStore
 import com.example.yuanassist.utils.BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION
 import com.example.yuanassist.utils.BATTLE_FLOW_START_BATTLE_OCR_DELAY_KEY
 import com.example.yuanassist.utils.BATTLE_FLOW_TEST_TASK_KEY
@@ -81,7 +87,7 @@ class CombatEngine(
     private var currentExecutingRowIndex = -1
     private val actionQueue: Queue<ActionItem> = LinkedList()
     private var delayJob: Job? = null
-    private var postActionCritCheckJob: Deferred<Boolean>? = null
+    private var postActionCheckJob: Deferred<Boolean>? = null
     private val random = Random()
     private var lastTurnPauseTriggered = -1
     private var startOnlyInstructionsHandled = false
@@ -204,12 +210,13 @@ class CombatEngine(
         private const val ORANGE_STAR_ATTEMPTS = 3
         private const val ORANGE_STAR_ATTEMPT_INTERVAL_MS = 500L
         private const val ORANGE_STAR_SHAPE_THRESHOLD = 0.40f
-        private const val ORANGE_STAR_RECOVERY_TEMPLATE = "queding2.png"
+        private const val BATTLE_NAV_TEMPLATE_DIR = "pics/战斗版导航/"
+        private const val ORANGE_STAR_RECOVERY_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "queding2.png"
         private const val ORANGE_STAR_RECOVERY_THRESHOLD = 0.80f
         private const val ORANGE_STAR_RECOVERY_CENTER_X = 759f
         private const val ORANGE_STAR_RECOVERY_CENTER_Y = 1158f
         private const val ORANGE_STAR_RECOVERY_ROI_SIZE = 300f
-        private const val ALL_WIPE_TEMPLATE = "zaicitiaozhan.png"
+        private const val ALL_WIPE_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "zaicitiaozhan.png"
         private const val ALL_WIPE_TEMPLATE_THRESHOLD = 0.80f
         private const val ALL_WIPE_TEMPLATE_CENTER_X = 785f
         private const val ALL_WIPE_TEMPLATE_CENTER_Y = 1699f
@@ -224,31 +231,31 @@ class CombatEngine(
         private const val STAGE_HOME_RECOVERY_POST_LANTAI_DELAY_MS = 2000L
         private const val STAGE_HOME_RECOVERY_POST_BAIHU_DELAY_MS = 2000L
         private const val STAGE_HOME_RECOVERY_SWIPE_DURATION_MS = 420L
-        private const val STAGE_HOME_RECOVERY_LANTAI_TEMPLATE = "lantai.png"
+        private const val STAGE_HOME_RECOVERY_LANTAI_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "lantai.png"
         private const val STAGE_HOME_RECOVERY_LANTAI_CENTER_X = 499f
         private const val STAGE_HOME_RECOVERY_LANTAI_CENTER_Y = 567f
         private const val STAGE_HOME_RECOVERY_LANTAI_ROI_WIDTH = 300f
         private const val STAGE_HOME_RECOVERY_LANTAI_ROI_HEIGHT = 300f
         private const val STAGE_HOME_RECOVERY_LANTAI_THRESHOLD = 0.75f
-        private const val STAGE_HOME_RECOVERY_YUANBAO_TEMPLATE = "yuanbao.png"
+        private const val STAGE_HOME_RECOVERY_YUANBAO_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "yuanbao.png"
         private const val STAGE_HOME_RECOVERY_YUANBAO_CENTER_X = 441f
         private const val STAGE_HOME_RECOVERY_YUANBAO_CENTER_Y = 920f
         private const val STAGE_HOME_RECOVERY_YUANBAO_ROI_WIDTH = 200f
         private const val STAGE_HOME_RECOVERY_YUANBAO_ROI_HEIGHT = 300f
         private const val STAGE_HOME_RECOVERY_YUANBAO_THRESHOLD = 0.85f
-        private const val STAGE_HOME_RECOVERY_BAIHU_TEMPLATE = "baihu.png"
+        private const val STAGE_HOME_RECOVERY_BAIHU_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "baihu.png"
         private const val STAGE_HOME_RECOVERY_BAIHU_CENTER_X = 84f
         private const val STAGE_HOME_RECOVERY_BAIHU_CENTER_Y = 1505f
         private const val STAGE_HOME_RECOVERY_BAIHU_ROI_WIDTH = 200f
         private const val STAGE_HOME_RECOVERY_BAIHU_ROI_HEIGHT = 300f
         private const val STAGE_HOME_RECOVERY_BAIHU_THRESHOLD = 0.80f
-        private const val STAGE_HOME_RECOVERY_DIGONG_TEMPLATE = "digong.png"
+        private const val STAGE_HOME_RECOVERY_DIGONG_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "digong.png"
         private const val STAGE_HOME_RECOVERY_DIGONG_CENTER_X = 573f
         private const val STAGE_HOME_RECOVERY_DIGONG_CENTER_Y = 811f
         private const val STAGE_HOME_RECOVERY_DIGONG_ROI_WIDTH = 300f
         private const val STAGE_HOME_RECOVERY_DIGONG_ROI_HEIGHT = 300f
         private const val STAGE_HOME_RECOVERY_DIGONG_THRESHOLD = 0.75f
-        private const val STAGE_HOME_RECOVERY_YIJI_RUKOU_TEMPLATE = "yijirukou.png"
+        private const val STAGE_HOME_RECOVERY_YIJI_RUKOU_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "yijirukou.png"
         private const val STAGE_HOME_RECOVERY_YIJI_RUKOU_CENTER_X = 931f
         private const val STAGE_HOME_RECOVERY_YIJI_RUKOU_CENTER_Y = 1688f
         private const val STAGE_HOME_RECOVERY_YIJI_RUKOU_ROI_WIDTH = 300f
@@ -256,13 +263,13 @@ class CombatEngine(
         private const val STAGE_HOME_RECOVERY_YIJI_RUKOU_THRESHOLD = 0.80f
         private const val STAGE_HOME_RECOVERY_POST_DIGONG_DELAY_MS = 2000L
         private const val STAGE_HOME_RECOVERY_POST_YIJI_RUKOU_DELAY_MS = 2000L
-        private const val STAGE_HOME_RECOVERY_XINZHI_TEMPLATE = "xinzhi.png"
+        private const val STAGE_HOME_RECOVERY_XINZHI_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "xinzhi.png"
         private const val STAGE_HOME_RECOVERY_XINZHI_CENTER_X = 999f
         private const val STAGE_HOME_RECOVERY_XINZHI_CENTER_Y = 1544f
         private const val STAGE_HOME_RECOVERY_XINZHI_ROI_WIDTH = 300f
         private const val STAGE_HOME_RECOVERY_XINZHI_ROI_HEIGHT = 300f
         private const val STAGE_HOME_RECOVERY_XINZHI_THRESHOLD = 0.75f
-        private const val STAGE_HOME_RECOVERY_LIXIAN_TEMPLATE = "lixian.png"
+        private const val STAGE_HOME_RECOVERY_LIXIAN_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "lixian.png"
         private const val STAGE_HOME_RECOVERY_LIXIAN_CENTER_X = 922f
         private const val STAGE_HOME_RECOVERY_LIXIAN_CENTER_Y = 1039f
         private const val STAGE_HOME_RECOVERY_LIXIAN_ROI_WIDTH = 300f
@@ -270,20 +277,15 @@ class CombatEngine(
         private const val STAGE_HOME_RECOVERY_LIXIAN_THRESHOLD = 0.80f
         private const val STAGE_HOME_RECOVERY_POST_XINZHI_DELAY_MS = 2000L
         private const val STAGE_HOME_RECOVERY_POST_LIXIAN_DELAY_MS = 2000L
-        private const val CAVE_DONGKU_TEMPLATE = "dongku.png"
-        private const val CAVE_DONGKU_TEMPLATE_FALLBACK = "dongku2.png"
         private const val CAVE_DONGKU_CENTER_X = 666f
         private const val CAVE_DONGKU_CENTER_Y = 313f
-        private const val CAVE_DONGKU_ROI_WIDTH = 300f
-        private const val CAVE_DONGKU_ROI_HEIGHT = 300f
-        private const val CAVE_DONGKU_THRESHOLD = 0.75f
-        private const val CAVE_NEXT_FLOOR_TEMPLATE = "xiayiceng.png"
+        private const val CAVE_NEXT_FLOOR_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "xiayiceng.png"
         private const val CAVE_NEXT_FLOOR_CENTER_X = 700f
         private const val CAVE_NEXT_FLOOR_CENTER_Y = 1700f
         private const val CAVE_NEXT_FLOOR_ROI_WIDTH = 500f
         private const val CAVE_NEXT_FLOOR_ROI_HEIGHT = 500f
         private const val CAVE_NEXT_FLOOR_THRESHOLD = 0.80f
-        private const val CAVE_START_BATTLE_TEMPLATE_FALLBACK = "kaishizhandou2.png"
+        private const val CAVE_START_BATTLE_TEMPLATE_FALLBACK = BATTLE_NAV_TEMPLATE_DIR + "kaishizhandou2.png"
         private const val CAVE_START_BATTLE_TEMPLATE_FALLBACK_THRESHOLD = 0.75f
         private const val DEATH_CHECK_TOP_Y = 1350f
         private const val DEATH_CHECK_BOTTOM_Y = 1700f
@@ -291,6 +293,21 @@ class CombatEngine(
         private const val DEATH_CHECK_SATURATION_THRESHOLD = 20f
         private const val STAGE_AUTO_NAV_CHECK_DELAY_MS = 500L
         private const val STAGE_SCREENSHOT_COOLDOWN_DELAY_MS = 500L
+        private const val TAI_SHAN_FU_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "yongzhou.png"
+        private const val TAI_SHAN_FU_TEMPLATE_THRESHOLD = 0.82f
+        private const val TAI_SHAN_FU_TEMPLATE_SUPPRESS_RATIO = 0.85f
+        private const val TAI_SHAN_FU_ENTRANCE_CENTER_X = 424f
+        private const val TAI_SHAN_FU_ENTRANCE_CENTER_Y = 329f
+        private const val TAI_SHAN_FU_ENTRANCE_ROI_WIDTH = 320f
+        private const val TAI_SHAN_FU_ENTRANCE_ROI_HEIGHT = 180f
+        private const val TAI_SHAN_FU_ENTRANCE_MIN_HIT_COUNT = 2
+        private const val TAI_SHAN_FU_POST_DIGONG_DELAY_MS = 2000L
+        private const val TAI_SHAN_FU_POST_ENTRANCE_DELAY_MS = 1800L
+        private const val TAI_SHAN_FU_SWIPE_DURATION_MS = 420L
+        private const val TAI_SHAN_FU_SWIPE_SETTLE_DELAY_MS = 1500L
+        private const val TAI_SHAN_FU_MAX_SWIPE_COUNT = 8
+        private const val TAI_SHAN_FU_PAGE_ANCHOR_X_TOLERANCE = 80f
+        private const val TAI_SHAN_FU_STAGE_CLICK_OFFSET_X = 100f
         private const val STAGE_AUTO_SELECT_ENTRY_OFFSET_DP = 200f
         private const val STAGE_AUTO_SELECT_ENTRY_SETTLE_DELAY_MS = 1500L
         private const val STAGE_AUTO_SELECT_POST_CONFIRM_DELAY_MS = 5000L
@@ -309,6 +326,21 @@ class CombatEngine(
         private const val CRIT_CHECK_ROI_HEIGHT = 900f
         private const val CRIT_CHECK_RED_RATIO_THRESHOLD = 0.18f
         private const val CRIT_CHECK_RED_PIXEL_THRESHOLD = 24
+        private const val PANG_TONG_COPY_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "fuzhi_single.png"
+        private const val PANG_TONG_COPY_SCAN_CENTER_X = VISION_BASE_W / 2f
+        private const val PANG_TONG_COPY_SCAN_CENTER_Y = 1510f
+        private const val PANG_TONG_COPY_SCAN_WIDTH = VISION_BASE_W
+        private const val PANG_TONG_COPY_SCAN_HEIGHT = 400f
+        private const val PANG_TONG_COPY_SAMPLE_OFFSET_MS = 500L
+        private const val PANG_TONG_COPY_SLOT_COUNT = 5
+        private const val DRAGON_QI_TEMPLATE = BATTLE_NAV_TEMPLATE_DIR + "longqi_single.png"
+        private const val DRAGON_QI_SCAN_CENTER_X = VISION_BASE_W / 2f
+        private const val DRAGON_QI_SCAN_CENTER_Y = 1550f
+        private const val DRAGON_QI_SCAN_WIDTH = VISION_BASE_W
+        private const val DRAGON_QI_SCAN_HEIGHT = 500f
+        private const val DRAGON_QI_MATCH_THRESHOLD = 0.82f
+        private const val DRAGON_QI_MATCH_SUPPRESS_WIDTH_RATIO = 0.65f
+        private const val DRAGON_QI_MATCH_SUPPRESS_HEIGHT_RATIO = 0.60f
     }
 
     private fun getTargetSwitchSettleDelayMs(): Long = 500L
@@ -319,8 +351,8 @@ class CombatEngine(
         lastTurnPauseTriggered = -1
         startOnlyInstructionsHandled = false
         delayJob?.cancel()
-        postActionCritCheckJob?.cancel()
-        postActionCritCheckJob = null
+        postActionCheckJob?.cancel()
+        postActionCheckJob = null
 
         if (followData.isEmpty()) {
             showToast("请先导入数据", false)
@@ -366,8 +398,8 @@ class CombatEngine(
         lastTurnPauseTriggered = -1
         startOnlyInstructionsHandled = false
         delayJob?.cancel()
-        postActionCritCheckJob?.cancel()
-        postActionCritCheckJob = null
+        postActionCheckJob?.cancel()
+        postActionCheckJob = null
         templateCache.evictAll()
         followData.forEach { it.isExecuting = false }
         onRowUpdated(-1)
@@ -403,15 +435,15 @@ class CombatEngine(
         }
 
         onHudUpdated("自动导航 ${target.description}", true)
-        performStageAutoNavigation(target, onReady)
+        performStageAutoNavigation(target, navigationTask.value, onReady)
     }
 
     fun togglePauseResume() {
         isPaused = !isPaused
         if (isPaused) {
             delayJob?.cancel()
-            postActionCritCheckJob?.cancel()
-            postActionCritCheckJob = null
+            postActionCheckJob?.cancel()
+            postActionCheckJob = null
             showToast("已暂停", false)
             onStateChanged()
             onHudUpdated("已暂停", true) // 🔴 暂停时固定显示
@@ -618,10 +650,13 @@ class CombatEngine(
         val char = action.command[0]
         val currentTurn = followData[currentExecutingRowIndex].turnNumber
         val currentStep = action.stepIndex
-        val hasCritCheck =
-            instructionList.any {
-                it.turn == currentTurn && it.step == currentStep && it.type == InstructionType.CRIT_CHECK
-            }
+        val postActionChecks = instructionList.filter {
+            it.turn == currentTurn &&
+                it.step == currentStep &&
+                (it.type == InstructionType.CRIT_CHECK ||
+                    it.type == InstructionType.PANG_TONG_COPY_CHECK ||
+                    it.type == InstructionType.DRAGON_QI_CHECK)
+        }
 
         val basePointA = coordinateManager.getActionCoordinates(
             action.colIndex,
@@ -717,14 +752,6 @@ class CombatEngine(
             }
         }
 
-        postActionCritCheckJob?.cancel()
-        postActionCritCheckJob = null
-        if (hasCritCheck) {
-            postActionCritCheckJob = serviceScope.async {
-                performCritCheckAfterAction(currentTurn, currentStep)
-            }
-        }
-
         val speedMultiplier = if (appConfig.gameSpeed == 2) 1.5 else 1.0
         var delay = if (char == '↑') {
             (appConfig.intervalSkill * speedMultiplier).toLong()
@@ -749,6 +776,52 @@ class CombatEngine(
         }
         delay = delay.coerceAtLeast(0L)
 
+        postActionCheckJob?.cancel()
+        postActionCheckJob = null
+        if (postActionChecks.isNotEmpty()) {
+            val actionDelayMs = delay
+            if (postActionChecks.any { it.type == InstructionType.PANG_TONG_COPY_CHECK }) {
+                RunLogger.i("庞统复制检测将在动作间隔结束、下个动作开始前执行 delay=${actionDelayMs}ms")
+            }
+            if (postActionChecks.any { it.type == InstructionType.DRAGON_QI_CHECK }) {
+                RunLogger.i("动作后龙气检测将在动作间隔结束、下个动作开始前执行 delay=${actionDelayMs}ms")
+            }
+            postActionCheckJob = serviceScope.async {
+                val checkJobs = postActionChecks.map { check ->
+                    async {
+                        val checkDelayMs = when (check.type) {
+                            InstructionType.PANG_TONG_COPY_CHECK,
+                            InstructionType.DRAGON_QI_CHECK -> actionDelayMs
+                            else -> CRIT_CHECK_DELAY_MS
+                        }
+                        delay(checkDelayMs)
+                        if (!isRunning) {
+                            false
+                        } else {
+                            when (check.type) {
+                                InstructionType.CRIT_CHECK ->
+                                    performCritCheckAfterAction(currentTurn, currentStep, waitForEffect = false)
+                            InstructionType.PANG_TONG_COPY_CHECK ->
+                                performPangTongCopyCheck(
+                                    expectedSlot = check.value,
+                                    turn = currentTurn,
+                                    step = currentStep,
+                                    actionDelayMs = actionDelayMs
+                                )
+                            InstructionType.DRAGON_QI_CHECK ->
+                                performDragonQiCheck(
+                                    encodedCondition = check.value,
+                                    sharedScreenshot = null
+                                )
+                                else -> true
+                            }
+                        }
+                    }
+                }
+                checkJobs.awaitAll().all { it } && isRunning
+            }
+        }
+
         val stepPauseIns =
             instructionList.find { it.turn == currentTurn && it.step == currentStep && it.type == InstructionType.PAUSE }
 
@@ -760,7 +833,7 @@ class CombatEngine(
         }
 
         startSafeDelay(delay, nextActionStr, true) {
-            val critCheckJob = postActionCritCheckJob
+            val critCheckJob = postActionCheckJob
             serviceScope.launch {
                 val shouldContinue = if (critCheckJob != null) {
                     try {
@@ -768,8 +841,8 @@ class CombatEngine(
                     } catch (_: CancellationException) {
                         return@launch
                     } finally {
-                        if (postActionCritCheckJob === critCheckJob) {
-                            postActionCritCheckJob = null
+                        if (postActionCheckJob === critCheckJob) {
+                            postActionCheckJob = null
                         }
                     }
                 } else {
@@ -831,16 +904,18 @@ class CombatEngine(
             it.turn == turn &&
                 (
                     it.type == InstructionType.ALL_WIPE_CHECK ||
-                        it.type == InstructionType.DEATH_CHECK ||
-                        it.type == InstructionType.ORANGE_STAR_CHECK ||
-                        it.type == InstructionType.PURPLE_STAR_CHECK
-                    )
+                    it.type == InstructionType.DEATH_CHECK ||
+                    it.type == InstructionType.ORANGE_STAR_CHECK ||
+                    it.type == InstructionType.PURPLE_STAR_CHECK ||
+                    (it.type == InstructionType.DRAGON_QI_CHECK && it.step == 0)
+                )
         }.sortedBy { task ->
             when (task.type) {
                 InstructionType.ALL_WIPE_CHECK -> 0
                 InstructionType.DEATH_CHECK -> 1
                 InstructionType.ORANGE_STAR_CHECK,
-                InstructionType.PURPLE_STAR_CHECK -> 2
+                InstructionType.PURPLE_STAR_CHECK,
+                InstructionType.DRAGON_QI_CHECK -> 2
                 else -> 3
             }
         }
@@ -852,6 +927,7 @@ class CombatEngine(
                         InstructionType.DEATH_CHECK -> "阵亡检测(${task.value})"
                         InstructionType.ORANGE_STAR_CHECK -> "橙星检测"
                         InstructionType.PURPLE_STAR_CHECK -> "紫星检测"
+                        InstructionType.DRAGON_QI_CHECK -> "龙气检测(${decodeDragonQiCondition(task.value).comparison.symbol}${decodeDragonQiCondition(task.value).count})"
                         else -> task.type.name
                     }
                 }
@@ -859,8 +935,9 @@ class CombatEngine(
         val shouldUseSharedScreenshot =
             shouldCheckCaveNextFloorAtTurnStart ||
                 tasks.any {
-                    it.type != InstructionType.ORANGE_STAR_CHECK &&
-                        it.type != InstructionType.PURPLE_STAR_CHECK
+                it.type != InstructionType.ORANGE_STAR_CHECK &&
+                        it.type != InstructionType.PURPLE_STAR_CHECK &&
+                        it.type != InstructionType.DRAGON_QI_CHECK
                 } ||
                 (getConfig().enableTurnNumberCheck && turn >= 2)
 
@@ -956,6 +1033,18 @@ class CombatEngine(
                     if (!isRunning) return
                 }
                 val shouldContinue = performPurpleStarCheck()
+                if (shouldContinue && isRunning) {
+                    performTurnStartInstructions(turn, tasks, index + 1, onComplete, sharedScreenshot)
+                }
+            }
+            InstructionType.DRAGON_QI_CHECK -> {
+                val condition = decodeDragonQiCondition(task.value)
+                onHudUpdated("龙气检测 ${condition.comparison.symbol}${condition.count}", true)
+                if (sharedScreenshot != null) {
+                    delay(STAGE_SCREENSHOT_COOLDOWN_DELAY_MS)
+                    if (!isRunning) return
+                }
+                val shouldContinue = performDragonQiCheck(task.value, sharedScreenshot)
                 if (shouldContinue && isRunning) {
                     performTurnStartInstructions(turn, tasks, index + 1, onComplete, sharedScreenshot)
                 }
@@ -1077,6 +1166,7 @@ class CombatEngine(
 
     private fun performStageAutoNavigation(
         target: BattleStageTarget,
+        navigationValue: Long,
         onReady: () -> Unit
     ) {
         serviceScope.launch {
@@ -1087,7 +1177,18 @@ class CombatEngine(
                 stop()
                 return@launch
             }
-            performDirectStageNavigation(config, onReady)
+            if (target == BattleStageTarget.TAI_SHAN_FU) {
+                val taishanConfig = taishanFuStageConfigFromValue(navigationValue)
+                    ?: return@launch
+                performTaishanFuStageNavigation(
+                    config = config,
+                    topLevel = taishanConfig.topLevel,
+                    targetLevel = taishanConfig.targetLevel,
+                    onReady = onReady,
+                )
+            } else {
+                performDirectStageNavigation(config, onReady)
+            }
         }
     }
 
@@ -1165,10 +1266,7 @@ class CombatEngine(
             }
             if (entryPoint == null && config.target.isCaveTarget()) {
                 cavePoint = withContext(Dispatchers.Default) {
-                    findCaveDongkuPointFromScreenshot(
-                        screenshot = initialScreenshot,
-                        logLabel = "${config.target.description} 洞窟模板"
-                    )
+                    caveDongkuCenterPoint()
                 }
             }
             if (entryPoint == null && config.recoverySelectionRegion != null) {
@@ -1279,6 +1377,392 @@ class CombatEngine(
             logPrefix = "${config.target.description} 自动导航进入挑战后",
             onReady = onReady
         )
+    }
+
+    private data class TaishanFuTemplateMatch(
+        val point: PointF,
+        val score: Float,
+    )
+
+    private suspend fun performTaishanFuStageNavigation(
+        config: DirectStageNavigationConfig,
+        topLevel: Int,
+        targetLevel: Int,
+        onReady: () -> Unit,
+    ) {
+        delay(STAGE_AUTO_NAV_CHECK_DELAY_MS)
+        if (!isRunning) return
+        val screenshot = captureScreenshotBitmap()
+        if (screenshot == null) {
+            RunLogger.e("泰山府${targetLevel}自动导航截图失败")
+            showToast("泰山府自动导航截图失败，已停止", true)
+            stop()
+            return
+        }
+
+        var isTaishanFuMap = false
+        try {
+            val battleState = detectBattleStateOcrFromScreenshot(screenshot, "泰山府${targetLevel}自动导航战斗OCR")
+            if (battleState != null && battleState.hitCount >= STAGE_BATTLE_OCR_MIN_HIT_COUNT) {
+                RunLogger.i("泰山府${targetLevel}自动导航已在战斗中")
+                onReady()
+                return
+            }
+
+            findStartBattleOcrPointFromScreenshot(
+                screenshot = screenshot,
+                logLabel = "泰山府${targetLevel}开始战斗OCR",
+            )?.let { startBattlePoint ->
+                continueAfterStageStartBattleDetected(
+                    config = config,
+                    startBattlePoint = startBattlePoint,
+                    logPrefix = "泰山府${targetLevel}自动导航",
+                    onReady = onReady,
+                )
+                return
+            }
+
+            isTaishanFuMap = withContext(Dispatchers.Default) {
+                findTaishanFuYongzhouMatchesFromScreenshot(screenshot).isNotEmpty()
+            }
+        } finally {
+            if (!screenshot.isRecycled) screenshot.recycle()
+        }
+
+        if (!isRunning) return
+        if (isTaishanFuMap) {
+            RunLogger.i("泰山府顶部${topLevel}关，定位目标${targetLevel}关")
+            if (!navigateTaishanFuFromTop(config, topLevel, targetLevel, onReady) && isRunning) {
+                RunLogger.e("泰山府${targetLevel}地图计数定位失败，已停止")
+                showToast("泰山府未找到目标关卡，已停止", true)
+                stop()
+            }
+            return
+        }
+
+        val recovered = performTaishanFuIndirectNavigation(config, topLevel, targetLevel, onReady)
+        if (!recovered && isRunning) {
+            RunLogger.e("泰山府${targetLevel}自动导航未识别到当前关卡、地图或地宫入口，已停止")
+            showToast("泰山府自动导航失败，已停止", true)
+            stop()
+        }
+    }
+
+    private suspend fun performTaishanFuIndirectNavigation(
+        config: DirectStageNavigationConfig,
+        topLevel: Int,
+        targetLevel: Int,
+        onReady: () -> Unit,
+    ): Boolean {
+        RunLogger.i("泰山府${targetLevel}自动导航直达失败，开始执行主页入口路线")
+        var backAttempts = 0
+        while (isRunning && backAttempts <= STAGE_HOME_RECOVERY_MAX_BACK_STEPS) {
+            val digongPoint = findTemplatePointInVisionRoi(
+                templateName = STAGE_HOME_RECOVERY_DIGONG_TEMPLATE,
+                centerX = STAGE_HOME_RECOVERY_DIGONG_CENTER_X,
+                centerY = STAGE_HOME_RECOVERY_DIGONG_CENTER_Y,
+                align = "center",
+                roiWidth = STAGE_HOME_RECOVERY_DIGONG_ROI_WIDTH,
+                roiHeight = STAGE_HOME_RECOVERY_DIGONG_ROI_HEIGHT,
+                threshold = STAGE_HOME_RECOVERY_DIGONG_THRESHOLD,
+                logLabel = "泰山府${targetLevel}主页入口地宫模板",
+            )
+            if (!isRunning) return true
+            if (digongPoint != null) {
+                return openDigongAndContinueToTaishanFu(config, topLevel, targetLevel, digongPoint, onReady)
+            }
+
+            delay(STAGE_HOME_RECOVERY_BETWEEN_TEMPLATES_DELAY_MS)
+            if (!isRunning) return true
+            val yuanbaoPoint = findTemplatePointInVisionRoi(
+                templateName = STAGE_HOME_RECOVERY_YUANBAO_TEMPLATE,
+                centerX = STAGE_HOME_RECOVERY_YUANBAO_CENTER_X,
+                centerY = STAGE_HOME_RECOVERY_YUANBAO_CENTER_Y,
+                align = "center",
+                roiWidth = STAGE_HOME_RECOVERY_YUANBAO_ROI_WIDTH,
+                roiHeight = STAGE_HOME_RECOVERY_YUANBAO_ROI_HEIGHT,
+                threshold = STAGE_HOME_RECOVERY_YUANBAO_THRESHOLD,
+                logLabel = "泰山府${targetLevel}主页入口鸢报模板",
+            )
+            if (!isRunning) return true
+            if (yuanbaoPoint != null) {
+                RunLogger.i("泰山府${targetLevel}主页入口识别到鸢报，左滑后查找地宫")
+                performStageRecoverySwipeRight()
+                delay(STAGE_HOME_RECOVERY_SWIPE_DELAY_MS)
+                if (!isRunning) return true
+                val postSwipeDigongPoint = findTemplatePointInVisionRoi(
+                    templateName = STAGE_HOME_RECOVERY_DIGONG_TEMPLATE,
+                    centerX = STAGE_HOME_RECOVERY_DIGONG_CENTER_X,
+                    centerY = STAGE_HOME_RECOVERY_DIGONG_CENTER_Y,
+                    align = "center",
+                    roiWidth = STAGE_HOME_RECOVERY_DIGONG_ROI_WIDTH,
+                    roiHeight = STAGE_HOME_RECOVERY_DIGONG_ROI_HEIGHT,
+                    threshold = STAGE_HOME_RECOVERY_DIGONG_THRESHOLD,
+                    logLabel = "泰山府${targetLevel}左滑后地宫模板",
+                )
+                if (postSwipeDigongPoint != null) {
+                    return openDigongAndContinueToTaishanFu(config, topLevel, targetLevel, postSwipeDigongPoint, onReady)
+                }
+                return false
+            }
+
+            if (backAttempts >= STAGE_HOME_RECOVERY_MAX_BACK_STEPS) return false
+            RunLogger.i("泰山府${targetLevel}主页入口未识别到地宫或鸢报，执行返回，第${backAttempts + 1}次")
+            accessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
+            backAttempts += 1
+            delay(STAGE_HOME_RECOVERY_BACK_DELAY_MS)
+        }
+        return false
+    }
+
+    private suspend fun openDigongAndContinueToTaishanFu(
+        config: DirectStageNavigationConfig,
+        topLevel: Int,
+        targetLevel: Int,
+        digongPoint: PointF,
+        onReady: () -> Unit,
+    ): Boolean {
+        gestureDispatcher.performActionDirect(digongPoint.x, digongPoint.y, digongPoint.x, digongPoint.y, true)
+        RunLogger.i("泰山府${targetLevel}主页入口识别到地宫，点击 x=${digongPoint.x.toInt()} y=${digongPoint.y.toInt()}")
+        delay(TAI_SHAN_FU_POST_DIGONG_DELAY_MS)
+        if (!isRunning) return true
+
+        val entrancePoint = findTaishanFuEntranceOcrPoint()
+        if (entrancePoint == null) {
+            RunLogger.e("泰山府${targetLevel}进入地宫后未识别到泰山府入口，已停止")
+            showToast("未识别到泰山府入口，已停止", true)
+            stop()
+            return true
+        }
+        gestureDispatcher.performActionDirect(entrancePoint.x, entrancePoint.y, entrancePoint.x, entrancePoint.y, true)
+        RunLogger.i("泰山府${targetLevel}OCR识别到泰山府入口，点击 x=${entrancePoint.x.toInt()} y=${entrancePoint.y.toInt()}")
+        delay(TAI_SHAN_FU_POST_ENTRANCE_DELAY_MS)
+        if (!isRunning) return true
+        return navigateTaishanFuFromTop(config, topLevel, targetLevel, onReady)
+    }
+
+    private suspend fun navigateTaishanFuFromTop(
+        config: DirectStageNavigationConfig,
+        topLevel: Int,
+        targetLevel: Int,
+        onReady: () -> Unit,
+    ): Boolean {
+        var countedLevelCount = 0
+        var previousPageBottom: TaishanFuTemplateMatch? = null
+        repeat(TAI_SHAN_FU_MAX_SWIPE_COUNT + 1) { pageIndex ->
+            val screenshot = captureScreenshotBitmap() ?: return false
+            val pageMatches = try {
+                withContext(Dispatchers.Default) { findTaishanFuYongzhouMatchesFromScreenshot(screenshot) }
+            } finally {
+                if (!screenshot.isRecycled) screenshot.recycle()
+            }
+            if (pageMatches.isEmpty()) {
+                RunLogger.e("泰山府${targetLevel}第${pageIndex + 1}页未识别到永昼模板")
+                return false
+            }
+
+            val newMatches = if (previousPageBottom == null) {
+                pageMatches
+            } else {
+                val overlap = pageMatches.minByOrNull { candidate ->
+                    kotlin.math.abs(candidate.point.x - previousPageBottom!!.point.x)
+                }
+                if (overlap == null || kotlin.math.abs(overlap.point.x - previousPageBottom!!.point.x) > taishanFuPageAnchorTolerance()) {
+                    RunLogger.e("泰山府${targetLevel}翻页后未找到上一页底部永昼锚点，停止以避免计数错误")
+                    return false
+                }
+                pageMatches.filter { it.point.y > overlap.point.y }
+            }
+            if (newMatches.isEmpty()) {
+                RunLogger.e("泰山府${targetLevel}翻页后没有新增关卡，停止以避免重复计数")
+                return false
+            }
+
+            val targetOffset = targetLevel - topLevel - countedLevelCount
+            if (targetOffset in newMatches.indices) {
+                val stagePoint = taishanFuStageClickPoint(targetLevel, newMatches[targetOffset].point)
+                enterTaishanFuStage(config, targetLevel, stagePoint, "从顶部第${topLevel}关计数", onReady)
+                return true
+            }
+            countedLevelCount += newMatches.size
+            previousPageBottom = pageMatches.maxByOrNull { it.point.y }
+            if (pageIndex == TAI_SHAN_FU_MAX_SWIPE_COUNT) return false
+
+            performTaishanFuSwipeUp()
+            delay(TAI_SHAN_FU_SWIPE_SETTLE_DELAY_MS)
+            if (!isRunning) return true
+        }
+        return false
+    }
+
+    private suspend fun enterTaishanFuStage(
+        config: DirectStageNavigationConfig,
+        targetLevel: Int,
+        stagePoint: PointF,
+        source: String,
+        onReady: () -> Unit,
+    ) {
+        gestureDispatcher.performActionDirect(stagePoint.x, stagePoint.y, stagePoint.x, stagePoint.y, true)
+        RunLogger.i("泰山府${targetLevel}${source}定位完成，点击 x=${stagePoint.x.toInt()} y=${stagePoint.y.toInt()}")
+        delay(config.delayAfterEntryClickMs)
+        if (!isRunning) return
+
+        val startBattlePoint = findTaishanFuStartBattleOcrPoint(targetLevel)
+        if (startBattlePoint == null) {
+            RunLogger.e("泰山府${targetLevel}点击关卡后未识别到开始战斗，已停止")
+            showToast("未识别到开始战斗，已停止", true)
+            stop()
+            return
+        }
+
+        continueAfterStageStartBattleDetected(
+            config = config,
+            startBattlePoint = startBattlePoint,
+            logPrefix = "泰山府${targetLevel}点击关卡后",
+            onReady = onReady,
+        )
+    }
+
+    private suspend fun findTaishanFuStartBattleOcrPoint(targetLevel: Int): PointF? {
+        val screenshot = captureScreenshotBitmap() ?: return null
+        return try {
+            findStartBattleOcrPointFromScreenshot(
+                screenshot = screenshot,
+                logLabel = "泰山府${targetLevel}开始战斗OCR",
+            )
+        } finally {
+            if (!screenshot.isRecycled) screenshot.recycle()
+        }
+    }
+
+    private suspend fun findTaishanFuEntranceOcrPoint(): PointF? {
+        val screenshot = captureScreenshotBitmap() ?: return null
+        return try {
+            findTaishanFuEntranceOcrPointFromScreenshot(screenshot)
+        } finally {
+            if (!screenshot.isRecycled) screenshot.recycle()
+        }
+    }
+
+    private suspend fun findTaishanFuEntranceOcrPointFromScreenshot(screenshot: Bitmap): PointF? {
+        val region = buildVisionSearchRegion(
+            screenshot = screenshot,
+            centerX = TAI_SHAN_FU_ENTRANCE_CENTER_X,
+            centerY = TAI_SHAN_FU_ENTRANCE_CENTER_Y,
+            align = "top",
+            roiWidth = TAI_SHAN_FU_ENTRANCE_ROI_WIDTH,
+            roiHeight = TAI_SHAN_FU_ENTRANCE_ROI_HEIGHT,
+        ) ?: return null
+        return try {
+            val result = recognizeChineseTextResult(region.bitmap)
+            val rawText = result?.text.orEmpty()
+            val targetChars = listOf('泰', '山', '府')
+            val match = result?.blocks
+                ?.flatMap { it.lines }
+                ?.map { line -> line to targetChars.filter { char -> line.text.contains(char) } }
+                ?.filter { (_, hitChars) -> hitChars.size >= TAI_SHAN_FU_ENTRANCE_MIN_HIT_COUNT }
+                ?.maxByOrNull { (_, hitChars) -> hitChars.size }
+            if (match == null) {
+                RunLogger.i("泰山府入口OCR raw=${formatOcrLogText(rawText)} hits=无 count=0")
+                return null
+            }
+            val (line, hitChars) = match
+            val (displayWidth, displayHeight) = getRealScreenSize()
+            val displayX = (region.left + line.boundingBox.centerX()) * displayWidth / screenshot.width.toFloat()
+            val displayY = (region.top + line.boundingBox.centerY()) * displayHeight / screenshot.height.toFloat()
+            RunLogger.i(
+                "泰山府入口OCR raw=${formatOcrLogText(rawText)} line=${formatOcrLogText(line.text)} " +
+                    "hits=${hitChars.joinToString("")} count=${hitChars.size} x=${displayX.toInt()} y=${displayY.toInt()}",
+            )
+            PointF(displayX, displayY)
+        } finally {
+            if (!region.bitmap.isRecycled) region.bitmap.recycle()
+        }
+    }
+
+    private fun findTaishanFuYongzhouMatchesFromScreenshot(screenshot: Bitmap): List<TaishanFuTemplateMatch> {
+        val template = loadTemplateBitmap(TAI_SHAN_FU_TEMPLATE) ?: return emptyList()
+        val scale = minOf(screenshot.width / VISION_BASE_W, screenshot.height / VISION_BASE_H)
+        val scaledTemplate = if (template.width == (template.width * scale).toInt() && template.height == (template.height * scale).toInt()) {
+            template
+        } else {
+            Bitmap.createScaledBitmap(
+                template,
+                (template.width * scale).toInt().coerceAtLeast(1),
+                (template.height * scale).toInt().coerceAtLeast(1),
+                true,
+            )
+        }
+        try {
+            val (displayWidth, displayHeight) = getRealScreenSize()
+            return Mat().use { sourceMat ->
+                Mat().use { templateMat ->
+                    Mat().use { resultMat ->
+                        Utils.bitmapToMat(screenshot, sourceMat)
+                        Utils.bitmapToMat(scaledTemplate, templateMat)
+                        Imgproc.cvtColor(sourceMat, sourceMat, Imgproc.COLOR_RGBA2GRAY)
+                        Imgproc.cvtColor(templateMat, templateMat, Imgproc.COLOR_RGBA2GRAY)
+                        Imgproc.matchTemplate(sourceMat, templateMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
+                        val suppressWidth = (scaledTemplate.width * TAI_SHAN_FU_TEMPLATE_SUPPRESS_RATIO).toInt().coerceAtLeast(1)
+                        val suppressHeight = (scaledTemplate.height * TAI_SHAN_FU_TEMPLATE_SUPPRESS_RATIO).toInt().coerceAtLeast(1)
+                        val matches = mutableListOf<TaishanFuTemplateMatch>()
+                        while (true) {
+                            val best = Core.minMaxLoc(resultMat)
+                            if (best.maxVal < TAI_SHAN_FU_TEMPLATE_THRESHOLD) break
+                            val screenshotX = best.maxLoc.x.toFloat() + scaledTemplate.width / 2f
+                            val screenshotY = best.maxLoc.y.toFloat() + scaledTemplate.height / 2f
+                            matches += TaishanFuTemplateMatch(
+                                point = PointF(
+                                    screenshotX * displayWidth / screenshot.width.toFloat(),
+                                    screenshotY * displayHeight / screenshot.height.toFloat(),
+                                ),
+                                score = best.maxVal.toFloat(),
+                            )
+                            val left = (best.maxLoc.x - suppressWidth / 2.0).toInt().coerceIn(0, resultMat.cols() - 1)
+                            val top = (best.maxLoc.y - suppressHeight / 2.0).toInt().coerceIn(0, resultMat.rows() - 1)
+                            val right = (left + suppressWidth).coerceAtMost(resultMat.cols())
+                            val bottom = (top + suppressHeight).coerceAtMost(resultMat.rows())
+                            Imgproc.rectangle(
+                                resultMat,
+                                org.opencv.core.Point(left.toDouble(), top.toDouble()),
+                                org.opencv.core.Point(right.toDouble(), bottom.toDouble()),
+                                org.opencv.core.Scalar(-1.0),
+                                -1,
+                            )
+                        }
+                        RunLogger.i("泰山府永昼模板命中=${matches.size} 阈值=${"%.2f".format(Locale.US, TAI_SHAN_FU_TEMPLATE_THRESHOLD)}")
+                        matches.sortedBy { it.point.y }
+                    }
+                }
+            }
+        } finally {
+            if (scaledTemplate !== template && !scaledTemplate.isRecycled) scaledTemplate.recycle()
+            if (!template.isRecycled) template.recycle()
+        }
+    }
+
+    private fun taishanFuStageClickPoint(targetLevel: Int, labelPoint: PointF): PointF {
+        val (screenWidth, _) = getRealScreenSize()
+        val offset = TAI_SHAN_FU_STAGE_CLICK_OFFSET_X * screenWidth / VISION_BASE_W
+        val clickX = if (targetLevel in 9..10) labelPoint.x + offset else labelPoint.x - offset
+        return PointF(clickX.coerceIn(0f, screenWidth), labelPoint.y)
+    }
+
+    private fun taishanFuPageAnchorTolerance(): Float {
+        val (screenWidth, _) = getRealScreenSize()
+        return TAI_SHAN_FU_PAGE_ANCHOR_X_TOLERANCE * screenWidth / VISION_BASE_W
+    }
+
+    private fun performTaishanFuSwipeUp() {
+        val (screenWidth, screenHeight) = getRealScreenSize()
+        val path = Path().apply {
+            moveTo(screenWidth * 0.50f, screenHeight * 0.60f)
+            lineTo(screenWidth * 0.50f, screenHeight * 0.40f)
+        }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, TAI_SHAN_FU_SWIPE_DURATION_MS))
+            .build()
+        accessibilityService.dispatchGesture(gesture, null, null)
     }
 
     private suspend fun performBaiHuIndirectRecovery(
@@ -1437,7 +1921,7 @@ class CombatEngine(
             true
         )
         RunLogger.i(
-            "${config.target.description} 自动导航识别到 ${CAVE_DONGKU_TEMPLATE}，点击 x=${dongkuPoint.x.toInt()} y=${dongkuPoint.y.toInt()}"
+            "${config.target.description} 自动导航点击洞窟固定点 x=${dongkuPoint.x.toInt()} y=${dongkuPoint.y.toInt()}"
         )
         delay(config.delayAfterEntryClickMs)
         if (!isRunning) return true
@@ -1575,73 +2059,14 @@ class CombatEngine(
         delay(STAGE_HOME_RECOVERY_POST_LIXIAN_DELAY_MS)
         if (!isRunning) return true
 
-        val dongkuPoint = findCaveDongkuPoint(
-            logLabel = "${config.target.description} 主页入口 洞窟模板"
-        )
+        val dongkuPoint = caveDongkuCenterPoint()
         if (!isRunning) return true
-        if (dongkuPoint == null) {
-            RunLogger.e("${config.target.description} 进入历险后未识别到洞窟，已停止")
-            showToast("未识别到洞窟，已停止", true)
-            stop()
-            return true
-        }
-
         return continueCaveFromDongkuFlow(config, dongkuPoint, onReady)
     }
 
-    private suspend fun findCaveDongkuPoint(logLabel: String): PointF? {
-        val primaryPoint = findTemplatePointInVisionRoi(
-            templateName = CAVE_DONGKU_TEMPLATE,
-            centerX = CAVE_DONGKU_CENTER_X,
-            centerY = CAVE_DONGKU_CENTER_Y,
-            align = "center",
-            roiWidth = CAVE_DONGKU_ROI_WIDTH,
-            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
-            threshold = CAVE_DONGKU_THRESHOLD,
-            logLabel = logLabel
-        )
-        if (primaryPoint != null) return primaryPoint
-
-        return findTemplatePointInVisionRoi(
-            templateName = CAVE_DONGKU_TEMPLATE_FALLBACK,
-            centerX = CAVE_DONGKU_CENTER_X,
-            centerY = CAVE_DONGKU_CENTER_Y,
-            align = "center",
-            roiWidth = CAVE_DONGKU_ROI_WIDTH,
-            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
-            threshold = CAVE_DONGKU_THRESHOLD,
-            logLabel = "$logLabel fallback"
-        )
-    }
-
-    private fun findCaveDongkuPointFromScreenshot(
-        screenshot: Bitmap,
-        logLabel: String
-    ): PointF? {
-        val primaryPoint = findTemplatePointInVisionRoiFromScreenshot(
-            screenshot = screenshot,
-            templateName = CAVE_DONGKU_TEMPLATE,
-            centerX = CAVE_DONGKU_CENTER_X,
-            centerY = CAVE_DONGKU_CENTER_Y,
-            align = "center",
-            roiWidth = CAVE_DONGKU_ROI_WIDTH,
-            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
-            threshold = CAVE_DONGKU_THRESHOLD,
-            logLabel = logLabel
-        )
-        if (primaryPoint != null) return primaryPoint
-
-        return findTemplatePointInVisionRoiFromScreenshot(
-            screenshot = screenshot,
-            templateName = CAVE_DONGKU_TEMPLATE_FALLBACK,
-            centerX = CAVE_DONGKU_CENTER_X,
-            centerY = CAVE_DONGKU_CENTER_Y,
-            align = "center",
-            roiWidth = CAVE_DONGKU_ROI_WIDTH,
-            roiHeight = CAVE_DONGKU_ROI_HEIGHT,
-            threshold = CAVE_DONGKU_THRESHOLD,
-            logLabel = "$logLabel fallback"
-        )
+    private fun caveDongkuCenterPoint(): PointF {
+        val (x, y) = calculateVisionCoordinate(CAVE_DONGKU_CENTER_X, CAVE_DONGKU_CENTER_Y, "center")
+        return PointF(x, y)
     }
 
     private suspend fun performRelicIndirectAutoNavigation(
@@ -1923,8 +2348,104 @@ class CombatEngine(
         return performStarCheck(StarDetectionMode.PURPLE)
     }
 
-    private suspend fun performCritCheckAfterAction(turn: Int, step: Int): Boolean {
-        delay(CRIT_CHECK_DELAY_MS)
+    private suspend fun performDragonQiCheck(
+        encodedCondition: Long,
+        sharedScreenshot: Bitmap?
+    ): Boolean {
+        val condition = decodeDragonQiCondition(encodedCondition)
+        val screenshot = sharedScreenshot ?: captureScreenshotBitmap()
+        if (screenshot == null) {
+            RunLogger.e("龙气检测截图失败")
+            handleBackRecoveryAndStop(
+                reasonLabel = "龙气检测",
+                toastMessage = "龙气检测截图失败，已执行一次返回",
+                successLog = "龙气检测截图失败，已执行一次全局返回",
+                failureLog = "龙气检测截图失败后执行全局返回失败"
+            )
+            return false
+        }
+
+        val actualCount = try {
+            withContext(Dispatchers.Default) {
+                countDragonQiFromScreenshot(screenshot)
+            }
+        } finally {
+            if (sharedScreenshot == null && !screenshot.isRecycled) {
+                screenshot.recycle()
+            }
+        }
+        if (!isRunning) return false
+
+        val passed = condition.matches(actualCount)
+        RunLogger.i(
+            "龙气检测 actual=$actualCount condition=${condition.comparison.symbol}${condition.count} " +
+                "passed=$passed"
+        )
+        if (passed) {
+            showToast("龙气检测通过：${actualCount}层", false)
+            return true
+        }
+
+        handleBackRecoveryAndStop(
+            reasonLabel = "龙气检测",
+            toastMessage = "龙气检测未通过，已执行一次返回",
+            successLog = "龙气检测未通过，已执行一次全局返回",
+            failureLog = "龙气检测未通过后执行全局返回失败"
+        )
+        return false
+    }
+
+    private fun countDragonQiFromScreenshot(screenshot: Bitmap): Int {
+        val roi = CombatDetectionRoiStore.resolveRoi(accessibilityService, CombatDetectionRoiKey.DRAGON_QI)
+        val region = buildVisionSearchRegion(
+            screenshot = screenshot,
+            centerX = roi.x,
+            centerY = roi.y,
+            align = "bottom",
+            roiWidth = roi.w,
+            roiHeight = roi.h
+        ) ?: return 0
+        return try {
+            val template = loadTemplateBitmap(DRAGON_QI_TEMPLATE) ?: return 0
+            val screenshotGameScale = minOf(
+                screenshot.width / VISION_BASE_W,
+                screenshot.height / VISION_BASE_H
+            )
+            val scaledWidth = (template.width * screenshotGameScale).toInt().coerceAtLeast(1)
+            val scaledHeight = (template.height * screenshotGameScale).toInt().coerceAtLeast(1)
+            val scaledTemplate = if (scaledWidth == template.width && scaledHeight == template.height) {
+                template
+            } else {
+                Bitmap.createScaledBitmap(template, scaledWidth, scaledHeight, true)
+            }
+            try {
+                countTemplateMatches(
+                    screenBitmap = region.bitmap,
+                    templateBitmap = scaledTemplate,
+                    threshold = DRAGON_QI_MATCH_THRESHOLD,
+                    suppressWidthRatio = DRAGON_QI_MATCH_SUPPRESS_WIDTH_RATIO,
+                    suppressHeightRatio = DRAGON_QI_MATCH_SUPPRESS_HEIGHT_RATIO,
+                    logLabel = "龙气检测",
+                    templateName = DRAGON_QI_TEMPLATE
+                )
+            } finally {
+                if (scaledTemplate !== template && !scaledTemplate.isRecycled) {
+                    scaledTemplate.recycle()
+                }
+            }
+        } finally {
+            if (!region.bitmap.isRecycled) {
+                region.bitmap.recycle()
+            }
+        }
+    }
+
+    private suspend fun performCritCheckAfterAction(
+        turn: Int,
+        step: Int,
+        waitForEffect: Boolean = true
+    ): Boolean {
+        if (waitForEffect) delay(CRIT_CHECK_DELAY_MS)
         if (!isRunning) return false
         onHudUpdated("暴击检测", true)
 
@@ -1984,6 +2505,131 @@ class CombatEngine(
             failureLog = "暴击检测未命中后执行全局返回失败"
         )
         return false
+    }
+
+    private suspend fun performPangTongCopyCheck(
+        expectedSlot: Long,
+        turn: Int,
+        step: Int,
+        actionDelayMs: Long
+    ): Boolean {
+        onHudUpdated("庞统复制检测", true)
+        val sampleTimes = listOf(
+            (actionDelayMs - PANG_TONG_COPY_SAMPLE_OFFSET_MS).coerceAtLeast(0L),
+            actionDelayMs,
+            actionDelayMs + PANG_TONG_COPY_SAMPLE_OFFSET_MS
+        )
+        val results = mutableListOf<PangTongCopyMatch>()
+        val sampleStartAt = SystemClock.elapsedRealtime()
+        sampleTimes.forEachIndexed { index, sampleTimeMs ->
+            val elapsedMs = SystemClock.elapsedRealtime() - sampleStartAt
+            val waitMs = (sampleTimeMs - elapsedMs).coerceAtLeast(0L)
+            if (waitMs > 0L) delay(waitMs)
+            if (!isRunning) return false
+
+            val screenshot = captureScreenshotBitmap()
+            if (screenshot == null) {
+                RunLogger.e("庞统复制检测第${index + 1}次截图失败 turn=$turn step=$step")
+                return@forEachIndexed
+            }
+            try {
+                withContext(Dispatchers.Default) {
+                    findPangTongCopyMatch(screenshot)?.let(results::add)
+                }
+            } finally {
+                if (!screenshot.isRecycled) screenshot.recycle()
+            }
+        }
+        if (!isRunning) return false
+
+        val result = results.maxByOrNull { it.score }
+        val actualSlot = result?.slot
+        val passed = actualSlot == expectedSlot.toInt()
+        RunLogger.i(
+            "庞统复制检测 turn=$turn step=$step samples=${results.size}/3 expectedSlot=$expectedSlot " +
+                "actualSlot=${actualSlot ?: "无"} score=${result?.score?.let { "%.4f".format(Locale.US, it) } ?: "无"} passed=$passed"
+        )
+        if (passed) {
+            showToast("庞统复制检测通过：${actualSlot}号位", false)
+            return true
+        }
+
+        handleBackRecoveryAndStop(
+            reasonLabel = "庞统复制检测",
+            toastMessage = "庞统复制检测未通过，已执行一次返回",
+            successLog = "庞统复制检测未通过，已执行一次全局返回",
+            failureLog = "庞统复制检测未通过后执行全局返回失败"
+        )
+        return false
+    }
+
+    private data class PangTongCopyMatch(
+        val slot: Int,
+        val score: Float,
+        val centerX: Float
+    )
+
+    private fun findPangTongCopyMatch(screenshot: Bitmap): PangTongCopyMatch? {
+        val roi = CombatDetectionRoiStore.resolveRoi(accessibilityService, CombatDetectionRoiKey.PANG_TONG_COPY)
+        val region = buildVisionSearchRegion(
+            screenshot = screenshot,
+            centerX = roi.x,
+            centerY = roi.y,
+            align = "bottom",
+            roiWidth = roi.w,
+            roiHeight = roi.h
+        ) ?: return null
+        return try {
+            val template = loadTemplateBitmap(PANG_TONG_COPY_TEMPLATE) ?: return null
+            val screenshotGameScale = minOf(
+                screenshot.width / VISION_BASE_W,
+                screenshot.height / VISION_BASE_H
+            )
+            val scaledWidth = (template.width * screenshotGameScale).toInt().coerceAtLeast(1)
+            val scaledHeight = (template.height * screenshotGameScale).toInt().coerceAtLeast(1)
+            val scaledTemplate = if (scaledWidth == template.width && scaledHeight == template.height) {
+                template
+            } else {
+                Bitmap.createScaledBitmap(template, scaledWidth, scaledHeight, true)
+            }
+            try {
+                val ownsSourceBitmap = region.bitmap.config != Bitmap.Config.ARGB_8888
+                val sourceBitmap = if (ownsSourceBitmap) region.bitmap.copy(Bitmap.Config.ARGB_8888, false) else region.bitmap
+                try {
+                    Mat().use { srcMat ->
+                        Mat().use { tmplMat ->
+                            Mat().use { resultMat ->
+                                Utils.bitmapToMat(sourceBitmap, srcMat)
+                                Utils.bitmapToMat(scaledTemplate, tmplMat)
+                                Imgproc.cvtColor(srcMat, srcMat, Imgproc.COLOR_RGBA2GRAY)
+                                Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
+                                Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
+                                val match = Core.minMaxLoc(resultMat)
+                                val score = match.maxVal.toFloat()
+                                RunLogger.i(
+                                    "庞统复制检测本次截图最高分=${"%.4f".format(Locale.US, score)}"
+                                )
+
+                                val centerX = region.left + match.maxLoc.x.toFloat() + scaledTemplate.width / 2f
+                                val gameWidth = VISION_BASE_W * screenshotGameScale
+                                val gameLeft = (screenshot.width - gameWidth) / 2f
+                                val baseX = ((centerX - gameLeft) / screenshotGameScale)
+                                    .coerceIn(0f, VISION_BASE_W - 0.01f)
+                                val slot = (baseX / (VISION_BASE_W / PANG_TONG_COPY_SLOT_COUNT)).toInt() + 1
+                                PangTongCopyMatch(slot, score, centerX)
+                            }
+                        }
+                    }
+                } finally {
+                    if (ownsSourceBitmap) sourceBitmap.recycle()
+                }
+            } finally {
+                if (scaledTemplate !== template) scaledTemplate.recycle()
+                template.recycle()
+            }
+        } finally {
+            if (!region.bitmap.isRecycled) region.bitmap.recycle()
+        }
     }
 
     private suspend fun performStarCheck(mode: StarDetectionMode): Boolean {
@@ -2330,6 +2976,20 @@ class CombatEngine(
         if (!isRunning) return true
 
         return when {
+            target == BattleStageTarget.TAI_SHAN_FU -> {
+                val navigationValue = instructionList.firstOrNull {
+                    it.type == InstructionType.STAGE_AUTO_NAV
+                }?.normalized()?.value ?: return false
+                val taishanConfig = taishanFuStageConfigFromValue(navigationValue) ?: return false
+                RunLogger.i("${reasonLabel}确认后进入泰山府重开分支")
+                performTaishanFuStageNavigation(
+                    config = config,
+                    topLevel = taishanConfig.topLevel,
+                    targetLevel = taishanConfig.targetLevel,
+                    onReady = { restartFromFirstTurn() },
+                )
+                true
+            }
             target == BattleStageTarget.BAI_HU -> {
                 RunLogger.i("${reasonLabel}确认后进入白鹄重开分支")
                 continueStageEntryFlow(config, onReady = { restartFromFirstTurn() }, tryStartBattleFirst = false)
@@ -2676,11 +3336,7 @@ class CombatEngine(
     ): PointF? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
 
-        val delayIncrementMs = TemplateDelayOverrideStore.getIncrementMs(
-            accessibilityService,
-            BATTLE_FLOW_TEST_TASK_KEY,
-            templateName
-        )
+        val delayIncrementMs = templateDelayIncrementMs(templateName)
         if (delayIncrementMs > 0L) {
             RunLogger.i("$logLabel 应用素材延迟增量 ${delayIncrementMs}ms template=$templateName")
             delay(delayIncrementMs)
@@ -2737,6 +3393,23 @@ class CombatEngine(
             BATTLE_FLOW_START_BATTLE_OCR_DELAY_KEY
         )
         return (baseDelayMs + incrementMs).coerceAtLeast(0L)
+    }
+
+    private fun templateDelayIncrementMs(templateName: String): Long {
+        val direct = TemplateDelayOverrideStore.getIncrementMs(
+            accessibilityService,
+            BATTLE_FLOW_TEST_TASK_KEY,
+            templateName
+        )
+        if (direct > 0L) return direct
+
+        val legacyName = templateName.substringAfterLast('/').substringAfterLast('\\')
+        if (legacyName == templateName) return 0L
+        return TemplateDelayOverrideStore.getIncrementMs(
+            accessibilityService,
+            BATTLE_FLOW_TEST_TASK_KEY,
+            legacyName
+        )
     }
 
     private suspend fun findStartBattlePointFromScreenshot(screenshot: Bitmap): PointF? {
@@ -3370,7 +4043,12 @@ class CombatEngine(
     }
 
     private fun loadTemplateBitmap(fileName: String): Bitmap? {
-        val cacheKey = TemplateOverrideStore.cacheKey(accessibilityService, fileName)
+        val overrideFile = templateOverrideFile(fileName)
+        val cacheKey = if (overrideFile != null) {
+            "$fileName#override#${overrideFile.name}#${overrideFile.lastModified()}"
+        } else {
+            "$fileName#asset"
+        }
         templateCache.get(cacheKey)?.let {
             BitmapFactory.decodeByteArray(it, 0, it.size)?.let { bitmap ->
                 return bitmap
@@ -3378,8 +4056,7 @@ class CombatEngine(
             templateCache.remove(cacheKey)
         }
         return try {
-            val bytes = TemplateOverrideStore.overrideFile(accessibilityService, fileName)
-                .takeIf { it.exists() }
+            val bytes = overrideFile
                 ?.readBytes()
                 ?: accessibilityService.assets.open(fileName).use { it.readBytes() }
             templateCache.put(cacheKey, bytes)
@@ -3392,6 +4069,20 @@ class CombatEngine(
         } catch (t: Throwable) {
             RunLogger.e("模板打开失败 $fileName", t)
             null
+        }
+    }
+
+    private fun templateOverrideFile(fileName: String) =
+        templateOverrideKeys(fileName)
+            .map { TemplateOverrideStore.overrideFile(accessibilityService, it) }
+            .firstOrNull { it.exists() }
+
+    private fun templateOverrideKeys(fileName: String): List<String> {
+        val legacyName = fileName.substringAfterLast('/').substringAfterLast('\\')
+        return if (legacyName == fileName) {
+            listOf(fileName)
+        } else {
+            listOf(fileName, legacyName)
         }
     }
 
@@ -3441,6 +4132,58 @@ class CombatEngine(
             if (ownsSourceBitmap) {
                 sourceBitmap.recycle()
             }
+        }
+    }
+
+    private fun countTemplateMatches(
+        screenBitmap: Bitmap,
+        templateBitmap: Bitmap,
+        threshold: Float,
+        suppressWidthRatio: Float,
+        suppressHeightRatio: Float,
+        logLabel: String,
+        templateName: String
+    ): Int {
+        val ownsSourceBitmap = screenBitmap.config != Bitmap.Config.ARGB_8888
+        val sourceBitmap = if (ownsSourceBitmap) screenBitmap.copy(Bitmap.Config.ARGB_8888, false) else screenBitmap
+        try {
+            return Mat().use { srcMat ->
+                Mat().use { tmplMat ->
+                    Mat().use { resultMat ->
+                        Utils.bitmapToMat(sourceBitmap, srcMat)
+                        Utils.bitmapToMat(templateBitmap, tmplMat)
+                        Imgproc.cvtColor(srcMat, srcMat, Imgproc.COLOR_RGBA2GRAY)
+                        Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
+                        Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
+
+                        val suppressWidth = (templateBitmap.width * suppressWidthRatio).toInt().coerceAtLeast(1)
+                        val suppressHeight = (templateBitmap.height * suppressHeightRatio).toInt().coerceAtLeast(1)
+                        var count = 0
+                        while (true) {
+                            val mmLoc = Core.minMaxLoc(resultMat)
+                            if (mmLoc.maxVal < threshold) break
+                            count += 1
+                            val left = (mmLoc.maxLoc.x - suppressWidth / 2.0).toInt().coerceIn(0, resultMat.cols() - 1)
+                            val top = (mmLoc.maxLoc.y - suppressHeight / 2.0).toInt().coerceIn(0, resultMat.rows() - 1)
+                            val right = (left + suppressWidth).coerceAtMost(resultMat.cols())
+                            val bottom = (top + suppressHeight).coerceAtMost(resultMat.rows())
+                            Imgproc.rectangle(
+                                resultMat,
+                                org.opencv.core.Point(left.toDouble(), top.toDouble()),
+                                org.opencv.core.Point(right.toDouble(), bottom.toDouble()),
+                                org.opencv.core.Scalar(-1.0),
+                                -1
+                            )
+                        }
+                        RunLogger.i(
+                            "$logLabel $templateName 命中数量=$count 阈值=${"%.2f".format(Locale.US, threshold)}"
+                        )
+                        count
+                    }
+                }
+            }
+        } finally {
+            if (ownsSourceBitmap) sourceBitmap.recycle()
         }
     }
 
@@ -3698,8 +4441,8 @@ class CombatEngine(
     private fun restartFromFirstTurn(restartMessage: String = "全灭恢复，重新从第1回合开始") {
         if (!isRunning) return
         delayJob?.cancel()
-        postActionCritCheckJob?.cancel()
-        postActionCritCheckJob = null
+        postActionCheckJob?.cancel()
+        postActionCheckJob = null
         actionQueue.clear()
         currentExecutingRowIndex = -1
         lastTurnPauseTriggered = -1

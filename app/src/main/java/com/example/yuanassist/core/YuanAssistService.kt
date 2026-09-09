@@ -461,6 +461,10 @@ class YuanAssistService : AccessibilityService() {
                 closeCombatFloatingWindows()
             }
             "ACTION_IMPORT_SCRIPT" -> {
+                dailyWindowManager?.hideWindow()
+                showControlWindow()
+                updateOverlayStatePrefs(combatOpen = true, dailyOpen = false)
+
                 combatEngine.instructionList.clear()
 
                 val scriptContent = intent.getStringExtra("SCRIPT_CONTENT")
@@ -1517,6 +1521,7 @@ class YuanAssistService : AccessibilityService() {
     @SuppressLint("ClickableViewAccessibility")
     private fun startCombatAnchorPicker() {
         stopCombatAnchorPicker()
+        coordinateManager.refreshIfNeeded()
 
         val overlay = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#66000000"))
@@ -1539,13 +1544,6 @@ class YuanAssistService : AccessibilityService() {
                 topMargin = dp(28)
             }
         )
-
-        combatAnchorAdjustSpecs().forEach { spec ->
-            overlay.addView(
-                createCombatAnchorAdjustMarker(spec),
-                createCombatAnchorAdjustMarkerParams(spec)
-            )
-        }
 
         overlay.setOnClickListener {
             stopCombatAnchorPicker()
@@ -1571,6 +1569,20 @@ class YuanAssistService : AccessibilityService() {
 
         combatAnchorPickerView = overlay
         systemWindowManager.addView(overlay, params)
+
+        // FrameLayout margins are local to this overlay. Convert the shared
+        // screen-space anchor to that local origin before placing markers.
+        overlay.post {
+            if (combatAnchorPickerView !== overlay) return@post
+            val overlayLocation = IntArray(2)
+            overlay.getLocationOnScreen(overlayLocation)
+            combatAnchorAdjustSpecs().forEach { spec ->
+                overlay.addView(
+                    createCombatAnchorAdjustMarker(spec),
+                    createCombatAnchorAdjustMarkerParams(spec, overlayLocation[1])
+                )
+            }
+        }
         Toast.makeText(this, "键位修正已开启，拖动标记保存", Toast.LENGTH_SHORT).show()
     }
 
@@ -1581,12 +1593,15 @@ class YuanAssistService : AccessibilityService() {
         CombatAnchorAdjustSpec("圈", 3, "#D68A93") { appConfig.circleYFromBottom }
     )
 
-    private fun createCombatAnchorAdjustMarkerParams(spec: CombatAnchorAdjustSpec): FrameLayout.LayoutParams {
+    private fun createCombatAnchorAdjustMarkerParams(
+        spec: CombatAnchorAdjustSpec,
+        overlayOriginY: Int
+    ): FrameLayout.LayoutParams {
         val sizePx = dp(42)
         val point = coordinateManager.getActionCoordinates(spec.slotIndex, spec.yFromBottom())
         return FrameLayout.LayoutParams(sizePx, sizePx).apply {
             leftMargin = (point.x - sizePx / 2f).roundToInt()
-            topMargin = (point.y - sizePx / 2f).roundToInt()
+            topMargin = (point.y - overlayOriginY - sizePx / 2f).roundToInt()
         }
     }
 
@@ -1627,13 +1642,15 @@ class YuanAssistService : AccessibilityService() {
                             if (kotlin.math.abs(dy) > touchSlop) {
                                 moved = true
                             }
-                            val maxTop = (coordinateManager.screenHeight - sizePx).coerceAtLeast(0)
+                            val parentHeight = (v.parent as? View)?.height ?: coordinateManager.screenHeight
+                            val maxTop = (parentHeight - sizePx).coerceAtLeast(0)
                             params.topMargin = (initialTop + dy.toInt()).coerceIn(0, maxTop)
                             v.layoutParams = params
                             return true
                         }
 
                         MotionEvent.ACTION_UP -> {
+                            // Persist the actual screen-space center shared by combat input.
                             val centerY = getViewCenterOnScreen(v, null).second
                             saveCombatAnchor(spec.type, centerY)
                             if (!moved) {
@@ -1666,6 +1683,7 @@ class YuanAssistService : AccessibilityService() {
     }
 
     private fun saveCombatAnchor(anchorType: String, rawY: Float) {
+        coordinateManager.refreshIfNeeded()
         val yFromBottom = ((coordinateManager.screenHeight - rawY) / coordinateManager.gameScale).coerceAtLeast(0f)
 
         val oldConfig = ConfigManager.getAllConfig(this)
@@ -2065,6 +2083,7 @@ class YuanAssistService : AccessibilityService() {
 
         combatCircleButtonView = view
         systemWindowManager.addView(view, params)
+        view.post { updateCombatCircleButtonPosition() }
     }
 
     private fun removeCombatCircleButton() {
@@ -2585,8 +2604,17 @@ class YuanAssistService : AccessibilityService() {
         val view = combatCircleButtonView ?: return
         val params = view.layoutParams as? WindowManager.LayoutParams ?: return
         val point = coordinateManager.getActionCoordinates(combatCircleSlotIndex, appConfig.circleYFromBottom)
-        params.x = (point.x - view.width.coerceAtLeast(params.width) / 2f).roundToInt()
-        params.y = (point.y - view.height.coerceAtLeast(params.height) / 2f).roundToInt()
+        val width = view.width.coerceAtLeast(params.width)
+        val height = view.height.coerceAtLeast(params.height)
+        params.x = (point.x - width / 2f).roundToInt()
+
+        // WindowManager.LayoutParams.y and the screen position reported by the
+        // view can have different origins. Correct by the measured screen delta
+        // so the recording button shares the exact combat anchor height.
+        val location = IntArray(2)
+        view.getLocationOnScreen(location)
+        val currentCenterY = location[1] + height / 2f
+        params.y += (point.y - currentCenterY).roundToInt()
         systemWindowManager.updateViewLayout(view, params)
     }
 

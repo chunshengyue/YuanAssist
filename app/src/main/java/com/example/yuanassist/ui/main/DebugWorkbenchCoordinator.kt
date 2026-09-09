@@ -25,6 +25,9 @@ import com.example.yuanassist.model.DailyTaskPlan
 import com.example.yuanassist.utils.BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION
 import com.example.yuanassist.utils.BATTLE_FLOW_TEST_TASK_KEY
 import com.example.yuanassist.utils.BIRD_FOOD_NAV_TEST_TASK_KEY
+import com.example.yuanassist.utils.CombatDetectionRoi
+import com.example.yuanassist.utils.CombatDetectionRoiKey
+import com.example.yuanassist.utils.CombatDetectionRoiStore
 import com.example.yuanassist.utils.DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.MAINLINE_624_START_BATTLE_DELAY_OPTION
 import com.example.yuanassist.utils.StartBattleShared
@@ -43,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
+import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
 import java.io.File
@@ -65,6 +69,10 @@ class DebugWorkbenchCoordinator(
         private const val DAI_BAN_GONG_WU_SWEEP_LABEL = "待办公务扫荡按钮"
         private const val BATTLE_TURN_OCR_OPTION = "BATTLE_TURN_OCR"
         private const val BATTLE_TURN_OCR_LABEL = "战斗回合 OCR（右上角）"
+        private const val TAISHAN_FU_LOCATION_OPTION = "TAISHAN_FU_LOCATION"
+        private const val TAISHAN_FU_LOCATION_LABEL = "泰山府定位"
+        private const val TAISHAN_FU_YONGZHOU_TEMPLATE = "pics/战斗版导航/yongzhou.png"
+        private const val TAISHAN_FU_YONGZHOU_THRESHOLD = 0.82f
         private const val STONE_GRID_DEBUG_OPTION = "STONE_GRID_DEBUG"
         private const val STONE_GRID_DEBUG_LABEL = "星石区域划分（Paddle划分 + Paddle识别）"
         private const val CHARACTER_NAME_OPTION = "CHARACTER_NAME_OCR"
@@ -76,6 +84,17 @@ class DebugWorkbenchCoordinator(
         private const val ORANGE_STAR_LABEL = "橙星检测（左上角）"
         private const val PURPLE_STAR_OPTION = "PURPLE_STAR_CHECK"
         private const val PURPLE_STAR_LABEL = "紫星检测（左上角）"
+        private const val DRAGON_QI_OPTION = "DRAGON_QI_CHECK"
+        private const val DRAGON_QI_LABEL = "龙气检测"
+        private const val DRAGON_QI_TEMPLATE = "pics/战斗版导航/longqi_single.png"
+        private const val PANG_TONG_COPY_OPTION = "PANG_TONG_COPY_CHECK"
+        private const val PANG_TONG_COPY_LABEL = "庞统复制检测"
+        private const val PANG_TONG_COPY_TEMPLATE = "pics/战斗版导航/fuzhi_single.png"
+        private const val PANG_TONG_COPY_SCAN_CENTER_X = 540f
+        private const val PANG_TONG_COPY_SCAN_CENTER_Y = 1510f
+        private const val PANG_TONG_COPY_SCAN_WIDTH = 1080f
+        private const val PANG_TONG_COPY_SCAN_HEIGHT = 400f
+        private const val PANG_TONG_COPY_SLOT_COUNT = 5
         private const val CAVE_DONGKU_OPTION = "CAVE_DONGKU_FALLBACK"
         private const val CAVE_DONGKU_LABEL = "洞窟入口（dongku / dongku2）"
         private const val CAVE_NEXT_FLOOR_TEMPLATE = "xiayiceng.png"
@@ -170,6 +189,13 @@ class DebugWorkbenchCoordinator(
         private const val PURPLE_STAR_THRESHOLD = 0.66f
         private const val ORANGE_STAR_SHAPE_THRESHOLD = 0.34f
         private const val ORANGE_STAR_MIN_GLOW_RATIO = 0.07f
+        private const val DRAGON_QI_SCAN_CENTER_X = 540f
+        private const val DRAGON_QI_SCAN_CENTER_Y = 1550f
+        private const val DRAGON_QI_SCAN_WIDTH = 1080f
+        private const val DRAGON_QI_SCAN_HEIGHT = 500f
+        private const val DRAGON_QI_MATCH_THRESHOLD = 0.82f
+        private const val DRAGON_QI_MATCH_SUPPRESS_WIDTH_RATIO = 0.65f
+        private const val DRAGON_QI_MATCH_SUPPRESS_HEIGHT_RATIO = 0.60f
         private const val TASK_BATTLE_FLOW = BATTLE_FLOW_TEST_TASK_KEY
         private const val TASK_BIRD_FOOD_NAV = BIRD_FOOD_NAV_TEST_TASK_KEY
         private const val START_BATTLE_RED_THRESHOLD = StartBattleShared.RED_THRESHOLD
@@ -338,6 +364,12 @@ class DebugWorkbenchCoordinator(
         val areaLabel: String,
     )
 
+    private data class DragonQiScanResult(
+        val count: Int,
+        val hits: List<TemplateMatchHit>,
+        val bestScore: Float,
+    )
+
     private data class FateCorrection(
         val displayText: String,
         val score: Float,
@@ -373,6 +405,11 @@ class DebugWorkbenchCoordinator(
     private var uploadedImageUri: Uri? = null
     private var uploadedImageName: String? = null
     private var activeReplacementSession: ReplacementSession? = null
+    private var activeCombatRoiDialogSessionId = 0L
+    private var combatRoiDialogOpen = false
+    private var combatRoiDialogSnapshot: CombatDetectionRoi? = null
+    private var combatRoiDialogSnapshotWasDraft = false
+    private val combatRoiDrafts = mutableMapOf<CombatDetectionRoiKey, CombatDetectionRoi>()
 
     fun initialize() {
         initializeOpenCv()
@@ -422,6 +459,60 @@ class DebugWorkbenchCoordinator(
 
     fun selectScope(localScope: Boolean) {
         isLocalScopeEnabled = localScope
+        pushState()
+    }
+
+    fun moveCombatRoi(x: Float, y: Float, w: Float, h: Float) {
+        val key = CombatDetectionRoiStore.keyForOption(selectedTemplate) ?: return
+        combatRoiDrafts[key] = CombatDetectionRoiStore.coerceRoi(CombatDetectionRoi(x, y, w, h))
+        pushState()
+    }
+
+    fun openCombatRoiDialog() {
+        val key = CombatDetectionRoiStore.keyForOption(selectedTemplate) ?: return
+        if (currentBitmap == null) {
+            showToast("请先上传截图")
+            return
+        }
+        combatRoiDialogSnapshot = combatRoiDrafts[key] ?: CombatDetectionRoiStore.resolveRoi(activity, key)
+        combatRoiDialogSnapshotWasDraft = key in combatRoiDrafts
+        activeCombatRoiDialogSessionId += 1L
+        combatRoiDialogOpen = true
+        pushState()
+    }
+
+    fun dismissCombatRoiDialog() {
+        val key = CombatDetectionRoiStore.keyForOption(selectedTemplate) ?: return
+        if (!combatRoiDialogOpen) return
+        combatRoiDrafts.remove(key)
+        if (combatRoiDialogSnapshotWasDraft) {
+            combatRoiDialogSnapshot?.let { combatRoiDrafts[key] = it }
+        }
+        combatRoiDialogOpen = false
+        combatRoiDialogSnapshot = null
+        combatRoiDialogSnapshotWasDraft = false
+        pushState()
+    }
+
+    fun saveCombatRoi() {
+        val key = CombatDetectionRoiStore.keyForOption(selectedTemplate) ?: return
+        val roi = combatRoiDrafts[key] ?: CombatDetectionRoiStore.resolveRoi(activity, key)
+        CombatDetectionRoiStore.saveOverride(activity, key, roi)
+        combatRoiDrafts.remove(key)
+        combatRoiDialogOpen = false
+        combatRoiDialogSnapshot = null
+        combatRoiDialogSnapshotWasDraft = false
+        showToast("${key.label}已保存")
+        log("${key.label}已保存：x=${roi.x.toInt()} y=${roi.y.toInt()} h=${roi.h.toInt()}")
+        pushState()
+    }
+
+    fun resetCombatRoi() {
+        val key = CombatDetectionRoiStore.keyForOption(selectedTemplate) ?: return
+        CombatDetectionRoiStore.clearOverride(activity, key)
+        combatRoiDrafts.remove(key)
+        showToast("已恢复${key.label}默认区域")
+        log("${key.label}已恢复默认")
         pushState()
     }
 
@@ -504,6 +595,7 @@ class DebugWorkbenchCoordinator(
             DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION -> runDaiBanGongWuStartBattleDelayTest()
             MAINLINE_624_START_BATTLE_DELAY_OPTION -> runMainline624StartBattleDelayTest()
             BATTLE_TURN_OCR_OPTION -> runBattleTurnOcrTest()
+            TAISHAN_FU_LOCATION_OPTION -> runTaishanFuLocationTest()
             STONE_GRID_DEBUG_OPTION -> runStoneGridDebugTest()
             CHARACTER_NAME_OPTION -> runCharacterFateOcrTest()
             CHARACTER_PROFICIENCY_OPTION -> runCharacterProficiencyOcrTest()
@@ -511,6 +603,8 @@ class DebugWorkbenchCoordinator(
             START_BATTLE_OCR_OPTION -> runStartBattleOcrTest()
             ORANGE_STAR_OPTION -> runStarTest(StarDetectionMode.ORANGE)
             PURPLE_STAR_OPTION -> runStarTest(StarDetectionMode.PURPLE)
+            DRAGON_QI_OPTION -> runDragonQiTest()
+            PANG_TONG_COPY_OPTION -> runPangTongCopyTest()
             else -> {
                 if (isDeathCheckOption(selectedTemplate)) {
                     val slotIndex = deathCheckSlotFromOption(selectedTemplate)
@@ -711,6 +805,60 @@ class DebugWorkbenchCoordinator(
             }
         }
     }
+
+    private fun runTaishanFuLocationTest() {
+        val source = currentBitmap ?: return
+        log("------------------------")
+        log("开始测试：$TAISHAN_FU_LOCATION_LABEL")
+        initializeOpenCv()
+        if (!isOpenCvReady) {
+            stopCurrentRun("OpenCV 初始化失败，无法执行泰山府定位", "OpenCV 初始化失败")
+            return
+        }
+        val template = TemplateOverrideStore.loadBitmap(activity, activity.assets, TAISHAN_FU_YONGZHOU_TEMPLATE)
+        if (template == null) {
+            log("泰山府永昼模板加载失败：$TAISHAN_FU_YONGZHOU_TEMPLATE")
+            return
+        }
+        val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
+        val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+        val scaledTemplate = Bitmap.createScaledBitmap(
+            template,
+            (template.width * gameScale).toInt().coerceAtLeast(1),
+            (template.height * gameScale).toInt().coerceAtLeast(1),
+            true,
+        )
+        try {
+            val scan = findMatchesInArea(
+                screenshot = screenshot,
+                area = SearchArea(
+                    label = "泰山府地图",
+                    rect = Rect(0, 0, screenshot.width, screenshot.height),
+                    threshold = TAISHAN_FU_YONGZHOU_THRESHOLD,
+                ),
+                templateBitmap = scaledTemplate,
+                threshold = TAISHAN_FU_YONGZHOU_THRESHOLD,
+            )
+            val hits = dedupeHits(scan.hits, scaledTemplate.width.toDouble() * 0.75)
+                .sortedBy { it.rect.centerY() }
+            val paint = Paint().apply {
+                color = Color.RED
+                style = Paint.Style.STROKE
+                strokeWidth = (screenshot.width / 180f).coerceIn(4f, 10f)
+            }
+            Canvas(screenshot).apply { hits.forEach { drawRect(it.rect, paint) } }
+            previewBitmap = screenshot
+            log("$TAISHAN_FU_LOCATION_LABEL：永昼模板命中 ${hits.size} 个，阈值=${"%.2f".format(TAISHAN_FU_YONGZHOU_THRESHOLD)}")
+            hits.forEachIndexed { index, hit ->
+                log("永昼 ${index + 1}: x=${hit.rect.centerX()} y=${hit.rect.centerY()} score=${"%.3f".format(hit.score)}")
+            }
+            pushState()
+        } finally {
+            if (scaledTemplate !== template && !scaledTemplate.isRecycled) scaledTemplate.recycle()
+            if (!template.isRecycled) template.recycle()
+        }
+    }
+
 
     private fun runStartBattleOcrTest() {
         if (isStartBattleTemplateModeEnabled()) {
@@ -1144,6 +1292,280 @@ class DebugWorkbenchCoordinator(
         }
         previewBitmap = screenshot
         pushState()
+    }
+
+    private fun runDragonQiTest() {
+        log("------------------------")
+        log("Start matching: ${templateDisplayName(DRAGON_QI_OPTION)}")
+        val source = currentBitmap ?: return
+        initializeOpenCv()
+        if (!isOpenCvReady) {
+            stopCurrentRun(
+                reason = "OpenCV 初始化失败，无法执行龙气检测",
+                toastMessage = "OpenCV 初始化失败",
+            )
+            return
+        }
+
+        val templateBitmap = loadTemplateBitmapForCurrentTask(DRAGON_QI_TEMPLATE)
+        if (templateBitmap == null) {
+            log("龙气模板加载失败：$DRAGON_QI_TEMPLATE")
+            showToast("龙气模板加载失败")
+            return
+        }
+
+        val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
+        try {
+            val roi = combatRoiFor(CombatDetectionRoiKey.DRAGON_QI)
+            val scanRect = buildFixedRectFromVisionRegion(
+                screenshot = screenshot,
+                x = roi.x,
+                y = roi.y,
+                align = "bottom",
+                w = roi.w,
+                h = roi.h,
+            )
+            if (scanRect == null) {
+                log("龙气检测扫描范围无效")
+                previewBitmap = screenshot
+                pushState()
+                return
+            }
+
+            Canvas(screenshot).drawRect(
+                scanRect,
+                Paint().apply {
+                    color = Color.GREEN
+                    style = Paint.Style.STROKE
+                    strokeWidth = 5f
+                },
+            )
+
+            val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+            val scaledWidth = (templateBitmap.width * gameScale).toInt().coerceAtLeast(1)
+            val scaledHeight = (templateBitmap.height * gameScale).toInt().coerceAtLeast(1)
+            val scaledTemplate = if (scaledWidth == templateBitmap.width && scaledHeight == templateBitmap.height) {
+                templateBitmap
+            } else {
+                Bitmap.createScaledBitmap(templateBitmap, scaledWidth, scaledHeight, true)
+            }
+            try {
+                val result = countDragonQiTemplateMatches(screenshot, scanRect, scaledTemplate)
+                val canvas = Canvas(screenshot)
+                result.hits.forEach { hit ->
+                    canvas.drawRect(
+                        hit.rect,
+                        Paint().apply {
+                            color = Color.RED
+                            style = Paint.Style.STROKE
+                            strokeWidth = 5f
+                        },
+                    )
+                }
+                log(
+                    "龙气检测 count=${result.count} " +
+                        "threshold=${"%.3f".format(DRAGON_QI_MATCH_THRESHOLD)} " +
+                        "best=${if (result.bestScore.isFinite()) "%.3f".format(result.bestScore) else "无"}"
+                )
+                result.hits.forEachIndexed { index, hit ->
+                    log(
+                        "龙气命中 ${index + 1}: x=${hit.rect.centerX()} y=${hit.rect.centerY()} " +
+                            "score=${"%.3f".format(hit.score)}"
+                    )
+                }
+            } finally {
+                if (scaledTemplate !== templateBitmap) {
+                    scaledTemplate.recycle()
+                }
+            }
+            previewBitmap = screenshot
+            pushState()
+        } finally {
+            templateBitmap.recycle()
+            if (screenshot !== previewBitmap && !screenshot.isRecycled) {
+                screenshot.recycle()
+            }
+        }
+    }
+
+    private fun runPangTongCopyTest() {
+        log("------------------------")
+        log("Start matching: ${templateDisplayName(PANG_TONG_COPY_OPTION)}")
+        val source = currentBitmap ?: return
+        initializeOpenCv()
+        if (!isOpenCvReady) {
+            stopCurrentRun("OpenCV 初始化失败，无法执行庞统复制检测", "OpenCV 初始化失败")
+            return
+        }
+        val template = loadTemplateBitmapForCurrentTask(PANG_TONG_COPY_TEMPLATE)
+        if (template == null) {
+            log("复制模板加载失败：$PANG_TONG_COPY_TEMPLATE")
+            showToast("复制模板加载失败")
+            return
+        }
+        val screenshot = source.copy(Bitmap.Config.ARGB_8888, true)
+        try {
+            val roi = combatRoiFor(CombatDetectionRoiKey.PANG_TONG_COPY)
+            val scanRect = buildFixedRectFromVisionRegion(
+                screenshot = screenshot,
+                x = roi.x,
+                y = roi.y,
+                align = "bottom",
+                w = roi.w,
+                h = roi.h,
+            )
+            if (scanRect == null) {
+                log("复制检测扫描范围无效")
+                previewBitmap = screenshot
+                pushState()
+                return
+            }
+            val gameScale = min(screenshot.width / BASE_W, screenshot.height / BASE_H)
+            val scaledWidth = (template.width * gameScale).toInt().coerceAtLeast(1)
+            val scaledHeight = (template.height * gameScale).toInt().coerceAtLeast(1)
+            val scaledTemplate = if (scaledWidth == template.width && scaledHeight == template.height) {
+                template
+            } else {
+                Bitmap.createScaledBitmap(template, scaledWidth, scaledHeight, true)
+            }
+            try {
+                val searchBitmap = Bitmap.createBitmap(screenshot, scanRect.left, scanRect.top, scanRect.width(), scanRect.height())
+                val srcMat = Mat()
+                val tmplMat = Mat()
+                val resultMat = Mat()
+                try {
+                    Utils.bitmapToMat(searchBitmap, srcMat)
+                    Utils.bitmapToMat(scaledTemplate, tmplMat)
+                    Imgproc.cvtColor(srcMat, srcMat, Imgproc.COLOR_RGBA2GRAY)
+                    Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
+                    Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
+                    val match = Core.minMaxLoc(resultMat)
+                    val score = match.maxVal.toFloat()
+                    val centerX = scanRect.left + match.maxLoc.x.toFloat() + scaledTemplate.width / 2f
+                    val gameWidth = BASE_W * gameScale
+                    val gameLeft = (screenshot.width - gameWidth) / 2f
+                    val baseX = ((centerX - gameLeft) / gameScale).coerceIn(0f, BASE_W - 0.01f)
+                    val slot = (baseX / (BASE_W / PANG_TONG_COPY_SLOT_COUNT)).toInt() + 1
+                    val hit = true
+                    Canvas(screenshot).drawRect(
+                        scanRect,
+                        Paint().apply {
+                            color = Color.GREEN
+                            style = Paint.Style.STROKE
+                            strokeWidth = 5f
+                        },
+                    )
+                    if (hit) {
+                        Canvas(screenshot).drawRect(
+                            Rect(
+                                scanRect.left + match.maxLoc.x.toInt(),
+                                scanRect.top + match.maxLoc.y.toInt(),
+                                scanRect.left + match.maxLoc.x.toInt() + scaledTemplate.width,
+                                scanRect.top + match.maxLoc.y.toInt() + scaledTemplate.height,
+                            ),
+                            Paint().apply {
+                                color = Color.RED
+                                style = Paint.Style.STROKE
+                                strokeWidth = 6f
+                            },
+                        )
+                    }
+                    log(
+                        "复制检测 score=${"%.4f".format(score)} " +
+                            "slot=$slot x=${centerX.toInt()}"
+                    )
+                } finally {
+                    srcMat.release()
+                    tmplMat.release()
+                    resultMat.release()
+                    searchBitmap.recycle()
+                }
+            } finally {
+                if (scaledTemplate !== template) scaledTemplate.recycle()
+            }
+            previewBitmap = screenshot
+            pushState()
+        } finally {
+            template.recycle()
+            if (screenshot !== previewBitmap && !screenshot.isRecycled) screenshot.recycle()
+        }
+    }
+
+    private fun countDragonQiTemplateMatches(
+        screenshot: Bitmap,
+        scanRect: Rect,
+        templateBitmap: Bitmap,
+    ): DragonQiScanResult {
+        if (scanRect.width() < templateBitmap.width || scanRect.height() < templateBitmap.height) {
+            return DragonQiScanResult(0, emptyList(), Float.NEGATIVE_INFINITY)
+        }
+
+        val searchBitmap = Bitmap.createBitmap(
+            screenshot,
+            scanRect.left,
+            scanRect.top,
+            scanRect.width(),
+            scanRect.height(),
+        )
+        val srcMat = Mat()
+        val tmplMat = Mat()
+        val resultMat = Mat()
+        return try {
+            Utils.bitmapToMat(searchBitmap, srcMat)
+            Utils.bitmapToMat(templateBitmap, tmplMat)
+            Imgproc.cvtColor(srcMat, srcMat, Imgproc.COLOR_RGBA2GRAY)
+            Imgproc.cvtColor(tmplMat, tmplMat, Imgproc.COLOR_RGBA2GRAY)
+            Imgproc.matchTemplate(srcMat, tmplMat, resultMat, Imgproc.TM_CCOEFF_NORMED)
+
+            val hits = mutableListOf<TemplateMatchHit>()
+            var bestScore = Float.NEGATIVE_INFINITY
+            val suppressWidth = (templateBitmap.width * DRAGON_QI_MATCH_SUPPRESS_WIDTH_RATIO)
+                .toInt()
+                .coerceAtLeast(1)
+            val suppressHeight = (templateBitmap.height * DRAGON_QI_MATCH_SUPPRESS_HEIGHT_RATIO)
+                .toInt()
+                .coerceAtLeast(1)
+            while (true) {
+                val match = Core.minMaxLoc(resultMat)
+                bestScore = maxOf(bestScore, match.maxVal.toFloat())
+                if (match.maxVal < DRAGON_QI_MATCH_THRESHOLD) break
+
+                val left = scanRect.left + match.maxLoc.x.toInt()
+                val top = scanRect.top + match.maxLoc.y.toInt()
+                hits += TemplateMatchHit(
+                    rect = Rect(
+                        left,
+                        top,
+                        left + templateBitmap.width,
+                        top + templateBitmap.height,
+                    ),
+                    score = match.maxVal.toFloat(),
+                    areaLabel = "龙气扫描区域",
+                )
+
+                val suppressLeft = (match.maxLoc.x - suppressWidth / 2.0)
+                    .toInt()
+                    .coerceIn(0, resultMat.cols() - 1)
+                val suppressTop = (match.maxLoc.y - suppressHeight / 2.0)
+                    .toInt()
+                    .coerceIn(0, resultMat.rows() - 1)
+                val suppressRight = (suppressLeft + suppressWidth).coerceAtMost(resultMat.cols())
+                val suppressBottom = (suppressTop + suppressHeight).coerceAtMost(resultMat.rows())
+                Imgproc.rectangle(
+                    resultMat,
+                    org.opencv.core.Point(suppressLeft.toDouble(), suppressTop.toDouble()),
+                    org.opencv.core.Point(suppressRight.toDouble(), suppressBottom.toDouble()),
+                    org.opencv.core.Scalar(-1.0),
+                    -1,
+                )
+            }
+            DragonQiScanResult(hits.size, hits, bestScore)
+        } finally {
+            srcMat.release()
+            tmplMat.release()
+            resultMat.release()
+            searchBitmap.recycle()
+        }
     }
 
     private fun runLocalTemplateMatchTest(templateName: String) {
@@ -1952,11 +2374,14 @@ class DebugWorkbenchCoordinator(
             START_BATTLE_OCR_OPTION,
             BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION,
             BATTLE_TURN_OCR_OPTION,
+            TAISHAN_FU_LOCATION_OPTION,
             STONE_GRID_DEBUG_OPTION,
             CHARACTER_PROFICIENCY_OPTION,
             CHARACTER_FATE_OPTION,
             ORANGE_STAR_OPTION,
             PURPLE_STAR_OPTION,
+            DRAGON_QI_OPTION,
+            PANG_TONG_COPY_OPTION,
             CAVE_DONGKU_OPTION,
             AUTO_SELECT_FILTER_TEMPLATE,
             CAVE_NEXT_FLOOR_TEMPLATE,
@@ -2053,12 +2478,19 @@ class DebugWorkbenchCoordinator(
         pushState()
     }
 
+    private fun combatRoiKeyForSelectedTemplate(): CombatDetectionRoiKey? =
+        CombatDetectionRoiStore.keyForOption(selectedTemplate)
+
+    private fun combatRoiFor(key: CombatDetectionRoiKey): CombatDetectionRoi =
+        combatRoiDrafts[key] ?: CombatDetectionRoiStore.resolveRoi(activity, key)
+
     private fun pushState() {
         val taskOptions = availableTasks.map { DebugSelectionOption(it, taskDisplayName(it)) }
         val templateOptions = availableTemplates.map { DebugSelectionOption(it, templateDisplayName(it)) }
         val delayEntries = currentTemplateDelayEntries()
         val incrementMs = storedDelayValue()
         val replacementTargets = replacementTargetsForOption(selectedTemplate)
+        val screenshotPreview = previewBitmap ?: currentBitmap
         onStateChanged(
             DebugWorkbenchState(
                 taskOptions = taskOptions,
@@ -2067,10 +2499,11 @@ class DebugWorkbenchCoordinator(
                 templateOptions = templateOptions,
                 selectedTemplateKey = selectedTemplate,
                 selectedTemplateLabel = templateDisplayName(selectedTemplate),
-                screenshotBitmap = previewBitmap ?: currentBitmap,
+                screenshotBitmap = screenshotPreview,
                 screenshotTitle = uploadedImageName ?: "未上传截图",
-                screenshotSubtitle = (previewBitmap ?: currentBitmap)?.let { "${it.width} x ${it.height}" }
+                screenshotSubtitle = screenshotPreview?.let { "${it.width} x ${it.height}" }
                     ?: "点击上传截图后可继续调试",
+                isCombatDetection = combatRoiKeyForSelectedTemplate() != null,
                 isLocalScopeEnabled = isLocalScopeEnabled,
                 scopeHint = scopeHint(),
                 delayInput = delayInput,
@@ -2079,6 +2512,11 @@ class DebugWorkbenchCoordinator(
                 delaySummary = buildDelaySummary(delayEntries, incrementMs),
                 canReplaceTemplate = replacementTargets.isNotEmpty(),
                 canRestoreTemplate = replacementTargets.isNotEmpty() && hasTemplateOverride(selectedTemplate),
+                canEditCombatRoi = combatRoiKeyForSelectedTemplate() != null && currentBitmap != null,
+                canResetCombatRoi = combatRoiKeyForSelectedTemplate()?.let {
+                    CombatDetectionRoiStore.hasOverride(activity, it)
+                } == true,
+                combatRoiDialog = buildCombatRoiDialogState(),
                 replacementDialog = activeReplacementSession?.let { session ->
                     DebugReplacementDialogState(
                         sessionId = session.id,
@@ -2094,6 +2532,23 @@ class DebugWorkbenchCoordinator(
                 },
                 logText = logs.joinToString("\n").ifBlank { "调试日志会显示在这里。" },
             ),
+        )
+    }
+
+    private fun buildCombatRoiDialogState(): DebugCombatRoiDialogState? {
+        if (!combatRoiDialogOpen) return null
+        val bitmap = currentBitmap ?: return null
+        val key = combatRoiKeyForSelectedTemplate() ?: return null
+        val roi = combatRoiFor(key)
+        return DebugCombatRoiDialogState(
+            sessionId = activeCombatRoiDialogSessionId,
+            previewBitmap = bitmap,
+            title = "修改${key.label}",
+            hint = "拖动红框调整位置；拖动红框上、下边缘调整高度，宽度固定为 ${roi.w.toInt()}。",
+            x = roi.x,
+            y = roi.y,
+            w = roi.w,
+            h = roi.h,
         )
     }
 
@@ -2126,6 +2581,8 @@ class DebugWorkbenchCoordinator(
                 "使用实战相同的左上角 200x200 检测区域，输出 shape/glow/confidence"
             selectedTemplate == PURPLE_STAR_OPTION ->
                 "使用实战相同的左上角 200x200 检测区域，输出 shape/glow/confidence"
+            selectedTemplate == DRAGON_QI_OPTION ->
+                "使用实战相同的横向卡片区域统计龙气：bottom(540,1550)，1080x500，输出命中数量"
             isDeathCheckOption(selectedTemplate) ->
                 "使用实战相同的底部槽位 ROI，输出中心区域平均饱和度"
             selectedTemplate == CAVE_DONGKU_OPTION && isLocalScopeEnabled ->
@@ -2204,6 +2661,8 @@ class DebugWorkbenchCoordinator(
             )
             optionName == ORANGE_STAR_OPTION ||
                 optionName == PURPLE_STAR_OPTION ||
+                optionName == DRAGON_QI_OPTION ||
+                optionName == PANG_TONG_COPY_OPTION ||
                 optionName == BATTLE_FLOW_FIRST_ACTION_DELAY_OPTION ||
                 optionName == DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION ||
                 optionName == MAINLINE_624_START_BATTLE_DELAY_OPTION ||
@@ -2249,12 +2708,15 @@ class DebugWorkbenchCoordinator(
             templateName == DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION -> "待办公务开始战斗前延时"
             templateName == MAINLINE_624_START_BATTLE_DELAY_OPTION -> "主线624开始战斗前延时"
             templateName == BATTLE_TURN_OCR_OPTION -> BATTLE_TURN_OCR_LABEL
+            templateName == TAISHAN_FU_LOCATION_OPTION -> TAISHAN_FU_LOCATION_LABEL
             templateName == STONE_GRID_DEBUG_OPTION -> STONE_GRID_DEBUG_LABEL
             templateName == CHARACTER_NAME_OPTION -> CHARACTER_FATE_LABEL
             templateName == CHARACTER_PROFICIENCY_OPTION -> CHARACTER_PROFICIENCY_LABEL
             templateName == CHARACTER_FATE_OPTION -> CHARACTER_FATE_LABEL
             templateName == ORANGE_STAR_OPTION -> ORANGE_STAR_LABEL
             templateName == PURPLE_STAR_OPTION -> PURPLE_STAR_LABEL
+            templateName == DRAGON_QI_OPTION -> DRAGON_QI_LABEL
+            templateName == PANG_TONG_COPY_OPTION -> PANG_TONG_COPY_LABEL
             templateName == CAVE_DONGKU_OPTION -> CAVE_DONGKU_LABEL
             templateName == CAVE_NEXT_FLOOR_TEMPLATE -> CAVE_NEXT_FLOOR_LABEL
             isDeathCheckOption(templateName) -> "阵亡检测（${deathCheckSlotFromOption(templateName)}号位）"
@@ -2283,12 +2745,15 @@ class DebugWorkbenchCoordinator(
                 optionName == DAI_BAN_GONG_WU_START_BATTLE_DELAY_OPTION ||
                 optionName == MAINLINE_624_START_BATTLE_DELAY_OPTION ||
                 optionName == BATTLE_TURN_OCR_OPTION ||
+                optionName == TAISHAN_FU_LOCATION_OPTION ||
                 optionName == STONE_GRID_DEBUG_OPTION ||
                 optionName == CHARACTER_NAME_OPTION ||
                 optionName == CHARACTER_PROFICIENCY_OPTION ||
                 optionName == CHARACTER_FATE_OPTION ||
                 optionName == ORANGE_STAR_OPTION ||
                 optionName == PURPLE_STAR_OPTION ||
+                optionName == DRAGON_QI_OPTION ||
+                optionName == PANG_TONG_COPY_OPTION ||
                 optionName == CAVE_DONGKU_OPTION ||
                 isDeathCheckOption(optionName) -> true
             else -> shouldShowInTemplateOptions(optionName)
@@ -2626,12 +3091,12 @@ class DebugWorkbenchCoordinator(
 
     private fun logStartBattleOcrResult(prefix: String, rawText: String) {
         val normalizedText = rawText.filterNot { it.isWhitespace() }
-        val hitChars = listOf('开', '始', '战', '斗').filter { normalizedText.contains(it) }
-        val containsPhrase = normalizedText.contains("开始战斗")
+        val hitChars = StartBattleShared.OCR_TARGET_CHARS.filter { normalizedText.contains(it) }
+        val containsPhrase = StartBattleShared.containsStartBattlePhrase(normalizedText)
         log("$prefix raw=${formatOcrLog(rawText)}")
         log("$prefix normalized=${formatOcrLog(normalizedText)}")
         log("$prefix hits=${if (hitChars.isEmpty()) "无" else hitChars.joinToString("")} count=${hitChars.size}")
-        log("$prefix phrase=${if (containsPhrase) "开始战斗" else "未完整命中"}")
+        log("$prefix phrase=${if (containsPhrase) "开始战斗/開始戰鬥" else "未完整命中"}")
     }
 
     private fun logCharacterNameResult(nameResult: PaddleTextResult) {

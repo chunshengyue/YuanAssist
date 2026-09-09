@@ -54,6 +54,7 @@ import com.example.yuanassist.core.LocalScriptJson
 import com.example.yuanassist.core.YuanAssistService
 import com.example.yuanassist.model.InstructionJson
 import com.example.yuanassist.model.MyUser
+import com.example.yuanassist.model.ScriptInstruction
 import com.example.yuanassist.model.STRATEGY_GAME_DAIHAOYUAN
 import com.example.yuanassist.model.STRATEGY_GAME_RUYUAN
 import com.example.yuanassist.model.StrategyPreviewData
@@ -82,6 +83,7 @@ import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.ImageExportUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.example.yuanassist.ui.dialogs.InstructionDialogs
 import java.io.File
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -172,6 +174,7 @@ class UploadStrategyActivity : AppCompatActivity() {
                 onRefreshCurrent = { loadCurrentWindowData(showToast = true) },
                 onPickScript = ::showScriptLibraryDialog,
                 onParseText = ::parseImportText,
+                onEditInstructions = ::showInstructionEditor,
                 onPickAgentImage = {
                     currentImageUploadTarget = 1
                     imagePickerLauncher.launch("image/*")
@@ -314,6 +317,27 @@ class UploadStrategyActivity : AppCompatActivity() {
         if (instructions.isEmpty()) return "该脚本无附加指令"
         val text = instructions.joinToString("\n") { it.toDisplaySummary() }
         return "脚本附带指令：\n$text"
+    }
+
+    private fun showInstructionEditor() {
+        val type = object : TypeToken<List<InstructionJson>>() {}.type
+        val instructions = runCatching {
+            Gson().fromJson<List<InstructionJson>>(uiState.instructionsJson.orEmpty(), type)
+                .orEmpty()
+                .mapNotNull { it.toScriptInstructionOrNull() }
+                .toCollection(ArrayList())
+        }.getOrDefault(ArrayList())
+
+        InstructionDialogs.showListDialog(this, instructions) {
+            val json = instructions
+                .map(ScriptInstruction::toInstructionJson)
+                .takeIf { it.isNotEmpty() }
+                ?.let { Gson().toJson(it) }
+            uiState = uiState.copy(
+                instructionsJson = json,
+                instructionsInfo = buildInstructionsInfoText(json),
+            )
+        }
     }
 
     private fun parseScriptContentToUploadItems(text: String): List<UploadTurnItem> {
@@ -842,6 +866,7 @@ private fun UploadStrategyScreen(
     onRefreshCurrent: () -> Unit,
     onPickScript: () -> Unit,
     onParseText: () -> Unit,
+    onEditInstructions: () -> Unit,
     onPickAgentImage: () -> Unit,
     onPickStrategyImage: () -> Unit,
     onPreview: () -> Unit,
@@ -868,6 +893,7 @@ private fun UploadStrategyScreen(
             onRefreshCurrent = onRefreshCurrent,
             onPickScript = onPickScript,
             onParseText = onParseText,
+            onEditInstructions = onEditInstructions,
         )
         AgentSection(
             state = state,
@@ -1019,6 +1045,7 @@ private fun ScriptSection(
     onRefreshCurrent: () -> Unit,
     onPickScript: () -> Unit,
     onParseText: () -> Unit,
+    onEditInstructions: () -> Unit,
 ) {
     SubpageSectionCard(title = "脚本", subtitle = "动作表会随导入方式刷新") {
         SegmentedButtons(
@@ -1084,6 +1111,25 @@ private fun ScriptSection(
                         selected = false,
                     )
                 }
+            }
+        }
+
+        SubpagePaperPanel {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    BodyText("附加指令")
+                    BodyText("可设置庞统复制检测和龙气检测")
+                }
+                StoneStyleButton(
+                    text = "设置",
+                    onClick = onEditInstructions,
+                    modifier = Modifier.width(88.dp),
+                    minHeight = 42.dp,
+                )
             }
         }
 

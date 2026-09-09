@@ -168,7 +168,28 @@
       },
       "on_success": 12,
       "on_fail": 15,
-      "name": "他的传闻跳过按钮"
+      "name": "他的传闻跳过按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "跳",
+              "过",
+              "過"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 963,
+              "y": 236,
+              "w": 200,
+              "h": 300,
+              "align": "top"
+            }
+          }
+        }
+      }
     },
     {
       "id": 12,
@@ -298,23 +319,66 @@
       },
       "on_success": 31,
       "on_fail": 5,
-      "name": "他的传闻确认按钮"
+      "name": "他的传闻确认按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "确",
+              "確",
+              "认",
+              "認"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 544,
+              "y": 1359,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 33,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 3000,
       "params": {
-        "template_name": "pics/他的传闻/jiangli.png",
-        "threshold": 0.77,
         "terminal_note": "他的传闻路径错误",
-        "roi": {
-          "x": 540,
-          "y": 522,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "他的传闻奖励按钮",
+            "template_name": "pics/他的传闻/jiangli.png",
+            "threshold": 0.77,
+            "roi": {
+              "x": 540,
+              "y": 522,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 34
+          },
+          {
+            "type": "template",
+            "name": "他的传闻奖励按钮_繁体",
+            "template_name": "pics/他的传闻/jiangli繁体.png",
+            "threshold": 0.77,
+            "roi": {
+              "x": 540,
+              "y": 522,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 34
+          }
+        ]
       },
       "on_success": 34,
       "on_fail": 3,
@@ -332,19 +396,40 @@
     },
     {
       "id": 35,
-      "action": "MATCH_TEMPLATE",
+      "action": "SCREENSHOT_GROUP",
       "delay": 3000,
       "params": {
-        "template_name": "pics/他的传闻/jiangli.png",
-        "threshold": 0.77,
         "terminal_note": "他的传闻路径错误",
-        "roi": {
-          "x": 540,
-          "y": 522,
-          "w": 200,
-          "h": 300,
-          "align": "center"
-        }
+        "screenshot_steps": [
+          {
+            "type": "template",
+            "name": "他的传闻奖励按钮",
+            "template_name": "pics/他的传闻/jiangli.png",
+            "threshold": 0.77,
+            "roi": {
+              "x": 540,
+              "y": 522,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 34
+          },
+          {
+            "type": "template",
+            "name": "他的传闻奖励按钮_繁体",
+            "template_name": "pics/他的传闻/jiangli繁体.png",
+            "threshold": 0.77,
+            "roi": {
+              "x": 540,
+              "y": 522,
+              "w": 200,
+              "h": 300,
+              "align": "center"
+            },
+            "on_success": 34
+          }
+        ]
       },
       "on_success": 34,
       "on_fail": 37,
@@ -368,7 +453,31 @@
       },
       "on_success": 5,
       "on_fail": 38,
-      "name": "他的传闻体验按钮"
+      "name": "他的传闻体验按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "立",
+              "即",
+              "体",
+              "體",
+              "验",
+              "驗"
+            ],
+            "min_hit_count": 2,
+            "click": 1,
+            "roi": {
+              "x": 765,
+              "y": 1163,
+              "w": 300,
+              "h": 300,
+              "align": "center"
+            }
+          }
+        }
+      }
     },
     {
       "id": 38,
@@ -409,7 +518,28 @@
       },
       "on_success": 12,
       "on_fail": 14,
-      "name": "他的传闻跳过按钮"
+      "name": "他的传闻跳过按钮",
+      "mode_overrides": {
+        "traditional": {
+          "action": "OCR",
+          "params": {
+            "target_chars": [
+              "跳",
+              "过",
+              "過"
+            ],
+            "min_hit_count": 1,
+            "click": 1,
+            "roi": {
+              "x": 963,
+              "y": 236,
+              "w": 200,
+              "h": 300,
+              "align": "top"
+            }
+          }
+        }
+      }
     },
     {
       "id": 141,

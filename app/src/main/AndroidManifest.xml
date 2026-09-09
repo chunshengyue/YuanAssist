@@ -86,11 +86,19 @@
             android:screenOrientation="portrait"
             android:exported="false" />
         <activity
+            android:name=".ui.XiuweiCalculatorActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity
             android:name=".ui.RecordedDailyScriptViewerActivity"
             android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.GlobalSettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity

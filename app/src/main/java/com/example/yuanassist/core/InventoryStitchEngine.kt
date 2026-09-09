@@ -12,10 +12,8 @@ import android.view.Display
 import com.example.yuanassist.utils.MyStoneStore
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.StoneLocalOcrSession
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.Text
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
+import com.example.yuanassist.tableocr.PaddleTextLine
+import com.example.yuanassist.tableocr.PaddleTextRecognizer
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
@@ -260,26 +258,19 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
             return
         }
 
-        onStatusUpdate?.invoke("ML Kit 识别文字行 ($frameIndex)...")
+        onStatusUpdate?.invoke("PaddleOCR 识别文字行 ($frameIndex)...")
 
         val preprocessedImage = preprocessBitmapForMlKit(croppedBitmap)
-        val recognizer = TextRecognition.getClient(
-            ChineseTextRecognizerOptions.Builder().build()
-        )
-        val inputImage = InputImage.fromBitmap(preprocessedImage.bitmap, 0)
-
-        recognizer.process(inputImage)
-            .addOnSuccessListener { text ->
-                try {
+        try {
+            val textLines = PaddleTextRecognizer.recognizeLines(service, preprocessedImage.bitmap).textLines
                     if (!isRunning) {
-                        recognizer.close()
                         preprocessedImage.bitmap.recycle()
                         croppedBitmap.recycle()
-                        return@addOnSuccessListener
+                        return
                     }
 
                     val rows = mergeRows(
-                        extractCandidateRows(text, preprocessedImage.coordinateScaleBack)
+                        extractCandidateRows(textLines, preprocessedImage.coordinateScaleBack)
                     )
                     if (rows.isEmpty()) {
                         throw IllegalStateException("第 $frameIndex 张图没有找到满足条件的文字行")
@@ -309,12 +300,11 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                         )
 
                         preprocessedImage.bitmap.recycle()
-                        recognizer.close()
 
                         nextFrameIndex = frameIndex + 1
                         onStatusUpdate?.invoke("首帧完成，滑动下一张...")
                         performSwipeAndContinue()
-                        return@addOnSuccessListener
+                        return
                     }
 
                     val matchResult = matchPreviousTemplate(
@@ -346,25 +336,16 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
                     )
 
                     preprocessedImage.bitmap.recycle()
-                    recognizer.close()
 
                     nextFrameIndex = frameIndex + 1
                     onStatusUpdate?.invoke("第 $frameIndex 张图处理完成，继续滑动...")
                     performSwipeAndContinue()
-                } catch (e: Exception) {
-                    recognizer.close()
+        } catch (e: Exception) {
                     preprocessedImage.bitmap.recycle()
                     croppedBitmap.recycle()
                     e.printStackTrace()
                     handleError("处理第 $frameIndex 张图失败: ${e.message}")
-                }
-            }
-            .addOnFailureListener { error ->
-                recognizer.close()
-                preprocessedImage.bitmap.recycle()
-                croppedBitmap.recycle()
-                handleError("ML Kit 识别失败: ${error.message}")
-            }
+        }
     }
 
     private fun preprocessBitmapForMlKit(sourceBitmap: Bitmap): PreprocessedImage {
@@ -406,11 +387,10 @@ class InventoryStitchEngine(private val service: AccessibilityService) {
         }
     }
 
-    private fun extractCandidateRows(result: Text, coordinateScaleBack: Float): List<TextRow> {
-        return result.textBlocks
-            .flatMap { block -> block.lines }
+    private fun extractCandidateRows(lines: List<PaddleTextLine>, coordinateScaleBack: Float): List<TextRow> {
+        return lines
             .mapNotNull { line ->
-                val boundingBox = line.boundingBox ?: return@mapNotNull null
+                val boundingBox = line.boundingBox
                 val normalizedText = normalizeWhitespace(line.text)
                 val chineseCount = countChineseChars(normalizedText)
                 if (chineseCount <= 0) {

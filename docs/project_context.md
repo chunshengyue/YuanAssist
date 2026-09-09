@@ -9,11 +9,13 @@
 - App 既有常规页面，也有基于无障碍服务的自动化执行能力。
 - 自动化能力主要服务于游戏场景，核心运行时服务是 `app/src/main/java/com/example/yuanassist/core/YuanAssistService.kt`。
 - 主界面是 Compose 壳，包含 Home、Job、Debug、Mine 四个 Tab；其中 Debug 是调试工作台入口。
+- 简历识别已从主 App 移除；核心代码和原运行时接入段落归档在 GitHub 私有仓库 `chunshengyue/YuanAssist-HrResume-Core`，用于未来按需恢复。
 
 ## 先看哪里
 - 想找测试工具当前能力、技术栈和计划：`docs/test_tool_context.md`；其中一键回归入口位于 `tools/yuanassist_test_tool/regression.py`，App 冒烟体检实现位于 `tools/yuanassist_test_tool/app_smoke.py`
 - 想找主界面入口与功能跳转：`app/src/main/java/com/example/yuanassist/ui/MainActivity.kt`
 - 想找首页按钮怎么进入各功能：`app/src/main/java/com/example/yuanassist/ui/main/HomeActionHandler.kt`
+- 想找日常全局设置页：`app/src/main/java/com/example/yuanassist/ui/GlobalSettingsActivity.kt`
 - 想找无障碍服务、悬浮窗、服务 action 分发：`app/src/main/java/com/example/yuanassist/core/YuanAssistService.kt`
 - 想找日常脚本执行引擎：`app/src/main/java/com/example/yuanassist/core/AutoTaskEngine.kt`
 - 想找调试页/模板调试/OCR 调试：`app/src/main/java/com/example/yuanassist/ui/main/DebugWorkbenchCoordinator.kt`
@@ -38,16 +40,21 @@
 - `app/src/main/assets/daily_script_templates`
   - 与日常脚本配套的模板图片。
 - `app/src/main/assets/ocr`
-  - OCR 模型与标签。
+  - 当前离线 OCR 使用 `PP-OCRv6_small` 的 ONNX 检测/识别模型与标签；运行时由 Android ONNX Runtime 加载。
 
 ## 功能结构
+- 首页相关链接下方会展示当前 App 安装包版本（PackageManager）和启动时静默拉取的最新版本；用户手动点击检查更新后也会刷新该最新版本显示。
 - 主壳页面
   - `MainActivity` + `ui/main/*` 负责主导航、状态同步、Debug 页接入。
-- 首页 `日常版` 现包含「一键日常」入口：只读取 `assets/daily_scripts/daily/` 下的内置脚本，多选后导入现有日常悬浮窗，开始执行时按列表顺序逐个运行，单项失败不中断，全部结束后统一汇总失败项；运行日志使用 `一键日常` 模块，队列汇总写入 `总流程` 板块，每个小任务按脚本 `display_name` 单独写入自己的板块；页面会记住上次勾选的脚本、`历练` / `观星` 选项以及一键日常专用的“调试模式 / 保存调试截图”开关，退出后再次进入不清空；当前内置项已包含领取体力、领取月卡、行囊派遣、送礼一次、历练、观星、白鹄扫荡、相见、鸢报一轮、密探升级、家具互动、密探特训、家具历险、家具打造、材料打造等；`家具打造` / `材料打造` 开头会先定位当前页面，识别不到时有限次返回后调用 `home_page_one_recover.json` 回到首页第一页；这两个脚本的开局深层定位只允许分别通过 `家具打造` / `材料合成` OCR 跳到对应打造流程，不允许通过加号等后续控件直接跳转；其中 `历练` 支持铜钱/经验/风火/地水/阴阳五入口单选，默认经验；`观星` 支持「观星一次 / 有月卡观星 / 无月卡观星」三种模式，后两者默认 30 次且可改；调试模式开启后，一键日常运行时会按脚本节点在屏幕上绘制 ROI 红框，若同时开启“保存调试截图”则继续沿用 `AutoTaskEngine` 的截图保存链路；`领取月卡` 在原“福利”识别前会先执行一段“月卡补充”流程；若导入时跳去开启无障碍或悬浮窗权限，待导入脚本列表会先持久化，权限补齐后可继续恢复导入。
+  - 首页 `日常版` 现包含「一键日常」入口：只读取 `assets/daily_scripts/daily/` 下的内置脚本，多选后导入现有日常悬浮窗，开始执行时按列表顺序逐个运行，单项失败不中断，全部结束后统一汇总失败项；运行日志使用 `一键日常` 模块，队列汇总写入 `总流程` 板块，每个小任务按脚本 `display_name` 单独写入自己的板块；页面会记住上次勾选的脚本、`历练` / `观星` 选项以及一键日常专用的“调试模式 / 保存调试截图”开关，退出后再次进入不清空；当前内置项已包含领取体力、领取月卡、行囊派遣、送礼一次、历练、观星、白鹄扫荡、地宫扫荡、相见、鸢报一轮、密探升级、家具互动、密探特训、家具历险、家具打造、材料打造等；`行囊派遣` 进入据点时不再识别据点模板，回到主页第二页后直接点击固定坐标 `x=347, y=1614, align=center`；`家具打造` / `材料打造` 开头会先定位当前页面，识别不到时返回时等待 1500ms 后调用 `home_page_one_recover.json` 回到首页第一页；这两个脚本的开局深层定位只允许分别通过 `家具打造` / `材料合成` OCR 跳到对应打造流程，不允许通过加号等后续控件直接跳转；其中 `历练` 支持铜钱/经验/风火/地水/阴阳五入口单选，默认经验；`观星` 支持「观星一次 / 有月卡观星 / 无月卡观星」三种模式，后两者默认 30 次且可改；调试模式开启后，一键日常运行时会按脚本节点在屏幕上绘制 ROI 红框，若同时开启“保存调试截图”则继续沿用 `AutoTaskEngine` 的截图保存链路；`领取月卡` 在原“福利”识别前会先执行一段“月卡补充”流程；若导入时跳去开启无障碍或悬浮窗权限，待导入脚本列表会先持久化，权限补齐后可继续恢复导入。
+  - 首页「日常版」新增「修为计算」：用户可添加多个密探并填写属性、当前/目标修为和数量，上传背包截图后使用现有离线 OCR 归一化图片：横向比 `9:16` 更宽时仅裁掉居中的两侧黑边，等宽或纵向更长时完整保留纵向内容并按宽度缩放至 1080；随后从背包 Tab 附近扫描至图片底部并按四列识别，每列先识别材料名，再从名称上方独立截取数字 ROI 二次识别。背包布局按“数量行在上、名称行在下”处理，数字配对限定在同列且每个材料只使用一个数字，材料名白名单过滤顶部货币/体力栏等无关文字，OCR 原文、内容区坐标和配对结果写入运行日志的「修为计算 / OCR」分区；数字解析优先取原文中的第一个真实数字串，只有原文没有数字时才兼容 `O/o` 误识别为 `0`；18 种修为材料会以圆形图标、名称、可编辑数量展示，Wiki 素材图会放大后裁圆以避开外圈深色像素，简繁体材料名会统一归一化到同一库存项，识别结果可人工校正；上传图片时 UI 预览 Bitmap 与 OCR 工作 Bitmap 必须分离，避免 Compose 绘制已被 OCR 链路回收的图片。计算器默认使用全部 12 个历练关卡；计算结果的每类材料下方可输入历练关卡和次数，快捷把该关卡奖励加入库存并自动刷新结果；材料数量、密探输入和上次背包预览会保存到 App 私有存储，重新进入页面自动恢复。
+  - `地宫扫荡` 进入地宫后会在同一张截图中按“地宫关卡”→“地宫关卡2”顺序尝试识别，任一命中后点击进入并记录命中坐标；随后先点击一次“扫荡5次”，点击右下角空白坐标 `x=1000, y=1800, align=bottom` 后复用首次关卡识别坐标再次点击进入，再点击“扫荡5次”，共扫荡 10 次。
   - 首页检查更新由 `HomeActionHandler` 处理：发现新版本后优先走 Android `DownloadManager` 应用内下载，下载完成拉起系统安装器；同时保留浏览器下载作为手动入口和兜底。
   - 首页「相关链接」板块位于常用入口之后，以两列卡片展示作者主页、maayuan、biubiu 三个推荐入口；入口图标使用 `assets/author_home.png`、`assets/maayuan.png`、`assets/biubiu.jpg`，点击由 `MainActivity` 打开外链。
+  - 我的页「全局设置」入口承载日常版通用偏好：繁体模式、排除密探、日常全局延时；战斗版首页「设置」仍打开独立的 `SettingsActivity`，不要混用。
 - 无障碍自动化
   - `YuanAssistService` 是核心服务，负责悬浮窗、服务 action、引擎生命周期。
+  - 战斗版悬浮窗当前支持右下角透明热区缩放，窗口左上角固定，整体比例固定；缩小时保持内部基准布局后做视觉缩放，避免底部工具行被挤压。`CoordinateManager` 在生成战斗坐标时会按当前屏幕尺寸刷新，键位修正打开和保存时也会显式刷新，覆盖平板横竖屏或窗口尺寸变化后的旧坐标缓存。
 - 日常脚本系统
   - `AutoTaskEngine` 按 `DailyTaskPlan` 执行 CLICK、MATCH_TEMPLATE、OCR、SET_VAR、BACK 等动作。
   - 云端脚本共享入口位于首页「常用入口」的「脚本库」后面；只共享日常录制脚本 bundle，战斗脚本仍归 JobStation。脚本整包通过 Supabase Storage 保存为 zip，元数据由 `SupabaseRepository` / `yuanassist-api-v3` 管理；详情页的「图片指引」使用图床 URL，并有独立于攻略评论的云端脚本评论区。管理员设备发布的云端脚本由后端返回 `isAdminPublished`，列表显示“管理员发布”标签；首页「云端脚本」入口红点与消息未读数共用 `get-home-badges` 请求，并按本地已读记录判断，进入列表页后清除。云端脚本详情页只提供“保存本地”，不要绕过本地 bundle 存储直接导入日常悬浮窗，否则运行时可能缺少模板素材。
@@ -58,6 +65,7 @@
     - 组级 `roi` 默认共享，子项可单独覆盖 `roi`
     - 子项命中后默认使用自己的 `on_success` 跳转；如果子项 `on_success` 与任务级 `on_success` 相同，则会复用任务级 `branch_var` / `branch_routes` 分支
     - 全部未命中仍走任务级 `on_fail`
+    - `RUN_SCRIPT_SEGMENT` 使用 `exit_task_id` 截断子脚本时，会同时重写任务级跳转和 `SCREENSHOT_GROUP` 子步骤的 `on_success`
   - 当前脚本退出语义统一为：
     - `on_success = -1` 表示正常完成
     - `on_fail = -1` 也按正常结束处理
@@ -70,9 +78,16 @@
   - `RecordedDailyScriptViewerActivity` 负责查看、分支切换、编辑、导出。
 - 作业站/攻略发布
   - `UploadStrategyActivity` 负责发布和编辑本站攻略，基础信息包含游戏版本（`ruyuan`：1=如鸢、0=代号鸢）和空格分隔的自定义标签 `tags`；`JobStationAssetRepository` 展示标签时会合并游戏标签、自定义标签和标题推断标签。
+  - 发布/编辑攻略的脚本区支持通过现有指令管理器配置附加指令，当前可直接设置庞统复制（鹦鹉）检测和龙气条件检测；保存到攻略 `instructions` 字段，预览、详情展示和导入沿用同一份 JSON。
+  - 本站攻略和 MaaYuan 攻略详情的“导入脚本”都会走 `YuanAssistService` 的 `ACTION_IMPORT_SCRIPT`；服务侧会先确保战斗版悬浮窗打开，再导入跟打数据。
+  - MaaYuan v3 作业中的 `Custom/BirdRestart` 会转换为绑定在前一真实动作后的 `PANG_TONG_COPY_CHECK`，`Custom/DragonRestart` 会转换为绑定在前一真实动作后的单次 `DRAGON_QI_CHECK`；龙气指令也支持 `step=0` 的回合开始检测，动作后检测复用动作间隔且只截图识别一次。检测参数进入附加指令并在详情页显示、导入时传入战斗引擎。详情页不会把这些独立检测节点当作普通动作重复展示。
   - 发布攻略在“选择密探”模式下若没有上传攻略原图，会复用 `ImageExportUtils` 的录制模式导出图生成表格封面，上传图床后只写入 `coverUrl`，不写入 `strategyImage`。
+  - `JobStationAssetRepository` 还会读取 `app/src/main/assets/strategy/operators.json` 组装 `maaOperatorDiscCache`，用于攻略/密探条目的职业与词条信息；这份资产和代码里的 `AgentRepository` 是两套独立维护的数据源，不要混为一谈。
 - 调试工作台
   - `DebugWorkbenchCoordinator` 负责从图片中测试模板/OCR、替换模板、调延时、查看命中范围。
+  - 战斗流程调试项包含「泰山府定位」：开始测试时用 `pics/战斗版导航/yongzhou.png` 的「永昼」模板扫描整张截图，绘制全部命中框并记录坐标、分数和数量；用于校验泰山府关卡导航的模板阈值。
+  - 战斗版调试选项包含“龙气检测”和“庞统复制检测”开始测试：两者分别复用 `CombatEngine` 的横向 bottom ROI 和模板缩放；复制检测在当前截图中取最高分位置并映射到 1-5 号位，预览图标出扫描区和最高分命中框；运行时会在动作间隔结束前 0.5 秒、结束时、结束后 0.5 秒连续截图并从三次最高分中取全局最大值。调试页可通过“修改区域”在完整截图上拖动 ROI，拖动上下边缘调整高度，配置由 `CombatDetectionRoiStore` 持久化并由调试测试与 `CombatEngine` 共同读取；“恢复默认”清除对应覆盖。
+  - 战斗版调试选项包含“龙气检测”和“庞统复制检测”开始测试：两者分别复用 `CombatEngine` 的横向 bottom ROI 和模板缩放；调试页 ROI 编辑器的显示、拖动保存和运行时读取统一使用 bottom 对齐，避免高屏截图按 center 语义还原；复制检测在当前截图中取最高分位置并映射到 1-5 号位，预览图标出扫描区和最高分命中框；运行时会在动作间隔结束前 0.5 秒、结束时、结束后 0.5 秒连续截图并从三次最高分中取全局最大值。调试页可通过“修改区域”在完整截图上拖动 ROI，拖动上下边缘调整高度，配置由 `CombatDetectionRoiStore` 持久化并由调试测试与 `CombatEngine` 共同读取；“恢复默认”清除对应覆盖。
   - 调试页会自动索引 `assets/daily_scripts` 中的脚本视觉节点，包括 `MATCH_TEMPLATE`、`OCR` 以及 `SCREENSHOT_GROUP` 子步骤。
   - 调试页对内置脚本的索引现支持递归读取 `assets/daily_scripts` 下的 `.json`，因此 `daily/*.json` 这类一键日常脚本也会进入任务列表并支持模板/OCR 调试与替换。
   - OCR 节点即使 JSON 未配置 `template_name`，调试页也会生成稳定派生模板名：`<scriptBaseName>_task_<taskId>_ocr.png`，保存位置是 App 私有 `files/template_overrides/`。
@@ -88,7 +103,7 @@
   - 刷鸟食的小道消息子脚本使用 `bird_food_xiao_dao_xiao_xi.json`；一键日常“鸢报一轮”使用旧 `xiao_dao_xiao_xi.json`，保留其中“最多/前往收集”的一次性收取逻辑，二者不要混用。
   - `Mainline624RuntimeManager` 已收敛为薄调度层：主体仍执行 `zhu_xian_6_24.json`，manager 只负责次数停止、`game_variant` 变量和开始战斗延时覆盖；首次入口和后续循环都从脚本头部定位组开始，不再维护单独循环入口。
   - `zhu_xian_6_24.json` 开头用 `SCREENSHOT_GROUP` 判断当前界面：可直接识别 6-24 战斗页、6-24 入口、第六章入口、首页故事入口；多次未命中会先返回重试，再调用 `home_page_one_recover.json` 回到首页后从故事入口流程继续。
-  - 披荆斩棘功能已从主项目移除并备份到公开仓库：`https://github.com/chunshengyue/yuanassist-pi-jing-zhan-ji`。主项目保留部分共享脚本及其依赖素材，避免影响鸟食、首页恢复、观星等现有链路。
+  - 披荆斩棘功能已从主项目移除并备份到公开仓库：`https://github.com/chunshengyue/yuanassist-pi-jing-zhan-ji`。主项目只保留仍被鸟食、首页恢复、观星等现有链路直接引用的共享脚本或素材。
 
 ## Supabase 维护指南
 - 当前 Supabase 项目：
@@ -153,9 +168,13 @@
   - 自动选人开关与角色配置
   - 战斗锚点/定位相关调节入口
   - “键位修正”入口会显示 A、↑、↓、圈 四个动作标记，分别落在 1-4 号位中间；拖动标记只保存对应动作的 y（距离底部距离），x 仍由列位算法计算
+  - 键位修正与录制圈按钮统一使用实际屏幕 y 坐标；键位修正标记先扣除全屏悬浮层原点，录制圈按钮按独立窗口实际屏幕中心校正，避免两个悬浮窗的本地坐标原点不同造成高度偏移。
   - 小窗最小化与恢复
   - 设置入口
   - 表格式回合/指令查看与编辑
+  - 附加指令支持回合开始或动作后的“龙气检测”：在战斗卡片区域横向 bottom ROI 扫描单龙气模板并统计数量，支持大于等于、等于、小于条件；动作后检测复用动作间隔并只截图一次，未通过时复用现有返回确认与重开分支。单龙气素材位于 `app/src/main/assets/pics/战斗版导航/longqi_single.png`。
+  - 附加指令支持动作后的“庞统复制检测”：复用该动作最终计算出的执行间隔，在下一个动作开始前对角色卡横向 bottom ROI 做一次复制模板匹配，取最高分位置映射到 1-5 号位并与配置目标比较；通过后不额外增加等待，未通过时复用现有返回确认与重开分支。素材位于 `app/src/main/assets/pics/战斗版导航/fuzhi_single.png`。
+  - 战斗版附加指令编辑器的回合数、动作序号、检测数值和关卡序号输入框统一调用 `protectInputLongPress()`，防止系统长按输入菜单干扰悬浮窗输入。
   - 录制模式下的额外悬浮按钮，例如“圈”和目标切换按钮，用于快速记录特殊战斗指令
   - 战斗设置页的“高级参数”将录制模拟和跟打执行拆成两套手势参数：点击持续时间、滑动持续时间、滑动距离；A/↑/↓/圈 的距离底部仍沿用原有“战斗动作距离底部”配置。
 - 简单理解：
@@ -186,6 +205,7 @@
   - 首页快捷按钮负责把模式导入到 `DailyWindowManager`
   - 悬浮窗开始按钮负责弹出可拖动/缩放的选区
   - 确认后走本地 PaddleOCR，并以悬浮对话框展示和复制识别结果
+- 学府作假作为首个不通过原因时，会按非法学校来源决定评语卡落点：简历学校非法拖到简历学校，只有毕业证学校非法则拖到毕业证学校；两者均非法时优先简历学校。落点复用对应学校 ROI 中心，因此会随调试页保存的 ROI 覆盖同步变化。
 - 简单理解：
   - 日常版悬浮窗 = 日常任务启动器 + 工具入口 + 当前日常任务状态控制器
 
@@ -225,7 +245,7 @@
   - 列表弹窗用 `DialogUtils.fixedOptionTextAdapter`
   - Spinner / AutoComplete 下拉用 `DialogUtils.fixedDropdownTextAdapter`
   - 这样可以避免部分系统主题下选项文字与背景同色而“能点但看不见”
-- Debug 页面虽然偏工具页，但也已经接入主壳视觉体系；新增调试能力时优先延续该风格，而不是单独做一套工具后台风
+  - Debug 页面虽然偏工具页，但也已经接入主壳视觉体系；新增调试能力时优先延续该风格，而不是单独做一套工具后台风
 
 ## 可复用 UI 组件
 ### Compose 主壳组件
@@ -380,12 +400,19 @@
 - `AutoTaskEngine`
   - 通用日常脚本执行引擎，支持模板匹配、OCR、点击、变量与分支跳转。
   - `RUN_SCRIPT_SEGMENT` 加载子脚本时支持 `segmentPlanCustomizer` 钩子；刷鸟食用它把待办公务入口跳过、五铢钱选择区域和开始战斗延时应用到实际子脚本。
+- `TemplateMatcher`
+  - OpenCV 模板匹配共享 helper，当前由 `AutoTaskEngine` 复用；新增模板匹配逻辑时优先复用它，不要另写像素差异判断。
+- `PaddleTextRecognizer`
+- `OcrPreprocessor`
+  - OCR 预处理共享 helper，保留 `AutoTaskEngine` 既有 `yellow_text` / `light_text`，新增的通用预处理优先放这里。
 - `DebugWorkbenchCoordinator`
   - 通用调试工作台协调器，适合给模板/OCR/延时调优接入口。
   - 脚本 OCR 节点支持从自身 ROI 裁剪生成 App 私有模板，不修改 assets JSON 或 assets 模板文件。
 - `TemplateDelayOverrideStore`
   - 调试页延时增量的统一持久化与运行时 plan 覆盖入口；普通日常悬浮窗在启动脚本前应用，`AutoTaskEngine` 在加载 `RUN_SCRIPT_SEGMENT` 子脚本后应用。
   - `SCREENSHOT_GROUP` 多个子步骤共享任务级 delay；若同组多个子项配置增量，运行时取最大视觉节点增量加到该组任务 delay。
+- `DailyGlobalDelayStore`
+  - 日常版全局延时的持久化入口，运行时由 `AutoTaskEngine.startPlan()` 统一应用到每个节点现有 `delay` 上。
 - `UserDailyScriptStore`
   - 用户脚本 bundle 的创建、读取、导出、模板文件同步。
 - `TemplateOverrideStore`
@@ -405,6 +432,9 @@
   - 主壳古风功能卡和装饰按钮，适合首页或强视觉入口。
 - `AgentSelectionComponents`
   - 密探/天赋选择相关的业务 UI 与标签解析工具。
+  - 勾选「代号鸢」时展示的扩展密探名单在 `AgentSelectionComponents.kt` 与 `ExcludedAgentsDialog.kt` 各维护一份；`吕布`、`曹丕` 现在属于基础名单前置项，不再算代号鸢限定，但两处名单构造仍要同步。
+- `AgentRepository`
+  - 角色基础资料与命盘映射表；`赵云`、`司马孚`、`张松`、`孙辅` 已按 `operators.json` 补入，头像直接读取 `assets/<密探名>.png`。
 - `DialogUtils`
   - 传统 View 弹窗、下拉和悬浮窗 overlay 弹窗的统一主题与安全展示工具。
 
@@ -414,7 +444,14 @@
 - 脚本模板主要放在 `app/src/main/assets/daily_script_templates/<script-name>/`。
 - 「一键日常」模板统一放在 `app/src/main/assets/daily_script_templates/daily/`，若不同任务存在同名模板，统一改成带任务名前缀的文件名，并同步更新 `template_name`。
 - 当前内置脚本实际引用的模板素材已优先整理到 `app/src/main/assets/pics/<display_name>/`。
+- 战斗版进图导航、主页恢复和战斗结果恢复素材统一放在 `app/src/main/assets/pics/战斗版导航/`；`BattleStageNavigationRegistry` 与 `CombatEngine` 使用带目录的 asset key，运行时仍兼容旧版按裸文件名保存的覆盖素材和延时配置；洞窟入口不再使用 `dongku.png` / `dongku2.png` 素材识别，直接点击 `center(666,313)` 对应的屏幕位置。
+  - 泰山府关卡自动导航复用地宫恢复；进入地宫后在 `top(424,329)` 的局部 OCR 中命中 `泰` / `山` / `府` 任意两个字即点击入口。关卡自动导航编辑器须填写“进入泰山府后顶部第一个关卡”和“泰山府目标关卡”（均为 1-13，且目标不得小于顶部）；运行时从当前截图的首个永昼节点按 `目标 - 顶部` 的零基索引定位，因此顶部 8、目标 10 会选择第 3 个识别节点。点击目标关卡后等待，再直接通过 OCR 识别并点击「开始战斗」，不匹配或点击「进入挑战」模板。翻页上滑距离固定为屏高约 20%，翻页动作完成后固定停顿 1500ms 再截图识别，以保留上一页底部节点。翻页后必须以“上一页最底部永昼节点的相近 X 坐标”作为重叠锚点，找不到锚点即停止，避免重复或漏计。永昼标签左侧约 100px 是关卡点击位，只有第 9、10 关取右侧约 100px；所有 X 偏移按当前宽度相对 1080 换算。旧的单目标关卡配置按“顶部第 1 关”兼容解析。
 - 当 `template_name` 写成 `pics/...` 这类带斜杠路径时，运行时会按 `assets` 相对路径直接取图，不再依赖脚本里的 `asset_template_dir`。
+- 同一识别点若需要同时兼容简体/繁体模板，优先在现有 `SCREENSHOT_GROUP` 中新增同 ROI、同阈值、同跳转的繁体候选；原本单个 `MATCH_TEMPLATE` 若要兼容两套模板，可改为只包含简繁两个候选的 `SCREENSHOT_GROUP`。
+- 内置脚本 OCR 的 `target_chars` 应按字符集合维护简繁兼容；同一含义的简体/繁体字放在同一个数组里，并保持 `min_hit_count` 语义不变，不要为了加繁体去改 ROI、跳转或点击参数。
+- 繁体模式的脚本差异优先声明在节点级 `mode_overrides.traditional`；基础节点继续保留简体模式行为，繁体 override 只描述运行时需要替换的 `action` / `params`，常见用法是把带简体文字的 `MATCH_TEMPLATE` 替换成同 ROI 的 `OCR`。
+- 我的页「全局设置」提供全局「繁体模式」开关，状态持久化在 `app_prefs`；`AutoTaskEngine.startPlan()` 会在每次父脚本或 `RUN_SCRIPT_SEGMENT` 子脚本启动时读取该状态，开启后将节点的 `mode_overrides.traditional` 中声明的 `action` / `params` 应用到执行 plan，节点 id、名称、延时和跳转保持原值。
+- 我的页「全局设置」提供日常版全局延时，状态由 `DailyGlobalDelayStore` 持久化在 `app_prefs`；`AutoTaskEngine.startPlan()` 会在繁体模式节点替换后，把该值叠加到每个节点现有 `delay` 上，因此会与刷鸟食、刷 6-24 等页面自己的低配适应延时继续叠加，但不影响战斗版 `SettingsActivity` / `CombatEngine`。
 - 调试页对脚本节点的展示，依赖脚本内容本身和 `DailyScriptDebugIndex` 的映射。
 - 若新增一类日常脚本或模板节点，最好同时考虑：
   - 脚本 JSON 是否能被调试页索引
@@ -423,9 +460,11 @@
   - 是否需要接入模板替换/恢复
 
 ## 容易忽略的点
+- 编写、审查或修复 PowerShell 语法时，优先使用用户级已安装的 `powershell-command-runner` skill；具体命令格式仍以根目录 `AGENTS.md` 为准。
 - 很多关键常量直接写在协调器或引擎里，不一定抽到统一配置层。
 - `DebugWorkbenchCoordinator` 里维护了大量任务、模板、ROI、阈值和角色特殊点位，是识别规则的重要事实来源。
 - 角色导入不仅依赖 OCR，还叠加了名字纠错、命盘匹配、候选打分；不要把它当成简单 OCR 页面。
+- `tableocr/PaddleOcrNative.kt` 对外仍保持 `init / recognize / detect` 接口，但底层已从 Paddle Lite/JNI 迁移为 Android ONNX Runtime；背包拼接的文字行识别也复用此链路，不再依赖 ML Kit；不要再把 Paddle 3 的 v6 PIR 模型直接转换为旧 `.nb` 格式。
 - `RecordedDailyScriptViewerActivity` 不只是查看器，它也是脚本结构编辑器，支持改起始任务、增删节点、分支查看、导出。
 - 模板替换、脚本编辑、延时覆盖三者是分开的持久化层；延时覆盖保存到偏好设置，运行时通过 plan 覆盖应用，不会改写脚本 JSON。
 

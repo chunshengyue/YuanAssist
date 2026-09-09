@@ -54,9 +54,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.coroutines.resume
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -187,7 +190,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         val density = service.resources.displayMetrics.density
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
-            (50f * density + 0.5f).toInt(),
+            WindowManager.LayoutParams.WRAP_CONTENT,
             overlayType(),
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -208,6 +211,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
         actionButton.setOnClickListener { toggleExecution() }
         closeButton.setOnClickListener { hideWindow() }
         refreshActionButton()
+        refreshDailyStatusPanel()
         windowManager.addView(view, params)
         updateOverlayState(isOpen = true)
     }
@@ -818,6 +822,7 @@ class DailyWindowManager(private val service: AccessibilityService) {
     }
 
     private fun refreshActionButton() {
+        refreshDailyStatusPanel()
         handler.post {
             val button = floatView?.findViewById<ImageButton>(R.id.btn_daily_action) ?: return@post
             if (isQueuedTaskSequenceRunning || engine.isRunning || birdFoodRuntimeManager.isRunning || mainline624RuntimeManager.isRunning || stargazingRuntimeManager.isRunning || stitchEngine.isRunning || characterImportEngine.isRunning) {
@@ -827,6 +832,21 @@ class DailyWindowManager(private val service: AccessibilityService) {
                 button.setImageResource(android.R.drawable.ic_media_play)
                 button.contentDescription = "开始"
             }
+        }
+    }
+
+    private fun refreshDailyStatusPanel() {
+        handler.post {
+            val statusView = floatView?.findViewById<TextView>(R.id.tv_daily_status) ?: return@post
+            statusView.visibility = View.GONE
+        }
+    }
+
+    private fun setDailyStatus(message: String) {
+        handler.post {
+            val statusView = floatView?.findViewById<TextView>(R.id.tv_daily_status) ?: return@post
+            statusView.visibility = View.GONE
+            statusView.text = message
         }
     }
 
@@ -1312,6 +1332,15 @@ class DailyWindowManager(private val service: AccessibilityService) {
         }
     }
 
+
+    private fun normalizeOcrLogText(text: String): String {
+        return text
+            .ifBlank { "未识别到文本" }
+            .replace("\r\n", "\\n")
+            .replace("\r", "\\n")
+            .replace("\n", "\\n")
+    }
+
     private fun buildNormalizedSelectionRect(
         selectionRect: Rect,
         containerWidth: Int,
@@ -1389,6 +1418,22 @@ class DailyWindowManager(private val service: AccessibilityService) {
             },
         )
     }
+
+    private suspend fun captureScreenshotBitmap(): Bitmap? =
+        suspendCancellableCoroutine { continuation ->
+            captureScreenshot(
+                onSuccess = { bitmap ->
+                    if (continuation.isActive) {
+                        continuation.resume(bitmap)
+                    } else {
+                        bitmap.recycle()
+                    }
+                },
+                onFailure = {
+                    if (continuation.isActive) continuation.resume(null)
+                },
+            )
+        }
 
     private fun mapNormalizedRectToScreenshot(
         selectionRect: NormalizedSelectionRect,

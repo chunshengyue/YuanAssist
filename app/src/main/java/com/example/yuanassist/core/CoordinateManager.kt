@@ -46,8 +46,16 @@ class CoordinateManager(private val context: Context) {
         colWidth = gameWidth / 5f
     }
 
+    fun refreshIfNeeded() {
+        val metrics = context.resources.displayMetrics
+        if (metrics.widthPixels != screenWidth || metrics.heightPixels != screenHeight) {
+            calculate()
+        }
+    }
+
     // 获取指定列和高度类型的最终屏幕坐标 (Bottom-Up 算法)
     fun getActionCoordinates(colIndex: Int, designYFromBottom: Float, designXOffset: Float = 0f): PointF {
+        refreshIfNeeded()
         val x = gameOffsetX + (colIndex * colWidth) + (colWidth / 2f) + (designXOffset * gameScale)
         val y = screenHeight - (designYFromBottom * gameScale)
         return PointF(x, y)
@@ -55,6 +63,7 @@ class CoordinateManager(private val context: Context) {
 
     // 获取绝对位置的屏幕坐标 (Top-Down 算法)
     fun getTargetCoordinates(designX: Float, designYTop: Float): PointF {
+        refreshIfNeeded()
         val x = gameOffsetX + (designX * gameScale)
         val y = gameOffsetY + (designYTop * gameScale)
         return PointF(x, y)

@@ -86,6 +86,44 @@
       "delay": 1800,
       "id": 31,
       "name": "密探特训入口",
+      "on_fail": 32,
+      "on_success": 4,
+      "params": {
+        "align": "center",
+        "click": 1,
+        "roi": {
+          "align": "center",
+          "h": 1920.0,
+          "w": 1080.0,
+          "x": 540.0,
+          "y": 960.0
+        },
+        "template_name": "pics/密探特训/密探特训.png",
+        "threshold": 0.77
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "SWIPE",
+      "delay": 1200,
+      "id": 32,
+      "on_fail": -2,
+      "on_success": 33,
+      "params": {
+        "align": "center",
+        "duration": 300,
+        "endX": 540.0,
+        "endY": 960.0,
+        "startX": 540.0,
+        "startY": 1160.0
+      },
+      "start_cooldown_on_success": false
+    },
+    {
+      "action": "MATCH_TEMPLATE",
+      "delay": 1800,
+      "id": 33,
+      "name": "密探特训入口",
       "on_fail": -2,
       "on_success": 4,
       "params": {

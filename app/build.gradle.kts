@@ -16,8 +16,8 @@ android {
         applicationId = "com.example.yuanassist"
         minSdk = 24
         targetSdk = 36
-        versionCode = 43
-        versionName = "1.1.6.2-beta"
+        versionCode = 50
+        versionName = "1.1.6.36"
 
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -25,12 +25,6 @@ android {
             abiFilters += listOf("arm64-v8a")
         }
 
-        externalNativeBuild {
-            cmake {
-                cppFlags += listOf("-std=c++17", "-frtti", "-fexceptions")
-                arguments += listOf("-DANDROID_STL=c++_shared")
-            }
-        }
     }
 
 
@@ -51,18 +45,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "11"
-    }
-
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-        }
-    }
-
-    sourceSets {
-        getByName("main") {
-            jniLibs.srcDirs("src/main/jniLibs")
-        }
     }
 
     buildFeatures {
@@ -99,5 +81,5 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.28.0")
 }

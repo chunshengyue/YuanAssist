@@ -21,16 +21,19 @@ import com.example.yuanassist.model.update
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.ui.FaqActivity
 import com.example.yuanassist.ui.FeedbackCenterActivity
+import com.example.yuanassist.ui.GlobalSettingsActivity
 import com.example.yuanassist.ui.OneKeyDailyActivity
 import com.example.yuanassist.ui.LegacyFragmentHostActivity
 import com.example.yuanassist.ui.RunLogActivity
 import com.example.yuanassist.ui.ScriptLibraryActivity
 import com.example.yuanassist.ui.SettingsActivity
+import com.example.yuanassist.ui.XiuweiCalculatorActivity
 import com.example.yuanassist.utils.DialogUtils
 import java.io.File
 
 class HomeActionHandler(
     private val activity: AppCompatActivity,
+    private val onLatestVersionLoaded: (String) -> Unit = {},
 ) {
 
     fun isCombatWindowOpen(): Boolean {
@@ -47,6 +50,10 @@ class HomeActionHandler(
 
     fun openSettings() {
         activity.startActivity(Intent(activity, SettingsActivity::class.java))
+    }
+
+    fun openGlobalSettings() {
+        activity.startActivity(Intent(activity, GlobalSettingsActivity::class.java))
     }
 
     fun openOneKeyDaily() {
@@ -71,6 +78,10 @@ class HomeActionHandler(
 
     fun openInventoryStitch() {
         openDailyScreen(LegacyFragmentHostActivity.Screen.DAILY_INVENTORY_STITCH)
+    }
+
+    fun openXiuweiCalculator() {
+        activity.startActivity(Intent(activity, XiuweiCalculatorActivity::class.java))
     }
 
     fun openCharacterImport() {
@@ -124,6 +135,7 @@ class HomeActionHandler(
         SupabaseRepository.getLatestUpdate(
             onSuccess = { updateInfo ->
                 activity.runOnUiThread {
+                    notifyLatestVersionLoaded(updateInfo)
                     handleUpdateInfo(updateInfo)
                 }
             },
@@ -133,6 +145,24 @@ class HomeActionHandler(
                 }
             },
         )
+    }
+
+    fun refreshLatestVersion() {
+        SupabaseRepository.getLatestUpdate(
+            onSuccess = { updateInfo ->
+                activity.runOnUiThread {
+                    notifyLatestVersionLoaded(updateInfo)
+                }
+            },
+            onError = {},
+        )
+    }
+
+    private fun notifyLatestVersionLoaded(updateInfo: update) {
+        val versionName = updateInfo.versionName.ifBlank { updateInfo.versionCode.toString() }
+        if (versionName != "0") {
+            onLatestVersionLoaded(versionName)
+        }
     }
 
     private fun handleUpdateInfo(updateInfo: update) {

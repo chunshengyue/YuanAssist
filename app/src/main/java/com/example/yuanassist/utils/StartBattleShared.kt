@@ -14,7 +14,14 @@ object StartBattleShared {
     const val ROI_HEIGHT = 400f
     const val ALIGN = "bottom"
     const val OCR_MIN_HIT_COUNT = 2
-    private val OCR_TARGET_CHARS = listOf('开', '始', '战', '斗')
+    val OCR_TARGET_CHARS = listOf('开', '開', '始', '战', '戰', '斗', '鬥')
+    private val OCR_TARGET_GROUPS = listOf(
+        setOf('开', '開'),
+        setOf('始'),
+        setOf('战', '戰'),
+        setOf('斗', '鬥')
+    )
+    private val OCR_TARGET_PHRASES = listOf("开始战斗", "開始戰鬥")
 
     data class OcrLineMatch(
         val lineText: String,
@@ -51,10 +58,18 @@ object StartBattleShared {
                     normalizedLineText = normalizedLineText,
                     hitChars = hitChars,
                     center = PointF(boundingBox.exactCenterX(), boundingBox.exactCenterY()),
-                    containsPhrase = normalizedLineText.contains("开始战斗"),
+                    containsPhrase = containsStartBattlePhrase(normalizedLineText),
                     area = boundingBox.width() * boundingBox.height()
                 )
             }
             .maxWithOrNull(compareBy<OcrLineMatch>({ it.containsPhrase }, { it.hitCount }, { it.area }))
     }
+
+    fun isExplicitStartBattleTarget(chars: Collection<Char>): Boolean {
+        if (chars.isEmpty()) return false
+        return OCR_TARGET_GROUPS.all { group -> chars.any { it in group } }
+    }
+
+    fun containsStartBattlePhrase(normalizedText: String): Boolean =
+        OCR_TARGET_PHRASES.any { normalizedText.contains(it) }
 }
