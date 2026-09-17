@@ -14,6 +14,7 @@ import com.example.yuanassist.model.formatStageAutoNavDisplay
 import com.example.yuanassist.model.toDisplaySummary
 import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.utils.RunLogger
+import com.example.yuanassist.utils.CloudGameAgentCache
 import com.example.yuanassist.utils.SupabaseTimeFormatter
 import com.google.gson.Gson
 import org.json.JSONArray
@@ -1151,6 +1152,7 @@ object JobStationAssetRepository {
             ?: AgentRepository.AGENT_MAP[normalizeOperatorName(agentName)]
                 ?.talents
                 ?.get(normalizedDiscId)
+            ?: CloudGameAgentCache.resolveTalentLabel(context, normalizeOperatorName(agentName), normalizedDiscId)
                 ?.removePrefix("橙")
                 ?.removePrefix("紫")
                 ?.trim()
@@ -1165,6 +1167,7 @@ object JobStationAssetRepository {
     }
 
     fun resolveCommunityDiscDisplaySpec(
+        context: Context,
         agentName: String,
         discId: Int
     ): DiscDisplaySpec {
@@ -1181,6 +1184,7 @@ object JobStationAssetRepository {
         val rawTalentText = AgentRepository.AGENT_MAP[normalizeOperatorName(agentName)]
             ?.talents
             ?.get(normalizedDiscId)
+            ?: CloudGameAgentCache.resolveTalentLabel(context, normalizeOperatorName(agentName), normalizedDiscId)
             .orEmpty()
         val displayName = rawTalentText
             .removePrefix("橙")

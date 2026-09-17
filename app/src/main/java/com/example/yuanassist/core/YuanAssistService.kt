@@ -7,6 +7,7 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
+import android.content.res.Configuration
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -768,6 +769,16 @@ class YuanAssistService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (!this::coordinateManager.isInitialized) return
+        handler.post {
+            coordinateManager.calculate()
+            updateCombatOverlayPositions()
+        }
+    }
+
     override fun onInterrupt() {
         appendAccessibilityTrace("onInterrupt：${buildAccessibilityStatusSummary()}，${buildWindowVisibilitySummary()}")
     }
@@ -1462,7 +1473,11 @@ class YuanAssistService : AccessibilityService() {
 
             btnUndo.text = "指令"
             btnUndo.setOnClickListener {
-                InstructionDialogs.showListDialog(this, combatEngine.instructionList)
+                InstructionDialogs.showListDialog(
+                    context = this,
+                    instructionList = combatEngine.instructionList,
+                    onCopyTurns = ::copyFollowTurns
+                )
             }
 
             if (isRunning) {
@@ -1770,6 +1785,55 @@ class YuanAssistService : AccessibilityService() {
         } else {
             Toast.makeText(this, "未找到回合 T$targetTurnNumber", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun copyFollowTurns(
+        sourceStart: Int,
+        sourceEnd: Int,
+        targetStart: Int,
+        targetEnd: Int
+    ): String? {
+        if (sourceEnd > combatEngine.followData.size) {
+            return "来源回合不存在，请先补齐来源回合"
+        }
+
+        while (combatEngine.followData.size < targetEnd) {
+            combatEngine.followData.add(TurnData(combatEngine.followData.size + 1))
+        }
+
+        val sourceTurns = (sourceStart..sourceEnd).map { turnNumber ->
+            combatEngine.followData[turnNumber - 1].let { source ->
+                TurnData(
+                    turnNumber = source.turnNumber,
+                    characterActions = Array(5) { index ->
+                        SpannableStringBuilder(source.characterActions[index])
+                    },
+                    currentStep = source.currentStep
+                )
+            }
+        }
+        val copiedInstructions = combatEngine.instructionList
+            .filter { it.turn in sourceStart..sourceEnd }
+            .map { instruction ->
+                instruction.copy(turn = targetStart + instruction.turn - sourceStart)
+            }
+
+        combatEngine.instructionList.removeAll { it.turn in targetStart..targetEnd }
+        combatEngine.instructionList.addAll(copiedInstructions)
+
+        sourceTurns.forEachIndexed { offset, source ->
+            val target = combatEngine.followData[targetStart - 1 + offset]
+            for (index in 0 until 5) {
+                target.characterActions[index] = SpannableStringBuilder(source.characterActions[index])
+            }
+            target.currentStep = source.currentStep
+            target.hasConflict = false
+            target.isExecuting = false
+        }
+
+        assignInstructionsToTurns(combatEngine.followData, combatEngine.instructionList)
+        tableAdapter?.notifyDataSetChanged()
+        return null
     }
 
 
@@ -2616,6 +2680,60 @@ class YuanAssistService : AccessibilityService() {
         val currentCenterY = location[1] + height / 2f
         params.y += (point.y - currentCenterY).roundToInt()
         systemWindowManager.updateViewLayout(view, params)
+    }
+
+    private fun updateCombatTargetSwitchButtonPosition(
+        type: InstructionType,
+        view: TextView
+    ) {
+        val params = view.layoutParams as? WindowManager.LayoutParams ?: return
+        val point = when (type) {
+            InstructionType.TARGET_SWITCH_LEFT -> coordinateManager.getTargetCoordinates(
+                GameConstants.DESIGN_TARGET_LEFT_X,
+                GameConstants.DESIGN_TARGET_Y_TOP
+            )
+
+            else -> coordinateManager.getTargetCoordinates(
+                GameConstants.DESIGN_TARGET_X,
+                GameConstants.DESIGN_TARGET_Y_TOP
+            )
+        }
+        val width = view.width.takeIf { it > 0 } ?: params.width
+        val height = view.height.takeIf { it > 0 } ?: params.height
+        if (width <= 0 || height <= 0) return
+        val location = IntArray(2)
+        view.getLocationOnScreen(location)
+        val currentCenterX = location[0] + width / 2f
+        val currentCenterY = location[1] + height / 2f
+        params.x += (point.x - currentCenterX).roundToInt()
+        params.y += (point.y - currentCenterY).roundToInt()
+        systemWindowManager.updateViewLayout(view, params)
+    }
+
+    private fun updateCombatOverlayPositions() {
+        updateCombatCircleButtonPosition()
+        combatLeftSwitchButtonView?.let {
+            updateCombatTargetSwitchButtonPosition(InstructionType.TARGET_SWITCH_LEFT, it)
+        }
+        combatRightSwitchButtonView?.let {
+            updateCombatTargetSwitchButtonPosition(InstructionType.TARGET_SWITCH_RIGHT, it)
+        }
+
+        val overlay = combatAnchorPickerView as? FrameLayout ?: return
+        overlay.post {
+            if (combatAnchorPickerView !== overlay) return@post
+            if (overlay.childCount > 1) {
+                overlay.removeViews(1, overlay.childCount - 1)
+            }
+            val overlayLocation = IntArray(2)
+            overlay.getLocationOnScreen(overlayLocation)
+            combatAnchorAdjustSpecs().forEach { spec ->
+                overlay.addView(
+                    createCombatAnchorAdjustMarker(spec),
+                    createCombatAnchorAdjustMarkerParams(spec, overlayLocation[1])
+                )
+            }
+        }
     }
 
     private fun findNearestCombatCircleSlotIndex(centerX: Float): Int {

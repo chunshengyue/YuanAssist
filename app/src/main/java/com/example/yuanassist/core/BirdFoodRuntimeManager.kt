@@ -246,6 +246,7 @@ class BirdFoodRuntimeManager(
         if (enabledEntries.isEmpty()) return plan
 
         val enabledEntrySet = enabledEntries.toSet()
+        val initialEntryTaskId = allEntries.first().taskId
         val firstEnabledTaskId = enabledEntries.first().taskId
         val nextTaskIdByEntry = allEntries.associate { entry ->
             entry.taskId to findNextEnabledGongWuEntry(entry, allEntries, enabledEntrySet).taskId
@@ -258,7 +259,20 @@ class BirdFoodRuntimeManager(
             start_task_id = plan.start_task_id,
             tasks = plan.tasks.map { task ->
                 when (task.id) {
-                    2 -> task.copy(on_success = firstEnabledTaskId)
+                    2 -> task.copy(
+                        on_success = firstEnabledTaskId,
+                        params = task.params?.let { params ->
+                            params.copy(
+                                screenshot_steps = params.screenshot_steps?.map { step ->
+                                    if (step.on_success == initialEntryTaskId) {
+                                        step.copy(on_success = firstEnabledTaskId)
+                                    } else {
+                                        step
+                                    }
+                                }
+                            )
+                        }
+                    )
                     31, 32, 33, 34 -> {
                         val nextTaskId = nextTaskIdByEntry[task.id] ?: task.on_fail
                         task.copy(on_fail = nextTaskId)

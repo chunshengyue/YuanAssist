@@ -29,12 +29,13 @@ import com.example.yuanassist.utils.DialogUtils
 object ExcludedAgentsDialog {
     private const val PREFS_AGENT_FILTER = "agent_filter_prefs"
     private const val KEY_SHOW_DAIHAOYUAN = "show_daihaoyuan_agents"
-    private val NON_DAIHAOYUAN_PREFIX_AGENTS = listOf("吕布", "曹丕")
+    private val NON_DAIHAOYUAN_PREFIX_AGENTS = listOf("郭女王", "庞德", "吕布", "曹丕")
     private val DAIHAOYUAN_EXTRA_AGENTS = listOf(
+        "周泰", "陈琳",
         "赵云", "司马孚", "张松", "孙辅",
-        "刘璋", "夏侯渊", "酆公珠", "酆公玖", "法正", "庞德",
+        "刘璋", "夏侯渊", "酆公珠", "酆公玖", "法正",
         "SP陈登", "SP史子渺", "程普", "钟繇", "蒯良", "陈群",
-        "卢植", "简雍", "郭女王", "周忠", "陈纪", "陈应",
+        "卢植", "简雍", "周忠", "陈纪", "陈应",
     )
     private val DAIHAOYUAN_HIDDEN_ALIASES = DAIHAOYUAN_EXTRA_AGENTS.toSet() + setOf(
         "庞曦",

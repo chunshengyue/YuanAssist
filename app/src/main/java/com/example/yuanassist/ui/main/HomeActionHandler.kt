@@ -21,9 +21,11 @@ import com.example.yuanassist.model.update
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.ui.FaqActivity
 import com.example.yuanassist.ui.FeedbackCenterActivity
+import com.example.yuanassist.ui.GachaPoolDirectoryActivity
 import com.example.yuanassist.ui.GlobalSettingsActivity
 import com.example.yuanassist.ui.OneKeyDailyActivity
 import com.example.yuanassist.ui.LegacyFragmentHostActivity
+import com.example.yuanassist.ui.MainActivity
 import com.example.yuanassist.ui.RunLogActivity
 import com.example.yuanassist.ui.ScriptLibraryActivity
 import com.example.yuanassist.ui.SettingsActivity
@@ -90,6 +92,25 @@ class HomeActionHandler(
 
     fun openRunLog() {
         activity.startActivity(Intent(activity, RunLogActivity::class.java))
+    }
+
+    fun openGachaRecord() {
+        if (SupabaseRepository.getCurrentUser(activity) == null) {
+            showGachaLoginRequiredDialog()
+            return
+        }
+        activity.startActivity(Intent(activity, GachaPoolDirectoryActivity::class.java))
+    }
+
+    private fun showGachaLoginRequiredDialog() {
+        val builder = AlertDialog.Builder(DialogUtils.getThemeContext(activity))
+            .setTitle("需要登录")
+            .setMessage("招募记录会绑定当前账号，请先登录或创建账号后再使用。")
+            .setNegativeButton("取消", null)
+            .setPositiveButton("前往登录") { _, _ ->
+                (activity as? MainActivity)?.navigateToTab(MainTab.MINE)
+            }
+        DialogUtils.showStyledDialog(builder)
     }
 
     fun openFaq() {

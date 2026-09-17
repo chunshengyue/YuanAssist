@@ -37,6 +37,14 @@
             android:exported="false"
             android:screenOrientation="portrait" />
         <activity
+            android:name=".ui.GachaPoolDirectoryActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.GachaRecordActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".ui.FaqActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

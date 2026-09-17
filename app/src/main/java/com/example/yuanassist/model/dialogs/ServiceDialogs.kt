@@ -26,10 +26,14 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import com.example.yuanassist.model.AgentRepository
 import com.example.yuanassist.ui.buildSelectableAgentList
+import com.example.yuanassist.network.CloudGameAgent
+import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.utils.DialogUtils
 import com.example.yuanassist.utils.disableShowSoftInput
 import com.example.yuanassist.utils.protectInputLongPress
+import java.net.URL
 
 object ServiceDialogs {
 
@@ -249,6 +253,7 @@ object ServiceDialogs {
                         slotIndex = index,
                         currentAgent = selectedAgents[index],
                         includeDaihaoYuanByDefault = gameGroup.checkedRadioButtonId == rbDaihao.id,
+                        gameVersion = if (gameGroup.checkedRadioButtonId == rbDaihao.id) 0 else 1,
                         onSelect = { agentName ->
                             selectedAgents[index] = agentName
                             bindExportAgentRow(themeContext, row, index, agentName)
@@ -382,6 +387,7 @@ object ServiceDialogs {
         slotIndex: Int,
         currentAgent: String,
         includeDaihaoYuanByDefault: Boolean,
+        gameVersion: Int,
         onSelect: (String) -> Unit,
     ) {
         val rootLayout = StyledDialogUi.createDialogCard(context)
@@ -411,6 +417,10 @@ object ServiceDialogs {
             StyledDialogUi.styleCompactCheckControl(context, this, "代号鸢", includeDaihaoYuanByDefault)
         }
         rootLayout.addView(includeDaihaoBox)
+        val includeCloudBox = CheckBox(context).apply {
+            StyledDialogUi.styleCompactCheckControl(context, this, "新出密探", false)
+        }
+        rootLayout.addView(includeCloudBox)
         val searchInput = StyledDialogUi.createStyledInput(context, "搜索密探").apply {
             hint = "搜索密探"
             maxLines = 1
@@ -452,12 +462,15 @@ object ServiceDialogs {
         rootLayout.addView(buttonRow)
 
         val dialog = StyledDialogUi.showStyledDialog(context, rootLayout)
+        var cloudAgents: List<CloudGameAgent> = emptyList()
+        var cloudLoading = false
+        var cloudError = ""
         fun refreshOptions() {
             val query = searchInput.text?.toString().orEmpty().trim()
             val agents = buildSelectableAgentList(includeDaihaoBox.isChecked)
                 .filter { query.isBlank() || it.contains(query, ignoreCase = true) }
             optionsContainer.removeAllViews()
-            agents.forEachIndexed { index, agentName ->
+            fun addAgentOption(index: Int, agentName: String, avatarUrl: String? = null) {
                 optionsContainer.addView(
                     LinearLayout(context).apply {
                         orientation = LinearLayout.VERTICAL
@@ -470,7 +483,7 @@ object ServiceDialogs {
                             StyledDialogUi.dpToPx(context, 8f),
                         )
                         addView(
-                            createAgentAvatarView(context, agentName, 42f),
+                            createAgentAvatarView(context, agentName, 42f, avatarUrl),
                             LinearLayout.LayoutParams(
                                 StyledDialogUi.dpToPx(context, 42f),
                                 StyledDialogUi.dpToPx(context, 42f)
@@ -508,9 +521,63 @@ object ServiceDialogs {
                     }
                 )
             }
+            fun addFullWidthMessage(message: String, emphasized: Boolean = false) {
+                optionsContainer.addView(
+                    TextView(context).apply {
+                        text = message
+                        textSize = 13f
+                        gravity = Gravity.CENTER_VERTICAL
+                        setTypeface(typeface, if (emphasized) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                        setTextColor(Color.parseColor(if (emphasized) "#9A6B24" else "#8C6C33"))
+                        setPadding(StyledDialogUi.dpToPx(context, 6f), StyledDialogUi.dpToPx(context, 12f), StyledDialogUi.dpToPx(context, 6f), StyledDialogUi.dpToPx(context, 4f))
+                    },
+                    GridLayout.LayoutParams().apply {
+                        width = 0
+                        height = GridLayout.LayoutParams.WRAP_CONTENT
+                        columnSpec = GridLayout.spec(0, 4, 1f)
+                    }
+                )
+            }
+            agents.forEachIndexed { index, agentName -> addAgentOption(index, agentName) }
+            if (includeCloudBox.isChecked) {
+                addFullWidthMessage("新出密探", emphasized = true)
+                val visibleCloudAgents = cloudAgents.filter {
+                    query.isBlank() || it.name.contains(query, ignoreCase = true)
+                }
+                when {
+                    cloudLoading -> addFullWidthMessage("正在读取云端密探...")
+                    cloudError.isNotBlank() -> addFullWidthMessage("云端密探读取失败：$cloudError")
+                    visibleCloudAgents.isEmpty() -> addFullWidthMessage("暂无未实装到 App 的新密探")
+                    else -> visibleCloudAgents.forEachIndexed { index, agent ->
+                        addAgentOption(index, agent.name, agent.avatarUrl)
+                    }
+                }
+            }
         }
 
         includeDaihaoBox.setOnCheckedChangeListener { _, _ -> refreshOptions() }
+        includeCloudBox.setOnCheckedChangeListener { _, checked ->
+            if (!checked || cloudLoading || cloudAgents.isNotEmpty()) {
+                refreshOptions()
+                return@setOnCheckedChangeListener
+            }
+            cloudLoading = true
+            cloudError = ""
+            refreshOptions()
+            SupabaseRepository.listCloudGameAgents(
+                gameVersion = gameVersion,
+                onSuccess = { result ->
+                    cloudAgents = result.filter { it.name.isNotBlank() && it.name !in AgentRepository.ALL_AGENTS }
+                    cloudLoading = false
+                    refreshOptions()
+                },
+                onError = { message ->
+                    cloudError = message
+                    cloudLoading = false
+                    refreshOptions()
+                },
+            )
+        }
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -526,9 +593,15 @@ object ServiceDialogs {
         refreshOptions()
     }
 
-    private fun createAgentAvatarView(context: Context, agentName: String, sizeDp: Float): TextView {
+    private fun createAgentAvatarView(
+        context: Context,
+        agentName: String,
+        sizeDp: Float,
+        avatarUrl: String? = null,
+    ): TextView {
         val sizePx = StyledDialogUi.dpToPx(context, sizeDp)
-        val avatarBitmap = loadAgentAvatarBitmap(context, agentName)?.let { source ->
+        val avatarBitmap = if (avatarUrl.isNullOrBlank()) loadAgentAvatarBitmap(context, agentName) else null
+        val circularBitmap = avatarBitmap?.let { source ->
             createCircularBitmap(source, sizePx).also {
                 if (it !== source && !source.isRecycled) source.recycle()
             }
@@ -538,8 +611,24 @@ object ServiceDialogs {
             textSize = 15f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             setTextColor(Color.parseColor("#8C6C33"))
-            background = avatarBitmap?.let { BitmapDrawable(context.resources, it) } ?: createAvatarFallbackBackground()
-            text = if (avatarBitmap == null) agentName.take(1).ifBlank { "?" } else ""
+            background = circularBitmap?.let { BitmapDrawable(context.resources, it) } ?: createAvatarFallbackBackground()
+            text = if (circularBitmap == null) agentName.take(1).ifBlank { "?" } else ""
+            avatarUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                Thread {
+                    val remote = runCatching { URL(url).openStream().use(BitmapFactory::decodeStream) }.getOrNull()
+                    val circular = remote?.let { source ->
+                        createCircularBitmap(source, sizePx).also {
+                            if (it !== source && !source.isRecycled) source.recycle()
+                        }
+                    }
+                    if (circular != null) {
+                        post {
+                            background = BitmapDrawable(context.resources, circular)
+                            text = ""
+                        }
+                    }
+                }.start()
+            }
         }
     }
 

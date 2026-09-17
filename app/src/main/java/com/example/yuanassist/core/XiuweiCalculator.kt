@@ -203,7 +203,8 @@ private object XiuweiOptimizer {
         val counts = IntArray(6)
         counts[5] = bestCount
         for (index in 4 downTo 1) {
-            counts[index] = parents[index - 1][counts[index + 1]]
+            // parents[groupIndex] stores the previous group's count for groupIndex + 1.
+            counts[index] = parents[index][counts[index + 1]]
         }
         counts[0] = parents.firstOrNull()?.get(counts[1]) ?: bestCount
 

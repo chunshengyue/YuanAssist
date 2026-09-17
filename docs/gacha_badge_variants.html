@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>招募记录角标试稿</title>
+  <style>
+    :root {
+      --ink: #713b35;
+      --body: #8b6b5e;
+      --paper: #fff8ea;
+      --paper-deep: #f6ead5;
+      --line: rgba(166, 105, 69, .30);
+      --gold: #bb8847;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Noto Serif SC", "Songti SC", SimSun, serif;
+      background: #d4c09f;
+      display: grid;
+      place-items: start center;
+      padding: 28px 16px 42px;
+    }
+
+    .sheet {
+      width: min(100%, 720px);
+      position: relative;
+      padding: 28px 24px 32px;
+      overflow: hidden;
+      border: 1px solid rgba(157, 104, 57, .38);
+      background:
+        radial-gradient(circle, rgba(170, 121, 77, .17) 0 1px, transparent 1.5px) 0 0 / 19px 19px,
+        radial-gradient(circle, rgba(170, 121, 77, .11) 0 1px, transparent 1.5px) 8px 10px / 23px 23px,
+        linear-gradient(115deg, rgba(255,255,255,.36), transparent 43%),
+        var(--paper-deep);
+      box-shadow: 0 16px 45px rgba(91, 58, 35, .20);
+    }
+
+    .sheet::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      pointer-events: none;
+      border: 1px solid rgba(157, 104, 57, .28);
+      box-shadow: inset 0 0 0 4px rgba(255, 248, 234, .25);
+    }
+
+    header, .variant-grid { position: relative; z-index: 1; }
+    header { margin: 0 2px 24px; }
+    .eyebrow { color: #a6453c; font-size: 11px; letter-spacing: 3px; }
+    h1 { margin: 8px 0 6px; font-size: 27px; letter-spacing: 3px; }
+    .intro { max-width: 580px; margin: 0; color: var(--body); font-size: 12px; line-height: 1.8; }
+
+    .variant-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+    .variant {
+      min-width: 0;
+      padding: 14px 11px 16px;
+      border: 1px solid rgba(187,136,71,.48);
+      background: rgba(255, 250, 239, .68);
+    }
+    .variant h2 { margin: 0; font-size: 15px; letter-spacing: 1px; }
+    .variant-note { min-height: 34px; margin: 6px 0 13px; color: var(--body); font-size: 10px; line-height: 1.6; }
+
+    .demo-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 6px; padding-top: 8px; }
+    .demo-card { min-width: 0; text-align: center; }
+    .portrait { position: relative; width: 58px; height: 58px; margin: 0 auto 9px; }
+    .portrait img {
+      width: 53px;
+      height: 53px;
+      display: block;
+      object-fit: cover;
+      border: 1px solid var(--paper);
+      outline: 1px solid var(--gold);
+      outline-offset: 2px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 4px rgba(174,125,45,.09), 0 4px 8px rgba(117,50,45,.13);
+    }
+    .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; letter-spacing: 1px; }
+    .pull-badge {
+      position: absolute;
+      right: -12px;
+      bottom: -1px;
+      z-index: 2;
+      min-width: 47px;
+      height: 17px;
+      padding: 1px 6px 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      font: 700 10px/1 Georgia, "Songti SC", serif;
+      letter-spacing: .3px;
+      transform: rotate(-9deg);
+      transform-origin: left center;
+    }
+
+    /* 方案 A：暗色缎带，数字被压在一条长形牌面里。 */
+    .variant-a .pull-badge {
+      color: #f8ead0;
+      background: #695249;
+      border: 1px solid #9c775a;
+      border-left: 3px solid #bd9255;
+      box-shadow: 2px 2px 0 rgba(78, 49, 35, .16);
+      clip-path: polygon(0 0, 100% 0, 92% 100%, 4% 100%);
+    }
+    .variant-a .pull-badge::after {
+      content: "";
+      position: absolute;
+      right: 5px;
+      top: 3px;
+      width: 4px;
+      height: 4px;
+      border-top: 1px solid rgba(255,242,211,.48);
+      border-right: 1px solid rgba(255,242,211,.48);
+      transform: rotate(45deg);
+    }
+
+    /* 方案 B：墨绿牌签，冷静但保留一点金色边。 */
+    .variant-b .pull-badge {
+      color: #f6ead1;
+      background: #43564f;
+      border: 1px solid #788c77;
+      box-shadow: 0 2px 0 rgba(52, 66, 57, .20);
+      border-radius: 2px;
+      transform: rotate(-9deg) skewX(-9deg);
+    }
+    .variant-b .pull-badge::before {
+      content: "";
+      position: absolute;
+      inset: 3px 4px;
+      border-top: 1px solid rgba(239,231,202,.30);
+      border-bottom: 1px solid rgba(239,231,202,.18);
+    }
+
+    /* 方案 C：酒红纸签，使用低饱和主色，不让颜色抢过头像。 */
+    .variant-c .pull-badge {
+      color: #f7e8d0;
+      background: #784943;
+      border: 1px solid #a7775b;
+      border-radius: 2px 0 2px 0;
+      box-shadow: 2px 2px 0 rgba(101, 53, 44, .13);
+      transform: rotate(-9deg);
+    }
+    .variant-c .pull-badge::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 7px;
+      height: 100%;
+      background: rgba(218, 169, 104, .28);
+    }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 22px; color: var(--body); font-size: 10px; }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { width: 10px; height: 10px; display: inline-block; border-radius: 2px; }
+    .legend .a { background: #695249; border: 1px solid #9c775a; }
+    .legend .b { background: #43564f; border: 1px solid #788c77; }
+    .legend .c { background: #784943; border: 1px solid #a7775b; }
+
+    @media (max-width: 640px) {
+      body { padding: 12px 8px 24px; }
+      .sheet { padding: 22px 14px 26px; }
+      .variant-grid { grid-template-columns: 1fr; }
+      .variant-note { min-height: 0; }
+      .demo-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+      .portrait { transform: scale(.92); transform-origin: center bottom; }
+      .name { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <header>
+      <div class="eyebrow">招募记录 · 抽数角标试稿</div>
+      <h1>三种长条徽记</h1>
+      <p class="intro">统一使用低饱和深色、长条比例和左下至右上的倾斜；数字贴在头像右下边缘，尽量不抢主体。每个方案都放了四个抽数样例，便于直接比较。</p>
+    </header>
+
+    <section class="variant-grid">
+      <article class="variant variant-a">
+        <h2>A · 暗色缎带</h2>
+        <p class="variant-note">偏稳重，金色只做边缘点缀；适合保留古风纸面感。</p>
+        <div class="demo-row">
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/阿蝉.png" alt="阿蝉"><span class="pull-badge">12抽</span></div><div class="name">阿蝉</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/颜良.png" alt="颜良"><span class="pull-badge">25抽</span></div><div class="name">颜良</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/陈登.png" alt="陈登"><span class="pull-badge">34抽</span></div><div class="name">陈登</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/郭嘉.png" alt="郭嘉"><span class="pull-badge">40抽</span></div><div class="name">郭嘉</div></div>
+        </div>
+      </article>
+
+      <article class="variant variant-b">
+        <h2>B · 墨绿牌签</h2>
+        <p class="variant-note">更像游戏 UI 的装备标签，整体压暗，数字保持清晰。</p>
+        <div class="demo-row">
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/阿蝉.png" alt="阿蝉"><span class="pull-badge">12抽</span></div><div class="name">阿蝉</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/颜良.png" alt="颜良"><span class="pull-badge">25抽</span></div><div class="name">颜良</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/陈登.png" alt="陈登"><span class="pull-badge">34抽</span></div><div class="name">陈登</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/郭嘉.png" alt="郭嘉"><span class="pull-badge">40抽</span></div><div class="name">郭嘉</div></div>
+        </div>
+      </article>
+
+      <article class="variant variant-c">
+        <h2>C · 酒红纸签</h2>
+        <p class="variant-note">和页面主色最接近，边缘更收敛，适合不想引入新色系的版本。</p>
+        <div class="demo-row">
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/阿蝉.png" alt="阿蝉"><span class="pull-badge">12抽</span></div><div class="name">阿蝉</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/颜良.png" alt="颜良"><span class="pull-badge">25抽</span></div><div class="name">颜良</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/陈登.png" alt="陈登"><span class="pull-badge">34抽</span></div><div class="name">陈登</div></div>
+          <div class="demo-card"><div class="portrait"><img src="../app/src/main/assets/郭嘉.png" alt="郭嘉"><span class="pull-badge">40抽</span></div><div class="name">郭嘉</div></div>
+        </div>
+      </article>
+    </section>
+
+    <div class="legend">
+      <span><i class="a"></i>A 暗色缎带</span>
+      <span><i class="b"></i>B 墨绿牌签</span>
+      <span><i class="c"></i>C 酒红纸签</span>
+    </div>
+  </main>
+</body>
+</html>

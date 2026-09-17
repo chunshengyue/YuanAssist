@@ -99,8 +99,9 @@ fun HomeTabScreen(
         )
         ModeSection(
             title = "常用入口",
-            subtitle = "日志 · 调试 · 问答 · 反馈 · 更新",
+            subtitle = "招募记录 · 日志 · 调试 · 问答 · 反馈 · 更新",
             actions = listOf(
+                HomeEntryButton("招募记录", R.drawable.item_liubao, R.drawable.decor_butterfly, onClick = actions.onOpenGachaRecord),
                 HomeEntryButton("运行日志", R.drawable.item_zhanghe, R.drawable.decor_yuan, onClick = actions.onOpenRunLog),
                 HomeEntryButton("调试", R.drawable.item_linghumao, R.drawable.decor_yuan, onClick = actions.onOpenDebugTab),
                 HomeEntryButton("常见问题", R.drawable.item_xunyu, R.drawable.decor_xian, onClick = actions.onOpenFaq),

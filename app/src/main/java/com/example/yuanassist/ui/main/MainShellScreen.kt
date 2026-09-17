@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.geometry.Size as UiSize
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -35,9 +36,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -336,13 +341,11 @@ private fun BottomNavButton(
                         contentScale = ContentScale.Fit,
                     )
                     Box {
-                        Text(
+                        CompactBottomNavLabel(
                             text = item.title,
                             color = TitleInk,
                             fontSize = 14.sp,
-                            fontFamily = FontFamily.Serif,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.sp,
                         )
                         UnreadBadge(
                             count = item.badgeCount,
@@ -368,13 +371,11 @@ private fun BottomNavButton(
                     contentScale = ContentScale.Fit,
                 )
                 Box {
-                    Text(
+                    CompactBottomNavLabel(
                         text = item.title,
                         color = BodyInk,
                         fontSize = 13.sp,
-                        fontFamily = FontFamily.Serif,
                         fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.sp,
                     )
                     UnreadBadge(
                         count = item.badgeCount,
@@ -385,6 +386,31 @@ private fun BottomNavButton(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CompactBottomNavLabel(
+    text: String,
+    color: Color,
+    fontSize: TextUnit,
+    fontWeight: FontWeight,
+) {
+    val density = LocalDensity.current
+    val compactLabelDensity = remember(density.density, density.fontScale) {
+        Density(density = density.density, fontScale = minOf(density.fontScale, 1f))
+    }
+    CompositionLocalProvider(LocalDensity provides compactLabelDensity) {
+        Text(
+            text = text,
+            color = color,
+            fontSize = fontSize,
+            fontFamily = FontFamily.Serif,
+            fontWeight = fontWeight,
+            letterSpacing = 0.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

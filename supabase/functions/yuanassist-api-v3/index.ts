@@ -141,6 +141,37 @@ type CloudDailyScriptMessageRow = {
   comment_id: string | null;
 };
 
+type GameAgentRow = {
+  id: string;
+  game_version: number | null;
+  name: string | null;
+  avatar_path: string | null;
+  fate_discs: unknown;
+};
+
+type GachaArchiveRow = {
+  id: string;
+  user_id: string | null;
+  archive_id: string | null;
+  archive_name: string | null;
+  game_version: number | null;
+  pool_records: unknown;
+  sync_version: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  deleted_at: string | null;
+};
+
+type GachaPoolRow = {
+  pool_id: string | null;
+  game_version: number | null;
+  name: string | null;
+  up_agents: string[] | null;
+  cover_url: string | null;
+  sort_order: number | null;
+  status: string | null;
+};
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
@@ -149,6 +180,7 @@ const db = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const DAILY_SCRIPT_BUCKET = "daily-script-bundles";
+const GAME_AGENT_AVATAR_BUCKET = "game-agent-avatars";
 const DAILY_SCRIPT_SELECT =
   "id, object_id, author_id, title, description, tags, guide_images, bundle_path, bundle_size, task_count, download_count, status, override_asset_script, created_at, updated_at";
 const DAILY_SCRIPT_COMMENT_SELECT =
@@ -1390,6 +1422,154 @@ async function incrementDailyScriptDownload(scriptObjectId: string) {
   return { downloadCount: nextCount };
 }
 
+async function listCloudGameAgents(gameVersion: number | null) {
+  let query = db
+    .from("game_agents")
+    .select("id, game_version, name, avatar_path, fate_discs")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (gameVersion === 0 || gameVersion === 1) {
+    query = query.eq("game_version", gameVersion);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  const rows = (data as GameAgentRow[]) ?? [];
+  return await Promise.all(rows.map(async (row) => {
+    const avatarPath = row.avatar_path?.trim() ?? "";
+    let avatarUrl = "";
+    if (avatarPath) {
+      const { data: signedUrl, error: signedUrlError } = await db.storage
+        .from(GAME_AGENT_AVATAR_BUCKET)
+        .createSignedUrl(avatarPath, 60 * 10);
+      if (signedUrlError) throw signedUrlError;
+      avatarUrl = signedUrl.signedUrl;
+    }
+    return {
+      id: row.id,
+      gameVersion: row.game_version ?? 1,
+      name: row.name ?? "",
+      avatarUrl,
+      fateDiscs: Array.isArray(row.fate_discs) ? row.fate_discs : [],
+    };
+  }));
+}
+
+async function getCloudGameAgents(names: string[]) {
+  const normalizedNames = uniqueNonEmpty(names).slice(0, 10);
+  if (normalizedNames.length === 0) return [];
+  const { data, error } = await db
+    .from("game_agents")
+    .select("id, game_version, name, avatar_path, fate_discs")
+    .eq("is_active", true)
+    .in("name", normalizedNames);
+  if (error) throw error;
+  const rows = (data as GameAgentRow[]) ?? [];
+  return await Promise.all(rows.map(async (row) => {
+    const avatarPath = row.avatar_path?.trim() ?? "";
+    let avatarUrl = "";
+    if (avatarPath) {
+      const { data: signedUrl, error: signedUrlError } = await db.storage
+        .from(GAME_AGENT_AVATAR_BUCKET)
+        .createSignedUrl(avatarPath, 60 * 10);
+      if (signedUrlError) throw signedUrlError;
+      avatarUrl = signedUrl.signedUrl;
+    }
+    return {
+      id: row.id,
+      gameVersion: row.game_version ?? 1,
+      name: row.name ?? "",
+      avatarUrl,
+      fateDiscs: Array.isArray(row.fate_discs) ? row.fate_discs : [],
+    };
+  }));
+}
+
+async function listGachaPools() {
+  const { data, error } = await db
+    .from("gacha_pools")
+    .select("pool_id, game_version, name, up_agents, cover_url, sort_order, status")
+    .order("game_version", { ascending: false })
+    .order("sort_order", { ascending: false })
+    .order("pool_id", { ascending: true });
+  if (error) throw error;
+  return ((data as GachaPoolRow[]) ?? []).map((row) => ({
+    poolId: row.pool_id ?? "",
+    gameVersion: row.game_version ?? 1,
+    name: row.name ?? "",
+    upAgents: row.up_agents ?? [],
+    coverUrl: row.cover_url ?? "",
+    sortOrder: row.sort_order ?? 0,
+    status: row.status ?? "active",
+  }));
+}
+
+function mapGachaArchive(row: GachaArchiveRow) {
+  return {
+    archiveId: row.archive_id ?? "",
+    archiveName: row.archive_name ?? "",
+    gameVersion: row.game_version ?? 1,
+    poolRecords: Array.isArray(row.pool_records) ? row.pool_records : [],
+    syncVersion: row.sync_version ?? 1,
+  };
+}
+
+async function upsertGachaArchive(body: JsonRecord) {
+  const deviceId = requireString(body.deviceId, "deviceId");
+  const user = await ensureUserByDeviceId(deviceId);
+  const archiveId = requireString(body.archiveId, "archiveId");
+  const archiveName = requireString(body.archiveName, "archiveName");
+  if (archiveName.length > 20) throw new Error("存档名称不能超过 20 个字");
+  const gameVersion = Number(body.gameVersion);
+  if (gameVersion !== 0 && gameVersion !== 1) throw new Error("游戏版本无效");
+  if (!Array.isArray(body.poolRecords)) throw new Error("卡池记录格式无效");
+
+  const { data: existing, error: findError } = await db
+    .from("gacha_archives")
+    .select("id, user_id, archive_id, archive_name, game_version, pool_records, sync_version, created_at, updated_at, deleted_at")
+    .eq("user_id", user.id)
+    .eq("archive_id", archiveId)
+    .maybeSingle<GachaArchiveRow>();
+  if (findError) throw findError;
+
+  const payload = {
+    archive_name: archiveName,
+    game_version: gameVersion,
+    pool_records: body.poolRecords,
+    sync_version: (existing?.sync_version ?? 0) + 1,
+    deleted_at: null,
+  };
+  const query = existing
+    ? db.from("gacha_archives").update(payload).eq("id", existing.id)
+    : db.from("gacha_archives").insert({
+      id: crypto.randomUUID(),
+      user_id: user.id,
+      archive_id: archiveId,
+      ...payload,
+    });
+  const { data, error } = await query
+    .select("id, user_id, archive_id, archive_name, game_version, pool_records, sync_version, created_at, updated_at, deleted_at")
+    .single<GachaArchiveRow>();
+  if (error) throw error;
+  return mapGachaArchive(data);
+}
+
+async function getGachaArchive(body: JsonRecord) {
+  const deviceId = requireString(body.deviceId, "deviceId");
+  const user = await ensureUserByDeviceId(deviceId);
+  const archiveId = requireString(body.archiveId, "archiveId");
+  const { data, error } = await db
+    .from("gacha_archives")
+    .select("id, user_id, archive_id, archive_name, game_version, pool_records, sync_version, created_at, updated_at, deleted_at")
+    .eq("user_id", user.id)
+    .eq("archive_id", archiveId)
+    .is("deleted_at", null)
+    .maybeSingle<GachaArchiveRow>();
+  if (error) throw error;
+  if (!data) throw new Error("云端暂无当前存档");
+  return mapGachaArchive(data);
+}
+
 async function routeAction(action: string, body: JsonRecord) {
   switch (action) {
     case "bootstrap-user":
@@ -1416,6 +1596,16 @@ async function routeAction(action: string, body: JsonRecord) {
     }
     case "list-public-strategies":
       return await listPublicStrategies(String(body.sortMode ?? "newest"), Number(body.limit ?? 200));
+    case "list-cloud-game-agents":
+      return await listCloudGameAgents(Number(body.gameVersion));
+    case "get-cloud-game-agents":
+      return await getCloudGameAgents(Array.isArray(body.names) ? body.names.map((item) => String(item)) : []);
+    case "list-gacha-pools":
+      return await listGachaPools();
+    case "upsert-gacha-archive":
+      return await upsertGachaArchive(body);
+    case "get-gacha-archive":
+      return await getGachaArchive(body);
     case "get-strategy-detail":
       return await getStrategyDetailForClient(
         requireString(body.strategyId, "strategyId"),

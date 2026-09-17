@@ -12,6 +12,7 @@ data class HomeTabActions(
     val onOpenBoxOcr: () -> Unit,
     val onOpenCoordinatePicker: () -> Unit,
     val onOpenScriptRecorder: () -> Unit,
+    val onOpenGachaRecord: () -> Unit,
     val onOpenRunLog: () -> Unit,
     val onOpenDebugTab: () -> Unit,
     val onOpenFaq: () -> Unit,

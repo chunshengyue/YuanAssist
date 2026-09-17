@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -23,9 +25,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -36,6 +41,7 @@ private val CapsuleIvory = Color(0xFFFFF2DD)
 private val CapsuleWarmPaper = Color(0xFFF2E0C3)
 private val CapsuleGold = Color(0xFFC99A52)
 private val CapsuleInk = Color(0xFF73332E)
+private const val CompactLabelFontScale = 1f
 
 @Composable
 fun GufengDecorActionButton(
@@ -55,6 +61,10 @@ fun GufengDecorActionButton(
     textSize: TextUnit = 16.sp,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+    val compactLabelDensity = remember(density.density, density.fontScale) {
+        Density(density = density.density, fontScale = minOf(density.fontScale, CompactLabelFontScale))
+    }
     val resolvedTextSize = when {
         text.length <= 4 -> textSize
         text.length == 5 -> (textSize.value - 2f).coerceAtLeast(10f).sp
@@ -111,29 +121,21 @@ fun GufengDecorActionButton(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
+                CompactButtonLabel(
                     text = text,
-                    color = CapsuleInk,
-                    modifier = Modifier.padding(start = textStartPadding, end = textEndPadding),
                     fontSize = resolvedTextSize,
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.sp,
-                    maxLines = 1,
+                    modifier = Modifier.padding(start = textStartPadding, end = textEndPadding),
+                    density = compactLabelDensity,
                 )
             }
         } else {
-            Text(
+            CompactButtonLabel(
                 text = text,
-                color = CapsuleInk,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(start = textStartPadding, end = textEndPadding),
                 fontSize = resolvedTextSize,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.sp,
-                maxLines = 1,
+                density = compactLabelDensity,
             )
         }
 
@@ -213,5 +215,27 @@ fun GufengDecorActionButton(
                 contentScale = ContentScale.Fit,
             )
         }
+    }
+}
+
+@Composable
+private fun CompactButtonLabel(
+    text: String,
+    fontSize: TextUnit,
+    density: Density,
+    modifier: Modifier = Modifier,
+) {
+    CompositionLocalProvider(LocalDensity provides density) {
+        Text(
+            text = text,
+            color = CapsuleInk,
+            modifier = modifier,
+            fontSize = fontSize,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

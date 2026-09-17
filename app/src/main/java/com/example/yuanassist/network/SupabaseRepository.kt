@@ -14,9 +14,13 @@ import com.example.yuanassist.model.strategy_comment
 import com.example.yuanassist.model.strategy_detail
 import com.example.yuanassist.model.strategy_message
 import com.example.yuanassist.model.update
+import com.example.yuanassist.utils.GachaArchive
+import com.example.yuanassist.utils.GachaGameVariant
+import com.example.yuanassist.utils.GachaPoolProgress
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -78,6 +82,39 @@ data class CloudDailyScriptPublishPayload(
 data class HomeBadges(
     val unreadMessageCount: Int = 0,
     val adminCloudScriptIds: List<String> = emptyList(),
+)
+
+data class CloudGameAgentFateDisc(
+    val position: Int = 0,
+    val rarity: String = "",
+    val name: String = "",
+    @SerializedName("short_name") val shortName: String = "",
+    val description: String = "",
+)
+
+data class CloudGameAgent(
+    val id: String = "",
+    val gameVersion: Int = 1,
+    val name: String = "",
+    val avatarUrl: String = "",
+    val fateDiscs: List<CloudGameAgentFateDisc> = emptyList(),
+)
+
+data class CloudGachaPool(
+    val poolId: String = "",
+    val gameVersion: Int = 1,
+    val name: String = "",
+    val upAgents: List<String> = emptyList(),
+    val coverUrl: String = "",
+    val sortOrder: Int = 0,
+    val status: String = "active",
+)
+
+private data class CloudGachaArchive(
+    val archiveId: String = "",
+    val archiveName: String = "",
+    val gameVersion: Int = 1,
+    val poolRecords: List<GachaPoolProgress> = emptyList(),
 )
 
 data class MyPublishedItems(
@@ -357,6 +394,107 @@ object SupabaseRepository {
             payload = mapOf("scriptId" to scriptId),
             type = object : TypeToken<List<cloud_daily_script_comment>>() {}.type,
             onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun listCloudGameAgents(
+        gameVersion: Int,
+        onSuccess: (List<CloudGameAgent>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<CloudGameAgent>>(
+            action = "list-cloud-game-agents",
+            payload = mapOf("gameVersion" to gameVersion),
+            type = object : TypeToken<List<CloudGameAgent>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun getCloudGameAgents(
+        names: List<String>,
+        onSuccess: (List<CloudGameAgent>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<CloudGameAgent>>(
+            action = "get-cloud-game-agents",
+            payload = mapOf("names" to names.distinct()),
+            type = object : TypeToken<List<CloudGameAgent>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun listGachaPools(
+        onSuccess: (List<CloudGachaPool>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<List<CloudGachaPool>>(
+            action = "list-gacha-pools",
+            payload = emptyMap(),
+            type = object : TypeToken<List<CloudGachaPool>>() {}.type,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    fun uploadGachaArchive(
+        context: Context,
+        archive: GachaArchive,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<Unit>(
+            action = "upsert-gacha-archive",
+            payload = mapOf(
+                "deviceId" to currentDeviceId(context),
+                "archiveId" to archive.id,
+                "archiveName" to archive.name,
+                "gameVersion" to if (archive.gameVariant == GachaGameVariant.RUYUAN) 1 else 0,
+                "poolRecords" to archive.poolProgresses,
+            ),
+            type = Unit::class.java,
+            onSuccess = { onSuccess() },
+            onError = onError,
+        )
+    }
+
+    fun downloadGachaArchive(
+        context: Context,
+        archiveId: String,
+        onSuccess: (GachaArchive) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        request<CloudGachaArchive>(
+            action = "get-gacha-archive",
+            payload = mapOf(
+                "deviceId" to currentDeviceId(context),
+                "archiveId" to archiveId,
+            ),
+            type = CloudGachaArchive::class.java,
+            onSuccess = { cloud ->
+                if (cloud.archiveId.isBlank() || cloud.archiveName.isBlank()) {
+                    onError("云端存档数据无效")
+                    return@request
+                }
+                val gameVariant = if (cloud.gameVersion == 0) {
+                    GachaGameVariant.DAIHAOYUAN
+                } else {
+                    GachaGameVariant.RUYUAN
+                }
+                val now = System.currentTimeMillis()
+                onSuccess(
+                    GachaArchive(
+                        id = cloud.archiveId,
+                        name = cloud.archiveName,
+                        gameVariantValue = gameVariant.storageValue,
+                        createdAt = now,
+                        updatedAt = now,
+                        poolProgresses = cloud.poolRecords,
+                    ),
+                )
+            },
             onError = onError,
         )
     }

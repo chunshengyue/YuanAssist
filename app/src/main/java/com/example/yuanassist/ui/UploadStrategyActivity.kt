@@ -926,6 +926,8 @@ private fun UploadStrategyScreen(
                 onStateChange(state.copy(agentSlots = slots))
                 agentPickerSlot = -1
             },
+            showCloudAgents = true,
+            gameVersion = state.gameType,
         )
     }
 

@@ -35,6 +35,7 @@ import com.example.yuanassist.network.FavoriteState
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.ui.UploadTurnItem
 import com.example.yuanassist.utils.DialogUtils
+import com.example.yuanassist.utils.CloudGameAgentCache
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -456,6 +457,16 @@ class StrategyDetailActivity : AppCompatActivity() {
     }
 
     private fun renderAgents(agentType: Int, rawAgentSelection: List<String?>?, agentImageUrl: String?, agentTextDesc: String?) {
+        if (agentType == 0) {
+            val names = rawAgentSelection.orEmpty().mapNotNull { raw ->
+                raw?.takeIf { it.isNotBlank() }?.substringBefore("-")?.let(::extractPureAgentName)
+            }
+            CloudGameAgentCache.ensureAvailable(this, names) {
+                if (!isFinishing && !isDestroyed) {
+                    renderAgents(agentType, rawAgentSelection, agentImageUrl, agentTextDesc)
+                }
+            }
+        }
         val layoutAgents = findViewById<LinearLayout>(R.id.layout_agents_container)
         val agentsCard = findViewById<LinearLayout>(R.id.layout_agents_card)
         val agentsTitle = findViewById<TextView>(R.id.tv_agents_section_title)
@@ -638,7 +649,9 @@ class StrategyDetailActivity : AppCompatActivity() {
             layoutTalents.visibility = View.VISIBLE
             val agentData = com.example.yuanassist.model.AgentRepository.AGENT_MAP[pureName]
             talents.forEach { talentId ->
-                val rawTalentText = agentData?.talents?.get(talentId) ?: "天赋$talentId"
+                val rawTalentText = agentData?.talents?.get(talentId)
+                    ?: CloudGameAgentCache.resolveTalentLabel(this, pureName, talentId)
+                    ?: "天赋$talentId"
                 val (colorHex, displayText) = when {
                     rawTalentText.startsWith("橙") -> "#FFA726" to rawTalentText.substring(1)
                     rawTalentText.startsWith("紫") -> "#B388FF" to rawTalentText.substring(1)
@@ -670,7 +683,8 @@ class StrategyDetailActivity : AppCompatActivity() {
         try {
             ivAvatar.setImageBitmap(BitmapFactory.decodeStream(assets.open("$pureName.png")))
         } catch (_: Exception) {
-            ivAvatar.setImageResource(R.drawable.ic_launcher_background)
+            CloudGameAgentCache.avatarDrawable(this, pureName)?.let(ivAvatar::setImageDrawable)
+                ?: ivAvatar.setImageResource(R.drawable.ic_launcher_background)
         }
         parentLayout.addView(agentView)
     }
@@ -863,7 +877,7 @@ class StrategyDetailActivity : AppCompatActivity() {
             assets.open("$name.jpg").use { stream ->
                 Drawable.createFromStream(stream, null)
             }
-        }.getOrNull()
+        }.getOrNull() ?: CloudGameAgentCache.avatarDrawable(this, name)
     }
 
     private fun parseScriptContentToTableData(text: String): List<UploadTurnItem> {

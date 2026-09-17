@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>招募记录 - 原型</title>
+  <style>
+    :root {
+      --ink: #75322d;
+      --body: #84675a;
+      --wine: #a6453c;
+      --gold: #bb8847;
+      --gold-soft: #dec18b;
+      --paper: #fff8ea;
+      --paper-deep: #f7ead2;
+      --line: rgba(166, 105, 69, .32);
+      --five: #ae7d2d;
+      --four: #75639d;
+      --three: #4e82aa;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Noto Serif SC", "Songti SC", SimSun, serif;
+      background: #d6c2a2;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone {
+      width: min(100%, 430px);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+      background:
+        radial-gradient(ellipse at 4% 22%, rgba(186, 130, 86, .14) 0 1px, transparent 2px),
+        radial-gradient(ellipse at 80% 40%, rgba(186, 130, 86, .10) 0 1px, transparent 2px),
+        linear-gradient(108deg, rgba(255,255,255,.45), transparent 42%),
+        var(--paper-deep);
+      background-size: 17px 19px, 23px 29px, auto, auto;
+      padding: 22px 18px 34px;
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      pointer-events: none;
+      border: 1px solid rgba(157, 104, 57, .36);
+      box-shadow: inset 0 0 0 4px rgba(255, 248, 234, .3);
+    }
+
+    .topbar, .hero, .tabs, .view { position: relative; z-index: 1; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin: 3px 2px 18px; }
+    .back, .more {
+      width: 34px; height: 34px; display: grid; place-items: center;
+      border: 1px solid var(--line); background: rgba(255, 249, 237, .55);
+      color: var(--ink); font: 22px Georgia, serif; cursor: pointer;
+    }
+    .back { border-radius: 50%; }
+    .more { border-radius: 5px; letter-spacing: 2px; font-size: 16px; }
+    .page-name { font-size: 14px; letter-spacing: 5px; padding-left: 5px; color: var(--body); }
+
+    .hero { min-height: 162px; padding: 22px 22px 18px; overflow: hidden; border: 1px solid var(--gold-soft); background: rgba(255, 250, 239, .76); }
+    .hero::before, .hero::after { content: ""; position: absolute; width: 150px; height: 150px; border: 1px solid rgba(187,136,71,.22); border-radius: 50%; }
+    .hero::before { right: -54px; top: -76px; }
+    .hero::after { right: -29px; top: -51px; width: 112px; height: 112px; }
+    .seal { position: absolute; right: 22px; bottom: 18px; width: 43px; height: 43px; display: grid; place-items: center; border: 2px solid rgba(166, 69, 60, .72); color: var(--wine); transform: rotate(-9deg); font-weight: 700; font-size: 13px; letter-spacing: 2px; line-height: 17px; text-align: center; }
+    .eyebrow { position: relative; z-index: 1; color: var(--wine); font-size: 11px; letter-spacing: 2px; }
+    h1 { position: relative; z-index: 1; font-size: 27px; letter-spacing: 3px; margin: 10px 0 9px; font-weight: 700; }
+    .hero-copy { position: relative; z-index: 1; max-width: 250px; color: var(--body); font-size: 12px; line-height: 1.75; }
+    .hero-copy b { color: var(--wine); font-size: 15px; }
+    .hero-actions { position: relative; z-index: 1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 13px; }
+    .action-button { position: relative; border: 0; border-bottom: 1px solid var(--five); background: #fff8ea; color: #8d672e; padding: 7px 10px 6px 14px; font: 11px inherit; letter-spacing: 1px; cursor: pointer; clip-path: polygon(8px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); box-shadow: 0 2px 4px rgba(117,50,45,.10); }
+    .action-button::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 5px 1px 0; border: 1px solid currentColor; transform: rotate(45deg); }
+    .action-button.secondary { border-bottom-color: var(--line); color: var(--body); background: rgba(255, 249, 237, .76); }
+
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 16px 2px 13px; border-bottom: 1px solid var(--line); }
+    .tab { background: none; border: 0; padding: 7px 0; color: var(--body); font-family: inherit; font-size: 13px; letter-spacing: 2px; cursor: pointer; position: relative; }
+    .tab.active { color: var(--ink); font-weight: 700; }
+    .tab.active::after { content: ""; position: absolute; height: 3px; width: 21px; background: var(--wine); bottom: -14px; left: calc(50% - 11px); }
+
+    .view { display: none; padding-top: 18px; }
+    .view.active { display: block; animation: arrive .35s ease-out; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 12px; }
+    .section-head h2 { font-size: 17px; margin: 0; letter-spacing: 2px; }
+    .section-head span { color: var(--body); font-size: 11px; }
+
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--gold-soft); background: rgba(255, 250, 238, .68); }
+    .metric { min-height: 96px; padding: 14px 11px; position: relative; }
+    .metric + .metric { border-left: 1px solid var(--line); }
+    .metric:nth-child(3), .metric:nth-child(4) { border-top: 1px solid var(--line); }
+    .metric-label { color: var(--body); font-size: 11px; letter-spacing: 1px; }
+    .metric strong { display: block; margin: 9px 0 1px; font: 700 27px Georgia, "Songti SC", serif; color: var(--ink); }
+    .metric em { color: var(--wine); font-style: normal; font-size: 11px; }
+    .metric:nth-child(2) strong { color: var(--five); }
+    .metric:nth-child(3) strong { color: var(--four); }
+
+    .secret-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin: 4px -2px 0; padding: 13px 0 8px; border-top: 1px solid rgba(187,136,71,.48); border-bottom: 1px solid rgba(187,136,71,.48); }
+    .secret-card { min-width: 0; min-height: 102px; padding: 0 4px 8px; text-align: center; position: relative; display: flex; flex-direction: column; align-items: center; }
+    .secret-card + .secret-card { border-left: 1px solid rgba(187,136,71,.25); }
+    .secret-portrait { position: relative; width: 53px; height: 53px; margin: 0 auto 8px; }
+    .secret-card .avatar { width: 53px; height: 53px; display: block; border: 1px solid var(--paper); outline: 1px solid var(--five); outline-offset: 2px; box-shadow: 0 0 0 4px rgba(174,125,45,.09), 0 4px 8px rgba(117,50,45,.13); }
+    .secret-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: 12px; letter-spacing: 1px; }
+    .secret-pull { position: absolute; right: -8px; bottom: -5px; z-index: 1; min-width: 34px; padding: 3px 5px 3px; color: #8d672e; font: 700 10px/1 Georgia, "Songti SC", serif; letter-spacing: .1px; text-align: center; background: #fff8ea; border: 1.5px solid rgba(174,125,45,.9); border-radius: 5px 2px 5px 2px; box-shadow: 0 2px 0 rgba(117,50,45,.16), 0 3px 5px rgba(117,50,45,.13), inset 0 1px 0 rgba(255,255,255,.9); text-shadow: 0 1px 0 rgba(255,255,255,.72); transform: rotate(-6deg); }
+    .secret-pull::before { content: ""; position: absolute; inset: 2px; border: 1px solid currentColor; border-radius: 3px 1px 3px 1px; opacity: .28; pointer-events: none; }
+    .secret-pull::after { content: ""; position: absolute; left: 3px; top: -3px; width: 4px; height: 4px; background: currentColor; border: 1px solid rgba(255,255,255,.7); transform: rotate(45deg); }
+    .secret-pull.tier-0 { color: #176889; border-color: #3d8daf; background: #dff3fa; }
+    .secret-pull.tier-11 { color: #1f7254; border-color: #3b9a78; background: #def6e9; }
+    .secret-pull.tier-21 { color: #9a5c13; border-color: #d28a2c; background: #fff0c7; }
+    .secret-pull.tier-31 { color: #9b3d32; border-color: #cf5c4d; background: #ffe0d8; }
+    .secret-card .star { display: none; }
+
+    .up-roster { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 5px 0 2px; }
+    .up-row { display: grid; grid-template-columns: 47px 1fr auto; gap: 7px; align-items: center; min-height: 56px; padding: 5px 1px 7px; border-bottom: 1px solid rgba(187,136,71,.48); }
+    .up-avatar { width: 42px; height: 42px; object-fit: cover; border-radius: 50%; border: 1px solid var(--five); box-shadow: 0 0 0 3px rgba(174,125,45,.09); }
+    .up-name { font-size: 13px; white-space: nowrap; }
+    .up-label { display: block; margin-top: 3px; color: var(--body); font-size: 9px; white-space: nowrap; }
+    .up-count { color: var(--wine); text-align: right; font: 700 18px Georgia, "Songti SC", serif; }
+    .up-count small { display: block; color: var(--body); font: 9px "Songti SC", serif; margin-top: 1px; }
+    .up-note { grid-column: 1 / -1; margin-top: 2px; padding: 8px 1px 2px; color: var(--body); font-size: 10px; text-align: center; }
+    .pity-strip { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; padding: 11px 12px; border-left: 3px solid var(--gold); background: rgba(187,136,71,.08); color: var(--body); font-size: 11px; }
+    .pity-strip strong { color: var(--ink); font: 700 16px Georgia, "Songti SC", serif; }
+
+    .correction-intro { padding: 12px 15px; border-left: 3px solid var(--wine); background: rgba(117,50,45,.055); color: var(--body); font-size: 11px; line-height: 1.85; }
+    .correction-intro p { margin: 0; }
+    .correction-intro b { color: var(--ink); }
+    .latest-boundary { display: grid; grid-template-columns: 73px 1fr; gap: 4px 10px; margin: 16px 0 20px; padding: 13px 14px; border: 1px solid var(--gold-soft); background: rgba(255,250,239,.6); }
+    .latest-boundary span { color: var(--body); font-size: 11px; padding-top: 2px; }
+    .latest-boundary strong { color: var(--wine); font: 700 16px Georgia, "Songti SC", serif; letter-spacing: .5px; }
+    .latest-boundary small { grid-column: 2; color: var(--body); font-size: 10px; }
+
+    .secret-history { margin: 1px 0; border-bottom: 1px solid var(--line); }
+    .secret-history summary { list-style: none; display: grid; grid-template-columns: 1fr auto 20px; gap: 9px; align-items: center; min-height: 51px; cursor: pointer; }
+    .secret-history summary::-webkit-details-marker { display: none; }
+    .history-name { font-size: 14px; }
+    .history-meta { color: var(--body); font-size: 10px; }
+    .history-arrow { color: var(--wine); text-align: right; font: 17px Georgia, serif; transition: transform .2s ease; }
+    .secret-history[open] .history-arrow { transform: rotate(90deg); }
+    .pre-pulls { margin: 0 0 9px; padding: 5px 12px 7px; background: rgba(117,50,45,.045); border-left: 2px solid rgba(187,136,71,.58); }
+    .pre-pull { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; color: var(--body); font-size: 11px; }
+    .pre-pull + .pre-pull { border-top: 1px dotted rgba(187,136,71,.34); }
+    .pre-pull b { color: var(--ink); font-weight: 400; }
+    .rarity-label { margin-left: 3px; font-size: 10px; font-style: normal; }
+    .rarity-label.secret { color: var(--five); }
+    .rarity-label.confidential { color: var(--four); }
+    .rarity-label.hidden { color: var(--three); }
+
+    .fortune { margin: 20px 0; padding: 17px 17px 15px 20px; border-left: 3px solid var(--wine); background: rgba(117, 50, 45, .055); }
+    .fortune p { margin: 0; color: var(--body); font-size: 12px; line-height: 1.85; }
+    .fortune b { color: var(--ink); font-size: 14px; letter-spacing: 1px; }
+
+    .ledger { margin-top: 4px; }
+    .pull-line { display: grid; grid-template-columns: 52px 1fr; gap: 12px; min-height: 89px; position: relative; }
+    .pull-line::before { content: ""; position: absolute; left: 25px; top: 33px; bottom: -4px; border-left: 1px dashed rgba(187,136,71,.58); }
+    .pull-line:last-child::before { display: none; }
+    .count { position: relative; z-index: 1; width: 51px; height: 51px; padding-top: 14px; background: var(--paper-deep); border: 1px solid var(--gold); border-radius: 50%; color: var(--wine); text-align: center; font: 700 14px Georgia, serif; }
+    .count small { display: block; color: var(--body); font: 9px "Songti SC", serif; margin-top: 1px; }
+    .pull-card { height: 66px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+    .avatar { width: 56px; height: 56px; object-fit: cover; border-radius: 50%; background: #e7d0a9; border: 2px solid var(--gold-soft); }
+    .rarity-five .avatar { border-color: var(--five); box-shadow: 0 0 0 3px rgba(174,125,45,.10); }
+    .rarity-four .avatar { border-color: var(--four); }
+    .pull-info { padding-left: 11px; flex: 1; min-width: 0; }
+    .pull-name { font-size: 15px; letter-spacing: 1px; }
+    .pull-meta { color: var(--body); font-size: 10px; margin-top: 5px; }
+    .star { color: var(--five); font-size: 12px; letter-spacing: 1px; }
+    .rarity-four .star { color: var(--four); }
+
+    .pool-note { display: flex; justify-content: space-between; align-items: center; padding: 13px 2px 0; color: var(--body); font-size: 11px; }
+    .pool-note button { border: 0; color: var(--wine); background: none; padding: 4px; font-family: inherit; cursor: pointer; }
+
+    .record-filter { display: flex; gap: 7px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 2px; }
+    .filter { white-space: nowrap; padding: 6px 11px; border: 1px solid var(--line); background: rgba(255, 249, 237, .5); color: var(--body); font: 11px inherit; cursor: pointer; }
+    .filter.selected { color: var(--wine); border-color: var(--wine); background: rgba(166,69,60,.07); }
+    .record-day { font-size: 11px; color: var(--body); letter-spacing: 1px; padding: 5px 0 9px; border-bottom: 1px solid var(--line); }
+    .record-item { display: grid; grid-template-columns: 38px 48px 1fr auto; align-items: center; min-height: 71px; border-bottom: 1px solid rgba(166,105,69,.18); }
+    .record-item .avatar { width: 42px; height: 42px; }
+    .record-num { font: 15px Georgia, serif; color: var(--wine); }
+    .record-name { font-size: 14px; }
+    .record-sub { color: var(--body); font-size: 10px; margin-top: 4px; }
+
+    .impression { padding: 21px 9px 18px; min-height: 200px; position: relative; border: 1px solid var(--gold-soft); background: rgba(255,250,239,.56); overflow: hidden; }
+    .impression::after { content: "抽\A 卡\A 印\A 象"; white-space: pre; position: absolute; right: 9px; top: 20px; color: rgba(166,69,60,.09); font-size: 35px; line-height: 1.1; letter-spacing: 8px; font-weight: 700; }
+    .word { position: absolute; cursor: pointer; text-shadow: 0 1px #fff8ea; }
+    .w1 { font-size: 29px; color: var(--five); left: 27px; top: 66px; }
+    .w2 { font-size: 20px; color: var(--ink); left: 178px; top: 37px; }
+    .w3 { font-size: 17px; color: var(--four); left: 82px; top: 133px; }
+    .w4 { font-size: 13px; color: var(--body); left: 198px; top: 128px; }
+    .w5 { font-size: 13px; color: var(--wine); left: 33px; top: 29px; }
+    .word-note { margin-top: 13px; font-size: 11px; line-height: 1.8; color: var(--body); }
+    .rank-list { margin-top: 18px; }
+    .rank { display: grid; grid-template-columns: 28px 42px 1fr 55px; gap: 8px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(166,105,69,.18); }
+    .rank .avatar { width: 35px; height: 35px; }
+    .rank-index { color: var(--gold); font: 16px Georgia, serif; }
+    .rank-name { font-size: 13px; }
+    .rank-name small { display: block; margin-top: 3px; color: var(--body); font-size: 10px; }
+    .rank-count { text-align: right; color: var(--wine); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main class="phone">
+    <header class="topbar">
+      <button class="back" aria-label="返回">&larr;</button>
+      <div class="page-name">招 募 记 录</div>
+      <button class="more" aria-label="更多选项">...</button>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">卡池时间 &middot; 2026.09.01 — 2026.09.21</div>
+      <h1>广陵旧梦</h1>
+      <div class="hero-copy">在这一池，已留下 <b>160</b> 次寻访记录。<br>最近一次心动，停在第 <b>151</b> 笔。</div>
+      <div class="hero-actions"><button class="action-button">导入记录</button><button class="action-button secondary">手动录入</button></div>
+    </section>
+
+    <nav class="tabs" aria-label="抽卡记录视图">
+      <button class="tab active" data-view="overview">本期总览</button>
+      <button class="tab" data-view="ledger-view">绝密密探</button>
+      <button class="tab" data-view="correction-view">修正记录</button>
+    </nav>
+
+    <section class="view active" id="overview">
+      <div class="section-head"><h2>本期小结</h2><span>限定寻访</span></div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">本期总抽数</div><strong>160</strong><em>当前卡池已记录</em></div>
+        <div class="metric"><div class="metric-label">平均出绝密</div><strong>32 抽</strong><em>每 32 抽获得一位绝密</em></div>
+        <div class="metric"><div class="metric-label">平均出机密</div><strong>8 抽</strong><em>每 8 抽获得一位机密</em></div>
+        <div class="metric"><div class="metric-label">非 UP 绝密占比</div><strong>40%</strong><em>5 位绝密中有 2 位歪卡</em></div>
+      </div>
+
+      <div class="section-head" style="margin-top:20px"><h2>本期绝密密探</h2><span>两个 UP 分别统计</span></div>
+      <div class="up-roster">
+        <div class="up-row"><img class="up-avatar" src="../app/src/main/assets/阿蝉.png" alt="阿蝉"><div><div class="up-name">阿蝉</div><span class="up-label">本期 UP · 绝密</span></div><div class="up-count">2<small>次</small></div></div>
+        <div class="up-row"><img class="up-avatar" src="../app/src/main/assets/颜良.png" alt="颜良"><div><div class="up-name">颜良</div><span class="up-label">本期 UP · 绝密</span></div><div class="up-count">1<small>次</small></div></div>
+        <div class="up-note">非 UP 绝密：2 次　·　普池则显示“本池无 UP 密探”</div>
+      </div>
+      <div class="pity-strip"><span>当前垫抽</span><strong>9 抽</strong></div>
+    </section>
+
+    <section class="view" id="ledger-view">
+      <div class="section-head"><h2>本期绝密密探</h2><span>只展示金色记录</span></div>
+      <div class="secret-grid">
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/阿蝉.png" alt="阿蝉"><span class="secret-pull">12抽</span></div><div class="secret-name">阿蝉</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/颜良.png" alt="颜良"><span class="secret-pull">34抽</span></div><div class="secret-name">颜良</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/陈登.png" alt="陈登"><span class="secret-pull">32抽</span></div><div class="secret-name">陈登</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/杨修.png" alt="杨修"><span class="secret-pull">25抽</span></div><div class="secret-name">杨修</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/郭嘉.png" alt="郭嘉"><span class="secret-pull">40抽</span></div><div class="secret-name">郭嘉</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/徐庶.png" alt="徐庶"><span class="secret-pull">28抽</span></div><div class="secret-name">徐庶</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/张辽.png" alt="张辽"><span class="secret-pull">25抽</span></div><div class="secret-name">张辽</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/孙尚香.png" alt="孙尚香"><span class="secret-pull">32抽</span></div><div class="secret-name">孙尚香</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/王粲.png" alt="王粲"><span class="secret-pull">35抽</span></div><div class="secret-name">王粲</div><div class="star">绝密</div></article>
+        <article class="secret-card"><div class="secret-portrait"><img class="avatar" src="../app/src/main/assets/赵云.png" alt="赵云"><span class="secret-pull">31抽</span></div><div class="secret-name">赵云</div><div class="star">绝密</div></article>
+      </div>
+      <div class="pool-note"><span>本期共 160 抽</span><span>5 位绝密密探</span></div>
+    </section>
+
+    <section class="view" id="correction-view">
+      <div class="section-head"><h2>修正招募记录</h2><span>共 128 笔</span></div>
+      <div class="correction-intro"><p><b>导入后可逐条确认：</b>角色、品级和招募时间均可修正。</p><p>下次导入将从最新记录时间之后继续识别，避免重复。</p></div>
+      <div class="latest-boundary"><span>增量边界</span><strong>2026.09.07 20:14:32</strong><small>最新一笔记录时间（精确到秒）</small></div>
+      <div class="section-head"><h2>最近记录</h2><button class="action-button secondary">新增一条</button></div>
+      <details class="secret-history" open><summary><span class="history-name">颜良 <span class="rarity-label secret">绝密</span></span><span class="history-meta">第 46 抽</span><span class="history-arrow">›</span></summary><div class="pre-pulls"><div class="pre-pull"><b>陈登 <i class="rarity-label confidential">机密</i></b><span>2026.09.07 20:14:28</span></div><div class="pre-pull"><b>郭解 <i class="rarity-label hidden">隐密</i></b><span>2026.09.07 20:14:21</span></div><div class="pre-pull"><b>小乔 <i class="rarity-label confidential">机密</i></b><span>2026.09.07 20:14:13</span></div></div></details>
+      <details class="secret-history"><summary><span class="history-name">陈登 <span class="rarity-label secret">绝密</span></span><span class="history-meta">第 78 抽</span><span class="history-arrow">›</span></summary><div class="pre-pulls"><div class="pre-pull"><b>王粲 <i class="rarity-label confidential">机密</i></b><span>2026.09.08 09:32:16</span></div><div class="pre-pull"><b>许攸 <i class="rarity-label hidden">隐密</i></b><span>2026.09.08 09:32:09</span></div></div></details>
+      <details class="secret-history"><summary><span class="history-name">杨修 <span class="rarity-label secret">绝密</span></span><span class="history-meta">第 103 抽</span><span class="history-arrow">›</span></summary><div class="pre-pulls"><div class="pre-pull"><b>蒯良 <i class="rarity-label hidden">隐密</i></b><span>2026.09.08 10:04:42</span></div><div class="pre-pull"><b>鲁肃 <i class="rarity-label confidential">机密</i></b><span>2026.09.08 10:04:33</span></div><div class="pre-pull"><b>满宠 <i class="rarity-label hidden">隐密</i></b><span>2026.09.08 10:04:25</span></div></div></details>
+    </section>
+  </main>
+  <script>
+    const tabs = document.querySelectorAll('[data-view]');
+    const views = document.querySelectorAll('.view');
+    tabs.forEach((item) => item.addEventListener('click', () => {
+      const target = item.dataset.view;
+      document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === target));
+      views.forEach((view) => view.classList.toggle('active', view.id === target));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }));
+    document.querySelectorAll('.filter').forEach((item) => item.addEventListener('click', () => {
+      document.querySelectorAll('.filter').forEach((filter) => filter.classList.remove('selected'));
+      item.classList.add('selected');
+    }));
+    document.querySelectorAll('.secret-pull').forEach((item) => {
+      const rawPulls = Number.parseInt(item.textContent, 10);
+      const pulls = Number.isFinite(rawPulls) ? Math.min(40, Math.max(0, rawPulls)) : 0;
+      item.textContent = `${pulls}抽`;
+      const tier = pulls <= 10 ? 'tier-0' : pulls <= 20 ? 'tier-11' : pulls <= 30 ? 'tier-21' : 'tier-31';
+      item.classList.add(tier);
+    });
+  </script>
+</body>
+</html>

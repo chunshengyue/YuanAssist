@@ -125,6 +125,7 @@ class MainActivity : AppCompatActivity() {
                     onOpenBoxOcr = homeActionHandler::startBoxOcr,
                     onOpenCoordinatePicker = homeActionHandler::startCoordinatePicker,
                     onOpenScriptRecorder = homeActionHandler::startDailyScriptRecorder,
+                    onOpenGachaRecord = homeActionHandler::openGachaRecord,
                     onOpenRunLog = homeActionHandler::openRunLog,
                     onOpenDebugTab = { selectedTab = MainTab.DEBUG },
                     onOpenFaq = homeActionHandler::openFaq,

@@ -39,6 +39,7 @@ object InstructionDialogs {
     fun showListDialog(
         context: Context,
         instructionList: ArrayList<ScriptInstruction>,
+        onCopyTurns: ((sourceStart: Int, sourceEnd: Int, targetStart: Int, targetEnd: Int) -> String?)? = null,
         onChanged: () -> Unit = {}
     ) {
         val themeContext = DialogUtils.getThemeContext(context)
@@ -72,8 +73,12 @@ object InstructionDialogs {
 
         val buttonRow = createActionRow(themeContext)
         val btnAdd = createActionButton(themeContext, "+ 新增指令", true)
+        val btnCopyTurns = createActionButton(themeContext, "回合复制", false)
         val btnClose = createActionButton(themeContext, "关闭", false)
         buttonRow.addView(btnAdd, createWeightedButtonParams(themeContext, false))
+        onCopyTurns?.let {
+            buttonRow.addView(btnCopyTurns, createWeightedButtonParams(themeContext, true))
+        }
         buttonRow.addView(btnClose, createWeightedButtonParams(themeContext, true))
         rootLayout.addView(buttonRow)
 
@@ -131,12 +136,100 @@ object InstructionDialogs {
                 onChanged()
             }
         }
+        btnCopyTurns.setOnClickListener {
+            val copyTurns = onCopyTurns ?: return@setOnClickListener
+            showCopyTurnsDialog(themeContext, copyTurns)
+        }
         btnClose.setOnClickListener {
             dialog.dismiss()
         }
 
         refreshList()
         dialog = showStyledDialog(themeContext, rootLayout)
+    }
+
+    private fun showCopyTurnsDialog(
+        context: Context,
+        onCopyTurns: (sourceStart: Int, sourceEnd: Int, targetStart: Int, targetEnd: Int) -> String?
+    ) {
+        val rootLayout = createDialogCard(context)
+        rootLayout.addView(createDialogTitle(context, "回合复制"))
+        rootLayout.addView(
+            createDialogSubtitle(
+                context,
+                "复制操作和附加指令；目标回合不足时会自动补齐，中间回合保持为空"
+            )
+        )
+
+        fun createRangeInputs(label: String): Pair<EditText, EditText> {
+            rootLayout.addView(createFieldLabel(context, label))
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val start = createStyledInput(context, "起始回合").apply {
+                inputType = InputType.TYPE_CLASS_NUMBER
+                protectInputLongPress()
+            }
+            val separator = TextView(context).apply {
+                text = "至"
+                textSize = 14f
+                gravity = Gravity.CENTER
+                setTextColor(Color.parseColor("#6C5B43"))
+            }
+            val end = createStyledInput(context, "结束回合").apply {
+                inputType = InputType.TYPE_CLASS_NUMBER
+                protectInputLongPress()
+            }
+            row.addView(start, LinearLayout.LayoutParams(0, dpToPx(context, 44f), 1f))
+            row.addView(separator, LinearLayout.LayoutParams(dpToPx(context, 34f), dpToPx(context, 44f)))
+            row.addView(end, LinearLayout.LayoutParams(0, dpToPx(context, 44f), 1f))
+            rootLayout.addView(row)
+            return start to end
+        }
+
+        val (sourceStartInput, sourceEndInput) = createRangeInputs("来源回合")
+        val (targetStartInput, targetEndInput) = createRangeInputs("复制到回合")
+
+        val buttonRow = createActionRow(context)
+        val btnCancel = createActionButton(context, "取消", false)
+        val btnConfirm = createActionButton(context, "确认复制", true)
+        buttonRow.addView(btnCancel, createWeightedButtonParams(context, false))
+        buttonRow.addView(btnConfirm, createWeightedButtonParams(context, true))
+        rootLayout.addView(buttonRow)
+
+        val dialog = showStyledDialog(context, rootLayout)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnConfirm.setOnClickListener {
+            val sourceStart = sourceStartInput.text.toString().trim().toIntOrNull()
+            val sourceEnd = sourceEndInput.text.toString().trim().toIntOrNull()
+            val targetStart = targetStartInput.text.toString().trim().toIntOrNull()
+            val targetEnd = targetEndInput.text.toString().trim().toIntOrNull()
+            if (sourceStart == null || sourceEnd == null || targetStart == null || targetEnd == null) {
+                Toast.makeText(context, "请填写四个回合数", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (sourceStart < 1 || targetStart < 1 || sourceEnd < sourceStart || targetEnd < targetStart) {
+                Toast.makeText(context, "回合范围不正确", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (sourceEnd - sourceStart != targetEnd - targetStart) {
+                Toast.makeText(context, "来源和目标回合数量必须相同", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (sourceStart <= targetEnd && targetStart <= sourceEnd) {
+                Toast.makeText(context, "来源和目标回合不能重叠", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val error = onCopyTurns(sourceStart, sourceEnd, targetStart, targetEnd)
+            if (error != null) {
+                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            Toast.makeText(context, "回合复制完成", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
     }
 
     private fun showEditDialog(

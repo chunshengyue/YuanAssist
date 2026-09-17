@@ -3,9 +3,13 @@ package com.example.yuanassist.core
 
 import android.content.Context
 import android.graphics.PointF
+import android.graphics.Point
+import android.os.Build
+import android.view.WindowManager
 import kotlin.math.min
 
 class CoordinateManager(private val context: Context) {
+    private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     var screenWidth = 0
         private set
     var screenHeight = 0
@@ -18,6 +22,7 @@ class CoordinateManager(private val context: Context) {
         private set
     var colWidth = 0f
         private set
+    private var displayRotation = 0
 
     init {
         calculate()
@@ -25,9 +30,11 @@ class CoordinateManager(private val context: Context) {
 
     // 🔴 核心算法：自适应坐标计算
     fun calculate() {
-        val metrics = context.resources.displayMetrics
-        screenWidth = metrics.widthPixels
-        screenHeight = metrics.heightPixels
+        val (width, height) = getRealScreenSize()
+        screenWidth = width
+        screenHeight = height
+        @Suppress("DEPRECATION")
+        displayRotation = windowManager.defaultDisplay.rotation
 
         // 1. 计算缩放因子 (基于 1440x2560 设计图)
         val widthRatio = screenWidth / 1440f
@@ -47,9 +54,23 @@ class CoordinateManager(private val context: Context) {
     }
 
     fun refreshIfNeeded() {
-        val metrics = context.resources.displayMetrics
-        if (metrics.widthPixels != screenWidth || metrics.heightPixels != screenHeight) {
+        val (width, height) = getRealScreenSize()
+        @Suppress("DEPRECATION")
+        val rotation = windowManager.defaultDisplay.rotation
+        if (width != screenWidth || height != screenHeight || rotation != displayRotation) {
             calculate()
+        }
+    }
+
+    private fun getRealScreenSize(): Pair<Int, Int> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = windowManager.maximumWindowMetrics.bounds
+            bounds.width() to bounds.height()
+        } else {
+            val point = Point()
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getRealSize(point)
+            point.x to point.y
         }
     }
 

@@ -41,6 +41,7 @@ import com.example.yuanassist.network.FavoriteState
 import com.example.yuanassist.network.SupabaseRepository
 import com.example.yuanassist.utils.RunLogger
 import com.example.yuanassist.utils.DialogUtils
+import com.example.yuanassist.utils.CloudGameAgentCache
 import com.example.yuanassist.utils.SupabaseTimeFormatter
 import retrofit2.Call
 
@@ -215,6 +216,12 @@ class JobStationActivity : AppCompatActivity() {
             bindRosterCard(data)
             bindTableAndOtherActions(data)
             bindBottomBar(data)
+            CloudGameAgentCache.ensureAvailable(this, data.roster.map { it.name }) {
+                if (!isFinishing && !isDestroyed) {
+                    bindRosterCard(data)
+                    bindTableAndOtherActions(data)
+                }
+            }
             RunLogger.i(module = "作业站", section = "详情页", message = "$source 渲染完成")
         } catch (t: Throwable) {
             RunLogger.e(module = "作业站", section = "详情页", message = "$source 渲染异常：$detailKey", throwable = t)
@@ -1283,7 +1290,7 @@ class JobStationActivity : AppCompatActivity() {
         val discSpec = if (isFromMaaYuan) {
             JobStationAssetRepository.resolveMaaDiscDisplaySpec(this, agentName, discId)
         } else {
-            JobStationAssetRepository.resolveCommunityDiscDisplaySpec(agentName, discId)
+            JobStationAssetRepository.resolveCommunityDiscDisplaySpec(this, agentName, discId)
         }
         val (bgColor, strokeColor, textColor, displayName) = when {
             discSpec.forbidden -> listOf(
@@ -1394,7 +1401,7 @@ class JobStationActivity : AppCompatActivity() {
             assets.open("$name.jpg").use { stream ->
                 Drawable.createFromStream(stream, null)
             }
-        }.getOrNull()
+        }.getOrNull() ?: CloudGameAgentCache.avatarDrawable(this, name)
     }
 
     private fun importScriptToService(payload: JobStationAssetRepository.JobStationImportPayload) {
